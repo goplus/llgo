@@ -27,7 +27,7 @@ var array = [...]uint8{
 	1, 2, 3, 4, 5, 6, 7, 8,
 }
 
-// CHECK-LABEL: define void @"{{.*}}cl/_testdata/utf8.main"() {
+// CHECK-LABEL: define void @"{{.*}}cl/_testdata/utf8.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:

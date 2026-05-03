@@ -5,12 +5,12 @@ import _ "unsafe"
 
 type T int
 
-// CHECK-LABEL: define i64 @"{{.*}}.T.Add"(i64 %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}.T.Add"(i64 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = add i64 %0, %1
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
-// CHECK-LABEL: define i64 @"{{.*}}.(*T).Add"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}.(*T).Add"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}.T.Add"(i64 %2, i64 %1)

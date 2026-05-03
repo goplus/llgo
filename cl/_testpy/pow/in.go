@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/lib/py/math"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/pow.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/pow.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
 // CHECK-NEXT:   %1 = call ptr @PyFloat_FromDouble(double 3.000000e+00)

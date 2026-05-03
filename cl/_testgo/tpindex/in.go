@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}tpindex.main"() {
+// CHECK-LABEL: define void @"{{.*}}tpindex.main"(){{.*}} {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 40)
 	// CHECK: store i64 1, ptr %1, align 8
@@ -21,7 +21,7 @@ func main() {
 
 // The index function returns the index of the first occurrence of v in s,
 // or -1 if not present.
-// CHECK-LABEL: define linkonce i64 @"{{.*}}tpindex.index[int]"(%"{{.*}}Slice" %0, i64 %1) {
+// CHECK-LABEL: define linkonce i64 @"{{.*}}tpindex.index[int]"(%"{{.*}}Slice" %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}Slice" %0, 1
 // CHECK-NEXT:   br label %_llgo_1

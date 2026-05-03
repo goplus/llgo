@@ -9,7 +9,7 @@ type I[T interface{}] interface {
 	Value() T
 }
 
-// CHECK-LABEL: define void @"{{.*}}tpinst.demo"() {
+// CHECK-LABEL: define void @"{{.*}}tpinst.demo"(){{.*}} {
 func demo() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 8)
 	// CHECK: getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
@@ -57,7 +57,7 @@ func demo() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}tpinst.main"() {
+// CHECK-LABEL: define void @"{{.*}}tpinst.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}tpinst.demo"()
 // CHECK-NEXT:   ret void
@@ -65,7 +65,7 @@ func main() {
 	demo()
 }
 
-// CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).Value"(ptr %0) {
+// CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).Value"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -74,7 +74,7 @@ func (pt *M[T]) Value() T {
 	return pt.v
 }
 
-// CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).value"(ptr %0) {
+// CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).value"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -83,13 +83,13 @@ func (pt *M[T]) value() T {
 	return pt.v
 }
 
-// CHECK-LABEL: define linkonce double @"{{.*}}tpinst.(*M[float64]).Value"(ptr %0) {
+// CHECK-LABEL: define linkonce double @"{{.*}}tpinst.(*M[float64]).Value"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[float64]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load double, ptr %1, align 8
 // CHECK-NEXT:   ret double %2
 
-// CHECK-LABEL: define linkonce double @"{{.*}}tpinst.(*M[float64]).value"(ptr %0) {
+// CHECK-LABEL: define linkonce double @"{{.*}}tpinst.(*M[float64]).value"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[float64]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load double, ptr %1, align 8

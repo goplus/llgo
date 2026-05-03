@@ -19,7 +19,7 @@ type cacheKey struct {
 	t5 uintptr
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpmap.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpmap.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testrt/tpmap.cacheKey", align 8

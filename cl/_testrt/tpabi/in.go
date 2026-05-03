@@ -27,7 +27,7 @@ func (t *K[N]) Advance(n int) *K[N] {
 	return nil
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpabi.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpabi.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/cl/_testrt/tpabi.T[string,int]", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 24, i1 false)
@@ -101,7 +101,7 @@ func main() {
 	println(k.Advance(1))
 }
 
-// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.T[string,int].Info"(%"{{.*}}/cl/_testrt/tpabi.T[string,int]" %0) {
+// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.T[string,int].Info"(%"{{.*}}/cl/_testrt/tpabi.T[string,int]" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testrt/tpabi.T[string,int]", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 24, i1 false)
@@ -117,7 +117,7 @@ func main() {
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.(*T[string,int]).Demo"(ptr %0) {
+// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.(*T[string,int]).Demo"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}/runtime/internal/runtime.String", ptr %1, align 8
@@ -130,7 +130,7 @@ func main() {
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.(*T[string,int]).Info"(ptr %0) {
+// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpabi.(*T[string,int]).Info"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, align 8
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/tpabi.T[string,int].Info"(%"{{.*}}/cl/_testrt/tpabi.T[string,int]" %1)

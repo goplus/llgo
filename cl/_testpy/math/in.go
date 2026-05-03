@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/lib/py"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/math.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/math.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testpy/math.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1

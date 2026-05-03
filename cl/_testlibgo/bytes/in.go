@@ -5,7 +5,7 @@ import (
 	"bytes"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/bytes.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/bytes.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
 // CHECK-NEXT:   %1 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/runtime/internal/runtime.StringToBytes"(%"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 6 })

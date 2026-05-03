@@ -5,7 +5,7 @@ import (
 	"unsafe"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/slicelen.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/slicelen.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 0)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)

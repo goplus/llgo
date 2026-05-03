@@ -7,7 +7,7 @@ import (
 )
 
 // CHECK: @0 = private unnamed_addr constant [29 x i8] c"__ZNK9INIReader10ParseErrorEv", align 1
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/demangle.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/demangle.main"(){{.*}} {
 func main() {
 	mangledName := "__ZNK9INIReader10ParseErrorEv"
 	// CHECK:  %0 = call ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 29 }, i1 true)

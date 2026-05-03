@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/math.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/math.main"(){{.*}} {
 func main() {
 	// CHECK: %0 = call double @math.Sqrt(double 2.000000e+00)
 	// CHECK: %1 = call double @math.Abs(double -1.200000e+00)

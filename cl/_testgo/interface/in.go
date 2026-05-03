@@ -12,13 +12,13 @@ type Game1 struct {
 type Game2 struct {
 }
 
-// CHECK-LABEL: define void @"{{.*}}interface.(*Game2).initGame"(ptr %0) {
+// CHECK-LABEL: define void @"{{.*}}interface.(*Game2).initGame"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret void
 func (p *Game2) initGame() {
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/interface.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/interface.main"(){{.*}} {
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"*_llgo_{{.*}}/cl/_testgo/interface.Game1"
 // CHECK: call i1 @"{{.*}}/runtime/internal/runtime.Implements"

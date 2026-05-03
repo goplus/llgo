@@ -3,7 +3,7 @@ package main
 
 import "os"
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/os.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/os.main"(){{.*}} {
 func main() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %0 = call { %"{{.*}}/runtime/internal/runtime.String", %"{{.*}}/runtime/internal/runtime.iface" } @os.Getwd()

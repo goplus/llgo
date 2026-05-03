@@ -16,7 +16,7 @@ type M[T any] struct {
 	m2 N[T]
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpunsafe.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpunsafe.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 12)
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/tpunsafe.(*M[bool]).check"(ptr %0, i64 1, i64 8, i64 1)
@@ -31,7 +31,7 @@ func main() {
 	m2.check(8, 16, 8)
 }
 
-// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpunsafe.(*M[bool]).check"(ptr %0, i64 %1, i64 %2, i64 %3) {
+// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpunsafe.(*M[bool]).check"(ptr %0, i64 %1, i64 %2, i64 %3){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpunsafe.M[bool]", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   %5 = load %"{{.*}}/cl/_testrt/tpunsafe.N[bool]", ptr %4, align 1
@@ -114,7 +114,7 @@ func (m *M[T]) check(align, offset1, offset2 uintptr) {
 	}
 }
 
-// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpunsafe.(*M[int64]).check"(ptr %0, i64 %1, i64 %2, i64 %3) {
+// CHECK-LABEL: define linkonce void @"{{.*}}/cl/_testrt/tpunsafe.(*M[int64]).check"(ptr %0, i64 %1, i64 %2, i64 %3){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpunsafe.M[int64]", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   %5 = load %"{{.*}}/cl/_testrt/tpunsafe.N[int64]", ptr %4, align 8

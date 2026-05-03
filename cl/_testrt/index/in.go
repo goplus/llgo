@@ -13,7 +13,7 @@ type N [2]int
 type T *N
 type S []int
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/index.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/index.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/cl/_testrt/index.point", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)

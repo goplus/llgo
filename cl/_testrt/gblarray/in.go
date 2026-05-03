@@ -6,7 +6,7 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 )
 
-// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/gblarray.Basic"(i64 %0) {
+// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/gblarray.Basic"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = icmp uge i64 %0, 25
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %1)
@@ -18,7 +18,7 @@ func Basic(kind abi.Kind) *abi.Type {
 	return basicTypes[kind]
 }
 
-// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/gblarray.basicType"(i64 %0) {
+// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/gblarray.basicType"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 72)
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %1, i32 0, i32 0
@@ -43,7 +43,7 @@ func basicType(kind abi.Kind) *abi.Type {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/gblarray.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/gblarray.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testrt/gblarray.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -68,7 +68,7 @@ var (
 	}
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/gblarray.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/gblarray.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/cl/_testrt/gblarray.Basic"(i64 24)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 6

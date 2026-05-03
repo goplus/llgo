@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/llgo/cl/_testdata/geometry1370"
 )
 
-// CHECK-LABEL: define void @"{{.*}}interface1370.main"() {
+// CHECK-LABEL: define void @"{{.*}}interface1370.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}geometry1370.NewRectangle"(double 5.000000e+00, double 3.000000e+00)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}NewItab"(ptr @"{{.*}}geometry1370.iface{{.*}}", ptr @"*_llgo_{{.*}}geometry1370.Rectangle")

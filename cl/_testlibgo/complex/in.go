@@ -5,7 +5,7 @@ import (
 	"math/cmplx"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1){{.*}} {
 func f(c, z complex128) {
 	// CHECK: %2 = call double @"math/cmplx.Abs"({ double, double } %0)
 	println("abs(3+4i):", cmplx.Abs(c))
@@ -15,7 +15,7 @@ func f(c, z complex128) {
 	println("imag(3+4i):", imag(z))
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/complex.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/complex.main"(){{.*}} {
 func main() {
 	re := 3.0
 	im := 4.0

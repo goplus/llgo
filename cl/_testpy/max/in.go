@@ -6,7 +6,7 @@ import (
 	"github.com/goplus/lib/py/std"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/max.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/max.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
 // CHECK-NEXT:   %1 = call ptr @PyFloat_FromDouble(double 9.000000e+00)

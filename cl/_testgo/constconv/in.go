@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}constconv.main"() {
+// CHECK-LABEL: define void @"{{.*}}constconv.main"(){{.*}} {
 func main() {
 	var i64 int64 = 1
 	var u64 uint64 = 1

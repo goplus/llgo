@@ -5,7 +5,7 @@ import (
 	"unsafe"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.check"({ ptr, ptr } %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.check"({ ptr, ptr } %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
 // CHECK-NEXT:   store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null }, ptr %1, align 8
@@ -72,7 +72,7 @@ func check(fn func()) {
 	println(closurePtr(a) == closurePtr(b))
 }
 
-// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/funcdecl.closurePtr"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
+// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/funcdecl.closurePtr"(%"{{.*}}/runtime/internal/runtime.eface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %0, ptr %1, align 8
@@ -95,7 +95,7 @@ type rtype struct {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.demo"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.demo"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 4 })
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -105,7 +105,7 @@ func demo() {
 	println("demo")
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcdecl.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 5 })
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -117,7 +117,7 @@ func main() {
 	check(demo)
 }
 
-// CHECK-LABEL: define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo"(ptr %0) {
+// CHECK-LABEL: define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   tail call void @"{{.*}}/cl/_testrt/funcdecl.demo"()
 // CHECK-NEXT:   ret void

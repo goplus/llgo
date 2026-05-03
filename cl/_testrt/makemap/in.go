@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/makemap.make1"()
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/makemap.make2"()
@@ -22,7 +22,7 @@ func main() {
 	make7()
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make1"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make1"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
@@ -229,7 +229,7 @@ func make1() {
 
 type N1 [1]int
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make2"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make2"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = call i64 @"{{.*}}/runtime/internal/runtime.MapLen"(ptr %0)
@@ -381,7 +381,7 @@ type N struct {
 type K [1]N
 type K2 [1]*N
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make3"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make3"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 2, i1 false)
@@ -511,7 +511,7 @@ func make3() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make4"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make4"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca [1 x ptr], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -646,7 +646,7 @@ func make4() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make5"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make5"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.NewChan"(i64 8, i64 0)
 // CHECK-NEXT:   %1 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"chan _llgo_int", ptr undef }, ptr %0, 1
@@ -716,7 +716,7 @@ func make5() {
 
 type M map[int]string
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make6"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make6"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
@@ -770,7 +770,7 @@ func make6() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make7"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make7"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", i64 2)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)

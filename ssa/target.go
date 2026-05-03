@@ -20,16 +20,18 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/goplus/llgo/internal/optlevel"
 	"github.com/goplus/llvm"
 )
 
 // -----------------------------------------------------------------------------
 
 type Target struct {
-	GOOS   string
-	GOARCH string
-	GOARM  string // "5", "6", "7" (default)
-	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	GOOS     string
+	GOARCH   string
+	GOARM    string // "5", "6", "7" (default)
+	Target   string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	OptLevel optlevel.Level
 }
 
 func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
@@ -45,12 +47,37 @@ func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 		spec.Triple,
 		spec.CPU,
 		spec.Features,
-		llvm.CodeGenLevelNone,
+		p.codeGenOptLevel(),
 		p.targetRelocMode(),
 		llvm.CodeModelDefault,
 		p.targetMachineOptions(),
 	)
 	return machine.CreateTargetData(), machine
+}
+
+func (p *Target) effectiveOptLevel() optlevel.Level {
+	if p != nil && p.OptLevel.IsValid() {
+		return p.OptLevel
+	}
+	if p != nil && p.Target != "" {
+		return optlevel.Oz
+	}
+	return optlevel.O2
+}
+
+func (p *Target) codeGenOptLevel() llvm.CodeGenOptLevel {
+	switch p.effectiveOptLevel() {
+	case optlevel.O0:
+		return llvm.CodeGenLevelNone
+	case optlevel.O1:
+		return llvm.CodeGenLevelLess
+	case optlevel.O3:
+		return llvm.CodeGenLevelAggressive
+	case optlevel.O2, optlevel.Os, optlevel.Oz:
+		return llvm.CodeGenLevelDefault
+	default:
+		return llvm.CodeGenLevelNone
+	}
 }
 
 func (p *Target) targetRelocMode() llvm.RelocMode {

@@ -6,7 +6,7 @@ type My[T any] struct {
 	next *My[T]
 }
 
-// CHECK-LABEL: define void @"{{.*}}tprecurfn.main"() {
+// CHECK-LABEL: define void @"{{.*}}tprecurfn.main"(){{.*}} {
 func main() {
 	// CHECK:  %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 24)
 	// CHECK-NEXT:  %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
@@ -27,7 +27,7 @@ func main() {
 	m.next.fn(100)
 }
 
-// CHECK-LABEL: define void @"{{.*}}tprecurfn.main$1"(i64 %0) {
+// CHECK-LABEL: define void @"{{.*}}tprecurfn.main$1"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}PrintInt"(i64 %0)
 // CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 10)

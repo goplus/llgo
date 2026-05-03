@@ -6,12 +6,12 @@ var my = demo2{}.encode
 type demo1 struct {
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo1.encode"(%"{{.*}}/cl/_testrt/closurebound.demo1" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo1.encode"(%"{{.*}}/cl/_testrt/closurebound.demo1" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret i64 1
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.(*demo1).encode"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.(*demo1).encode"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testrt/closurebound.demo1", ptr %0, align 1
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}/cl/_testrt/closurebound.demo1.encode"(%"{{.*}}/cl/_testrt/closurebound.demo1" %1)
@@ -24,12 +24,12 @@ func (se demo1) encode() int {
 type demo2 struct {
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo2.encode"(%"{{.*}}/cl/_testrt/closurebound.demo2" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo2.encode"(%"{{.*}}/cl/_testrt/closurebound.demo2" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret i64 2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.(*demo2).encode"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.(*demo2).encode"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testrt/closurebound.demo2", ptr %0, align 1
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}/cl/_testrt/closurebound.demo2.encode"(%"{{.*}}/cl/_testrt/closurebound.demo2" %1)
@@ -39,7 +39,7 @@ func (se demo2) encode() int {
 	return 2
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closurebound.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closurebound.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 0)
 // CHECK-NEXT:   %1 = getelementptr inbounds { %"{{.*}}/cl/_testrt/closurebound.demo1" }, ptr %0, i32 0, i32 0
@@ -69,7 +69,7 @@ func main() {
 	}
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo2.encode$bound"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo2.encode$bound"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load { %"{{.*}}/cl/_testrt/closurebound.demo2" }, ptr %0, align 1
 // CHECK-NEXT:   %2 = extractvalue { %"{{.*}}/cl/_testrt/closurebound.demo2" } %1, 0
@@ -77,7 +77,7 @@ func main() {
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo1.encode$bound"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/closurebound.demo1.encode$bound"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load { %"{{.*}}/cl/_testrt/closurebound.demo1" }, ptr %0, align 1
 // CHECK-NEXT:   %2 = extractvalue { %"{{.*}}/cl/_testrt/closurebound.demo1" } %1, 0

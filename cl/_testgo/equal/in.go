@@ -3,7 +3,7 @@ package main
 
 func test() {}
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.assert"(i1 %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.assert"(i1 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
 // CHECK-EMPTY:
@@ -23,7 +23,7 @@ func assert(cond bool) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testgo/equal.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -43,7 +43,7 @@ func assert(cond bool) {
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#1"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#1"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
@@ -70,14 +70,14 @@ func assert(cond bool) {
 func init() {
 	fn1 := test
 	fn2 := func(i, j int) int { return i + j }
-	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/equal.init#1$1"(i64 %0, i64 %1) {
+	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/equal.init#1$1"(i64 %0, i64 %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = add i64 %0, %1
 	// CHECK-NEXT:   ret i64 %2
 	// CHECK-NEXT: }
 	var n int
 	fn3 := func() { println(n) }
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#1$2"(ptr %0) {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#1$2"(ptr %0){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0
@@ -99,7 +99,7 @@ func init() {
 	assert(nil == fn4)
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#2"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#2"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testgo/equal.assert"(i1 true)
 // CHECK-NEXT:   %0 = alloca [3 x i64], align 8
@@ -172,7 +172,7 @@ type T struct {
 
 type N struct{}
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#3"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#3"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 1, ptr {{%[0-9]+}}, align 8
@@ -195,7 +195,7 @@ func init() {
 	assert(y != z)
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#4"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#4"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 24)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -238,7 +238,7 @@ func init() {
 	assert(b == nil)
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#5"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#5"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 100, ptr {{%[0-9]+}}, align 8
@@ -263,7 +263,7 @@ func init() {
 	assert(c != y)
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#6"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#6"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.NewChan"(i64 8, i64 0)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.NewChan"(i64 8, i64 0)
@@ -284,7 +284,7 @@ func init() {
 	assert(a != nil)
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#7"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#7"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = icmp ne ptr %0, null

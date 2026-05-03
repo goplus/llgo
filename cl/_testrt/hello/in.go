@@ -5,7 +5,7 @@ import "github.com/goplus/llgo/cl/_testrt/hello/libc"
 
 // CHECK-LINE: @"{{.*}}/cl/_testrt/hello.format" = global [10 x i8] zeroinitializer, align 1
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/hello.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/hello.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testrt/hello.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -29,7 +29,7 @@ import "github.com/goplus/llgo/cl/_testrt/hello/libc"
 // CHECK-NEXT: }
 var format = [...]int8{'H', 'e', 'l', 'l', 'o', ' ', '%', 'd', '\n', 0}
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/hello.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/hello.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 @strlen(ptr @"{{.*}}/cl/_testrt/hello.format")
 // CHECK-NEXT:   call void (ptr, ...) @printf(ptr @"{{.*}}/cl/_testrt/hello.format", i32 %0)

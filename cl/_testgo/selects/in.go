@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/selects.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/selects.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.NewChan"(i64 0, i64 1)
@@ -122,7 +122,7 @@ func main() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/selects.main$1"(ptr %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/selects.main$1"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load { ptr, ptr, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %2 = extractvalue { ptr, ptr, ptr } %1, 0

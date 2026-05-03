@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/sum.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/sum.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 32)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -27,7 +27,7 @@ func main() {
 	c.Printf(c.Str("Hello %d\n"), sum(1, 2, 3, 4))
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/sum.sum"(%"{{.*}}/runtime/internal/runtime.Slice" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/sum.sum"(%"{{.*}}/runtime/internal/runtime.Slice" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %0, 1
 // CHECK-NEXT:   br label %_llgo_1

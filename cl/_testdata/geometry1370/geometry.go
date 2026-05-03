@@ -12,7 +12,7 @@ type Rectangle struct {
 	id            int
 }
 
-// CHECK-LABEL: define ptr @"{{.*}}.NewRectangle"(double %0, double %1) {
+// CHECK-LABEL: define ptr @"{{.*}}.NewRectangle"(double %0, double %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}.AllocZ"(i64 24)
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}.Rectangle", ptr %2, i32 0, i32 0
@@ -25,7 +25,7 @@ func NewRectangle(width, height float64) *Rectangle {
 	return &Rectangle{Width: width, Height: height}
 }
 
-// CHECK-LABEL: define double @"{{.*}}geometry1370.(*Rectangle).Area"(ptr %0) {
+// CHECK-LABEL: define double @"{{.*}}geometry1370.(*Rectangle).Area"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load double, ptr %1, align 8
@@ -36,7 +36,7 @@ func NewRectangle(width, height float64) *Rectangle {
 // CHECK-NEXT: }
 func (r *Rectangle) Area() float64 { return r.Width * r.Height }
 
-// CHECK-LABEL: define i64 @"{{.*}}geometry1370.(*Rectangle).GetID"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}geometry1370.(*Rectangle).GetID"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -44,7 +44,7 @@ func (r *Rectangle) Area() float64 { return r.Width * r.Height }
 // CHECK-NEXT: }
 func (r *Rectangle) GetID() int { return r.id }
 
-// CHECK-LABEL: define void @"{{.*}}geometry1370.(*Rectangle).setID"(ptr %0, i64 %1) {
+// CHECK-LABEL: define void @"{{.*}}geometry1370.(*Rectangle).setID"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   store i64 %1, ptr %2, align 8
@@ -52,7 +52,7 @@ func (r *Rectangle) GetID() int { return r.id }
 // CHECK-NEXT: }
 func (r *Rectangle) setID(id int) { r.id = id }
 
-// CHECK-LABEL: define i1 @"{{.*}}geometry1370.(*Rectangle).validate"(ptr %0) {
+// CHECK-LABEL: define i1 @"{{.*}}geometry1370.(*Rectangle).validate"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load double, ptr %1, align 8
@@ -71,7 +71,7 @@ func (r *Rectangle) setID(id int) { r.id = id }
 // CHECK-NEXT: }
 func (r *Rectangle) validate() bool { return r.Width > 0 && r.Height > 0 }
 
-// CHECK-LABEL: define void @"{{.*}}.RegisterShape"(%"{{.*}}.iface" %0, i64 %1) {
+// CHECK-LABEL: define void @"{{.*}}.RegisterShape"(%"{{.*}}.iface" %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}.IfacePtrData"(%"{{.*}}.iface" %0)
 // CHECK-NEXT:   %3 = extractvalue %"{{.*}}.iface" %0, 0

@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/argv.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/argv.main"(){{.*}} {
 func main() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   br label %_llgo_1

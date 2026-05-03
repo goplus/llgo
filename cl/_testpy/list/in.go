@@ -9,7 +9,7 @@ import (
 	"github.com/goplus/lib/py/std"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/list.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/list.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   store i64 100, ptr %0, align 8

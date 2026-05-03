@@ -8,7 +8,7 @@ type data struct {
 	a []int
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/len.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/len.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 56)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/len.data", ptr %0, i32 0, i32 0

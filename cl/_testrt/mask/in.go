@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/mask.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/mask.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 @"{{.*}}/cl/_testrt/mask.mask"(i8 1)
 // CHECK-NEXT:   %1 = sext i32 %0 to i64
@@ -56,7 +56,7 @@ func main() {
 	println(mask_shr8(127, 16))
 }
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/mask.mask"(i8 %0) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/mask.mask"(i8 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = sext i8 %0 to i32
 // CHECK-NEXT:   %2 = shl i32 %1, 31
@@ -68,7 +68,7 @@ func mask(x int8) int32 {
 	return int32(x) << 31 >> 31
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/mask.mask_shl"(i64 %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/mask.mask_shl"(i64 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -81,7 +81,7 @@ func mask_shl(x int, y int) int {
 	return x << y
 }
 
-// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shl8"(i8 %0, i64 %1) {
+// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shl8"(i8 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -95,7 +95,7 @@ func mask_shl8(x int8, y int) int8 {
 	return x << y
 }
 
-// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shl8u"(i8 %0, i64 %1) {
+// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shl8u"(i8 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -109,7 +109,7 @@ func mask_shl8u(x uint8, y int) uint8 {
 	return x << y
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/mask.mask_shr"(i64 %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/mask.mask_shr"(i64 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -122,7 +122,7 @@ func mask_shr(x int, y int) int {
 	return x >> y
 }
 
-// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shr8"(i8 %0, i64 %1) {
+// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shr8"(i8 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -136,7 +136,7 @@ func mask_shr8(x int8, y int) int8 {
 	return x >> y
 }
 
-// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shr8u"(i8 %0, i64 %1) {
+// CHECK-LABEL: define i8 @"{{.*}}/cl/_testrt/mask.mask_shr8u"(i8 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
