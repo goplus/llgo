@@ -3,7 +3,7 @@ module github.com/goplus/llgo
 go 1.24
 
 require (
-	github.com/goplus/cobra v1.9.12 //xgo:class
+	github.com/goplus/cobra v1.10.7 //xgo:class
 	github.com/goplus/gogen v1.22.0
 	github.com/goplus/lib v0.3.1
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
