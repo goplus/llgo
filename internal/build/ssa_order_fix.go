@@ -48,7 +48,6 @@ func fixSSAOrder(pkg *ssa.Package, files []*ast.File) {
 		case *ssa.Type:
 			if tn, ok := m.Object().(*types.TypeName); ok {
 				fixSSAOrderMethods(pkg, tn.Type(), visitFn)
-				fixSSAOrderMethods(pkg, types.NewPointer(tn.Type()), visitFn)
 			}
 		}
 	}
@@ -58,9 +57,12 @@ func fixSSAOrderMethods(pkg *ssa.Package, typ types.Type, visitFn func(*ssa.Func
 	if pkg == nil || pkg.Prog == nil || typ == nil {
 		return
 	}
-	mset := pkg.Prog.MethodSets.MethodSet(typ)
-	for i, n := 0, mset.Len(); i < n; i++ {
-		if fn := pkg.Prog.MethodValue(mset.At(i)); fn != nil {
+	named, ok := typ.(*types.Named)
+	if !ok {
+		return
+	}
+	for i, n := 0, named.NumMethods(); i < n; i++ {
+		if fn := pkg.Prog.FuncValue(named.Method(i)); fn != nil {
 			visitFn(fn)
 		}
 	}
@@ -292,8 +294,15 @@ func fixSSAOrderBlock(b *ssa.BasicBlock) {
 		// Bail if the alloc is written between the load and return.
 		// Moving the load could otherwise observe a different value.
 		writtenBeforeReturn := false
+		var storeSeen map[ssa.Value]struct{}
 		for i := loadIdx + 1; i < retIdx; i++ {
-			if storeWritesAlloc(b.Instrs[i], alloc) {
+			if _, ok := b.Instrs[i].(*ssa.Store); !ok {
+				continue
+			}
+			if storeSeen == nil {
+				storeSeen = make(map[ssa.Value]struct{})
+			}
+			if storeWritesAlloc(b.Instrs[i], alloc, storeSeen) {
 				writtenBeforeReturn = true
 				break
 			}
@@ -360,12 +369,13 @@ func callUsesValue(ci ssa.CallInstruction, v ssa.Value) bool {
 	return false
 }
 
-func storeWritesAlloc(ins ssa.Instruction, alloc *ssa.Alloc) bool {
+func storeWritesAlloc(ins ssa.Instruction, alloc *ssa.Alloc, seen map[ssa.Value]struct{}) bool {
 	store, ok := ins.(*ssa.Store)
 	if !ok || store == nil || alloc == nil {
 		return false
 	}
-	return valueDependsOn(store.Addr, alloc, map[ssa.Value]struct{}{})
+	clear(seen)
+	return valueDependsOn(store.Addr, alloc, seen)
 }
 
 func valueDependsOn(v, target ssa.Value, seen map[ssa.Value]struct{}) bool {

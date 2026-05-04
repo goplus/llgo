@@ -20,10 +20,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"unsafe"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -73,26 +74,6 @@ func (m orderedStringMap) AddMap(src map[string]string) orderedStringMap {
 		m[k] = v
 	}
 	return m
-}
-
-func (m orderedStringMap) MarshalYAML() (interface{}, error) {
-	if len(m) == 0 {
-		return nil, nil
-	}
-	type kv struct{ K, V string }
-	list := make([]kv, 0, len(m))
-	for k, v := range m {
-		list = append(list, kv{k, v})
-	}
-	sort.Slice(list, func(i, j int) bool { return list[i].K < list[j].K })
-	out := &yaml.Node{Kind: yaml.MappingNode}
-	for _, item := range list {
-		out.Content = append(out.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: item.K},
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: item.V},
-		)
-	}
-	return out, nil
 }
 
 // envSection holds fixed environment fields and optional vars.
@@ -175,11 +156,27 @@ func (m *manifestBuilder) Build() string {
 	return content
 }
 
-// Fingerprint returns the sha256 hash of the manifest content.
-func (m *manifestBuilder) Fingerprint() string {
-	content := m.Build()
-	hash := sha256.Sum256([]byte(content))
+func fingerprintManifest(content string) string {
+	hash := sha256.Sum256(readOnlyStringBytes(content))
 	return hex.EncodeToString(hash[:])
+}
+
+func readOnlyStringBytes(s string) []byte {
+	if s == "" {
+		return nil
+	}
+	// sha256.Sum256 only reads its input. Avoid copying large manifest strings
+	// solely to satisfy the []byte API.
+	return unsafe.Slice(unsafe.StringData(s), len(s))
+}
+
+func readOnlyBytesString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	// The caller must not mutate b after this conversion. This is intended for
+	// freshly allocated read buffers whose contents become immutable manifest text.
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }
 
 func sortDeps(deps []depEntry) []depEntry {
@@ -210,8 +207,180 @@ func buildManifestYAML(data manifestData) (string, error) {
 	if data.isEmpty() {
 		return "", nil
 	}
-	out, err := yaml.Marshal(data)
-	return string(out), err
+	return buildManifestYAMLFast(data), nil
+}
+
+func buildManifestYAMLFast(data manifestData) string {
+	var b strings.Builder
+	if data.Env != nil && !data.Env.empty() {
+		b.WriteString("env:\n")
+		writeStringField(&b, 4, "GOOS", data.Env.Goos)
+		writeStringField(&b, 4, "GOARCH", data.Env.Goarch)
+		writeStringField(&b, 4, "GO_VERSION", data.Env.GoVersion)
+		writeStringField(&b, 4, "LLGO_VERSION", data.Env.LlgoVersion)
+		writeStringField(&b, 4, "LLGO_COMPILER_HASH", data.Env.LlgoCompilerHash)
+		writeStringField(&b, 4, "LLVM_TRIPLE", data.Env.LlvmTriple)
+		writeStringField(&b, 4, "LLVM_VERSION", data.Env.LlvmVersion)
+		writeStringMap(&b, 4, "VARS", data.Env.Vars)
+	}
+	if data.Common != nil && !data.Common.empty() {
+		b.WriteString("common:\n")
+		writeStringField(&b, 4, "ABI_MODE", data.Common.AbiMode)
+		writeStringList(&b, 4, "BUILD_TAGS", data.Common.BuildTags)
+		writeStringField(&b, 4, "TARGET", data.Common.Target)
+		writeStringField(&b, 4, "TARGET_ABI", data.Common.TargetABI)
+		writeStringField(&b, 4, "CC", data.Common.CC)
+		writeStringList(&b, 4, "CCFLAGS", data.Common.CCFlags)
+		writeStringList(&b, 4, "CFLAGS", data.Common.CFlags)
+		writeStringList(&b, 4, "LDFLAGS", data.Common.LDFlags)
+		writeStringField(&b, 4, "LINKER", data.Common.Linker)
+		writeFileDigestList(&b, 4, "EXTRA_FILES", data.Common.ExtraFiles)
+	}
+	if data.Package != nil && !data.Package.empty() {
+		b.WriteString("package:\n")
+		writeStringField(&b, 4, "pkg_path", data.Package.PkgPath)
+		writeStringField(&b, 4, "pkg_id", data.Package.PkgID)
+		writeFileDigestList(&b, 4, "go_files", data.Package.GoFiles)
+		writeFileDigestList(&b, 4, "alt_go_files", data.Package.AltGoFiles)
+		writeFileDigestList(&b, 4, "other_files", data.Package.OtherFiles)
+		writeStringMap(&b, 4, "rewrite_vars", data.Package.RewriteVars)
+	}
+	if data.Metadata != nil {
+		b.WriteString("metadata:\n")
+		writeStringList(&b, 4, "link_args", data.Metadata.LinkArgs)
+		writeBoolField(&b, 4, "need_rt", data.Metadata.NeedRt)
+		writeBoolField(&b, 4, "need_py_init", data.Metadata.NeedPyInit)
+	}
+	writeDepList(&b, data.Deps)
+	return b.String()
+}
+
+func writeIndent(b *strings.Builder, n int) {
+	for ; n > 0; n-- {
+		b.WriteByte(' ')
+	}
+}
+
+func writeYAMLString(b *strings.Builder, s string) {
+	if isPlainYAMLString(s) {
+		b.WriteString(s)
+		return
+	}
+	b.WriteString(strconv.Quote(s))
+}
+
+func isPlainYAMLString(s string) bool {
+	if s == "" || s == "true" || s == "false" || s == "null" || s == "~" {
+		return false
+	}
+	hasNonDigit := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z':
+			hasNonDigit = true
+		case '0' <= c && c <= '9':
+		case c == '/', c == '.', c == '_', c == '-', c == '+':
+			hasNonDigit = true
+		default:
+			return false
+		}
+	}
+	return hasNonDigit
+}
+
+func writeStringField(b *strings.Builder, indent int, key, val string) {
+	if val == "" {
+		return
+	}
+	writeIndent(b, indent)
+	b.WriteString(key)
+	b.WriteString(": ")
+	writeYAMLString(b, val)
+	b.WriteByte('\n')
+}
+
+func writeBoolField(b *strings.Builder, indent int, key string, val bool) {
+	if !val {
+		return
+	}
+	writeIndent(b, indent)
+	b.WriteString(key)
+	b.WriteString(": true\n")
+}
+
+func writeStringList(b *strings.Builder, indent int, key string, vals []string) {
+	if len(vals) == 0 {
+		return
+	}
+	writeIndent(b, indent)
+	b.WriteString(key)
+	b.WriteString(":\n")
+	for _, val := range vals {
+		writeIndent(b, indent+4)
+		b.WriteString("- ")
+		writeYAMLString(b, val)
+		b.WriteByte('\n')
+	}
+}
+
+func writeStringMap(b *strings.Builder, indent int, key string, vals orderedStringMap) {
+	if len(vals) == 0 {
+		return
+	}
+	keys := make([]string, 0, len(vals))
+	for k := range vals {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	writeIndent(b, indent)
+	b.WriteString(key)
+	b.WriteString(":\n")
+	for _, k := range keys {
+		writeIndent(b, indent+4)
+		writeYAMLString(b, k)
+		b.WriteString(": ")
+		writeYAMLString(b, vals[k])
+		b.WriteByte('\n')
+	}
+}
+
+func writeFileDigestList(b *strings.Builder, indent int, key string, vals []fileDigest) {
+	if len(vals) == 0 {
+		return
+	}
+	writeIndent(b, indent)
+	b.WriteString(key)
+	b.WriteString(":\n")
+	for _, val := range vals {
+		writeIndent(b, indent+4)
+		b.WriteString("- path: ")
+		writeYAMLString(b, val.Path)
+		b.WriteByte('\n')
+		writeIndent(b, indent+6)
+		b.WriteString("size: ")
+		b.WriteString(strconv.FormatInt(val.Size, 10))
+		b.WriteByte('\n')
+		writeIndent(b, indent+6)
+		b.WriteString("mtime: ")
+		b.WriteString(strconv.FormatInt(val.ModTime, 10))
+		b.WriteByte('\n')
+		writeStringField(b, indent+6, "overlay_hash", val.OverlayHash)
+	}
+}
+
+func writeDepList(b *strings.Builder, vals []depEntry) {
+	if len(vals) == 0 {
+		return
+	}
+	b.WriteString("deps:\n")
+	for _, val := range vals {
+		b.WriteString("    - id: ")
+		writeYAMLString(b, val.ID)
+		b.WriteByte('\n')
+		writeStringField(b, 6, "version", val.Version)
+		writeStringField(b, 6, "fingerprint", val.Fingerprint)
+	}
 }
 
 const maxManifestSize = 10 * 1024 * 1024 // 10MB safety bound
@@ -229,29 +398,6 @@ func decodeManifest(content string) (manifestData, error) {
 		return manifestData{}, err
 	}
 	return data, nil
-}
-
-// digestFile calculates the sha256 hash of a file.
-func digestFile(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	buf := make([]byte, 32*1024)
-	if _, err := io.CopyBuffer(h, f, buf); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-// digestBytes calculates the sha256 hash of bytes.
-func digestBytes(data []byte) string {
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:])
 }
 
 // fileDigest represents a file with its path and metadata.
@@ -281,7 +427,8 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) ([]fileDi
 				Size:    int64(len(content)),
 				ModTime: 0,
 			}
-			fd.OverlayHash = digestBytes(content)
+			hash := sha256.Sum256(content)
+			fd.OverlayHash = hex.EncodeToString(hash[:])
 			digests = append(digests, fd)
 			continue
 		}
@@ -296,7 +443,9 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) ([]fileDi
 		})
 	}
 
-	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
+	if len(digests) > 1 {
+		sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
+	}
 
 	return digests, nil
 }

@@ -4,12 +4,48 @@
 package env
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 )
+
+func TestLLGoROOTWarnsOnceForDevelRoot(t *testing.T) {
+	origLLGoRoot := os.Getenv("LLGO_ROOT")
+	os.Setenv("LLGO_ROOT", "")
+	t.Cleanup(func() { os.Setenv("LLGO_ROOT", origLLGoRoot) })
+
+	oldWarned := llgoRootWarned
+	llgoRootWarned = sync.Map{}
+	t.Cleanup(func() { llgoRootWarned = oldWarned })
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = w
+	root1 := LLGoROOT()
+	root2 := LLGoROOT()
+	w.Close()
+	os.Stderr = oldStderr
+	defer r.Close()
+
+	if root1 == "" || root2 == "" {
+		t.Skip("LLGoROOT did not resolve a development root")
+	}
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "WARNING: Using LLGO root for devel: " + root1
+	if got := strings.Count(string(out), want); got != 1 {
+		t.Fatalf("devel root warning count = %d, output %q", got, out)
+	}
+}
 
 func TestGOROOT(t *testing.T) {
 	// Test with GOROOT environment variable set
@@ -93,6 +129,37 @@ func TestGOROOTAndGOVERSIONWithEnv(t *testing.T) {
 			t.Fatalf("GOROOTAndGOVERSIONWithEnv() = %q, %q, %v, want error", goroot, goversion, err)
 		}
 	})
+}
+
+func TestGoEnvWithEnvCachesSuccessfulResults(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake go shell script is Unix-only")
+	}
+	dir := t.TempDir()
+	countFile := filepath.Join(dir, "count")
+	goPath := filepath.Join(dir, "go")
+	script := "#!/bin/sh\ncount=0\nif [ -f " + countFile + " ]; then count=$(cat " + countFile + "); fi\ncount=$((count + 1))\necho $count > " + countFile + "\necho /tmp/fake-goroot\necho go1.99.0\n"
+	if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	for i := 0; i < 2; i++ {
+		got, err := GoEnvWithEnv(nil, "GOROOT", "GOVERSION")
+		if err != nil {
+			t.Fatalf("GoEnvWithEnv call %d: %v", i, err)
+		}
+		if strings.Join(got, ",") != "/tmp/fake-goroot,go1.99.0" {
+			t.Fatalf("GoEnvWithEnv call %d = %v", i, got)
+		}
+	}
+	count, err := os.ReadFile(countFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(count)) != "1" {
+		t.Fatalf("fake go invoked %s times, want 1", strings.TrimSpace(string(count)))
+	}
 }
 
 func TestGoEnvWithEnvErrors(t *testing.T) {

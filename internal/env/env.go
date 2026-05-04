@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 const (
@@ -45,9 +46,19 @@ func GOROOTAndGOVERSIONWithEnv(env []string) (goroot, goversion string, err erro
 	return vals[0], vals[1], nil
 }
 
+var (
+	goEnvCache     sync.Map
+	llgoRootWarned sync.Map
+)
+
 func GoEnvWithEnv(env []string, vars ...string) ([]string, error) {
 	if len(vars) == 0 {
 		return nil, fmt.Errorf("go env requires at least one variable")
+	}
+	cacheKey := goEnvCacheKey(env, vars)
+	if cached, ok := goEnvCache.Load(cacheKey); ok {
+		vals := cached.([]string)
+		return append([]string(nil), vals...), nil
 	}
 	args := append([]string{"env"}, vars...)
 	cmd := exec.Command("go", args...)
@@ -69,7 +80,27 @@ func GoEnvWithEnv(env []string, vars ...string) ([]string, error) {
 	for i := range got {
 		got[i] = strings.TrimSpace(got[i])
 	}
+	goEnvCache.Store(cacheKey, append([]string(nil), got...))
 	return got, nil
+}
+
+func goEnvCacheKey(env []string, vars []string) string {
+	var b strings.Builder
+	b.WriteString(os.Getenv("PATH"))
+	b.WriteByte('\x00')
+	for _, v := range vars {
+		b.WriteString(v)
+		b.WriteByte('\x00')
+	}
+	b.WriteByte('\x00')
+	if len(env) == 0 {
+		env = os.Environ()
+	}
+	for _, entry := range env {
+		b.WriteString(entry)
+		b.WriteByte('\x00')
+	}
+	return b.String()
 }
 
 func LLGoCacheDir() string {
@@ -121,7 +152,9 @@ func LLGoROOT() string {
 			return ""
 		}
 		if root, ok := isLLGoRoot(root); ok {
-			fmt.Fprintln(os.Stderr, "WARNING: Using LLGO root for devel: "+root)
+			if _, loaded := llgoRootWarned.LoadOrStore(root, true); !loaded {
+				fmt.Fprintln(os.Stderr, "WARNING: Using LLGO root for devel: "+root)
+			}
 			return root
 		}
 	}

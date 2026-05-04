@@ -2,10 +2,9 @@ package build
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+	"go/build"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,13 +16,10 @@ import (
 	gllvm "github.com/goplus/llvm"
 )
 
-// compilePkgSFiles translates Go/Plan9 assembly files selected by `go list -json`
-// for this package/target into LLVM IR, compiles them to .o, and returns the
-// object files for linking.
-//
-// NOTE: golang.org/x/tools/go/packages.Package does not expose SFiles, so we
-// query `go list -json` here to get the exact filtered set for GOOS/GOARCH.
-func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbose bool) ([]string, error) {
+// compilePkgSFiles translates Go/Plan9 assembly files selected for this
+// package/target into LLVM IR, compiles them to .o, and returns the object files
+// for linking.
+func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, dynimports []cgoImportDynamicDecl, verbose bool) ([]string, error) {
 	sfiles, err := pkgSFiles(ctx, pkg)
 	if err != nil {
 		return nil, err
@@ -53,7 +49,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		return nil, fmt.Errorf("%s: missing types (needed for asm signatures)", pkg.PkgPath)
 	}
 
-	skipDarwinDynimportTrampolines := shouldCheckDarwinDynimportTrampolineAsm(ctx, pkg)
+	skipDarwinDynimportTrampolines := shouldCheckDarwinDynimportTrampolineAsm(ctx, pkg, dynimports)
 	objFiles := make([]string, 0, len(sfiles))
 	for _, sfile := range sfiles {
 		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
@@ -136,7 +132,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	return objFiles, nil
 }
 
-func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package) bool {
+func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package, dynimports []cgoImportDynamicDecl) bool {
 	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Goos != "darwin" {
 		return false
 	}
@@ -146,7 +142,6 @@ func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package
 	if pkg == nil || pkg.PkgPath != "golang.org/x/sys/unix" {
 		return false
 	}
-	_, dynimports := collectGoCgoPragmas(pkg.Syntax)
 	return len(dynimports) != 0
 }
 
@@ -366,6 +361,39 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
 }
 
+func (c *context) dirHasAsmFile(dir string) bool {
+	if c == nil {
+		return dirHasAsmFile(dir)
+	}
+	if c.asmDirCache == nil {
+		c.asmDirCache = make(map[string]bool)
+	}
+	if has, ok := c.asmDirCache[dir]; ok {
+		return has
+	}
+	has := dirHasAsmFile(dir)
+	c.asmDirCache[dir] = has
+	return has
+}
+
+func dirHasAsmFile(dir string) bool {
+	f, err := os.Open(dir)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return true
+	}
+	for _, name := range names {
+		if strings.HasSuffix(name, ".s") || strings.HasSuffix(name, ".S") {
+			return true
+		}
+	}
+	return false
+}
+
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg == nil || pkg.PkgPath == "" {
 		return nil, nil
@@ -376,15 +404,6 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg.Dir == "" {
 		return nil, nil
 	}
-	// Fast path: if directory has no .s/.S at all, skip `go list`.
-	if pkg.Dir != "" {
-		if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.s")); len(ss) == 0 {
-			if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.S")); len(ss) == 0 {
-				return nil, nil
-			}
-		}
-	}
-
 	if ctx.sfilesCache == nil {
 		ctx.sfilesCache = make(map[string][]string)
 	}
@@ -392,40 +411,13 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		return v, nil
 	}
 
-	args := []string{"list", "-json"}
-	if ctx.conf != nil && len(ctx.conf.BuildFlags) > 0 {
-		args = append(args, ctx.conf.BuildFlags...)
-	}
-	args = append(args, pkg.PkgPath)
-
-	cmd := exec.Command("go", args...)
-	cmd.Dir = pkg.Dir
-	cmd.Env = append(os.Environ(),
-		"GOOS="+ctx.buildConf.Goos,
-		"GOARCH="+ctx.buildConf.Goarch,
-	)
-	out, err := cmd.Output()
-	if err != nil {
-		var errBuf bytes.Buffer
-		if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
-			errBuf.Write(ee.Stderr)
-		}
-		return nil, fmt.Errorf("go list -json %s failed: %w\n%s", pkg.PkgPath, err, strings.TrimSpace(errBuf.String()))
-	}
-
-	var lp struct {
-		Dir    string   `json:"Dir"`
-		SFiles []string `json:"SFiles"`
-	}
-	if err := json.Unmarshal(out, &lp); err != nil {
-		return nil, fmt.Errorf("go list -json %s: parse: %w", pkg.PkgPath, err)
-	}
-
 	// internal/chacha8rand has highly optimized arch asm on amd64/arm64.
 	// Until full vector lowering lands, force the generic stub entry, which
-	// tail-jumps to block_generic and preserves package behavior.
-	if pkg.PkgPath == "internal/chacha8rand" && lp.Dir != "" {
-		stub := filepath.Join(lp.Dir, "chacha8_stub.s")
+	// tail-jumps to block_generic and preserves package behavior. Do this before
+	// trusting OtherFiles because go/packages may expose the selected optimized
+	// assembly there on some platforms.
+	if pkg.PkgPath == "internal/chacha8rand" {
+		stub := filepath.Join(pkg.Dir, "chacha8_stub.s")
 		if _, err := os.Stat(stub); err == nil {
 			paths := []string{stub}
 			ctx.sfilesCache[pkg.ID] = paths
@@ -433,12 +425,40 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		}
 	}
 
-	paths := make([]string, 0, len(lp.SFiles))
-	for _, f := range lp.SFiles {
-		if lp.Dir == "" {
+	var metadataSFiles []string
+	for _, file := range pkg.OtherFiles {
+		if strings.HasSuffix(file, ".s") || strings.HasSuffix(file, ".S") {
+			metadataSFiles = append(metadataSFiles, file)
+		}
+	}
+	if len(metadataSFiles) > 0 {
+		ctx.sfilesCache[pkg.ID] = metadataSFiles
+		return metadataSFiles, nil
+	}
+
+	// Fast path: if directory has no .s/.S at all, skip source selection.
+	if !ctx.dirHasAsmFile(pkg.Dir) {
+		ctx.sfilesCache[pkg.ID] = nil
+		return nil, nil
+	}
+
+	buildCtx := build.Default
+	buildCtx.GOOS = ctx.buildConf.Goos
+	buildCtx.GOARCH = ctx.buildConf.Goarch
+	if ctx.conf != nil {
+		buildCtx.BuildTags = parseSourcePatchBuildTags(ctx.conf.BuildFlags)
+	}
+	bp, err := buildCtx.ImportDir(pkg.Dir, 0)
+	if err != nil {
+		return nil, fmt.Errorf("inspect asm files for %s: %w", pkg.PkgPath, err)
+	}
+
+	paths := make([]string, 0, len(bp.SFiles))
+	for _, f := range bp.SFiles {
+		if bp.Dir == "" {
 			continue
 		}
-		paths = append(paths, filepath.Join(lp.Dir, f))
+		paths = append(paths, filepath.Join(bp.Dir, f))
 	}
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil

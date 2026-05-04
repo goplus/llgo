@@ -67,6 +67,24 @@ const (
 	DebugPackagesLoad = false
 )
 
+var runtimeGoMinor = parseRuntimeGoMinor(runtime.Version())
+
+func parseRuntimeGoMinor(version string) int {
+	const prefix = "go1."
+	if !strings.HasPrefix(version, prefix) {
+		return 0
+	}
+	minor := 0
+	for i := len(prefix); i < len(version); i++ {
+		c := version[i]
+		if c < '0' || c > '9' {
+			break
+		}
+		minor = minor*10 + int(c-'0')
+	}
+	return minor
+}
+
 // A Config specifies details about how packages should be loaded.
 // The zero value is a valid configuration.
 // Calls to Load do not modify this struct.
@@ -303,8 +321,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	// - golang.org/issue/55883 (go/packages confusing error)
 	//
 	// Should we assert a hard minimum of (currently) go1.16 here?
-	var runtimeVersion int
-	if _, err := fmt.Sscanf(runtime.Version(), "go1.%d", &runtimeVersion); err == nil && runtimeVersion < lpkg.goVersion {
+	if runtimeVersion := runtimeGoMinor; runtimeVersion != 0 && runtimeVersion < lpkg.goVersion {
 		defer func() {
 			if len(lpkg.Errors) > 0 {
 				appendError(packages.Error{
@@ -346,14 +363,27 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		return
 	}
 
+	typeInfoCap := len(lpkg.Syntax) * 1024
+	if typeInfoCap < 16 {
+		typeInfoCap = 16
+	}
+	identCap := typeInfoCap / 2
+	if identCap < 16 {
+		identCap = 16
+	}
+	smallCap := len(lpkg.Syntax) * 8
+	if smallCap < 4 {
+		smallCap = 4
+	}
 	lpkg.TypesInfo = &types.Info{
-		Types:      make(map[ast.Expr]types.TypeAndValue),
-		Defs:       make(map[*ast.Ident]types.Object),
-		Uses:       make(map[*ast.Ident]types.Object),
-		Implicits:  make(map[ast.Node]types.Object),
-		Instances:  make(map[*ast.Ident]types.Instance),
-		Scopes:     make(map[ast.Node]*types.Scope),
-		Selections: make(map[*ast.SelectorExpr]*types.Selection),
+		Types:     make(map[ast.Expr]types.TypeAndValue, typeInfoCap),
+		Defs:      make(map[*ast.Ident]types.Object, identCap),
+		Uses:      make(map[*ast.Ident]types.Object, identCap),
+		Implicits: make(map[ast.Node]types.Object, smallCap),
+		Instances: make(map[*ast.Ident]types.Instance, smallCap),
+		// Scopes are not consumed by LLGo or x/tools/go/ssa during compilation.
+		// Leaving it nil avoids recording every lexical scope during type checking.
+		Selections: make(map[*ast.SelectorExpr]*types.Selection, smallCap),
 	}
 	lpkg.TypesSizes = ld.sizes
 
@@ -468,19 +498,29 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	lpkg.IllTyped = illTyped
 }
 
+const packageLoadParallelFanout = 4
+
 func loadRecursiveEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	lpkg.loadOnce.Do(func() {
-		// Load the direct dependencies, in parallel.
-		var wg sync.WaitGroup
-		for _, ipkg := range lpkg.Imports {
-			imp := ld.pkgs[ipkg.ID]
-			wg.Add(1)
-			go func(imp *loaderPackage) {
-				loadRecursiveEx(dedup, ld, imp)
-				wg.Done()
-			}(imp)
+		// Most packages have a narrow import fanout; loading those branches
+		// sequentially avoids a large number of short-lived goroutines while
+		// still using parallelism for wider parts of the graph.
+		if len(lpkg.Imports) <= packageLoadParallelFanout {
+			for _, ipkg := range lpkg.Imports {
+				loadRecursiveEx(dedup, ld, ld.pkgs[ipkg.ID])
+			}
+		} else {
+			var wg sync.WaitGroup
+			for _, ipkg := range lpkg.Imports {
+				imp := ld.pkgs[ipkg.ID]
+				wg.Add(1)
+				go func(imp *loaderPackage) {
+					loadRecursiveEx(dedup, ld, imp)
+					wg.Done()
+				}(imp)
+			}
+			wg.Wait()
 		}
-		wg.Wait()
 		loadPackageEx(dedup, ld, lpkg)
 	})
 }
@@ -621,15 +661,19 @@ func refineEx(dedup Deduper, ld *loader, response *packages.DriverResponse) ([]*
 	// Load type data and syntax if needed, starting at
 	// the initial packages (roots of the import DAG).
 	if ld.Mode&NeedTypes != 0 || ld.Mode&NeedSyntax != 0 {
-		var wg sync.WaitGroup
-		for _, lpkg := range initial {
-			wg.Add(1)
-			go func(lpkg *loaderPackage) {
-				loadRecursiveEx(dedup, ld, lpkg)
-				wg.Done()
-			}(lpkg)
+		if len(initial) == 1 {
+			loadRecursiveEx(dedup, ld, initial[0])
+		} else {
+			var wg sync.WaitGroup
+			for _, lpkg := range initial {
+				wg.Add(1)
+				go func(lpkg *loaderPackage) {
+					loadRecursiveEx(dedup, ld, lpkg)
+					wg.Done()
+				}(lpkg)
+			}
+			wg.Wait()
 		}
-		wg.Wait()
 	}
 
 	// If the context is done, return its error and

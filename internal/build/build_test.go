@@ -20,6 +20,7 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/packages"
 	llssa "github.com/goplus/llgo/ssa"
+	gossa "golang.org/x/tools/go/ssa"
 )
 
 func TestMain(m *testing.M) {
@@ -30,6 +31,67 @@ func TestMain(m *testing.M) {
 	cacheRootFunc = old
 	_ = os.RemoveAll(td)
 	os.Exit(code)
+}
+
+func TestParseBuildFileSkipsObjectResolutionAndKeepsComments(t *testing.T) {
+	src := []byte("package p\n//go:linkname f C.f\nfunc f() {}\n")
+	file, err := parseBuildFile(token.NewFileSet(), "p.go", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if file.Scope != nil {
+		t.Fatalf("file.Scope = %v, want nil with parser.SkipObjectResolution", file.Scope)
+	}
+	if len(file.Comments) == 0 {
+		t.Fatal("parseBuildFile should preserve comments for LLGo directives")
+	}
+	ast.Inspect(file, func(n ast.Node) bool {
+		if ident, ok := n.(*ast.Ident); ok && ident.Obj != nil {
+			t.Fatalf("identifier %q has parser object %v, want nil", ident.Name, ident.Obj)
+		}
+		return true
+	})
+}
+
+func TestPrependEnvPath(t *testing.T) {
+	sep := string(os.PathListSeparator)
+	t.Setenv("PATH", strings.Join([]string{"/usr/bin", "/opt/llvm/bin", "/bin", "/opt/llvm/bin"}, sep))
+	prependEnvPath("/opt/llvm/bin")
+	want := strings.Join([]string{"/opt/llvm/bin", "/usr/bin", "/bin"}, sep)
+	if got := os.Getenv("PATH"); got != want {
+		t.Fatalf("PATH = %q, want %q", got, want)
+	}
+
+	prependEnvPath("/opt/llvm/bin")
+	if got := os.Getenv("PATH"); got != want {
+		t.Fatalf("second prepend changed PATH to %q, want %q", got, want)
+	}
+
+	prependEnvPath("")
+	if got := os.Getenv("PATH"); got != want {
+		t.Fatalf("empty prepend changed PATH to %q, want %q", got, want)
+	}
+}
+
+func TestSSABuildModeSanityOptIn(t *testing.T) {
+	t.Setenv(llgoSSASanity, "")
+	if ssaSanityEnabled() {
+		t.Fatal("SSA sanity should default to disabled")
+	}
+	if got := ssaBuildMode(); got&gossa.SanityCheckFunctions != 0 {
+		t.Fatalf("default SSA build mode enables sanity checks: %v", got)
+	}
+	if got := ssaBuildMode(); got&gossa.InstantiateGenerics == 0 {
+		t.Fatalf("default SSA build mode does not instantiate generics: %v", got)
+	}
+
+	t.Setenv(llgoSSASanity, "1")
+	if !ssaSanityEnabled() {
+		t.Fatal("SSA sanity should be enabled by LLGO_SSA_SANITY=1")
+	}
+	if got := ssaBuildMode(); got&gossa.SanityCheckFunctions == 0 {
+		t.Fatalf("opt-in SSA build mode does not enable sanity checks: %v", got)
+	}
 }
 
 func TestNeedsLinuxNoPIE(t *testing.T) {

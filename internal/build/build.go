@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/constant"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"log"
@@ -203,6 +204,26 @@ func envGOPATH() (string, error) {
 	return filepath.Join(home, "go"), nil
 }
 
+func prependEnvPath(dir string) {
+	if dir == "" {
+		return
+	}
+	sep := string(os.PathListSeparator)
+	pathEnv := os.Getenv("PATH")
+	parts := filepath.SplitList(pathEnv)
+	if len(parts) > 0 && parts[0] == dir {
+		return
+	}
+	out := make([]string, 0, len(parts)+1)
+	out = append(out, dir)
+	for _, part := range parts {
+		if part != "" && part != dir {
+			out = append(out, part)
+		}
+	}
+	os.Setenv("PATH", strings.Join(out, sep))
+}
+
 // -----------------------------------------------------------------------------
 
 const (
@@ -273,6 +294,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		Fset:       token.NewFileSet(),
 		Tests:      conf.Mode == ModeTest,
 		Env:        append(slices.Clone(os.Environ()), "GOOS="+conf.Goos, "GOARCH="+conf.Goarch),
+		ParseFile:  parseBuildFile,
 	}
 	if conf.Mode == ModeTest {
 		cfg.Mode |= packages.NeedForTest
@@ -364,7 +386,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	})
 	preCollectRuntimeLinknames(prog, altPkgs)
 
-	buildMode := ssaBuildMode
+	buildMode := ssaBuildMode()
 	cabiOptimize := true
 	passOpt := true
 	if IsDbgEnabled() || mode == ModeGen {
@@ -382,7 +404,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altSSAPkgs(progSSA, patches, altPkgs[1:], conf, verbose)
 
 	env := llvm.New("")
-	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
+	prependEnvPath(env.BinDir())
 
 	output := conf.OutFile != ""
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
@@ -551,9 +573,17 @@ func (p Package) isNeedRuntimeOrPyInit() (needRuntime, needPyInit bool) {
 	return
 }
 
-const (
-	ssaBuildMode = ssa.SanityCheckFunctions | ssa.InstantiateGenerics
-)
+func ssaBuildMode() ssa.BuilderMode {
+	mode := ssa.InstantiateGenerics
+	if ssaSanityEnabled() {
+		mode |= ssa.SanityCheckFunctions
+	}
+	return mode
+}
+
+func ssaSanityEnabled() bool {
+	return isEnvOn(llgoSSASanity, false)
+}
 
 type context struct {
 	env            *llvm.Env
@@ -580,16 +610,83 @@ type context struct {
 	testFail bool
 
 	// Cache related fields
-	cacheManager *cacheManager
-	llvmVersion  string
+	cacheManager       *cacheManager
+	pendingCacheSaves  []*pendingCacheSave
+	cacheSaveSem       chan struct{}
+	objectEmitSem      chan struct{}
+	llvmVersion        string
+	targetTripleCached string
+	buildTagsRaw       string
+	buildTagsCached    []string
+	envInputsCached    envSection
+	envInputsReady     bool
 
-	// go list derived file lists (SFiles, etc.)
+	// Plan9 assembly file discovery caches.
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
+	asmDirCache map[string]bool     // package directory -> whether it contains any .s/.S files
 
 	// plan9asm package policy parsed from env.
 	plan9asmOnce sync.Once
 	plan9asmMode plan9asmPkgsEnvMode
 	plan9asmPkgs map[string]bool
+}
+
+type pendingCacheSave struct {
+	pkg  *aPackage
+	done chan cacheSaveResult
+}
+
+type cacheSaveResult struct {
+	saveErr error
+	err     error
+}
+
+func (c *context) startCacheSave(pkg *aPackage, verbose bool) {
+	c.ensureCacheManager()
+	c.targetTriple()
+	if c.cacheSaveSem == nil {
+		limit := runtime.GOMAXPROCS(0) / 2
+		if limit < 1 {
+			limit = 1
+		} else if limit > 4 {
+			limit = 4
+		}
+		c.cacheSaveSem = make(chan struct{}, limit)
+	}
+	pending := &pendingCacheSave{pkg: pkg, done: make(chan cacheSaveResult, 1)}
+	c.pendingCacheSaves = append(c.pendingCacheSaves, pending)
+	go func() {
+		c.cacheSaveSem <- struct{}{}
+		defer func() { <-c.cacheSaveSem }()
+
+		var res cacheSaveResult
+		if res.err = waitPackageObjectEmit(pkg); res.err != nil {
+			pending.done <- res
+			return
+		}
+		if cacheEnabled() && pkg.Name != "main" && pkg.Fingerprint != "" && pkg.Manifest != "" {
+			res.saveErr = c.saveToCache(pkg)
+		}
+		if pkg.ArchiveFile == "" {
+			res.err = normalizeToArchive(c, pkg, verbose)
+		}
+		pending.done <- res
+	}()
+}
+
+func (c *context) waitCacheSaves(verbose bool) error {
+	var firstErr error
+	for _, pending := range c.pendingCacheSaves {
+		res := <-pending.done
+		if res.saveErr != nil && verbose {
+			fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pending.pkg.PkgPath, res.saveErr)
+		}
+		if firstErr == nil && res.err != nil {
+			firstErr = res.err
+		}
+	}
+	c.pendingCacheSaves = nil
+	return firstErr
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -614,6 +711,19 @@ func (c *context) linker() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewLinker(config)
+	cmd.Verbose = c.shouldPrintCommands(false)
+	return cmd
+}
+
+func (c *context) irCompiler() *clang.Cmd {
+	config := clang.NewConfig(
+		filepath.Join(c.env.BinDir(), "clang"),
+		c.crossCompile.CCFLAGS,
+		c.crossCompile.CFLAGS,
+		c.crossCompile.LDFLAGS,
+		c.crossCompile.Linker,
+	)
+	cmd := clang.NewCompiler(config)
 	cmd.Verbose = c.shouldPrintCommands(false)
 	return cmd
 }
@@ -649,6 +759,10 @@ func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 	aPkg.ObjFiles = nil
 	aPkg.ArchiveFile = archivePath
 	return nil
+}
+
+func parseBuildFile(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
+	return parser.ParseFile(fset, filename, src, parser.AllErrors|parser.ParseComments|parser.SkipObjectResolution)
 }
 
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
@@ -695,15 +809,10 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				if !aPkg.CacheHit {
-					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
-						return err
-					}
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
-					if err := ctx.saveToCache(aPkg); err != nil && verbose {
-						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
-					}
+					ctx.startCacheSave(aPkg, verbose)
 				}
 			} else {
 				pkg.ExportFile = ""
@@ -730,12 +839,7 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
-				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
-					return err
-				}
-				if err := ctx.saveToCache(aPkg); err != nil && verbose {
-					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
-				}
+				ctx.startCacheSave(aPkg, verbose)
 			}
 		}
 		return nil
@@ -744,6 +848,7 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 	// Build non-runtime packages first, so we know whether runtime is actually needed.
 	for _, p := range normalPkgs {
 		if err := buildOne(p); err != nil {
+			_ = ctx.waitCacheSaves(verbose)
 			return nil, err
 		}
 	}
@@ -752,9 +857,17 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		for _, p := range runtimePkgs {
 			if err := buildOne(p); err != nil {
+				_ = ctx.waitCacheSaves(verbose)
 				return nil, err
 			}
 		}
+	}
+
+	if err := ctx.waitCacheSaves(verbose); err != nil {
+		return nil, err
+	}
+	if err := ctx.waitObjectEmits(pkgs); err != nil {
+		return nil, err
 	}
 
 	return pkgs, nil
@@ -937,9 +1050,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	needRuntime := false
 	needPyInit := false
 	var needAbiInit int
-	methodByIndex := make(map[int]none)
-	methodByName := make(map[string]none)
-	allPkgs := []*packages.Package{pkg}
+	allPkgs := make([]*packages.Package, 1, len(pkgs)+1)
+	allPkgs[0] = pkg
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
@@ -954,12 +1066,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 	// archiveInputs contains package .a files. Object files are prepended later so
 	// archive extraction can see their undefined references in a single linker pass.
-	var archiveInputs []string
-	var linkArgs []string
+	archiveInputs := make([]string, 0, len(pkgs)+1)
+	linkArgs := make([]string, 0, len(pkgs))
 	var rtLinkInputs []string
 	var rtLinkArgs []string
-	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
-	var linkedOrder []Package
+	linkedPkgs := make(map[string]bool, len(pkgs)+1) // Track linked packages by ID to avoid duplicates
+	linkedOrder := make([]Package, 0, len(pkgs)+1)
 	packages.Visit(visitRoots, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
 		if linkedPkgs[p.ID] {
@@ -994,12 +1106,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		needRuntime = needRuntime || need1
 		needPyInit = needPyInit || need2
 		needAbiInit |= aPkg.LPkg.NeedAbiInit
-		for k, _ := range aPkg.LPkg.MethodByIndex {
-			methodByIndex[k] = none{}
-		}
-		for k, _ := range aPkg.LPkg.MethodByName {
-			methodByName[k] = none{}
-		}
 
 		linkArgs = append(linkArgs, aPkg.LinkArgs...)
 		if aPkg.ArchiveFile != "" {
@@ -1017,12 +1123,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
-		rtInit:        needRuntime,
-		pyInit:        needPyInit,
-		abiInit:       needAbiInit,
-		methodByIndex: methodByIndex,
-		methodByName:  methodByName,
-		abiSymbols:    linkedModuleGlobals(linkedOrder),
+		rtInit:     needRuntime,
+		pyInit:     needPyInit,
+		abiInit:    needAbiInit,
+		abiSymbols: linkedModuleGlobals(linkedOrder),
 	})
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryPkg.LPkg)
 	if err != nil {
@@ -1301,46 +1405,52 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
+	goCgoLdflags, goCgoDynimports := collectGoCgoPragmas(aPkg.Package.Syntax)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
-	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
+	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, goCgoDynimports, printCmds); err != nil {
 		return err
 	} else {
 		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 	}
-	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.Package.Syntax, printCmds); err != nil {
+	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, goCgoDynimports, printCmds); err != nil {
 		return err
 	} else {
 		aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
 	}
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
-	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.Package.Syntax)...)
+	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLdflags...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
+		altGoCgoLdflags, altGoCgoDynimports := collectGoCgoPragmas(aPkg.AltPkg.Syntax)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
-		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, printCmds); err != nil {
+		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, altGoCgoDynimports, printCmds); err != nil {
 			return err
 		} else {
 			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 		}
-		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.AltPkg.Syntax, printCmds); err != nil {
+		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, altGoCgoDynimports, printCmds); err != nil {
 			return err
 		} else {
 			aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
 		}
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
-		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
+		aPkg.LinkArgs = append(aPkg.LinkArgs, altGoCgoLdflags...)
 	}
 	if pkg.ExportFile != "" {
-		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret)
-		if err != nil {
-			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
+		if parallelObjectEmitEnabled(ctx) && !verbose {
+			ctx.startObjectEmit(aPkg, pkg.PkgPath, pkg.ExportFile, ret)
+		} else {
+			exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret)
+			if err != nil {
+				return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
+			}
+			aPkg.ObjFiles = append(aPkg.ObjFiles, exportFile)
 		}
-		aPkg.ObjFiles = append(aPkg.ObjFiles, exportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
@@ -1352,7 +1462,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, pkg llssa.Pac
 	if useInMemoryNativeCodegen(ctx) {
 		return exportObjectInMemory(ctx, pkgPath, exportFile, pkg)
 	}
-	return exportObjectWithClang(ctx, pkgPath, exportFile, []byte(pkg.String()))
+	return exportObjectWithClang(ctx, pkgPath, exportFile, pkg.String())
 }
 
 func useInMemoryNativeCodegen(ctx *context) bool {
@@ -1365,6 +1475,135 @@ func useInMemoryNativeCodegenConf(conf *Config) bool {
 		conf.Goos == runtime.GOOS &&
 		conf.Goarch == runtime.GOARCH &&
 		conf.Goarch != "wasm"
+}
+
+// parallelObjectEmitEnabled overlaps native object emission with later package
+// work by sending serialized LLVM IR to bounded external clang workers. It is
+// disabled for debug/tracing paths so command output and .ll generation remain
+// synchronous and deterministic.
+func parallelObjectEmitEnabled(ctx *context) bool {
+	if !isEnvOn(llgoParallelObjectEmit, true) ||
+		ctx.buildConf.GenLL ||
+		ctx.buildConf.CheckLLFiles ||
+		ctx.shouldPrintCommands(false) {
+		return false
+	}
+	// Native async object emission streams text IR from the linked LLVM library
+	// into clang. If the clang binary is from an older LLVM install, it may not
+	// parse newer IR attributes (for example LLVM 19's range/trunc flags). In
+	// that case, fall back to the native in-process object writer.
+	return !useInMemoryNativeCodegen(ctx) || ctx.asyncIRCompilerMatchesLLVM()
+}
+
+var asyncIRCompilerMajorCache sync.Map
+
+type objectEmitResult struct {
+	path string
+	err  error
+}
+
+func (c *context) asyncIRCompilerMatchesLLVM() bool {
+	if c == nil || c.env == nil {
+		return true
+	}
+	want := parseMajorVersion(gllvm.Version)
+	if want == 0 {
+		return false
+	}
+	clangPath := filepath.Join(c.env.BinDir(), "clang")
+	cacheKey := clangPath + "\x00" + os.Getenv("PATH")
+	if cached, ok := asyncIRCompilerMajorCache.Load(cacheKey); ok {
+		return cached.(int) == want
+	}
+	got := detectToolMajorVersion(clangPath)
+	actual, _ := asyncIRCompilerMajorCache.LoadOrStore(cacheKey, got)
+	return actual.(int) == want
+}
+
+func detectToolMajorVersion(tool string) int {
+	out, err := exec.Command(tool, "--version").Output()
+	if err != nil {
+		return 0
+	}
+	return parseVersionOutputMajor(string(out))
+}
+
+func parseVersionOutputMajor(output string) int {
+	fields := strings.Fields(output)
+	for i, field := range fields {
+		if field == "version" && i+1 < len(fields) {
+			return parseMajorVersion(fields[i+1])
+		}
+	}
+	for _, field := range fields {
+		if major := parseMajorVersion(field); major != 0 {
+			return major
+		}
+	}
+	return 0
+}
+
+func parseMajorVersion(version string) int {
+	major := 0
+	for i := 0; i < len(version); i++ {
+		c := version[i]
+		if c < '0' || c > '9' {
+			if major != 0 {
+				return major
+			}
+			continue
+		}
+		major = major*10 + int(c-'0')
+	}
+	return major
+}
+
+func (c *context) objectEmitSemaphore() chan struct{} {
+	if c.objectEmitSem == nil {
+		limit := runtime.GOMAXPROCS(0)
+		if limit < 1 {
+			limit = 1
+		} else if limit > 4 {
+			limit = 4
+		}
+		c.objectEmitSem = make(chan struct{}, limit)
+	}
+	return c.objectEmitSem
+}
+
+func (c *context) startObjectEmit(pkg *aPackage, pkgPath string, exportFile string, llpkg llssa.Package) {
+	data := llpkg.String()
+	done := make(chan objectEmitResult, 1)
+	sem := c.objectEmitSemaphore()
+	pkg.pendingObj = done
+	go func() {
+		sem <- struct{}{}
+		defer func() { <-sem }()
+		obj, err := exportObjectWithClang(c, pkgPath, exportFile, data)
+		done <- objectEmitResult{path: obj, err: err}
+	}()
+}
+
+func waitPackageObjectEmit(pkg *aPackage) error {
+	if pkg == nil || pkg.pendingObj == nil {
+		return nil
+	}
+	res := <-pkg.pendingObj
+	pkg.pendingObj = nil
+	if res.err != nil {
+		return fmt.Errorf("export object of %v failed: %v", pkg.PkgPath, res.err)
+	}
+	pkg.ObjFiles = append(pkg.ObjFiles, res.path)
+	return nil
+}
+
+func (c *context) waitObjectEmits(pkgs []*aPackage) error {
+	for _, pkg := range pkgs {
+		if err := waitPackageObjectEmit(pkg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func dumpLLVMIRIfNeeded(ctx *context, pkgPath string, exportFile string, data string) error {
@@ -1439,13 +1678,37 @@ func exportObjectInMemory(ctx *context, pkgPath string, exportFile string, pkg l
 	return objFileName, nil
 }
 
-func exportObjectWithClang(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
+func (c *context) objectCompiler() *clang.Cmd {
+	cmd := c.compiler()
+	if parallelObjectEmitEnabled(c) && useInMemoryNativeCodegen(c) {
+		cmd = c.irCompiler()
+	}
+	return cmd
+}
+
+func exportObjectWithClang(ctx *context, pkgPath string, exportFile string, data string) (string, error) {
 	base := filepath.Base(exportFile)
+	if !ctx.buildConf.CheckLLFiles && !ctx.buildConf.GenLL && parallelObjectEmitEnabled(ctx) {
+		objFile, err := os.CreateTemp("", base+"-*.o")
+		if err != nil {
+			return "", err
+		}
+		objFile.Close()
+		args := []string{"-x", "ir", "-o", objFile.Name(), "-c", "-", "-Wno-override-module"}
+		if ctx.shouldPrintCommands(false) {
+			fmt.Fprintf(os.Stderr, "# compiling LLVM IR from stdin for pkg: %s\n", pkgPath)
+			fmt.Fprintln(os.Stderr, "clang", args)
+		}
+		cmd := ctx.objectCompiler()
+		cmd.Stdin = strings.NewReader(data)
+		return objFile.Name(), cmd.Compile(args...)
+	}
+
 	f, err := os.CreateTemp("", base+"-*.ll")
 	if err != nil {
 		return "", err
 	}
-	if _, err := f.Write(data); err != nil {
+	if _, err := f.WriteString(data); err != nil {
 		f.Close()
 		return "", err
 	}
@@ -1478,8 +1741,7 @@ func exportObjectWithClang(ctx *context, pkgPath string, exportFile string, data
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	cmd := ctx.compiler()
-	return objFile.Name(), cmd.Compile(args...)
+	return objFile.Name(), ctx.objectCompiler().Compile(args...)
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
@@ -1555,6 +1817,7 @@ type aPackage struct {
 	ObjFiles    []string // object files: .o or .ll (output of compiler, input to archiver)
 	ArchiveFile string   // archive file: .a (output of archiver, used for linking)
 	rewriteVars map[string]string
+	pendingObj  chan objectEmitResult
 
 	// Cache related fields
 	Fingerprint string // fingerprint digest
@@ -1568,6 +1831,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 	prog := ctx.progSSA
 	var all []*aPackage
 	var errs []*packages.Package
+	var createdSSA bool
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
@@ -1576,7 +1840,10 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				return
 			}
 			var altPkg *packages.Cached
-			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
+			ssaPkg, created := createSSAPkg(ctx, prog, p, verbose)
+			if created {
+				createdSSA = true
+			}
 			if ctx.hasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
@@ -1609,6 +1876,12 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			fmt.Fprintln(os.Stderr, "cannot build SSA for package", errPkg)
 		}
 		return nil, fmt.Errorf("cannot build SSA for packages")
+	}
+	if createdSSA {
+		prog.Build()
+	}
+	for _, pkg := range all {
+		fixSSAOrder(pkg.SSA, pkg.Syntax)
 	}
 	return all, nil
 }
@@ -1688,9 +1961,11 @@ func fixUntypedShiftTypes(p *packages.Package) {
 }
 
 func applyPatches(ctx *context, p *packages.Package, verbose bool) {
-	// Fix untyped shift types before SSA build
+	// Fix untyped shift types before SSA sanity checking.
 	// See: https://github.com/golang/go/issues/77067
-	fixUntypedShiftTypes(p)
+	if ssaSanityEnabled() {
+		fixUntypedShiftTypes(p)
+	}
 
 	// fix instance patch
 	for id, inst := range p.TypesInfo.Instances {
@@ -1715,19 +1990,17 @@ func applyPatches(ctx *context, p *packages.Package, verbose bool) {
 	}
 }
 
-func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
+func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) (*ssa.Package, bool) {
 	pkgSSA := prog.ImportedPackage(p.ID)
-	if pkgSSA == nil {
-		if debugBuild || verbose {
-			log.Println("==> BuildSSA", p.ID)
-		}
-		applyPatches(ctx, p, verbose)
-		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
-		pkgSSA.Build() // TODO(xsw): build concurrently
-		// Apply local SSA fixups once when package SSA is first built.
-		fixSSAOrder(pkgSSA, p.Syntax)
+	if pkgSSA != nil {
+		return pkgSSA, false
 	}
-	return pkgSSA
+	if debugBuild || verbose {
+		log.Println("==> BuildSSA", p.ID)
+	}
+	applyPatches(ctx, p, verbose)
+	pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+	return pkgSSA, true
 }
 
 /*
@@ -1760,6 +2033,8 @@ const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoFullRpath = "LLGO_FULL_RPATH"
 const llgoBuildCache = "LLGO_BUILD_CACHE"
+const llgoSSASanity = "LLGO_SSA_SANITY"
+const llgoParallelObjectEmit = "LLGO_PARALLEL_OBJECT_EMIT"
 
 // for Plan9 asm translation debug
 const llgoPlan9ASMPkgs = "LLGO_PLAN9ASM_PKGS"

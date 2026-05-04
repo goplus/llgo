@@ -19,6 +19,8 @@
 package build
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -81,14 +83,26 @@ func TestManifestBuilder_BuildSorting(t *testing.T) {
 	}
 }
 
+func TestFingerprintManifestMatchesSHA256(t *testing.T) {
+	content := "env:\n  GOOS: linux\npackage:\n  pkg_path: example.com/pkg\n"
+	sum := sha256.Sum256([]byte(content))
+	want := hex.EncodeToString(sum[:])
+	if got := fingerprintManifest(content); got != want {
+		t.Fatalf("fingerprintManifest() = %q, want %q", got, want)
+	}
+	if got := fingerprintManifest(""); got != hex.EncodeToString(sha256.New().Sum(nil)) {
+		t.Fatalf("fingerprintManifest(empty) = %q", got)
+	}
+}
+
 func TestManifestBuilder_Fingerprint(t *testing.T) {
 	m := newManifestBuilder()
 	m.env.Goos = "linux"
 	m.env.Goarch = "amd64"
 	m.pkg.PkgPath = "test/pkg"
 
-	fp1 := m.Fingerprint()
-	fp2 := m.Fingerprint()
+	fp1 := fingerprintManifest(m.Build())
+	fp2 := fingerprintManifest(m.Build())
 
 	if fp1 != fp2 {
 		t.Error("fingerprint not stable")
@@ -110,7 +124,7 @@ func TestManifestBuilder_FingerprintDeterminism(t *testing.T) {
 	m2.env.Vars = orderedStringMap{"B": "2", "A": "1"}
 	m2.common.BuildTags = []string{"20", "10"}
 
-	if m1.Fingerprint() != m2.Fingerprint() {
+	if fingerprintManifest(m1.Build()) != fingerprintManifest(m2.Build()) {
 		t.Error("order should not affect fingerprint")
 	}
 
@@ -126,9 +140,14 @@ func TestManifestBuilder_FingerprintDifferentValues(t *testing.T) {
 	m2 := newManifestBuilder()
 	m2.env.Vars = orderedStringMap{"KEY": "value2"}
 
-	if m1.Fingerprint() == m2.Fingerprint() {
+	if fingerprintManifest(m1.Build()) == fingerprintManifest(m2.Build()) {
 		t.Error("different values should produce different fingerprints")
 	}
+}
+
+func testDigestBytes(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
 }
 
 func TestManifestBuilder_EmptySections(t *testing.T) {
@@ -142,7 +161,7 @@ func TestManifestBuilder_EmptySections(t *testing.T) {
 	}
 
 	// Should still produce a valid fingerprint
-	fp := m.Fingerprint()
+	fp := fingerprintManifest(m.Build())
 	if len(fp) != 64 {
 		t.Errorf("fingerprint length = %d, want 64", len(fp))
 	}
@@ -150,7 +169,7 @@ func TestManifestBuilder_EmptySections(t *testing.T) {
 
 func TestDigestBytes(t *testing.T) {
 	data := []byte("hello world")
-	hash := digestBytes(data)
+	hash := testDigestBytes(data)
 
 	// Known sha256 of "hello world"
 	expected := "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
@@ -159,7 +178,7 @@ func TestDigestBytes(t *testing.T) {
 	}
 
 	// Empty data
-	emptyHash := digestBytes([]byte{})
+	emptyHash := testDigestBytes([]byte{})
 	if len(emptyHash) != 64 {
 		t.Errorf("empty hash length = %d, want 64", len(emptyHash))
 	}
@@ -260,7 +279,7 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		t.Fatalf("digestFilesWithOverlay: %v", err)
 	}
 
-	hashOverlay := digestBytes(overlayContent)
+	hashOverlay := testDigestBytes(overlayContent)
 
 	// Should be sorted by path
 	if len(list) != 2 {
