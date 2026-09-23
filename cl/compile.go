@@ -32,7 +32,6 @@ import (
 
 	"github.com/xgo-dev/llgo/cl/blocks"
 	"github.com/xgo-dev/llgo/cl/ssawrap"
-	"github.com/xgo-dev/llgo/internal/directive"
 	"github.com/xgo-dev/llgo/internal/genmethod"
 	"github.com/xgo-dev/llgo/internal/goembed"
 	"github.com/xgo-dev/llgo/internal/typepatch"
@@ -176,6 +175,8 @@ type context struct {
 	methodNilDerefChecks map[*ssa.UnOp]none
 	recvNilDerefChecks   map[*ssa.UnOp]token.Pos
 	vargs                map[*ssa.Alloc][]llssa.Expr // varargs
+	sourceFunctions      map[*ssa.Function]*sourceFunction
+	importSources        map[*types.Package]*pkgSymInfo
 	funcs                map[*ssa.Function]llssa.Function
 	linkOnceFns          map[*ssa.Function]none
 	stackDefers          map[*ssa.Function]bool
@@ -625,13 +626,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	fn := pkg.FuncOf(name)
 	hasFreeVars := len(f.FreeVars) > 0
 	elideFreeVarEnv := p.canElideZeroSizedClosureEnv(f)
-	hasExplicitEnv := false
-	// ParsePkgSyntax is the sole //llgo:env extractor. Lowering only consumes
-	// its source-declaration cache; imported env entries use NewEnvFunc.
-	if decl, ok := f.Syntax().(*ast.FuncDecl); ok {
-		fullName := declarationFuncName(llssa.PathOf(pkgTypes), decl, f.Object(), f.Signature.Recv())
-		hasExplicitEnv = p.prog.HasClosureEnvDirective(p.goProg.Fset, fullName, decl.Pos())
-	}
+	source := p.sourceFunction(f)
+	hasExplicitEnv := source.ClosureEnv
 	hasCtx := hasFreeVars && !elideFreeVarEnv || hasExplicitEnv
 	var ctx *types.Var
 	if elideFreeVarEnv {
@@ -675,14 +671,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if p.prog.Target().GOARCH == "wasm" {
-		if decl, ok := f.Syntax().(*ast.FuncDecl); ok {
-			fullName := declarationFuncName(llssa.PathOf(pkgTypes), decl, f.Object(), f.Signature.Recv())
-			if module, importName, ok := p.prog.WasmImport(fullName); ok {
-				fn.SetWasmImport(module, importName)
-			}
+		if w := source.WasmImport; w != nil {
+			fn.SetWasmImport(w.Module, w.Name)
 		}
 	}
-	noInlineDirective := hasNoInlineDirective(f)
+	noInlineDirective := source.NoInline
 	runtimeStackNoInline := needsRuntimeStackNoInline(pkgTypes, f)
 	pcLineNoInline := p.needsPCLineNoInline(f)
 	usesRecover := p.functionUsesRecover(f)
@@ -850,23 +843,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 // affected.
 func funcInfoDisplayName(goName string) string {
 	return normalizeRuntimeAnonFuncName(goName)
-}
-
-func hasNoInlineDirective(f *ssa.Function) bool {
-	return hasFuncDirective(f, "go:noinline")
-}
-
-func hasFuncDirective(f *ssa.Function, name string) bool {
-	decl, _ := f.Syntax().(*ast.FuncDecl)
-	if decl == nil || decl.Doc == nil {
-		return false
-	}
-	for _, item := range directive.ParseGroup(decl.Doc) {
-		if item.Name == name {
-			return true
-		}
-	}
-	return false
 }
 
 func needsRuntimeStackNoInline(pkg *types.Package, f *ssa.Function) bool {
@@ -2906,6 +2882,9 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 			return nil, nil, err
 		}
 	}
+	if !options.PreloadedSyntax {
+		prog.PackageDirectives(pkgTypes).BindScope(pkgTypes)
+	}
 	if err = prog.ValidateLocalitiesFor(pkgTypes); err != nil {
 		return nil, nil, err
 	}
@@ -2922,7 +2901,7 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 	}
 
 	if ct == nil {
-		ct = NewCallerTracking()
+		ct = NewCallerTracking(prog.Directives())
 	}
 	ctx := &context{
 		prog:             prog,
@@ -2949,10 +2928,13 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 		runtimeCallerFuncs: runtimeCallerFuncSet(ct, pkg),
 		panicSiteFuncs:     recoverPanicSiteFuncSet(ct, pkg),
 	}
+	if !options.PreloadedSyntax {
+		ctx.prepareImportSources()
+	}
 	if embedMap != nil {
 		ctx.embedMap = *embedMap
 	} else {
-		ctx.embedMap, err = goembed.LoadDirectives(ctx.fset, files)
+		ctx.embedMap, err = goembed.LoadRecords(ctx.fset, prog.Directives().Files(files))
 		if err != nil {
 			panic(err)
 		}

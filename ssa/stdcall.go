@@ -110,7 +110,7 @@ func (p Program) isStdcallType(typ types.Type) bool {
 	if !ok {
 		return false
 	}
-	background, ok := p.packageTypeBackground(namedLinkname(named))
+	background, ok := p.packageSyntax.namedBackground(named)
 	return ok && background == InStdcall
 }
 
