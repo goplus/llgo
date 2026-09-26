@@ -177,6 +177,7 @@ type context struct {
 	vargs                map[*ssa.Alloc][]llssa.Expr // varargs
 	importSources        map[*types.Package]*pkgSymInfo
 	funcs                map[*ssa.Function]llssa.Function
+	sourceFunctions      map[*ssa.Function]sourceFunction
 	linkOnceFns          map[*ssa.Function]none
 	stackDefers          map[*ssa.Function]bool
 	anonDefers           map[*ssa.Function]bool
@@ -591,7 +592,8 @@ func hasInstantiatedRecv(recv *types.Var) bool {
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
-	pkgTypes, name, ftype := p.funcName(f)
+	source := p.sourceFunction(f)
+	pkgTypes, name, ftype, _ := p.funcName(source)
 	simd, simdDecl := lookupSIMD(f, p.prog.Target().GOARCH)
 	simdDecl = simdDecl && f.Pkg == p.goPkg
 	if simdDecl {
@@ -625,8 +627,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	fn := pkg.FuncOf(name)
 	hasFreeVars := len(f.FreeVars) > 0
 	elideFreeVarEnv := p.canElideZeroSizedClosureEnv(f)
-	source := p.functionDirectives(f)
-	hasExplicitEnv := source.ClosureEnv
+	hasExplicitEnv := source.Decl != nil && source.Decl.ClosureEnv
 	hasCtx := hasFreeVars && !elideFreeVarEnv || hasExplicitEnv
 	var ctx *types.Var
 	if elideFreeVarEnv {
@@ -669,12 +670,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn = pkg.NewFuncEx(name, sig, background, false, p.needsLinkOnce(f))
 		}
 	}
-	if p.prog.Target().GOARCH == "wasm" {
-		if w := source.WasmImport; w != nil {
+	if p.prog.Target().GOARCH == "wasm" && source.Decl != nil {
+		if w := source.Decl.WasmImport; w != nil {
 			fn.SetWasmImport(w.Module, w.Name)
 		}
 	}
-	noInlineDirective := source.NoInline
+	noInlineDirective := source.Decl != nil && source.Decl.NoInline
 	runtimeStackNoInline := needsRuntimeStackNoInline(pkgTypes, f)
 	pcLineNoInline := p.needsPCLineNoInline(f)
 	usesRecover := p.functionUsesRecover(f)
@@ -796,7 +797,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.prepareExportedLocalContext(f)
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			p.methodNilDerefChecks, p.recvNilDerefChecks = collectMethodNilDerefChecks(f, p.options.ReceiverNilChecks)
-			p.prepareCooperativeSafepoints(f, isCgo)
+			p.prepareCooperativeSafepoints(source, isCgo)
 			p.prepareGCRoots(f, hasCtx)
 			p.initGCRoots(b, f)
 			off := make([]int, len(f.Blocks))
@@ -1254,7 +1255,7 @@ func (p *context) isDirectTailUnreachableCall(instr ssa.Instruction, tail []ssa.
 	if !ok {
 		return false
 	}
-	_, name, kind := p.funcName(fn)
+	_, name, kind, _ := p.funcName(p.sourceFunction(fn))
 	if kind != llgoInstr || llgoInstrs[name] != llgoUnreachable {
 		return false
 	}
@@ -2492,7 +2493,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 			}
 		}
 	case *ssa.Function:
-		if _, _, ftype := p.funcName(v); ftype == llgoInstr {
+		if _, _, ftype, _ := p.funcName(p.sourceFunction(v)); ftype == llgoInstr {
 			v = ssawrap.MakeCallWrapper(p.goProg, v)
 		}
 		aFn, pyFn, _ := p.compileFunction(v)
