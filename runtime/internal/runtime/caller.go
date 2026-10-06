@@ -63,6 +63,10 @@ type callerLocationStore struct {
 }
 
 func PushCallerLocationFrame(entry uintptr, name, file string, startLine int) int {
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	store := callerLocationStoreForGoroutine()
 	mark := len(store.stack)
 	if mark == cap(store.stack) {
@@ -79,6 +83,9 @@ func PushCallerLocationFrame(entry uintptr, name, file string, startLine int) in
 		File:      file,
 		Line:      startLine,
 		StartLine: startLine,
+	}
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
 	}
 	return mark
 }
@@ -97,11 +104,18 @@ func PopCallerLocationFrame(mark int) {
 		// stack. Preserve that prefix across the corresponding longjmps.
 		mark = store.panicDepth
 	}
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	var zero CallerFrame
 	for i := mark; i < oldLen; i++ {
 		store.stack[i] = zero
 	}
 	store.stack = store.stack[:mark]
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
+	}
 }
 
 func RecordCallerLocation(entry uintptr, name, file string, line int) {
@@ -125,6 +139,10 @@ func updateCurrentFrame(entry uintptr, name, file string, line int) {
 	if store == nil {
 		return
 	}
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	for i := len(store.stack) - 1; i >= 0; i-- {
 		frame := &store.stack[i]
 		if frame.Entry == entry {
@@ -136,8 +154,14 @@ func updateCurrentFrame(entry uintptr, name, file string, line int) {
 			frame.Function = name
 			frame.File = file
 			frame.Line = line
+			if wasmDebuggerEnabled {
+				endWasmCallerUpdate(update)
+			}
 			return
 		}
+	}
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
 	}
 }
 
@@ -513,6 +537,9 @@ func callerLocationStoreForGoroutine() *callerLocationStore {
 	if store == nil {
 		store = new(callerLocationStore)
 		callerLocationStoreCurrent = store
+		if wasmDebuggerEnabled {
+			publishWasmCallerStore(store)
+		}
 	}
 	return store
 }

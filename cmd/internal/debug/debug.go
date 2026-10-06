@@ -176,6 +176,12 @@ func run(packageArgs, debuggerArgs []string, opts options, stdin io.Reader, stdo
 	if err := validateSessionTarget(conf, target, selected, opts); err != nil {
 		return err
 	}
+	if selected == backendBrowser {
+		if conf.Tags != "" {
+			conf.Tags += ","
+		}
+		conf.Tags += "llgo.wasm.debugger"
+	}
 
 	cleanup, artifact, err := prepareArtifact(conf)
 	if err != nil {
