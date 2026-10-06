@@ -21,9 +21,15 @@ func callMainJSWorker(func()) bool
 //go:linkname hasMainJSWorkerExecutor github.com/xgo-dev/llgo/runtime/internal/runtime.HasMainJSWorkerExecutorForTesting
 func hasMainJSWorkerExecutor() bool
 
+//go:linkname queueTransition github.com/xgo-dev/llgo/runtime/internal/runtime.ExerciseWasmRunqueueTransitionForTesting
+func queueTransition(func())
+
 func main() {
 	testLocalAllocations()
 	testPortablePrimitives()
+	println("js workers: queue transitions")
+	queueTransition(func() {})
+	queueTransition(runtime.GC)
 	println("js workers: finalizers")
 	testFinalizerContention()
 	println("js workers: shared values")

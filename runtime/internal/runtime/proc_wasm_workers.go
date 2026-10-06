@@ -446,7 +446,9 @@ func enqueueWasmG(worker *wasmWorker, gp *g) {
 		fatal("runtime: enqueue on nil WebAssembly worker")
 		return
 	}
-	worker.lock.Lock(CooperativeSafepoint)
+	// G may already be runnable but not queued. Stop for GC in place: a
+	// fiber switch here could lose it or reenter its status transition.
+	worker.lock.Lock(wasmGCAllocatorYield)
 	ok := worker.runq.Push(gp)
 	worker.lock.Unlock()
 	if !ok {
@@ -457,7 +459,7 @@ func enqueueWasmG(worker *wasmWorker, gp *g) {
 }
 
 func popWasmWorkerRunq(worker *wasmWorker) *g {
-	worker.lock.Lock(CooperativeSafepoint)
+	worker.lock.Lock(wasmGCAllocatorYield)
 	var gp *g
 	var e *wasmJSEvent
 	if n := len(worker.jsEvents); n != 0 {
@@ -502,7 +504,7 @@ func popWasmCallbackChild(worker *wasmWorker, event *wasmJSEvent) *g {
 }
 
 func wasmWorkerRunqLen(worker *wasmWorker) uintptr {
-	worker.lock.Lock(CooperativeSafepoint)
+	worker.lock.Lock(wasmGCAllocatorYield)
 	size := worker.runq.Len()
 	worker.lock.Unlock()
 	return size

@@ -17,6 +17,9 @@ func HasMainJSWorkerExecutorForTesting() bool {
 // CallMainJSWorker runs fn on worker zero when the caller is on another
 // worker. It parks only the calling G, leaving both worker schedulers free
 // to process nested calls, callbacks, and GC. False means fn was not called.
+// Each calling G has its own executor so a JS callback can wait for another
+// G that calls back into this realm. Reusing its fiber avoids allocating a
+// native and Asyncify stack for every property access.
 func CallMainJSWorker(fn func()) bool {
 	worker := currentWasmWorker()
 	if worker == nil || worker.index == 0 {
@@ -49,9 +52,6 @@ func CallMainJSWorker(fn func()) bool {
 	return true
 }
 
-// Each calling G has its own executor so a JS callback can wait for another
-// G that calls back into this realm. Reusing its fiber avoids allocating a
-// native and Asyncify stack for every property access.
 func runMainJSCall(call *wasmJSCall) {
 	defer func() {
 		call.failure = recover()

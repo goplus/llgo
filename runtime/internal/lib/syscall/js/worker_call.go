@@ -10,6 +10,8 @@ func isRemoteJSWorker() bool {
 	return llruntime.SchedulerProcID() != 0
 }
 
-func onJSWorker(fn func()) bool {
-	return llruntime.CallMainJSWorker(fn)
+func onJSWorker(fn func()) {
+	if !llruntime.CallMainJSWorker(fn) {
+		fn()
+	}
 }

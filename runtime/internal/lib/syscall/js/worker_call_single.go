@@ -4,4 +4,4 @@ package js
 
 func isRemoteJSWorker() bool { return false }
 
-func onJSWorker(func()) bool { return false }
+func onJSWorker(fn func()) { fn() }
