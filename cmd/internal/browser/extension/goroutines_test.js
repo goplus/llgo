@@ -152,3 +152,16 @@ test('incomplete batched reads do not create partial snapshots', async () => {
   await assert.rejects(f.plugin.evaluate('$goroutines', f.context, 'stop'), /incomplete debugger memory read/);
   assert.equal(f.plugin.objects.size, 0);
 });
+
+
+test('P0 is a valid processor; minus one means the G has not run yet', async () => {
+  for (const width of [4, 8]) {
+    const f = fixture(width);
+    f.u32(168, 0);
+    let records = await globalThis.LLGoWasmGoroutines.read(f.plugin, f.module, f.context, 'stop');
+    assert.equal(records[0].processor, '0');
+    f.u32(168, 0xffffffff);
+    records = await globalThis.LLGoWasmGoroutines.read(f.plugin, f.module, f.context, 'stop');
+    assert.equal(records[0].processor, null);
+  }
+});

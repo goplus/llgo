@@ -214,6 +214,9 @@ try {
     assert.deepEqual(parked.map(g => g.frames.filter(f => f.function === 'main.debugWaiter').length).sort(), [4, 5]);
     assert.ok(parked.every(g => g.frames.every(f => f.file && Number(f.line) > 0)), JSON.stringify(parked));
     assert.equal(new Set(parked.map(g => g.id)).size, 2);
+    assert.ok(parked.every(g => g.processor !== null), JSON.stringify(parked));
+    const main = records.find(g => g.frames.some(f => f.function === 'main.main'));
+    assert.equal(main?.processor, '0', JSON.stringify(records));
     if (workerSessions.length > 1) {
       assert.equal(new Set(parked.map(g => g.processor)).size, 2, JSON.stringify(parked));
     }

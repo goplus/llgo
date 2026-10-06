@@ -21,7 +21,7 @@ type wasmDebuggerNode struct {
 	callers        *callerLocationStore
 	sequence       uint32
 	updateDepth    uint32
-	processorID    int32 // last P; a parked G has no current M
+	processorID    int32 // last P; -1 until first execution
 }
 
 var wasmDebuggerRegistry struct {
@@ -49,7 +49,7 @@ func registerTraceback(gp, _ *g) {
 		fatal("runtime: failed to allocate debugger goroutine record")
 		return
 	}
-	*node = wasmDebuggerNode{gp: gp}
+	*node = wasmDebuggerNode{gp: gp, processorID: -1}
 	lockWasmDebugger()
 	atomic.Add(&wasmDebuggerRegistry.epoch, uint32(1))
 	// Initialization precedes Go package init; avoid an initializer that

@@ -106,8 +106,9 @@
       const state = unsigned(gBytes, gFields[spec.status]);
       const record = {id: String(id), parent: String(parent),
         state: module.layout.goroutine.status_names[String(state)] || `unknown(${state})`, processor: null, frames: []};
-      const processor = unsigned(nodeBytes, nodeFields[spec.processor_id]);
-      if (processor !== 0n) record.processor = String(processor);
+      const processor = BigInt.asIntN(nodeFields[spec.processor_id].size * 8,
+        unsigned(nodeBytes, nodeFields[spec.processor_id]));
+      if (processor >= 0n) record.processor = String(processor);
       const storeAddress = unsigned(nodeBytes, nodeFields[spec.callers]);
       if (storeAddress !== 0n) {
         const stackBytes = await memory(storeAddress + BigInt(stackField.offset), stack.size);
