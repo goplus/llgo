@@ -47,6 +47,14 @@ func addHeapSegment(start, end uintptr) bool {
 }
 
 func segmentForBlock(block uintptr) *heapSegment {
+	if !segmentedHeap {
+		segment := &heapSegments[0]
+		if block >= segment.first && block <= segment.last {
+			return segment
+		}
+		gcPanic(c.Str("gc: invalid heap block"))
+		return nil
+	}
 	low, high := 0, heapSegmentCount
 	for low < high {
 		mid := low + (high-low)/2

@@ -221,6 +221,12 @@ func gcFindNextIn(segment *heapSegment, blockAddr uintptr) uintptr {
 		blockAddr++
 	}
 	for blockAddr < segment.last && gcStateOfIn(segment, blockAddr) == blockStateTail {
+		// A full metadata byte containing only tails has no object boundary.
+		if (blockAddr-segment.first)%blocksPerStateByte == 0 &&
+			segment.last-blockAddr >= blocksPerStateByte && gcStateByteOfIn(segment, blockAddr) == blockStateByteAllTails {
+			blockAddr += blocksPerStateByte
+			continue
+		}
 		blockAddr++
 	}
 	return blockAddr
@@ -635,6 +641,15 @@ func finishMark() {
 		for segmentIndex := 0; segmentIndex < heapSegmentCount; segmentIndex++ {
 			segment := &heapSegments[segmentIndex]
 			for block := segment.first; block < segment.last; block++ {
+				if (block-segment.first)%blocksPerStateByte == 0 && segment.last-block >= blocksPerStateByte {
+					stateByte := gcStateByteOfIn(segment, block)
+					// A mark has both state bits set. Skip complete bytes with
+					// no marked heads, including free space and object tails.
+					if stateByte&(stateByte>>1)&(blockStateByteAllTails>>1) == 0 {
+						block += blocksPerStateByte - 1
+						continue
+					}
+				}
 				if gcStateOfIn(segment, block) != blockStateMark {
 					continue
 				}
@@ -671,6 +686,25 @@ func sweep() (freeBytes uintptr) {
 	for segmentIndex := 0; segmentIndex < heapSegmentCount; segmentIndex++ {
 		segment := &heapSegments[segmentIndex]
 		for block := segment.first; block < segment.last; block++ {
+			// Free space and long object tails dominate grown heaps. Process
+			// complete metadata bytes without decoding each two-bit state.
+			if (block-segment.first)%blocksPerStateByte == 0 && segment.last-block >= blocksPerStateByte {
+				stateByte := gcStateByteOfIn(segment, block)
+				if stateByte == 0 {
+					freeBytes += blocksPerStateByte * bytesPerBlock
+					block += blocksPerStateByte - 1
+					continue
+				}
+				if stateByte == blockStateByteAllTails {
+					if freeCurrentObject {
+						*(*byte)(unsafe.Pointer(segment.metadata + (block-segment.first)/blocksPerStateByte)) = 0
+						c.Memset(unsafe.Pointer(gcAddressOfIn(segment, block)), 0, blocksPerStateByte*bytesPerBlock)
+						freed += blocksPerStateByte
+					}
+					block += blocksPerStateByte - 1
+					continue
+				}
+			}
 			switch gcStateOfIn(segment, block) {
 			case blockStateHead:
 				// Unmarked head. Free it, including all tail blocks following it.
