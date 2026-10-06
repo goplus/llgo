@@ -1,3 +1,5 @@
+//go:build js && wasm && llgo.wasm.workers
+
 package main
 
 import (

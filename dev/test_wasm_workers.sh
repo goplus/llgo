@@ -86,6 +86,17 @@ run_worker_llgo_test() {
 	grep -Fq "PASS" "${output}"
 }
 
+run_worker_go_test() {
+	local target="$1"
+	local output="${work_dir}/test-go-${target}.out"
+	# Run the full Go-language package: the small reflection fixture alone
+	# does not exercise continuous collection after the larger live heap.
+	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
+		-target "${target}" -emulator -v -count=1 -timeout=60s \
+		"${repo_root}/test/go" 2>&1 | tee "${output}"
+	grep -Fxq "PASS" "${output}"
+}
+
 run_worker_pool_gc_test() {
 	local output="${work_dir}/test-pool-gc-emscripten.out"
 	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
@@ -205,6 +216,8 @@ run_emscripten 2 emscripten-memory64 emscripten-memory64-runner.mjs \
 run_worker_llgo_test emscripten test-workers-emscripten
 run_worker_llgo_test emscripten-memory64 test-workers-memory64
 run_worker_pool_gc_test
+run_worker_go_test emscripten
+run_worker_go_test emscripten-memory64
 run_filesystem_acceptance
 
 run_browser_acceptance "$(find_browser)"
