@@ -61,6 +61,24 @@ func TestConfigureWasmReflectBridges(t *testing.T) {
 			`package main; import "reflect"; func main() { reflect.ValueOf(func() {}).Call(nil) }`,
 			true,
 		},
+		{
+			"Emscripten Memory32 reflection uses typed bridges",
+			&llssa.Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "emscripten"},
+			`package main; import "reflect"; func main() { reflect.ValueOf(func() {}).Call(nil) }`,
+			true,
+		},
+		{
+			"Emscripten Memory64 reflection uses typed bridges",
+			&llssa.Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j64", WasmProvider: "emscripten"},
+			`package main; import "reflect"; func main() { reflect.ValueOf(func() {}).Call(nil) }`,
+			true,
+		},
+		{
+			"dead JavaScript reflection does not require bridges",
+			&llssa.Target{GOOS: "js", GOARCH: "wasm", WasmProvider: "emscripten"},
+			`package main; import "reflect"; func dead(v reflect.Value) { v.Call(nil) }; func main() {}`,
+			false,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
