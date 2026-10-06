@@ -42,7 +42,8 @@ func lockWasmDebugger() {
 	}
 }
 
-func registerTraceback(gp, parent *g) {
+// The shared parent parameter is unused: gp.parentGoid supplies the debugger linkage.
+func registerTraceback(gp, _ *g) {
 	node := (*wasmDebuggerNode)(c.Malloc(unsafe.Sizeof(wasmDebuggerNode{})))
 	if node == nil {
 		fatal("runtime: failed to allocate debugger goroutine record")

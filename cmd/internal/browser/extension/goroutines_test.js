@@ -28,7 +28,7 @@ function fixture(pointerSize) {
   struct('slice', 24, [['data', 'framePtr', 0], ['len', 'u64', 8], ['cap', 'u64', 16]]);
   struct('string', 16, [['data', 'bytePtr', 0], ['len', 'u64', 8]]);
   struct('frame', 40, [['Function', 'string', 0], ['File', 'string', 16], ['Line', 'u64', 32]]);
-  const memory = new Uint8Array(2048), view = new DataView(memory.buffer);
+  const memory = new Uint8Array(16384), view = new DataView(memory.buffer);
   const u32 = (at, value) => view.setUint32(at, value, true);
   const u64 = (at, value) => view.setBigUint64(at, BigInt(value), true);
   const ptr = pointerSize === 4 ? u32 : u64;
@@ -51,13 +51,15 @@ function fixture(pointerSize) {
     index: {variables: [{name: 'wasmDebuggerRegistry', scope: 'GLOBAL', type: 'registry',
       locations: [{expression: pointerSize === 4 ? '0340000000' : '034000000000000000'}]}]},
   };
+  const reads = [];
   const services = {getWasmLinearMemory: async (at, size) => {
+    reads.push({at, size});
     assert.ok(at >= 0 && at + size <= memory.length, `out-of-bounds read ${at}+${size}`);
     return memory.slice(at, at + size).buffer;
   }};
   const plugin = new globalThis.LLGoLanguageExtension.LLGoLanguageExtensionPlugin(services);
   plugin.modules.set('module', module);
-  return {plugin, module, memory, u32, u64, ptr, context: {rawModuleId: 'module', codeOffset: 0}};
+  return {plugin, module, memory, u32, u64, ptr, reads, context: {rawModuleId: 'module', codeOffset: 0}};
 }
 
 for (const width of [4, 8]) {
@@ -98,7 +100,7 @@ test('goroutine decoder rejects corrupt, oversized and changing snapshots', asyn
       const read = f.plugin.readNamedUnsigned.bind(f.plugin);
       let epochs = 0;
       f.plugin.readNamedUnsigned = (...args) => {
-        if (args[3] === 'epoch' && ++epochs === 2) f.u32(68, 4);
+        if (args[3] === 'epoch' && ++epochs === 1) f.u32(68, 4);
         return read(...args);
       };
     }, /registry changed/],
@@ -106,7 +108,7 @@ test('goroutine decoder rejects corrupt, oversized and changing snapshots', asyn
       const read = f.plugin.readNamedUnsigned.bind(f.plugin);
       let sequences = 0;
       f.plugin.readNamedUnsigned = (...args) => {
-        if (args[3] === 'sequence' && ++sequences === 2) f.u32(160, 6);
+        if (args[3] === 'sequence' && ++sequences === 1) f.u32(160, 6);
         return read(...args);
       };
     }, /stack changed/],
@@ -126,4 +128,27 @@ test('empty registry and ordinary Wasm builds have explicit results', async () =
   assert.equal(empty.hasChildren, false);
   f.module.index.variables = [];
   assert.match((await f.plugin.evaluate('$goroutines', f.context, 'stop')).value, /build with llgo.wasm.debugger/);
+});
+
+
+test('deep stacks use batched headers and cache repeated source strings', async () => {
+  const f = fixture(4);
+  const header = f.memory.slice(552, 592);
+  const count = 128, data = 1024;
+  for (let index = 0; index < count; ++index) f.memory.set(header, data + index * 40);
+  f.ptr(480, data); f.u64(488, count); f.u64(496, count);
+  const records = await globalThis.LLGoWasmGoroutines.read(f.plugin, f.module, f.context, 'stop');
+  assert.equal(records[0].frames.length, count);
+  assert.deepEqual(records[0].frames[127], {function: 'main.wait', file: '/src/main.go', line: '20'});
+  assert.equal(f.reads.filter(r => r.at === data && r.size === count * 40).length, 1);
+  assert.ok(f.reads.length <= 10, `deep stack used ${f.reads.length} transport calls`);
+});
+
+test('incomplete batched reads do not create partial snapshots', async () => {
+  const f = fixture(4);
+  const read = f.plugin.languageServices.getWasmLinearMemory;
+  f.plugin.languageServices.getWasmLinearMemory = async (at, size) =>
+    (await read(at, size)).slice(0, size - 1);
+  await assert.rejects(f.plugin.evaluate('$goroutines', f.context, 'stop'), /incomplete debugger memory read/);
+  assert.equal(f.plugin.objects.size, 0);
 });
