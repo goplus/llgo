@@ -92,7 +92,7 @@ The opt-in bounded Emscripten worker mode (`LLGO_WASM_WORKERS=2` through `16`; `
 
 ## Reflection and foreign calls
 
-`reflect.Value.Call`, `CallSlice`, methods, and `reflect.MakeFunc` are required capabilities, not profile definitions. J32/GoJS, J32/Emscripten, and J64/Emscripten use the WebAssembly libffi backend from [#2549](https://github.com/xgo-dev/llgo/pull/2549), which provides generic dynamic calls without generating a bridge for every function signature. W32/WASI has no JavaScript table adapter, so it uses compact compiler-generated typed bridges deduplicated by lowered signature and emitted only when whole-program reachability finds a dynamic reflection call. The selected backend must preserve GC roots, suspension, panic/recover, closures, aggregate ABI lowering, and deterministic errors. Typed-bridge size and compile-time cost must remain confined to WASI and are measured in acceptance.
+`reflect.Value.Call`, `CallSlice`, methods, and `reflect.MakeFunc` are required capabilities, not profile definitions. All hosted Wasm profiles use compiler-generated typed Go reflection bridges, deduplicated by lowered signature and emitted only when whole-program reachability finds dynamic reflection. The earlier JavaScript libffi selection cannot support a MakeFunc value crossing workers: its dynamically installed table entry exists only in the creating worker, whereas compiled entries exist in every instance. libffi remains available for C integration. Go reflection must preserve GC roots, suspension, panic/recover, closures, aggregate ABI lowering, and deterministic errors. Measure the bridge code/metadata and compile-time cost against the prior libffi output; further size optimization must retain cross-worker correctness.
 
 LLGo's Core Wasm C ABI is unrelated to the WIT Canonical ABI. Future WASI Preview 2 support will add generated WIT lift/lower adapters outside the ordinary Go and C calling conventions; it is not part of the current scope.
 
@@ -211,7 +211,7 @@ Hosted profile 是 Memory ABI 与 Host ABI 的组合。源码兼容、C 互操�
 
 ## 反射与外部调用
 
-`reflect.Value.Call`、`CallSlice`、方法和 `reflect.MakeFunc` 是必须能力，不是 profile 定义。J32/GoJS、J32/Emscripten 和 J64/Emscripten 使用 [#2549](https://github.com/xgo-dev/llgo/pull/2549) 的 WebAssembly libffi 后端，以通用动态调用避免为每个函数签名生成 bridge。W32/WASI 没有 JavaScript table adapter，因此使用按 lowering 后签名去重的 compact typed bridge，并且只在 whole-program 可达性分析发现动态反射调用时生成。最终后端必须正确处理 GC root、挂起、panic/recover、闭包、聚合 ABI lowering 和确定性错误；typed bridge 的体积与编译时间开销必须严格限制在 WASI，并在验收中测量。
+`reflect.Value.Call`、`CallSlice`、方法和 `reflect.MakeFunc` 是必须能力，不是 profile 定义。所有 hosted Wasm profile 使用编译器生成的 typed Go reflection bridge，按 lowering 后签名去重，并且只在 whole-program 可达性分析发现动态反射时生成。原先选择的 JavaScript libffi 无法支持 MakeFunc 值跨 worker：动态添加的 table entry 只存在于创建它的 worker，编译后的 entry 才能在所有实例中使用。C 集成继续使用 libffi。Go 反射必须正确处理 GC root、挂起、panic/recover、闭包、聚合 ABI lowering 和确定性错误；应对比原 libffi 产物测量 bridge 代码、metadata 和编译时间开销，后续体积优化必须保持跨 worker 正确性。
 
 LLGo Core Wasm C ABI 与 WIT Canonical ABI 无关。未来 WASI Preview 2 将在普通 Go/C 调用约定之外生成 WIT lift/lower adapter，不属于当前范围。
 

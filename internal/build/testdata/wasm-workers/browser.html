@@ -42,7 +42,7 @@ try {
   if (status !== 0) {
     throw new Error(`module exited with status ${status}: ${output.join("\n")}`);
   }
-  if (!output.some(line => /wasm (workers|hardening|filesystem|js workers) ok/.test(line))) {
+  if (!output.some(line => /wasm (workers|hardening|filesystem|js workers|reflect workers) ok/.test(line))) {
     throw new Error(`module produced no success marker: ${output.join("\n")}`);
   }
   body.dataset.result = "pass";

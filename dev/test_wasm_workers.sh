@@ -11,6 +11,7 @@ wasm_opt_cmd="${WASMOPT:-wasm-opt}"
 worker_fixture="${repo_root}/internal/build/testdata/wasm-workers"
 hardening_fixture="${repo_root}/internal/build/testdata/wasm-hardening"
 js_worker_fixture="${repo_root}/test/wasm/js-workers"
+reflect_worker_fixture="${repo_root}/test/wasm/reflect-workers"
 test_fixture="${repo_root}/internal/build/testdata/wasm-test"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/llgo-wasm-workers.XXXXXX")"
 browser_server=
@@ -153,6 +154,7 @@ run_browser_acceptance() {
 	local module
 	for module in workers-emscripten.mjs workers-memory64.mjs hardening-workers-emscripten.mjs hardening-workers-memory64.mjs \
 		js-workers-2-emscripten.mjs js-workers-2-memory64.mjs js-workers-4-emscripten.mjs js-workers-4-memory64.mjs \
+		reflect-workers-2-emscripten.mjs reflect-workers-2-memory64.mjs reflect-workers-4-emscripten.mjs reflect-workers-4-memory64.mjs \
 		fs-single-emscripten.mjs fs-workers-emscripten.mjs fs-single-emscripten-memory64.mjs fs-workers-emscripten-memory64.mjs; do
 		echo "browser worker acceptance: ${module}"
 		run_with_timeout "${node_cmd}" "${worker_fixture}/browser-runner.mjs" \
@@ -187,6 +189,10 @@ for workers in 2 4; do
 		"${js_worker_fixture}" "wasm js workers ok" "js-workers-${workers}-emscripten"
 	run_emscripten "${workers}" emscripten-memory64 emscripten-memory64-runner.mjs \
 		"${js_worker_fixture}" "wasm js workers ok" "js-workers-${workers}-memory64"
+	run_emscripten "${workers}" emscripten emscripten-runner.mjs \
+		"${reflect_worker_fixture}" "wasm reflect workers ok" "reflect-workers-${workers}-emscripten"
+	run_emscripten "${workers}" emscripten-memory64 emscripten-memory64-runner.mjs \
+		"${reflect_worker_fixture}" "wasm reflect workers ok" "reflect-workers-${workers}-memory64"
 done
 run_emscripten 2 emscripten emscripten-runner.mjs \
 	"${hardening_fixture}" "wasm hardening ok" hardening-workers-emscripten \

@@ -56,10 +56,10 @@ func TestConfigureWasmReflectBridges(t *testing.T) {
 			false,
 		},
 		{
-			"GoJS reflection uses libffi",
+			"GoJS reflection uses typed bridges",
 			&llssa.Target{GOOS: "js", GOARCH: "wasm", WasmProvider: "gojs"},
 			`package main; import "reflect"; func main() { reflect.ValueOf(func() {}).Call(nil) }`,
-			false,
+			true,
 		},
 	}
 	for _, test := range tests {
