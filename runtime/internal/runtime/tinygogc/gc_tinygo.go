@@ -568,6 +568,15 @@ func startMark(root uintptr) {
 		start, end := gcAddressOfIn(segment, block), gcAddressOfIn(segment, endBlock)
 
 		for addr := start; addr != end; addr += gcScanWordSize {
+			// Fiber buffers contain large zero-filled spans. On Memory32, skip
+			// four null pointer words at once without skipping either half of
+			// a nonzero Go/C pointer. Bound and align both loads inside the object.
+			if gcScanZeroSpans && addr&7 == 0 && end-addr >= 16 &&
+				*(*uint64)(unsafe.Pointer(addr)) == 0 &&
+				*(*uint64)(unsafe.Pointer(addr + 8)) == 0 {
+				addr += 16 - gcScanWordSize
+				continue
+			}
 			// Load the word.
 			word := loadGCScanWord(addr)
 			if word == 0 {
