@@ -584,7 +584,10 @@ func TestEmscriptenTargetProfiles(t *testing.T) {
 				t.Errorf("named target does not mark interruptible host wait and ffi_call_js as async: %v", export.LDFLAGS)
 			}
 			if !slices.Contains(export.LDFLAGS, emscriptenAsyncifyRemove) {
-				t.Errorf("named target does not preserve current libffi closure buffers during replay: %v", export.LDFLAGS)
+				t.Errorf("named target instruments non-suspending caller and allocator paths: %v", export.LDFLAGS)
+			}
+			if strings.Contains(strings.Join(export.LDFLAGS, " "), "llgo_reflect_bind") {
+				t.Error("named target retains obsolete reflection Asyncify exclusions")
 			}
 			if !slices.Contains(export.LDFLAGS, "-sALLOW_TABLE_GROWTH=1") {
 				t.Errorf("named target does not allow dynamic libffi closure entries: %v", export.LDFLAGS)
