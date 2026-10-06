@@ -570,6 +570,9 @@ func startMark(root uintptr) {
 		for addr := start; addr != end; addr += gcScanWordSize {
 			// Load the word.
 			word := loadGCScanWord(addr)
+			if word == 0 {
+				continue
+			}
 
 			referencedSegment := segmentForAddress(word)
 			if referencedSegment == nil {
