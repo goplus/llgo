@@ -851,10 +851,12 @@ func copyCallABIAttrs(from, to llvm.Value, paramMap []int) {
 	copyABIAttrs(fromType, toType, paramMap, from.GetCallSiteEnumAttribute, to.AddCallSiteAttribute)
 }
 
-// copyABIAttrs preserves attributes on the replacement LLVM entry or call.
-// SSA codegen has already selected integer extension from Go signedness and
-// the target ABI. Keep those attributes only where the physical type survives
-// lowering; closure environment markers follow the environment parameter.
+// copyABIAttrs remaps existing attributes when aggregate lowering replaces a
+// function or call: sret insertion, empty parameter elision and aggregate
+// expansion can change parameter positions. SSA codegen has already emitted
+// integer extension attributes from Go signedness and the target ABI. Preserve
+// them where the physical type survives lowering; closure environment markers
+// follow the environment parameter.
 func copyABIAttrs(from, to llvm.Type, paramMap []int, get func(int, uint) llvm.Attribute, add func(int, llvm.Attribute)) {
 	copyIndex := func(oldIndex, newIndex int, kinds []uint) {
 		for _, kind := range kinds {

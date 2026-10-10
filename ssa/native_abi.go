@@ -13,9 +13,11 @@ var (
 
 var nativeIntegerAttributeKinds = [...]uint{nativeSignExtKind, nativeZeroExtKind}
 
-// nativeIntegerAttrs records signedness while the Go signature is still
-// available. LLVM's integer types alone cannot distinguish signed from unsigned
-// C values. Apple arm64, SysV amd64, x86-32 and WebAssembly require extension
+// nativeIntegerAttrs emits LLVM ABI parameter attributes while the Go signature
+// still carries signedness. LLVM integer types alone do not distinguish signed
+// from unsigned C values. These attributes tell LLVM codegen how to extend
+// arguments at the call boundary; no separate integer-extension pass is needed.
+// Apple arm64, SysV amd64, x86-32 and WebAssembly require extension
 // attributes for narrow arguments. Native Windows amd64 only requires zeroext
 // for bool; other arm64 ABIs leave argument extension to the callee.
 func (p Program) nativeIntegerAttrs(sig *types.Signature, ft llvm.Type, add func(int, llvm.Attribute)) {
