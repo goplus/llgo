@@ -20,6 +20,8 @@ var nativeIntegerAttributeKinds = [...]uint{nativeSignExtKind, nativeZeroExtKind
 // Apple arm64, SysV amd64, x86-32 and WebAssembly require extension
 // attributes for narrow arguments. Native Windows amd64 only requires zeroext
 // for bool; other arm64 ABIs leave argument extension to the callee.
+// Return attributes require Go-to-native callback adapters: a native function
+// pointer can currently refer to an unadapted Go entry.
 func (p Program) nativeIntegerAttrs(sig *types.Signature, ft llvm.Type, add func(int, llvm.Attribute)) {
 	if !p.nativeIntegerExtensionRequired() {
 		return
@@ -35,13 +37,14 @@ func (p Program) nativeIntegerAttrs(sig *types.Signature, ft llvm.Type, add func
 	if len(physicalParams) != fixedCount {
 		panic("ssa: native integer attributes require the unlowered function signature")
 	}
+	target := p.Target()
+	windowsAMD64 := target.effectiveGOARCH() == "amd64" && target.effectiveGOOS() == "windows"
 	addInteger := func(index int, raw types.Type, physical llvm.Type) {
 		basic, ok := raw.Underlying().(*types.Basic)
 		if !ok || physical.TypeKind() != llvm.IntegerTypeKind || physical.IntTypeWidth() >= 32 {
 			return
 		}
-		if target := p.Target(); target.effectiveGOARCH() == "amd64" &&
-			target.effectiveGOOS() == "windows" && basic.Info()&types.IsBoolean == 0 {
+		if windowsAMD64 && basic.Info()&types.IsBoolean == 0 {
 			return
 		}
 		kind := nativeSignExtKind
@@ -50,8 +53,6 @@ func (p Program) nativeIntegerAttrs(sig *types.Signature, ft llvm.Type, add func
 		}
 		add(index, p.ctx.CreateEnumAttribute(kind, 0))
 	}
-	// Return attributes require Go-to-native callback adapters: a native
-	// function pointer can currently refer to an unadapted Go entry.
 	// The LLVM prototype omits __llgo_va_list. Only fixed parameters carry
 	// extension attributes; callers supply the promoted ellipsis argument types.
 	for i, physical := range physicalParams {
