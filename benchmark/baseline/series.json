@@ -2614,10 +2614,10 @@
       "label": "Branch cpunion/llgo:fix/narrow-cabi-extension",
       "path": "series/branch/71cc83d6a28107b5/summary.json",
       "configPath": "series/branch/71cc83d6a28107b5/config.json",
-      "commitPath": "commits/a9af550732ef16f50b1107e6b94f031386bc021c.json",
-      "sha": "a9af550732ef16f50b1107e6b94f031386bc021c",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/a9af550732ef16f50b1107e6b94f031386bc021c",
-      "updatedAt": "2026-10-10T16:50:39.128Z"
+      "commitPath": "commits/17bf859aaa17702392f7a6bccec81cd125bf64f9.json",
+      "sha": "17bf859aaa17702392f7a6bccec81cd125bf64f9",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/17bf859aaa17702392f7a6bccec81cd125bf64f9",
+      "updatedAt": "2026-10-10T23:57:55.910Z"
     },
     {
       "kind": "branch",
@@ -8411,10 +8411,10 @@
       "label": "PR #2776",
       "path": "series/pull/2776/summary.json",
       "configPath": "series/pull/2776/config.json",
-      "commitPath": "commits/a9af550732ef16f50b1107e6b94f031386bc021c.json",
-      "sha": "a9af550732ef16f50b1107e6b94f031386bc021c",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/a9af550732ef16f50b1107e6b94f031386bc021c",
-      "updatedAt": "2026-10-10T16:50:37.355Z"
+      "commitPath": "commits/17bf859aaa17702392f7a6bccec81cd125bf64f9.json",
+      "sha": "17bf859aaa17702392f7a6bccec81cd125bf64f9",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/17bf859aaa17702392f7a6bccec81cd125bf64f9",
+      "updatedAt": "2026-10-10T23:57:54.134Z"
     }
   ]
 }
