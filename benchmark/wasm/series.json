@@ -986,10 +986,10 @@
       "label": "Branch cpunion/llgo:codex/selected-go-driver",
       "path": "series/branch/efb7ab070cad982c/summary.json",
       "configPath": "series/branch/efb7ab070cad982c/config.json",
-      "commitPath": "commits/46b8e1b6879a9f395c63569b204144f63f0bf56f.json",
-      "sha": "46b8e1b6879a9f395c63569b204144f63f0bf56f",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/46b8e1b6879a9f395c63569b204144f63f0bf56f",
-      "updatedAt": "2026-10-10T12:57:32.512Z"
+      "commitPath": "commits/aeff03f553b6c349422649468c14c0333e8c70dc.json",
+      "sha": "aeff03f553b6c349422649468c14c0333e8c70dc",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/aeff03f553b6c349422649468c14c0333e8c70dc",
+      "updatedAt": "2026-10-10T23:46:45.843Z"
     },
     {
       "kind": "branch",
@@ -4517,10 +4517,10 @@
       "label": "PR #2775",
       "path": "series/pull/2775/summary.json",
       "configPath": "series/pull/2775/config.json",
-      "commitPath": "commits/46b8e1b6879a9f395c63569b204144f63f0bf56f.json",
-      "sha": "46b8e1b6879a9f395c63569b204144f63f0bf56f",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/46b8e1b6879a9f395c63569b204144f63f0bf56f",
-      "updatedAt": "2026-10-10T12:57:32.393Z"
+      "commitPath": "commits/aeff03f553b6c349422649468c14c0333e8c70dc.json",
+      "sha": "aeff03f553b6c349422649468c14c0333e8c70dc",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/aeff03f553b6c349422649468c14c0333e8c70dc",
+      "updatedAt": "2026-10-10T23:46:45.734Z"
     },
     {
       "kind": "pull",
