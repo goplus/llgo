@@ -258,7 +258,7 @@ func TestRuntimeGCDrainsBDWGCFinalizersOnDemand(t *testing.T) {
 }
 
 func TestRuntimeConcurrentGCFinalizers(t *testing.T) {
-	// Keep finalization inside the concurrent runtime.GC calls below instead
+	// Keep finalizer discovery inside the concurrent runtime.GC calls below instead
 	// of letting an unrelated allocation drain BDWGC's ready queue first.
 	old := getBDWGCFinalizeOnDemand()
 	setBDWGCFinalizeOnDemand(1)

@@ -186,18 +186,6 @@ timeouts:
     timeout: 2m
     reason: nosplit run runs past the default timeout on linux/amd64
 flakes:
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
   - platform: linux/amd64
     directive: run
     case: fixedbugs/issue25897a.go
