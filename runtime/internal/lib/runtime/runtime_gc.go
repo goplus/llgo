@@ -46,8 +46,6 @@ func GC() {
 	if poolCleanup != nil {
 		poolCleanup()
 	}
-	// Let mutators run before a caller starts another stop-the-world cycle.
-	llruntime.Gosched()
 }
 
 func collectAndEnqueueFinalizers() {
@@ -57,6 +55,9 @@ func collectAndEnqueueFinalizers() {
 	// allocation to enqueue callbacks for the finalizer worker. Do not run user
 	// finalizers on this thread: they may block or invoke GC themselves.
 	bdwgc.InvokeFinalizers()
+	// Let mutators run before another stop-the-world cycle, including the
+	// second collection performed by the same runtime.GC call.
+	llruntime.Gosched()
 }
 
 func saturatingSub(x, y uintptr) uintptr {
