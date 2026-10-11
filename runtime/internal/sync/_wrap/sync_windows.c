@@ -104,7 +104,10 @@ static int llgo_cond_wait(llgo_condition_variable *condition,
                           llgo_srwlock *lock, llgo_dword milliseconds)
 {
     llgo_cond_wait_call call = {condition, lock, milliseconds, 0};
-#if defined(LLGO_USE_BDWGC)
+    /* LLDB cannot unwind the optimized MSVC ARM64 GC_do_blocking frames:
+     * https://github.com/llvm/llvm-project/issues/224600. Keep those threads
+     * active in the collector so their Go stacks remain debuggable. */
+#if defined(LLGO_USE_BDWGC) && !(defined(_MSC_VER) && defined(_M_ARM64))
     /* The native wait neither allocates GC memory nor runs Go code. Keep
      * its caller's roots visible without suspending this blocked thread
      * during every collection. GC_do_blocking restores the active state
