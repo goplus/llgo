@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-	_ "unsafe"
+	"unsafe"
 )
 
 type concurrentFinalizerValue struct {
@@ -54,34 +54,30 @@ func getBDWGCFinalizeOnDemand() int32
 //go:linkname setBDWGCFinalizeOnDemand C.GC_set_finalize_on_demand
 func setBDWGCFinalizeOnDemand(enabled int32)
 
-//go:linkname collectBDWGC C.GC_gcollect
-func collectBDWGC()
+//llgo:type C
+type collectorFinalizer func(unsafe.Pointer, unsafe.Pointer)
 
-//go:linkname invokeBDWGCFinalizers C.GC_invoke_finalizers
-func invokeBDWGCFinalizers() int32
+//go:linkname registerCollectorFinalizer C.GC_register_finalizer
+func registerCollectorFinalizer(unsafe.Pointer, collectorFinalizer, unsafe.Pointer, *collectorFinalizer, *unsafe.Pointer)
 
 func TestRuntimeCollectorFinalizersWakeWorker(t *testing.T) {
-	const n = 32
-	finalized := make(chan int32, n)
-	created := make(chan struct{})
-	go func() {
-		makeFinalizerTinyObjects(n, finalized)
-		close(created)
-	}()
-	<-created
-
-	deadline := time.After(3 * time.Second)
-	for len(finalized) <= n/2 {
-		// Exercise the collector callback without runtime.GC's explicit drain,
-		// as happens when BDWGC invokes callbacks during an allocation.
-		collectBDWGC()
-		invokeBDWGCFinalizers()
-		runtime.Gosched()
-		select {
-		case <-deadline:
-			t.Fatalf("only %d/%d collector finalizers ran", len(finalized), n)
-		default:
-		}
+	finalized := make(chan struct{}, 1)
+	p := new(concurrentFinalizerValue)
+	runtime.SetFinalizer(p, func(*concurrentFinalizerValue) { finalized <- struct{}{} })
+	// Retrieve and unregister the real collector callback, then invoke it
+	// directly. This isolates waking the worker from conservative root lifetime
+	// and collection duration; other tests exercise actual GC discovery.
+	var callback collectorFinalizer
+	var data unsafe.Pointer
+	registerCollectorFinalizer(unsafe.Pointer(p), nil, nil, &callback, &data)
+	if callback == nil {
+		t.Fatal("SetFinalizer did not register a collector callback")
+	}
+	callback(unsafe.Pointer(p), data)
+	select {
+	case <-finalized:
+	case <-time.After(3 * time.Second):
+		t.Fatal("collector callback did not wake the finalizer worker")
 	}
 }
 
