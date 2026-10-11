@@ -588,14 +588,14 @@ func TestWindows386UglyfibRequiresSuccessWithTimeout(t *testing.T) {
 	}
 }
 
-func TestWindowsIssue25897aIsFlakyWithTimeout(t *testing.T) {
+func TestWindowsIssue25897aUsesTimeoutWithoutFlakyAllowance(t *testing.T) {
 	repo := repoRoot(t)
 	cfg := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
 	tc := testCase{RelPath: "fixedbugs/issue25897a.go", Directive: "run"}
 	for _, version := range []string{"go1.26.7", "go1.27.0"} {
 		for _, platform := range []string{"windows-msvc/386", "windows-mingw/386", "windows-msvc/amd64", "windows-mingw/amd64", "windows-msvc/arm64", "windows-mingw/arm64"} {
-			if match, _ := cfg.MatchFlaky(version, platform, tc); !match {
-				t.Errorf("%s did not match flake for %s/%s", tc.RelPath, version, platform)
+			if match, _ := cfg.MatchFlaky(version, platform, tc); match {
+				t.Errorf("%s is still allowed to flake for %s/%s", tc.RelPath, version, platform)
 			}
 			if timeout, _, match := cfg.MatchTimeout(version, platform, tc); !match || timeout != 90*time.Second {
 				t.Errorf("timeout for %s/%s/%s = %s, %v; want 1m30s, true", tc.RelPath, version, platform, timeout, match)
