@@ -185,7 +185,7 @@ typedef struct cJSON
 } cJSON;
 */
 
-// llgo:type C
+// llgo:cdecl
 type JSON struct {
     Unused [0]byte
 }
@@ -200,19 +200,23 @@ For the size of Unused, if the methods bound to the structure do not need to cre
 ```go
 // Both defined types and aliases can represent C function pointers.
 
-//llgo:type C
+//llgo:cdecl
 type Comp func(a c.Int)
 
-//llgo:type C
+//llgo:cdecl
 type Visitor = func(a c.Int)
 
 ```
+
+`//llgo:cdecl` selects the C calling convention for the function type. The older
+`//llgo:type C` spelling still works but is deprecated and triggers a
+compiler warning; see [Calling-convention directives](#calling-convention-directives).
 
 C variadic function pointers use the reserved final parameter name
 `__llgo_va_list`:
 
 ```go
-//llgo:type C
+//llgo:cdecl
 type Variadic func(marker int32, __llgo_va_list ...any) int32
 
 func Call(function Variadic) int32 {
@@ -229,7 +233,7 @@ to C functions, not exporting a Go variadic function as a C callback.
 #### Handling Windows stdcall APIs
 
 Use the `stdcall.` linkname namespace for Windows functions declared with
-`WINAPI` or `__stdcall`, and use `//llgo:type stdcall` for their function
+`WINAPI` or `__stdcall`, and use `//llgo:stdcall` for their function
 pointer and callback types:
 
 ```go
@@ -238,7 +242,7 @@ import _ "unsafe"
 //go:linkname MessageBoxW stdcall.MessageBoxW
 func MessageBoxW(hwnd uintptr, text, caption *uint16, flags uint32) int32
 
-//llgo:type stdcall
+//llgo:stdcall
 type Callback func(context uintptr) uintptr
 ```
 
@@ -247,11 +251,48 @@ and Windows/arm64 use their unified native C ABI. You may spell a 386 export
 explicitly as `_Name@N`; LLGo preserves that spelling on 386 and normalizes it
 to `Name` on 64-bit Windows.
 
-The `stdcall.` namespace and `//llgo:type stdcall` accept only non-variadic
+The `stdcall.` namespace and `//llgo:stdcall` accept only non-variadic
 signatures. A native callback carries one function pointer and no LLGo closure
 environment. Direct Go functions and function values with an empty environment
 can cross this boundary; a capturing closure panics before the C call. Pass
 callback state through an explicit context pointer.
+
+#### Calling-convention directives
+
+A function type that models a C or Windows callback carries a calling-convention
+directive so the generated function pointer matches the native ABI:
+
+| Directive | Calling convention |
+|---|---|
+| `//llgo:cdecl` | C calling convention |
+| `//llgo:stdcall` | Windows stdcall (distinct only on 386) |
+
+Both directives apply to a `type` declaration and accept no arguments:
+
+```go
+//llgo:cdecl
+type Handler func(data unsafe.Pointer) c.Int
+
+//llgo:stdcall
+type WinProc func(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr
+```
+
+A type may carry at most one calling-convention directive. Combining two (for
+example `//llgo:cdecl` with `//llgo:stdcall`, or a new directive with
+`//llgo:type`) is reported as a compile error. Field-level directives are not
+supported yet; a `//llgo:cdecl` or `//llgo:stdcall` placed on a struct field is
+rejected with a diagnostic rather than silently ignored.
+
+**Deprecated spellings.** The earlier `//llgo:type C` and `//llgo:type stdcall`
+directives remain supported for backward compatibility but are deprecated. The
+compiler accepts them and prints a warning naming the replacement:
+
+| Deprecated | Replacement |
+|---|---|
+| `//llgo:type C` | `//llgo:cdecl` |
+| `//llgo:type stdcall` | `//llgo:stdcall` |
+
+Prefer the new directives in new code. Other `//llgo:type` forms are unaffected.
 
 #### Handling char ** Type in C
 
@@ -355,7 +396,7 @@ func ParseError() c.Int
 - Use a struct to map the class. The writing method is the same as migrating a struct in the C library migration:
 
   ```go
-  // llgo:type C
+  // llgo:cdecl
   type Reader struct {
       Unused [32]byte
   }

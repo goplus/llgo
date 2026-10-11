@@ -244,6 +244,16 @@ func use() Value { return value }
 			want: "stdcall requires a function type",
 		},
 		{
+			name: "non-function type via //llgo:stdcall", goos: "windows", goarch: "386",
+			src: `package p
+//llgo:stdcall
+type Value int
+var value Value
+func use() Value { return value }
+`,
+			want: "stdcall requires a function type",
+		},
+		{
 			name: "variable linkname", goos: "windows", goarch: "386",
 			src: `package p
 import _ "unsafe"

@@ -24,25 +24,52 @@ func TestReplaceGoNameRuntimeBranch(t *testing.T) {
 }
 
 func TestTypeBackgroundAndParsePkgSyntaxCoverage(t *testing.T) {
-	if got := typeBackground(nil); got != "" {
-		t.Fatalf("typeBackground(nil)=%q, want empty", got)
+	callConvFset := token.NewFileSet()
+	callConvBg := func(doc *ast.CommentGroup) string {
+		cc, err := typeCallConv(callConvFset, doc)
+		if err != nil {
+			t.Fatalf("typeCallConv(%v) error: %v", doc, err)
+		}
+		return cc.bg
 	}
 
+	if got := callConvBg(nil); got != "" {
+		t.Fatalf("typeCallConv(nil)=%q, want empty", got)
+	}
+
+	// Deprecated //llgo:type forms still resolve to the same background.
 	doc1 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:type C"}}}
-	if got := typeBackground(doc1); got != "C" {
-		t.Fatalf("typeBackground(//llgo:type C)=%q, want C", got)
+	if got := callConvBg(doc1); got != "C" {
+		t.Fatalf("typeCallConv(//llgo:type C)=%q, want C", got)
 	}
 	doc2 := &ast.CommentGroup{List: []*ast.Comment{{Text: "// llgo:type C"}}}
-	if got := typeBackground(doc2); got != "C" {
-		t.Fatalf("typeBackground(// llgo:type C)=%q, want C", got)
+	if got := callConvBg(doc2); got != "C" {
+		t.Fatalf("typeCallConv(// llgo:type C)=%q, want C", got)
 	}
 	doc3 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:type stdcall"}}}
-	if got := typeBackground(doc3); got != "stdcall" {
-		t.Fatalf("typeBackground(//llgo:type stdcall)=%q, want stdcall", got)
+	if got := callConvBg(doc3); got != "stdcall" {
+		t.Fatalf("typeCallConv(//llgo:type stdcall)=%q, want stdcall", got)
+	}
+
+	// New directives resolve to the matching background.
+	doc4 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:cdecl"}}}
+	if got := callConvBg(doc4); got != "C" {
+		t.Fatalf("typeCallConv(//llgo:cdecl)=%q, want C", got)
+	}
+	doc5 := &ast.CommentGroup{List: []*ast.Comment{{Text: "// llgo:stdcall"}}}
+	if got := callConvBg(doc5); got != "stdcall" {
+		t.Fatalf("typeCallConv(// llgo:stdcall)=%q, want stdcall", got)
+	}
+
+	// A //llgo:type with an unrelated argument is not a calling-convention
+	// directive and leaves the background unset.
+	doc6 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:type Python"}}}
+	if got := callConvBg(doc6); got != "" {
+		t.Fatalf("typeCallConv(//llgo:type Python)=%q, want empty", got)
 	}
 
 	src := `package p
-//llgo:type C
+//llgo:cdecl
 type A int
 type (
 	B int

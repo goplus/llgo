@@ -133,11 +133,28 @@ On Windows, bind APIs declared with `WINAPI` or `__stdcall` through the `stdcall
 //go:linkname MessageBoxW stdcall.MessageBoxW
 func MessageBoxW(hwnd uintptr, text, caption *uint16, flags uint32) int32
 
-//llgo:type stdcall
+//llgo:stdcall
 type Callback func(context uintptr) uintptr
 ```
 
-`stdcall.` declarations and `//llgo:type stdcall` apply only to non-variadic function types. A native callback is one function pointer, so a Go callback must be a direct function reference; pass state through an explicit context pointer rather than a capturing closure.
+`stdcall.` declarations and `//llgo:stdcall` apply only to non-variadic function types. A native callback is one function pointer, so a Go callback must be a direct function reference; pass state through an explicit context pointer rather than a capturing closure.
+
+#### Calling-convention directives
+
+A function type that models a C or Windows callback carries a calling-convention directive so the generated function pointer matches the native ABI:
+
+* `//llgo:cdecl` selects the C calling convention.
+* `//llgo:stdcall` selects the Windows stdcall convention (distinct only on 386; Windows amd64 and arm64 use their unified native C ABI).
+
+```go
+//llgo:cdecl
+type Handler func(data unsafe.Pointer) c.Int
+
+//llgo:stdcall
+type WinProc func(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr
+```
+
+The older `//llgo:type C` and `//llgo:type stdcall` spellings remain supported for backward compatibility but are **deprecated**: the compiler accepts them and prints a warning naming the replacement (`//llgo:type C` → `//llgo:cdecl`, `//llgo:type stdcall` → `//llgo:stdcall`). Prefer the new directives in new code. A type may carry only one calling-convention directive; combining them (for example `//llgo:cdecl` together with `//llgo:stdcall` or `//llgo:type stdcall`) is reported as an error.
 
 ### C/C++ standard libraries
 

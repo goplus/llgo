@@ -234,7 +234,7 @@ func cEmvalGetModuleProperty(name *c.Char) uintptr
 //go:linkname cEmvalInstallInvoke C.llgo_emval_install_invoke
 func cEmvalInstallInvoke(handler emvalCallback)
 
-//llgo:type C
+//llgo:cdecl
 type emvalCallback func(c.Ulong)
 
 //go:linkname cEmvalTakePendingInvoke C.llgo_emval_take_pending_invoke

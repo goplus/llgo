@@ -1077,7 +1077,9 @@ func ParsePkgSyntaxWithOptions(prog llssa.Program, fset *token.FileSet, pkg *typ
 					return err
 				}
 				if decl.Tok == token.TYPE {
-					handleTypeDecl(prog, pkg, decl)
+					if err := handleTypeDecl(prog, fset, pkg, decl); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -1106,33 +1108,117 @@ func validateInternalDirectives(fset *token.FileSet, pkgPath string, files []*as
 	return nil
 }
 
-func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
-	if len(decl.Specs) == 1 {
-		if bg := typeBackground(decl.Doc); bg != "" {
-			inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
-			prog.SetTypeBackground(pkg.Path()+"."+inPkgName, toBackground(bg))
+func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package, decl *ast.GenDecl) error {
+	// Field-level //llgo:cdecl / //llgo:stdcall is a later phase. Reject it with
+	// a clear diagnostic rather than silently ignoring the directive.
+	for _, spec := range decl.Specs {
+		if err := rejectFieldCallConv(fset, spec); err != nil {
+			return err
 		}
 	}
+	cc, err := typeCallConv(fset, decl.Doc)
+	if err != nil {
+		return err
+	}
+	if cc.bg == "" {
+		return nil
+	}
+	if len(decl.Specs) != 1 {
+		return fmt.Errorf("%s: %s applies to a single type declaration, not a grouped type block", fset.Position(cc.pos), cc.name)
+	}
+	spec, ok := decl.Specs[0].(*ast.TypeSpec)
+	if !ok {
+		return fmt.Errorf("%s: %s applies to a type declaration", fset.Position(cc.pos), cc.name)
+	}
+	prog.SetTypeBackground(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
+	return nil
+}
+
+// rejectFieldCallConv reports a clear diagnostic when a //llgo:cdecl or
+// //llgo:stdcall directive is placed on a struct field. Field-level calling
+// conventions are planned for a later phase; until then the directive must not
+// be silently dropped.
+func rejectFieldCallConv(fset *token.FileSet, spec ast.Spec) error {
+	ts, ok := spec.(*ast.TypeSpec)
+	if !ok {
+		return nil
+	}
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok || st.Fields == nil {
+		return nil
+	}
+	for _, field := range st.Fields.List {
+		for _, d := range directive.ParseGroup(field.Doc) {
+			if d.Name == llgocdecl || d.Name == stdcall {
+				return fmt.Errorf("%s: //%s on a struct field is not supported yet; apply it to the type declaration instead", fset.Position(d.Pos), d.Name)
+			}
+		}
+	}
+	return nil
 }
 
 const (
-	llgotype  = "//llgo:type "
-	llgotype2 = "// llgo:type "
+	llgotype  = "llgo:type"
+	llgocdecl = "llgo:cdecl"
+	stdcall   = "llgo:stdcall"
 )
 
-func typeBackground(doc *ast.CommentGroup) (bg string) {
-	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			if strings.HasPrefix(line, llgotype) {
-				return strings.TrimSpace(line[len(llgotype):])
+// callConv is the calling-convention directive resolved for a type declaration.
+type callConv struct {
+	bg   string    // normalized background value: "C", "stdcall", or ""
+	name string    // human-readable directive spelling for diagnostics
+	pos  token.Pos // position of the directive comment
+}
+
+// typeCallConv scans doc for calling-convention directives on a type
+// declaration. It recognizes the new //llgo:cdecl and //llgo:stdcall forms as
+// well as the deprecated //llgo:type C / //llgo:type stdcall forms, emitting a
+// deprecation warning for the latter. More than one calling-convention
+// directive on the same declaration is reported as an error.
+func typeCallConv(fset *token.FileSet, doc *ast.CommentGroup) (cc callConv, err error) {
+	seen := false
+	for _, d := range directive.ParseGroup(doc) {
+		var bg, name string
+		deprecated := false
+		switch d.Name {
+		case llgocdecl:
+			if d.Args != "" {
+				return cc, fmt.Errorf("%s: //llgo:cdecl does not accept arguments", fset.Position(d.Pos))
 			}
-			if strings.HasPrefix(line, llgotype2) {
-				return strings.TrimSpace(line[len(llgotype2):])
+			bg, name = "C", "//llgo:cdecl"
+		case stdcall:
+			if d.Args != "" {
+				return cc, fmt.Errorf("%s: //llgo:stdcall does not accept arguments", fset.Position(d.Pos))
 			}
+			bg, name = "stdcall", "//llgo:stdcall"
+		case llgotype:
+			// //llgo:type has other forms beyond the two calling-convention
+			// values; only C and stdcall are affected by this task.
+			switch d.Args {
+			case "C":
+				bg, name, deprecated = "C", "//llgo:type C", true
+			case "stdcall":
+				bg, name, deprecated = "stdcall", "//llgo:type stdcall", true
+			default:
+				continue
+			}
+		default:
+			continue
 		}
+		if seen {
+			return cc, fmt.Errorf("%s: conflicting calling-convention directives on one type: %s and %s", fset.Position(d.Pos), cc.name, name)
+		}
+		if deprecated {
+			replacement := "//llgo:cdecl"
+			if bg == "stdcall" {
+				replacement = "//llgo:stdcall"
+			}
+			fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", name, fset.Position(d.Pos), replacement)
+		}
+		cc = callConv{bg: bg, name: name, pos: d.Pos}
+		seen = true
 	}
-	return
+	return cc, nil
 }
 
 func toBackground(bg string) llssa.Background {

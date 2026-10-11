@@ -7,7 +7,7 @@ import (
 
 func reflectedBase(n int, s string) (bool, int) { return true, n + len(s) }
 
-//llgo:type C
+//llgo:cdecl
 type reflectedCFunc func(int, string) (bool, int)
 
 type reflectedFunc func(int, string) (bool, int)
