@@ -1109,13 +1109,6 @@ func validateInternalDirectives(fset *token.FileSet, pkgPath string, files []*as
 }
 
 func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package, decl *ast.GenDecl) error {
-	// Field-level //llgo:cdecl / //llgo:stdcall is a later phase. Reject it with
-	// a clear diagnostic rather than silently ignoring the directive.
-	for _, spec := range decl.Specs {
-		if err := rejectFieldCallConv(fset, spec); err != nil {
-			return err
-		}
-	}
 	cc, err := typeCallConv(fset, decl.Doc)
 	if err != nil {
 		return err
@@ -1136,30 +1129,7 @@ func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package,
 	if cc.replacement != "" {
 		fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", cc.name, fset.Position(cc.pos), cc.replacement)
 	}
-	prog.SetTypeBackground(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
-	return nil
-}
-
-// rejectFieldCallConv reports a clear diagnostic when a //llgo:cdecl or
-// //llgo:stdcall directive is placed on a struct field. Field-level calling
-// conventions are planned for a later phase; until then the directive must not
-// be silently dropped.
-func rejectFieldCallConv(fset *token.FileSet, spec ast.Spec) error {
-	ts, ok := spec.(*ast.TypeSpec)
-	if !ok {
-		return nil
-	}
-	st, ok := ts.Type.(*ast.StructType)
-	if !ok || st.Fields == nil {
-		return nil
-	}
-	for _, field := range st.Fields.List {
-		for _, d := range directive.ParseGroup(field.Doc) {
-			if d.Name == nameCdecl || d.Name == nameStdcall {
-				return fmt.Errorf("%s: //%s on a struct field is not supported yet; apply it to the type declaration instead", fset.Position(d.Pos), d.Name)
-			}
-		}
-	}
+	prog.SetCallConv(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
 	return nil
 }
 

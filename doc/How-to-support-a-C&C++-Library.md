@@ -280,8 +280,9 @@ type WinProc func(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr
 A type may carry at most one calling-convention directive. Combining two (for
 example `//llgo:cdecl` with `//llgo:stdcall`, or a new directive with
 `//llgo:type`) is reported as a compile error. Field-level directives are not
-supported yet; a `//llgo:cdecl` or `//llgo:stdcall` placed on a struct field is
-rejected with a diagnostic rather than silently ignored.
+supported yet; a `//llgo:cdecl` or `//llgo:stdcall` placed on a struct field
+carries no calling-convention semantics and is ignored. Apply the directive to
+the type declaration instead.
 
 **Deprecated spellings.** The earlier `//llgo:type C` and `//llgo:type stdcall`
 directives remain supported for backward compatibility but are deprecated. The

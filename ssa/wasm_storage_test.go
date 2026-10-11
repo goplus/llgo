@@ -404,7 +404,7 @@ func TestWasm32NativeStructAndGCRootStorage(t *testing.T) {
 		types.NewField(token.NoPos, typesPkg, "size", types.Typ[types.Uintptr], false),
 	}
 	cIovec := types.NewNamed(name, types.NewStruct(fields, nil), nil)
-	prog.SetTypeBackground("example.com/p.CIovec", InC)
+	prog.SetCallConv("example.com/p.CIovec", InC)
 	typ := prog.Type(cIovec, InC)
 	if got := prog.SizeOf(typ); got != 8 {
 		t.Fatalf("native wasm32 iovec size = %d, want 8", got)

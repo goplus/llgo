@@ -249,11 +249,6 @@ func TestTypeCallConvConflictsAndInvalidPlacement(t *testing.T) {
 			src:  "package p\n//llgo:cdecl extra\ntype Callback func()\n",
 			want: "does not accept arguments",
 		},
-		{
-			name: "directive on a struct field",
-			src:  "package p\ntype S struct {\n\t//llgo:cdecl\n\tCallback func()\n}\n",
-			want: "struct field is not supported yet",
-		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -267,12 +262,12 @@ func TestTypeCallConvConflictsAndInvalidPlacement(t *testing.T) {
 
 // TestCdeclOnStructTypeAccepted asserts that a calling-convention directive on a
 // struct *type* declaration (the opaque-C-struct case documented for
-// //llgo:cdecl) is accepted and silent. This is the positive counterpart to the
-// "directive on a struct field" rejection, and locks in the distinction between
-// a directive on the type (allowed) and on a field (rejected). The directive's
-// background value is checked separately via typeCallConv in
-// TestTypeBackgroundAndParsePkgSyntaxCoverage; IR-level equivalence with the
-// legacy spelling is covered by TestCdeclStdcallEquivalentToLegacyType.
+// //llgo:cdecl) is accepted and silent. A directive on a struct *field* carries
+// no calling-convention semantics yet and is silently ignored rather than
+// rejected. The directive's background value is checked separately via
+// typeCallConv in TestTypeBackgroundAndParsePkgSyntaxCoverage; IR-level
+// equivalence with the legacy spelling is covered by
+// TestCdeclStdcallEquivalentToLegacyType.
 func TestCdeclOnStructTypeAccepted(t *testing.T) {
 	cases := []struct {
 		name string
@@ -286,12 +281,16 @@ func TestCdeclOnStructTypeAccepted(t *testing.T) {
 			name: "spaced cdecl on struct type",
 			src:  "package p\n// llgo:cdecl\ntype Opaque struct {\n\tUnused [0]byte\n}\n",
 		},
+		{
+			name: "cdecl on a struct field is ignored",
+			src:  "package p\ntype S struct {\n\t//llgo:cdecl\n\tCallback func()\n}\n",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			stderr, err := parseSyntaxCapturingStderr(t, "example.com/"+strings.ReplaceAll(c.name, " ", "-"), c.src)
 			if err != nil {
-				t.Fatalf("ParsePkgSyntax rejected //llgo:cdecl on a struct type: %v", err)
+				t.Fatalf("ParsePkgSyntax rejected //llgo:cdecl: %v", err)
 			}
 			if strings.Contains(stderr, "DEPRECATED") {
 				t.Fatalf("unexpected deprecation warning for a new directive: %q", stderr)

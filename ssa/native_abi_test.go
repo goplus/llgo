@@ -88,7 +88,7 @@ func TestNativeNarrowIntegerAttributes(t *testing.T) {
 
 				pointerName := "Pointer" + name
 				pointer := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, pointerName, nil), sig, nil)
-				prog.SetTypeBackground(pkg.Path()+"."+pointerName, InC)
+				prog.SetCallConv(pkg.Path()+"."+pointerName, InC)
 				pointerParam := types.NewVar(token.NoPos, nil, "fn", pointer)
 				indirectSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(append([]*types.Var{pointerParam}, params...)...), sig.Results(), false)
 				indirect := pkg.NewFunc("indirect."+name, indirectSig, InGo)
@@ -124,7 +124,7 @@ func TestNativeNarrowVariadicAttributes(t *testing.T) {
 			fn := pkg.NewFunc("native.variadic", sig, InC)
 			checkNarrowAttrs(t, fn.impl, false, []string{"", "signext"})
 			pointer := types.NewNamed(types.NewTypeName(token.NoPos, types.NewPackage(pkg.Path(), "p"), "Native", nil), sig, nil)
-			prog.SetTypeBackground(pkg.Path()+".Native", InC)
+			prog.SetCallConv(pkg.Path()+".Native", InC)
 			callerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(types.NewVar(token.NoPos, nil, "fn", pointer)), nil, false)
 			caller := pkg.NewFunc("caller", callerSig, InGo)
 			body := caller.MakeBody(1)
