@@ -10,15 +10,20 @@ import (
 )
 
 const (
-	entryAttribute = "llgo.fmv.avx2-entry"
-	doneAttribute  = "llgo.fmv.processed"
-	inlineEntry    = "llgo.fmv.inline-entry"
-	variantSuffix  = ".__llgo_fmv_avx2"
-	baselineSuffix = ".__llgo_fmv_baseline"
-	resolverSuffix = ".__llgo_fmv_resolve"
-	slotSuffix     = ".__llgo_fmv_slot"
-	queryAttribute = "llgo.cpu.query"
-	avx2Query      = "x86.avx2"
+	attributePrefix = "llgo.fmv."
+	symbolPrefix    = ".__llgo_fmv_"
+
+	// Shared with the frontend that emits the FMV attributes and CPU queries.
+	EntryAttribute       = attributePrefix + "avx2-entry"
+	InlineEntryAttribute = attributePrefix + "inline-entry"
+	QueryAttribute       = "llgo.cpu.query"
+	AVX2Query            = "x86.avx2"
+
+	doneAttribute  = attributePrefix + "processed"
+	variantSuffix  = symbolPrefix + "avx2"
+	baselineSuffix = symbolPrefix + "baseline"
+	resolverSuffix = symbolPrefix + "resolve"
+	slotSuffix     = symbolPrefix + "slot"
 	featureSymbol  = "github.com/xgo-dev/llgo/runtime/internal/runtime.CPUFeatures"
 	// Keep these bits in sync with runtime/_patch/internal/cpu/init_llgo.go.
 	featureInitialized = 1
@@ -37,7 +42,7 @@ func hasAttribute(fn llvm.Value, name string) bool {
 }
 
 func isQuery(fn llvm.Value) bool {
-	if fn.IsNil() || fn.IsAFunction().IsNil() || stringAttribute(fn, queryAttribute) != avx2Query {
+	if fn.IsNil() || fn.IsAFunction().IsNil() || stringAttribute(fn, QueryAttribute) != AVX2Query {
 		return false
 	}
 	typ := fn.GlobalValueType()
@@ -135,7 +140,7 @@ func Run(mod llvm.Module, baseline string) error {
 		if hasAttribute(fn, doneAttribute) {
 			continue
 		}
-		if !hasAttribute(fn, entryAttribute) && roots[fn].IsNil() {
+		if !hasAttribute(fn, EntryAttribute) && roots[fn].IsNil() {
 			continue
 		}
 		if !supported(fn) {
@@ -177,8 +182,8 @@ func Run(mod llvm.Module, baseline string) error {
 			features += ","
 		}
 		variant.AddFunctionAttr(ctx.CreateStringAttribute("target-features", features+"+avx,+avx2"))
-		variant.RemoveStringAttributeAtIndex(-1, entryAttribute)
-		variant.RemoveStringAttributeAtIndex(-1, inlineEntry)
+		variant.RemoveStringAttributeAtIndex(-1, EntryAttribute)
+		variant.RemoveStringAttributeAtIndex(-1, InlineEntryAttribute)
 		variant.AddFunctionAttr(ctx.CreateStringAttribute(doneAttribute, ""))
 		fn.AddFunctionAttr(ctx.CreateStringAttribute(doneAttribute, ""))
 		variants[fn] = variant
@@ -186,8 +191,8 @@ func Run(mod llvm.Module, baseline string) error {
 			baseline := fn.CloneFunction()
 			baseline.SetName(fn.Name() + baselineSuffix)
 			baseline.SetLinkage(llvm.InternalLinkage)
-			baseline.RemoveStringAttributeAtIndex(-1, entryAttribute)
-			baseline.RemoveStringAttributeAtIndex(-1, inlineEntry)
+			baseline.RemoveStringAttributeAtIndex(-1, EntryAttribute)
+			baseline.RemoveStringAttributeAtIndex(-1, InlineEntryAttribute)
 			source.clone(fn, baseline)
 			baselines[fn] = baseline
 		}
@@ -258,8 +263,8 @@ func dispatch(mod llvm.Module, source *sourceInfo, fn, baseline, variant llvm.Va
 	resolver := fn.CloneFunction()
 	resolver.SetName(fn.Name() + resolverSuffix)
 	resolver.SetLinkage(llvm.InternalLinkage)
-	resolver.RemoveStringAttributeAtIndex(-1, entryAttribute)
-	resolver.RemoveStringAttributeAtIndex(-1, inlineEntry)
+	resolver.RemoveStringAttributeAtIndex(-1, EntryAttribute)
+	resolver.RemoveStringAttributeAtIndex(-1, InlineEntryAttribute)
 	resolver.RemoveEnumAttributeAtIndex(-1, llvm.AttributeKindID("alwaysinline"))
 	resolver.AddFunctionAttr(ctx.CreateEnumAttribute(llvm.AttributeKindID("noinline"), 0))
 	source.cloneEntry(fn, resolver)
@@ -284,9 +289,9 @@ func dispatch(mod llvm.Module, source *sourceInfo, fn, baseline, variant llvm.Va
 	// This gives the same synthetic-scope policy before and during LTO without
 	// requiring a compiler-specific late pass in the native linker.
 	fn.SetSubprogram(llvm.Metadata{})
-	if hasAttribute(fn, inlineEntry) {
+	if hasAttribute(fn, InlineEntryAttribute) {
 		fn.RemoveEnumAttributeAtIndex(-1, llvm.AttributeKindID("noinline"))
-		fn.RemoveStringAttributeAtIndex(-1, inlineEntry)
+		fn.RemoveStringAttributeAtIndex(-1, InlineEntryAttribute)
 	}
 	target := b.CreateLoad(fn.Type(), slot, "target")
 	target.SetAlignment(8)

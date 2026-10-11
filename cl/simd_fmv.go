@@ -3,6 +3,7 @@ package cl
 import (
 	"go/types"
 
+	"github.com/xgo-dev/llgo/internal/llvmfmv"
 	llssa "github.com/xgo-dev/llgo/ssa"
 	"golang.org/x/tools/go/ssa"
 )
@@ -22,7 +23,7 @@ func simdCPUQuery(fn *ssa.Function) string {
 	if !ok || recv.Obj().Pkg() != obj.Pkg() || recv.Obj().Name() != "X86Features" {
 		return ""
 	}
-	return "x86.avx2"
+	return llvmfmv.AVX2Query
 }
 
 func (p *context) markSIMDFMV(fn llssa.Function, source *ssa.Function) {

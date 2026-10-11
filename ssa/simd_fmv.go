@@ -1,5 +1,7 @@
 package ssa
 
+import "github.com/xgo-dev/llgo/internal/llvmfmv"
+
 // MarkSIMDFMV records compiler-checked source identities for the early LLVM
 // transform. An available variant is a cross-package ABI promise: the defining
 // package emits it, and guarded callers may refer to it without LTO.
@@ -8,10 +10,10 @@ func (f Function) MarkSIMDFMV(available bool, query string) {
 		return
 	}
 	if available {
-		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute("llgo.fmv.avx2-entry", ""))
+		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute(llvmfmv.EntryAttribute, ""))
 	}
 	if query != "" {
-		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute("llgo.cpu.query", query))
+		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute(llvmfmv.QueryAttribute, query))
 	}
 }
 
@@ -21,6 +23,6 @@ func (f Function) MarkSIMDFMV(available bool, query string) {
 // Callers must not set this for an explicit noinline directive or -l.
 func (f Function) AllowSIMDDispatcherInlining() {
 	if f.Prog.Target().GOARCH == "amd64" {
-		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute("llgo.fmv.inline-entry", ""))
+		f.impl.AddFunctionAttr(f.Prog.ctx.CreateStringAttribute(llvmfmv.InlineEntryAttribute, ""))
 	}
 }
