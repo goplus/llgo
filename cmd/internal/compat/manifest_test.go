@@ -31,6 +31,11 @@ import (
 )
 
 func TestManifestNamesOwnersAndRegistration(t *testing.T) {
+	for _, name := range []string{"", " \t\n", "unknown"} {
+		if record := compat.Command(name); record != (compat.Record{}) {
+			t.Errorf("unknown command %q: %+v", name, record)
+		}
+	}
 	surface := compat.GoSurface()
 	pinned, err := os.ReadFile("../../../.go-version")
 	if err != nil {

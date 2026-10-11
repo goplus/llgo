@@ -29,8 +29,12 @@ type SourceOverlayFile struct {
 
 // prepareSourceOverlay materializes an absolute Go loader view. Runtime loads
 // run from the compiler module, so the caller's relative JSON paths cannot be
-// forwarded unchanged. The caller owns removal of the returned temporary file.
+// forwarded unchanged. The owning Build removes the file after all child
+// groups and failure recovery finish; children reuse the prepared parser view.
 func prepareSourceOverlay(conf *Config) (string, error) {
+	if conf.sourceOverlayFile != "" {
+		return conf.sourceOverlayFile, nil
+	}
 	if len(conf.SourceOverlay) == 0 {
 		return "", nil
 	}
@@ -58,6 +62,7 @@ func prepareSourceOverlay(conf *Config) (string, error) {
 		return "", fmt.Errorf("write source overlay: %w", err)
 	}
 	conf.Overlay = contents
+	conf.sourceOverlayFile = name
 	return name, nil
 }
 

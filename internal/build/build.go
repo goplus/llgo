@@ -247,6 +247,9 @@ type Config struct {
 	// SourceOverlay contains absolute paths from the public -overlay JSON.
 	// The Go loader and LLGo parser share this view, including file deletions.
 	SourceOverlay map[string]SourceOverlayFile
+	// sourceOverlayFile is borrowed by isolated child groups and fallback
+	// builds. The parent Build owns its lifetime through all child work.
+	sourceOverlayFile string
 	// TestPythonPackage supplies the synthetic Python ABI root used by compiler
 	// fixtures that intentionally avoid importing github.com/goplus/lib/py.
 	// Production callers leave this nil; the provider is evaluated once per Do.
@@ -510,6 +513,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 // Build executes one build invocation.
 func Build(inv Invocation) ([]Package, error) {
 	var plan initialBuildPlan
+	defer func() {
+		if plan.sourceOverlayFile != "" {
+			os.Remove(plan.sourceOverlayFile)
+		}
+	}()
 	result, err := buildInvocation(inv, &plan)
 	if len(plan.invocations) == 0 {
 		return result, err
@@ -657,12 +665,15 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 	goBuildFlags := []string{"-tags=" + tags}
 	goBuildFlags = append(goBuildFlags, conf.GoBuildFlags...)
+	ownsOverlay := conf.sourceOverlayFile == ""
 	overlayFile, err := prepareSourceOverlay(conf)
 	if err != nil {
 		return nil, err
 	}
 	if overlayFile != "" {
-		defer os.Remove(overlayFile)
+		if ownsOverlay {
+			plan.sourceOverlayFile = overlayFile
+		}
 		goBuildFlags = append(goBuildFlags, "-overlay="+overlayFile)
 	}
 	cfg := &packages.Config{

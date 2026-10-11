@@ -70,15 +70,16 @@ func buildFlagHelp(name string) string { return buildFlagDescriptions[name] }
 // before an unknown flag can accidentally become a package-loader argument.
 func FinalizeNativeFlags(command string, fs *flag.FlagSet) {
 	for _, name := range compat.GoSurface().Commands[command] {
-		if fs.Lookup(name) != nil || compat.Flag(command, name).Status != "rejected" {
+		record := compat.Flag(command, name)
+		if fs.Lookup(name) != nil || record.Status != "rejected" {
 			continue
 		}
-		reason := compat.Flag(command, name).Note
+		reason := record.Note
 		if specific := buildFlagHelp(name); specific != "" {
 			reason = specific
 		}
 		switch name {
-		case "a", "asan", "msan", "race", "linkshared", "n", "work", "trimpath", "json", "cover", "r", "i", "cache", "testcache", "modcache", "fuzzcache", "artifacts", "v", "m":
+		case "a", "asan", "msan", "race", "linkshared", "n", "work", "trimpath", "json", "cover", "r", "i", "cache", "testcache", "modcache", "fuzzcache", "artifacts", "v", "m", "x":
 			rejectBool(fs, name, reason)
 		default:
 			rejectValue(fs, name, reason)

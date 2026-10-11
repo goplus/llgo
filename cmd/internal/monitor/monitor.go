@@ -45,7 +45,13 @@ func init() {
 }
 
 func runMonitor(cmd *base.Command, args []string) {
-	if err := flags.Parse(&cmd.Flag, args); err != nil {
+	args, err := flags.ChangeDirectory(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+		return
+	}
+	if err := cmd.Flag.Parse(args); err != nil {
 		if err != flag.ErrHelp {
 			mockable.Exit(1)
 		}

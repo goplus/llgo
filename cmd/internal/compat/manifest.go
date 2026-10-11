@@ -50,7 +50,11 @@ func GoSurface() Surface {
 }
 
 func Command(name string) Record {
-	switch strings.Fields(name)[0] {
+	fields := strings.Fields(name)
+	if len(fields) == 0 {
+		return Record{}
+	}
+	switch fields[0] {
 	case "fmt", "doc", "mod", "work":
 		return Record{"delegated", "cmd/internal/gocommand", "Exact Go delegation; no LLGo artifact or runtime semantics"}
 	case "fix", "generate", "get", "list", "vet":

@@ -106,19 +106,32 @@ func TestNativeUnsupportedControlsFailBeforeLoading(t *testing.T) {
 			t.Fatalf("%s exit=%d output=%s", command, code, out)
 		}
 	}
+	out, code := nativeCommand(t, dir, nil, "clean", "-x")
+	if code != 1 || !strings.Contains(out, "unsupported") {
+		t.Fatalf("clean -x exit=%d output=%s", code, out)
+	}
 	for _, control := range []string{"-D=tmp", "-I=tmp", "-o=out.o", "-p=main", "-importcfg=imports"} {
 		out, code := nativeCommand(t, dir, nil, "tool", "compile", control, "missing.go")
 		if code != 2 || !strings.Contains(out, "unsupported") {
 			t.Fatalf("%s exit=%d output=%s", control, code, out)
 		}
 	}
-	out, code := nativeCommand(t, dir, nil, "version", "missing.exe")
+	out, code = nativeCommand(t, dir, nil, "version", "missing.exe")
 	if code != 1 || !strings.Contains(out, "inspection") {
 		t.Fatalf("version exit=%d output=%s", code, out)
 	}
 	out, code = nativeCommand(t, dir, nil, "tool", "unknown")
 	if code == 0 || !strings.Contains(out, "unknown") {
 		t.Fatalf("tool exit=%d output=%s", code, out)
+	}
+}
+
+func TestMonitorHelpDoesNotRequireGoDefaultsOrToolchain(t *testing.T) {
+	for _, defaults := range []string{"", "-mod=mod -count=1 -tags=custom"} {
+		out, code := nativeCommand(t, t.TempDir(), []string{"GOFLAGS=" + defaults, "GOENV=" + filepath.Join(t.TempDir(), "missing-goenv"), "PATH="}, "monitor", "-h")
+		if code != 0 || !strings.Contains(out, "Usage") {
+			t.Fatalf("monitor help GOFLAGS=%q exit=%d output=%s", defaults, code, out)
+		}
 	}
 }
 

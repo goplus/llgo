@@ -75,12 +75,59 @@ func TestSourceOverlayViewsAndClone(t *testing.T) {
 	for _, variable := range []string{"TMPDIR", "TMP", "TEMP"} {
 		t.Setenv(variable, filepath.Join(dir, "missing"))
 	}
-	before := conf.Overlay
-	if name, err := prepareSourceOverlay(conf); err == nil || name != "" {
+	if reused, err := prepareSourceOverlay(conf.clone()); err != nil || reused != file {
+		t.Fatalf("child did not reuse the live overlay: %q %v", reused, err)
+	}
+	unprepared := &Config{Overlay: conf.Overlay, SourceOverlay: conf.SourceOverlay}
+	before := unprepared.Overlay
+	if name, err := prepareSourceOverlay(unprepared); err == nil || name != "" {
 		t.Fatalf("accepted unavailable temp directory: %q %v", name, err)
 	}
-	if !reflect.DeepEqual(conf.Overlay, before) {
+	if !reflect.DeepEqual(unprepared.Overlay, before) {
 		t.Fatal("changed parser view on error")
+	}
+}
+
+func TestSourceOverlaySurvivesInitialGroupsAndIsRemoved(t *testing.T) {
+	for _, valid := range []bool{true, false} {
+		t.Run(map[bool]string{true: "success", false: "error"}[valid], func(t *testing.T) {
+			dir := t.TempDir()
+			for _, variable := range []string{"TMPDIR", "TMP", "TEMP"} {
+				t.Setenv(variable, dir)
+			}
+			logical, err := filepath.Abs("../../benchmark/binary_size/println/main.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := "package main\nfunc main(){println(42)}\n"
+			if !valid {
+				source = "package main\nfunc main(){undefined()}\n"
+			}
+			backing := filepath.Join(dir, "replacement.go")
+			if err := os.WriteFile(backing, []byte(source), 0600); err != nil {
+				t.Fatal(err)
+			}
+			conf := NewDefaultConf(ModeBuild)
+			conf.OutFile = t.TempDir() + string(os.PathSeparator)
+			conf.AppExt = defaultAppExt(conf)
+			conf.SourceOverlay = map[string]SourceOverlayFile{logical: {BackingFile: backing, Contents: []byte(source)}}
+			_, err = Do([]string{"../../benchmark/binary_size/cprintf", "../../benchmark/binary_size/println", "../../benchmark/binary_size/fmtprintf"}, conf)
+			if valid {
+				if err != nil {
+					t.Fatal(err)
+				}
+				assertBuiltProgram(t, filepath.Join(conf.OutFile, "println"+conf.AppExt), "42")
+				for _, name := range []string{"cprintf", "fmtprintf"} {
+					assertBuiltProgram(t, filepath.Join(conf.OutFile, name+conf.AppExt), "Hello, world")
+				}
+			} else if err == nil {
+				t.Fatal("invalid overlay source built successfully")
+			}
+			leftovers, err := filepath.Glob(filepath.Join(dir, "llgo-overlay-*.json"))
+			if err != nil || len(leftovers) != 0 {
+				t.Fatalf("overlay files survived Build: %v %v", leftovers, err)
+			}
+		})
 	}
 }
 
