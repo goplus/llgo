@@ -312,14 +312,15 @@ type fileDigest struct {
 	OverlayHash string `yaml:"overlay_hash,omitempty"`
 }
 
-// embedFileDigest records the bytes compiled into an embedded resource.
+// embedFileDigest records the path and SHA-256 hash of an embedded resource.
+// Content hashes detect edits preserving the size and timestamp used by fileDigest.
 type embedFileDigest struct {
 	Path        string `yaml:"path"`
 	ContentHash string `yaml:"content_hash"`
 }
 
-// Hash resource contents so edits preserving size and timestamps invalidate
-// the package cache too.
+// digestEmbedFiles hashes embedded file contents so edits preserving size and
+// timestamps still invalidate the package cache.
 func digestEmbedFiles(paths []string) ([]embedFileDigest, error) {
 	if len(paths) == 0 {
 		return nil, nil

@@ -1,6 +1,7 @@
 package build
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,8 +54,11 @@ func TestEmbedFilesChangePackageFingerprint(t *testing.T) {
 			if fingerprint() == before {
 				t.Fatal("changing only embedded content did not invalidate the package cache")
 			}
-			embedded.EmbedFiles = append(embedded.EmbedFiles, filepath.Join(dir, "missing.txt"))
-			if err := ctx.collectPackageInputs(newManifestBuilder(), pkg); err == nil || !strings.Contains(err.Error(), "embed") {
+			missing := filepath.Join(dir, "missing.txt")
+			embedded.EmbedFiles = append(embedded.EmbedFiles, missing)
+			err := ctx.collectPackageInputs(newManifestBuilder(), pkg)
+			var pathErr *os.PathError
+			if !errors.Is(err, os.ErrNotExist) || !errors.As(err, &pathErr) || pathErr.Path != missing {
 				t.Fatalf("missing embed input error = %v", err)
 			}
 		})
