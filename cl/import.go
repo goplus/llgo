@@ -1130,6 +1130,12 @@ func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package,
 	if !ok {
 		return fmt.Errorf("%s: %s applies to a type declaration", fset.Position(cc.pos), cc.name)
 	}
+	// Emit the deprecation warning only after placement is validated, so an
+	// invalid use of a deprecated directive reports the placement error without
+	// also suggesting a replacement that would be equally invalid.
+	if cc.replacement != "" {
+		fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", cc.name, fset.Position(cc.pos), cc.replacement)
+	}
 	prog.SetTypeBackground(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
 	return nil
 }
@@ -1149,7 +1155,7 @@ func rejectFieldCallConv(fset *token.FileSet, spec ast.Spec) error {
 	}
 	for _, field := range st.Fields.List {
 		for _, d := range directive.ParseGroup(field.Doc) {
-			if d.Name == llgocdecl || d.Name == stdcall {
+			if d.Name == nameCdecl || d.Name == nameStdcall {
 				return fmt.Errorf("%s: //%s on a struct field is not supported yet; apply it to the type declaration instead", fset.Position(d.Pos), d.Name)
 			}
 		}
@@ -1157,48 +1163,53 @@ func rejectFieldCallConv(fset *token.FileSet, spec ast.Spec) error {
 	return nil
 }
 
+// Directive names, normalized by the directive package (the "//" / "// "
+// prefix and any arguments are stripped). These identify directive spellings;
+// they are distinct from the background values ("C" / "stdcall") they map to.
 const (
-	llgotype  = "llgo:type"
-	llgocdecl = "llgo:cdecl"
-	stdcall   = "llgo:stdcall"
+	nameType    = "llgo:type"
+	nameCdecl   = "llgo:cdecl"
+	nameStdcall = "llgo:stdcall"
 )
 
 // callConv is the calling-convention directive resolved for a type declaration.
 type callConv struct {
-	bg   string    // normalized background value: "C", "stdcall", or ""
-	name string    // human-readable directive spelling for diagnostics
-	pos  token.Pos // position of the directive comment
+	bg          string    // normalized background value: "C", "stdcall", or ""
+	name        string    // human-readable directive spelling for diagnostics
+	pos         token.Pos // position of the directive comment
+	replacement string    // non-empty when the directive is deprecated: the spelling to use instead
 }
 
 // typeCallConv scans doc for calling-convention directives on a type
 // declaration. It recognizes the new //llgo:cdecl and //llgo:stdcall forms as
-// well as the deprecated //llgo:type C / //llgo:type stdcall forms, emitting a
-// deprecation warning for the latter. More than one calling-convention
-// directive on the same declaration is reported as an error.
+// well as the deprecated //llgo:type C / //llgo:type stdcall forms. For the
+// deprecated forms it records the replacement spelling in the returned
+// callConv; the caller emits the deprecation warning only once placement is
+// validated. More than one calling-convention directive on the same
+// declaration is reported as an error.
 func typeCallConv(fset *token.FileSet, doc *ast.CommentGroup) (cc callConv, err error) {
 	seen := false
 	for _, d := range directive.ParseGroup(doc) {
-		var bg, name string
-		deprecated := false
+		var bg, name, replacement string
 		switch d.Name {
-		case llgocdecl:
+		case nameCdecl:
 			if d.Args != "" {
 				return cc, fmt.Errorf("%s: //llgo:cdecl does not accept arguments", fset.Position(d.Pos))
 			}
 			bg, name = "C", "//llgo:cdecl"
-		case stdcall:
+		case nameStdcall:
 			if d.Args != "" {
 				return cc, fmt.Errorf("%s: //llgo:stdcall does not accept arguments", fset.Position(d.Pos))
 			}
 			bg, name = "stdcall", "//llgo:stdcall"
-		case llgotype:
+		case nameType:
 			// //llgo:type has other forms beyond the two calling-convention
 			// values; only C and stdcall are affected by this task.
 			switch d.Args {
 			case "C":
-				bg, name, deprecated = "C", "//llgo:type C", true
+				bg, name, replacement = "C", "//llgo:type C", "//llgo:cdecl"
 			case "stdcall":
-				bg, name, deprecated = "stdcall", "//llgo:type stdcall", true
+				bg, name, replacement = "stdcall", "//llgo:type stdcall", "//llgo:stdcall"
 			default:
 				continue
 			}
@@ -1208,14 +1219,7 @@ func typeCallConv(fset *token.FileSet, doc *ast.CommentGroup) (cc callConv, err 
 		if seen {
 			return cc, fmt.Errorf("%s: conflicting calling-convention directives on one type: %s and %s", fset.Position(d.Pos), cc.name, name)
 		}
-		if deprecated {
-			replacement := "//llgo:cdecl"
-			if bg == "stdcall" {
-				replacement = "//llgo:stdcall"
-			}
-			fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", name, fset.Position(d.Pos), replacement)
-		}
-		cc = callConv{bg: bg, name: name, pos: d.Pos}
+		cc = callConv{bg: bg, name: name, pos: d.Pos, replacement: replacement}
 		seen = true
 	}
 	return cc, nil

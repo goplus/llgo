@@ -185,7 +185,7 @@ typedef struct cJSON
 } cJSON;
 */
 
-// llgo:cdecl
+//llgo:cdecl
 type JSON struct {
     Unused [0]byte
 }
@@ -396,7 +396,7 @@ func ParseError() c.Int
 - Use a struct to map the class. The writing method is the same as migrating a struct in the C library migration:
 
   ```go
-  // llgo:cdecl
+  //llgo:cdecl
   type Reader struct {
       Unused [32]byte
   }

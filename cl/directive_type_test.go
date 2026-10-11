@@ -53,9 +53,18 @@ func parseSyntaxCapturingStderr(t *testing.T, pkgPath, src string) (string, erro
 		b, _ := io.ReadAll(r)
 		done <- string(b)
 	}()
+	// Restore os.Stderr and close the pipe writer even if ParsePkgSyntax
+	// panics, so a failing parse cannot leave the process-global os.Stderr
+	// pointing at a closed pipe or leak the writer.
+	defer func() {
+		w.Close()
+		os.Stderr = old
+	}()
 
 	parseErr := ParsePkgSyntax(prog, fset, pkg, []*ast.File{file})
 
+	// Close the writer and restore os.Stderr before draining the reader so the
+	// goroutine observes EOF; the deferred cleanup is then a safe no-op.
 	w.Close()
 	os.Stderr = old
 	return <-done, parseErr
@@ -100,6 +109,25 @@ func use(cb Callback, v int32) int32 {
 }
 `
 
+// structTmpl exercises an opaque C struct (the documented JSON/Reader pattern)
+// passed by pointer to a linked C function. The //llgo:cdecl / //llgo:type C
+// directive sits on the struct *type* declaration, not a field. %s is the
+// directive on Opaque.
+const structTmpl = `package equiv
+
+%s
+type Opaque struct {
+	Unused [0]byte
+}
+
+//go:linkname consume C.consume
+func consume(*Opaque) int32
+
+func use(p *Opaque) int32 {
+	return consume(p)
+}
+`
+
 // TestCdeclStdcallEquivalentToLegacyType asserts that the new //llgo:cdecl and
 // //llgo:stdcall directives generate exactly the same code, ABI and calling
 // convention as the deprecated //llgo:type C / //llgo:type stdcall forms. The
@@ -114,6 +142,9 @@ func TestCdeclStdcallEquivalentToLegacyType(t *testing.T) {
 		target *llssa.Target
 	}{
 		{"cdecl", cdeclTmpl, "//llgo:cdecl", "//llgo:type C", nil},
+		// //llgo:cdecl on a struct type (the opaque-C-struct case) must be
+		// honored exactly like the legacy //llgo:type C spelling.
+		{"cdecl struct", structTmpl, "//llgo:cdecl", "//llgo:type C", nil},
 		// stdcall only diverges from the C ABI on windows/386; use that target
 		// to exercise the dedicated x86 stdcall path.
 		{"stdcall", stdcallTmpl, "//llgo:stdcall", "//llgo:type stdcall", &llssa.Target{GOOS: "windows", GOARCH: "386"}},
@@ -229,6 +260,41 @@ func TestTypeCallConvConflictsAndInvalidPlacement(t *testing.T) {
 			_, err := parseSyntaxCapturingStderr(t, "example.com/"+strings.ReplaceAll(c.name, " ", "-"), c.src)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("ParsePkgSyntax error = %v, want %q", err, c.want)
+			}
+		})
+	}
+}
+
+// TestCdeclOnStructTypeAccepted asserts that a calling-convention directive on a
+// struct *type* declaration (the opaque-C-struct case documented for
+// //llgo:cdecl) is accepted and silent. This is the positive counterpart to the
+// "directive on a struct field" rejection, and locks in the distinction between
+// a directive on the type (allowed) and on a field (rejected). The directive's
+// background value is checked separately via typeCallConv in
+// TestTypeBackgroundAndParsePkgSyntaxCoverage; IR-level equivalence with the
+// legacy spelling is covered by TestCdeclStdcallEquivalentToLegacyType.
+func TestCdeclOnStructTypeAccepted(t *testing.T) {
+	cases := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "cdecl on struct type",
+			src:  "package p\n//llgo:cdecl\ntype Opaque struct {\n\tUnused [0]byte\n}\n",
+		},
+		{
+			name: "spaced cdecl on struct type",
+			src:  "package p\n// llgo:cdecl\ntype Opaque struct {\n\tUnused [0]byte\n}\n",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			stderr, err := parseSyntaxCapturingStderr(t, "example.com/"+strings.ReplaceAll(c.name, " ", "-"), c.src)
+			if err != nil {
+				t.Fatalf("ParsePkgSyntax rejected //llgo:cdecl on a struct type: %v", err)
+			}
+			if strings.Contains(stderr, "DEPRECATED") {
+				t.Fatalf("unexpected deprecation warning for a new directive: %q", stderr)
 			}
 		})
 	}
