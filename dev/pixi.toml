@@ -22,3 +22,6 @@ scripts = ["activate_pixi.sh"]
 
 [target.win-64.activation]
 scripts = ["activate_pixi.bat"]
+
+[target.win-64.dependencies]
+pkgconf = ">=3.0.8,<4"

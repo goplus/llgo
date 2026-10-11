@@ -12,7 +12,8 @@ if ($CppFlags) {
   if ($LASTEXITCODE -ne 0 -or -not $flags.StartsWith($prefix, [StringComparison]::Ordinal)) {
     throw 'llvm-config failed to report the expected include flag'
   }
-  '"-I' + $includeDirectory.Replace('\', '/') + '"' + $flags.Substring($prefix.Length)
+  # Single quotes survive Pixi's CMD activation and are accepted by cgo.
+  "'-I" + $includeDirectory.Replace('\', '/') + "'" + $flags.Substring($prefix.Length)
   return
 }
 
@@ -48,6 +49,6 @@ if ($env:LIBRARY_PATH) {
   $searchDirectories += $env:LIBRARY_PATH -split ';' | Where-Object { $_ }
 }
 $searchFlags = $searchDirectories | Select-Object -Unique | ForEach-Object {
-  '"-L' + $_.Replace('\', '/') + '"'
+  "'-L" + $_.Replace('\', '/') + "'"
 }
 ($searchFlags -join ' ') + ' ' + ($flags -join ' ')

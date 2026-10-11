@@ -1382,6 +1382,52 @@ conda_deps = [
     "bzip2-1.0.8-h0ad9c76_10",
 ]
 
+[[tools."conda:pkgconf"]]
+version = "3.0.8"
+backend = "conda:pkgconf"
+specifiers = ["3.0.8"]
+
+[tools."conda:pkgconf".options]
+channel = "conda-forge"
+
+[tools."conda:pkgconf"."platforms.linux-arm64"]
+checksum = "sha256:4b8451556bc1202aebf1bb34ea56977636a786dd6b8a0b16a7157679107f753f"
+url = "https://conda.anaconda.org/conda-forge/linux-aarch64/pkgconf-3.0.8-h29ee22c_0.conda"
+conda_deps = [
+    "libgcc-16.2.0-h205dda4_7",
+    "_openmp_mutex-4.5-20_gnu",
+    "libgomp-16.2.0-h8acb6b2_7",
+]
+
+[tools."conda:pkgconf"."platforms.linux-x64"]
+checksum = "sha256:a998f781a180e71711b311a8ca452cab86528b464e602f3b027810d17d50fe23"
+url = "https://conda.anaconda.org/conda-forge/linux-64/pkgconf-3.0.8-hebe6cf0_0.conda"
+conda_deps = [
+    "libgcc-16.2.0-ha9f2e26_7",
+    "_openmp_mutex-4.5-20_gnu",
+    "libgomp-16.2.0-he0feb66_7",
+]
+
+[tools."conda:pkgconf"."platforms.macos-arm64"]
+checksum = "sha256:396d6af8755da4e7f19ee4c24c7ee00cd77f9b9f4619a537824082c29ec228b1"
+url = "https://conda.anaconda.org/conda-forge/osx-arm64/pkgconf-3.0.8-h74c22ad_0.conda"
+conda_deps = []
+
+[tools."conda:pkgconf"."platforms.macos-x64"]
+checksum = "sha256:ff8fad3b1541dd38e3589fc5cbccda1a54186127a5dc3829979dc8c1ad05bdce"
+url = "https://conda.anaconda.org/conda-forge/osx-64/pkgconf-3.0.8-had63097_0.conda"
+conda_deps = []
+
+[tools."conda:pkgconf"."platforms.windows-x64"]
+checksum = "sha256:e1b9842229b35665138a76ba0bd31e4aaaf1939174d07cb44a0f9a7f04c17719"
+url = "https://conda.anaconda.org/conda-forge/win-64/pkgconf-3.0.8-h6a83c73_0.conda"
+conda_deps = [
+    "vc-14.5-ha367084_41",
+    "vc14_runtime-14.51.36247-habf1de7_41",
+    "vcomp14-14.51.36247-habf1de7_41",
+    "ucrt-10.0.26100.0-h57928b3_0",
+]
+
 [[tools."conda:sqlite"]]
 version = "3.53.4"
 backend = "conda:sqlite"

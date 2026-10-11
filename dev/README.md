@@ -73,6 +73,7 @@ headers and linker flags from `llvm-config`. Include `byollvm` if you supply
 compiler's prefix and sysroot; the shared flag helpers quote LLVM paths and
 preserve Visual Studio's SDK/CRT library discovery on Windows.
 The Unix pkg-config wrapper handles Conda prefixes containing spaces.
+Windows uses the compatible `pkgconf` implementation for paths containing spaces.
 
 mise installs packages in its user data directory; keep `MISE_DATA_DIR` local
 to each host if you override it. Pixi stores its environment in `dev/.pixi/`,

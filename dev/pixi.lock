@@ -286,6 +286,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.4-hf411b9b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pcre2-10.47-h8466c1e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pkg-config-0.29.2-hffdb5b9_1013.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/pkgconf-3.0.8-h6a83c73_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/sqlite-3.53.4-hdb435a2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
@@ -3862,6 +3863,20 @@ packages:
   run_exports: {}
   size: 37998
   timestamp: 1788677380581
+- conda: https://conda.anaconda.org/conda-forge/win-64/pkgconf-3.0.8-h6a83c73_0.conda
+  sha256: e1b9842229b35665138a76ba0bd31e4aaaf1939174d07cb44a0f9a7f04c17719
+  md5: d8a18d2f360cae60183ff346fcf1870a
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: MIT
+  license_family: MIT
+  run_exports:
+    weak:
+    - pkgconf >=3.0.8,<4.0a0
+  size: 137541
+  timestamp: 1791499625396
 - conda: https://conda.anaconda.org/conda-forge/win-64/sqlite-3.53.4-hdb435a2_1.conda
   sha256: 7616fec2d6ded67e111a47d4842738d0b3730c0acf3eaebe928cf6d3e15a6822
   md5: df9d7c5d34602e0f2655a524d31fce87

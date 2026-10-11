@@ -9,6 +9,7 @@ go = "{{ read_file(path='../.go-version') | trim }}"
 "conda:clangxx" = "22.1.8"
 "conda:lld" = "22.1.8"
 "conda:pkg-config" = "0.29.2"
+"conda:pkgconf" = { version = "3.0.8", os = ["windows"] }
 "conda:bdw-gc" = "8.2.12"
 "conda:libffi" = "3.7.0"
 "conda:openssl" = "3.6.4"
@@ -28,7 +29,10 @@ LLGO_LLVM_PREFIX = { value = "{{ tools.llvmdev.path }}", tools = true }
 LLGO_CLANG_PREFIX = { value = "{{ tools.clangxx.path }}", tools = true }
 LLGO_LLD_PREFIX = { value = "{{ tools.lld.path }}", tools = true }
 LLGO_PKG_CONFIG_PREFIX = { value = "{{ tools['pkg-config'].path }}", tools = true }
-PKG_CONFIG = { value = "{% if os() == 'windows' %}pkg-config{% else %}\"{{ config_root }}/conda-tools/pkg-config\"{% endif %}", tools = true }
+PKG_CONFIG = { value = "{% if os() == 'windows' %}pkgconf{% else %}\"{{ config_root }}/conda-tools/pkg-config\"{% endif %}", tools = true }
+# LLGo needs explicit flags, including paths also listed in CPATH/LIBRARY_PATH.
+PKG_CONFIG_ALLOW_SYSTEM_CFLAGS = "1"
+PKG_CONFIG_ALLOW_SYSTEM_LIBS = "1"
 # Use the full compiler prefix: clangxx is a metapackage, whose actual
 # executables are dependencies and are not exposed by mise's conda launchers.
 _.path = { path = [
