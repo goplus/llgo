@@ -80,12 +80,46 @@ int llgo_win_once(llgo_init_once *once, llgo_once_fn fn)
     return (int)GetLastError();
 }
 
+typedef struct {
+    llgo_condition_variable *condition;
+    llgo_srwlock *lock;
+    llgo_dword milliseconds;
+    int error;
+} llgo_cond_wait_call;
+
+static void *llgo_cond_wait_inactive(void *raw)
+{
+    llgo_cond_wait_call *call = (llgo_cond_wait_call *)raw;
+    call->error = SleepConditionVariableSRW(
+        call->condition, call->lock, call->milliseconds, 0)
+        ? 0 : (int)GetLastError();
+    return 0;
+}
+
+#if defined(LLGO_USE_BDWGC)
+void *GC_do_blocking(void *(*fn)(void *), void *data);
+#endif
+
+static int llgo_cond_wait(llgo_condition_variable *condition,
+                          llgo_srwlock *lock, llgo_dword milliseconds)
+{
+    llgo_cond_wait_call call = {condition, lock, milliseconds, 0};
+#if defined(LLGO_USE_BDWGC)
+    /* The native wait neither allocates GC memory nor runs Go code. Keep
+     * its caller's roots visible without suspending this blocked thread
+     * during every collection. GC_do_blocking restores the active state
+     * before returning to Go. */
+    GC_do_blocking(llgo_cond_wait_inactive, &call);
+#else
+    llgo_cond_wait_inactive(&call);
+#endif
+    return call.error;
+}
+
 int llgo_win_cond_wait(llgo_condition_variable *condition,
                        llgo_srwlock *lock)
 {
-    if (SleepConditionVariableSRW(condition, lock, LLGO_INFINITE, 0))
-        return 0;
-    return (int)GetLastError();
+    return llgo_cond_wait(condition, lock, LLGO_INFINITE);
 }
 
 typedef struct {
@@ -127,9 +161,7 @@ int llgo_win_cond_timedwait(llgo_condition_variable *condition,
     milliseconds = remaining >= LLGO_INFINITE
                  ? LLGO_INFINITE - 1
                  : (llgo_dword)remaining;
-    if (SleepConditionVariableSRW(condition, lock, milliseconds, 0))
-        return 0;
-    error = GetLastError();
+    error = (llgo_dword)llgo_cond_wait(condition, lock, milliseconds);
     return error == llgo_error_timeout ? llgo_timedout : (int)error;
 }
 
