@@ -13,6 +13,8 @@ if errorlevel 1 (
 set "GOFLAGS=-tags=byollvm"
 set "GOTOOLCHAIN=local"
 set "CGO_ENABLED=1"
+rem Conda Go otherwise inherits CFLAGS, which may quote paths for a shell.
+set "CGO_CFLAGS=-O2 -g"
 set "CC=clang -fuse-ld=lld -fms-runtime-lib=dll"
 set "CXX=clang++ -fuse-ld=lld -fms-runtime-lib=dll"
 set "LLVM_CONFIG=llvm-config"

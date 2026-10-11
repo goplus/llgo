@@ -11,6 +11,8 @@ if (-not ((llvm-config --version) -match '^22\.')) { throw 'LLVM 22 is required'
 if (-not (Test-Path (Join-Path $env:LLGO_ROOT 'runtime/go.mod'))) { throw 'LLGO_ROOT is incorrect' }
 
 Set-Location $env:LLGO_ROOT
+go env -json CC CGO_CFLAGS CGO_CPPFLAGS
+if ($LASTEXITCODE -ne 0) { throw 'Go cgo environment check failed' }
 go run ./cmd/llgo version
 if ($LASTEXITCODE -ne 0) { throw 'LLGo go run failed' }
 go build -o llgo.exe ./cmd/llgo
