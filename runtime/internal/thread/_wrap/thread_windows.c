@@ -25,7 +25,7 @@ __declspec(dllimport) llgo_handle LLGO_WINAPI CreateThread(
     void *attributes, llgo_size_t stack_size, llgo_win_thread_start start,
     void *arg, llgo_dword flags, llgo_dword *thread_id);
 __declspec(dllimport) void LLGO_WINAPI ExitThread(llgo_dword exit_code);
-__declspec(dllimport) llgo_bool LLGO_WINAPI SwitchToThread(void);
+__declspec(dllimport) void LLGO_WINAPI Sleep(llgo_dword milliseconds);
 __declspec(dllimport) void LLGO_WINAPI ExitProcess(llgo_dword exit_code);
 __declspec(dllimport) llgo_handle LLGO_WINAPI GetCurrentProcess(void);
 __declspec(dllimport) llgo_bool LLGO_WINAPI
@@ -167,7 +167,7 @@ void llgo_win_thread_exit(void)
 
 void llgo_win_thread_yield(void)
 {
-    SwitchToThread();
+    Sleep(0);
 }
 
 typedef void (*llgo_key_destructor)(void *value);
