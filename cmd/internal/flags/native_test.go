@@ -57,7 +57,7 @@ func TestDirectoryAndGOFLAGSPrecedence(t *testing.T) {
 
 func TestInvalidDefaultsAndDirectory(t *testing.T) {
 	t.Setenv("GOENV", "off")
-	for _, value := range []string{"bare", "-", "--", "-tags", "-C=tmp", "'-tags=unterminated", "-v=invalid", "-unknown"} {
+	for _, value := range []string{"bare", "-", "--", "---v", "-=x", "--=x", "-tags", "-C=tmp", "'-tags=unterminated", "-v=invalid", "-unknown"} {
 		t.Run(value, func(t *testing.T) {
 			t.Setenv("GOFLAGS", value)
 			fs := flag.NewFlagSet("invalid", flag.ContinueOnError)
@@ -83,6 +83,17 @@ func TestInvalidDefaultsAndDirectory(t *testing.T) {
 	AddCommonFlags(fs)
 	if err := Parse(fs, []string{"operand", "-C=program-argument"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDefaultsApplyOnlyToRelevantCommands(t *testing.T) {
+	t.Setenv("GOENV", "off")
+	t.Setenv("GOFLAGS", "-run=Selected -port=device -tags=default")
+	fs := flag.NewFlagSet("build", flag.ContinueOnError)
+	fs.SetOutput(new(bytes.Buffer))
+	tags := fs.String("tags", "", "tags")
+	if err := Parse(fs, nil); err != nil || *tags != "default" {
+		t.Fatalf("irrelevant defaults affected build: tags=%q err=%v", *tags, err)
 	}
 }
 

@@ -159,7 +159,11 @@ func TestNativeDirectoryAndOverlaySourceSelection(t *testing.T) {
 			args = append(args, "-o=result")
 		}
 		args = append(args, ".")
-		out, code := nativeCommand(t, dir, nil, args...)
+		env := []string(nil)
+		if command == "build" {
+			env = []string{"GOFLAGS=-run=Selected"}
+		}
+		out, code := nativeCommand(t, dir, env, args...)
 		if code != 0 {
 			t.Fatalf("%s exit=%d output=%s", command, code, out)
 		}

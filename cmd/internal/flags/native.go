@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/xgo-dev/llgo/cmd/internal/compat"
@@ -158,20 +159,37 @@ func defaults(fs *flag.FlagSet) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse GOFLAGS: %w", err)
 	}
+	var selected []string
+	surface := compat.GoSurface()
 	for _, arg := range envArgs {
-		if !strings.HasPrefix(arg, "-") || arg == "-" || arg == "--" {
+		if !strings.HasPrefix(arg, "-") || arg == "-" || arg == "--" || strings.HasPrefix(arg, "---") || strings.HasPrefix(arg, "-=") || strings.HasPrefix(arg, "--=") {
 			return nil, fmt.Errorf("GOFLAGS contains non-flag %q", arg)
 		}
 		name, _, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		if name == "C" {
 			return nil, fmt.Errorf("-C is not allowed in GOFLAGS")
 		}
-		if f := fs.Lookup(name); f != nil && !hasValue {
+		f := fs.Lookup(name)
+		if f == nil {
+			// Go validates flag names across commands, then applies only the
+			// defaults relevant to this command (for example, -run is ignored
+			// by build). Native rejections remain registered and fail below.
+			known := compat.Extensions[name] != ""
+			for _, names := range surface.Commands {
+				known = known || slices.Contains(names, name)
+			}
+			if !known {
+				return nil, fmt.Errorf("GOFLAGS contains unknown flag -%s", name)
+			}
+			continue
+		}
+		if !hasValue {
 			isBool, ok := f.Value.(interface{ IsBoolFlag() bool })
 			if !ok || !isBool.IsBoolFlag() {
 				return nil, fmt.Errorf("GOFLAGS: -%s requires =value", name)
 			}
 		}
+		selected = append(selected, arg)
 	}
-	return envArgs, nil
+	return selected, nil
 }

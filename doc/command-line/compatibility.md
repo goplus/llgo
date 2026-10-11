@@ -20,7 +20,8 @@ tool workflows implement a documented subset; unsupported controls fail.
 Native package commands accept a leading `-C dir` or `-C=dir` after the command
 name. It applies before relative source, output, module and overlay paths.
 `GOFLAGS`, including persisted `go env -w` defaults, are parsed before command
-flags, so explicit options take precedence. `-C` is not permitted in `GOFLAGS`.
+flags, so explicit options take precedence. Defaults belonging only to other
+commands are skipped, as in Go. `-C` is not permitted in `GOFLAGS`.
 Unimplemented instrumentation cannot bypass validation through environment
 settings.
 
