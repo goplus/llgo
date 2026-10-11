@@ -1723,10 +1723,10 @@
       "label": "Branch fennoai/issue-2786-1791749696",
       "path": "series/branch/00a0dfe92a461a90/summary.json",
       "configPath": "series/branch/00a0dfe92a461a90/config.json",
-      "commitPath": "commits/0d5a7b963c7e7be83846df719e9f72f0dfde56bd.json",
-      "sha": "0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
-      "updatedAt": "2026-10-11T21:09:52.827Z"
+      "commitPath": "commits/7527b8334d5e117e35ed4e77d04afe5e6c973f3a.json",
+      "sha": "7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
+      "updatedAt": "2026-10-11T22:29:15.748Z"
     },
     {
       "kind": "branch",
@@ -4682,10 +4682,10 @@
       "label": "PR #2787",
       "path": "series/pull/2787/summary.json",
       "configPath": "series/pull/2787/config.json",
-      "commitPath": "commits/0d5a7b963c7e7be83846df719e9f72f0dfde56bd.json",
-      "sha": "0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
-      "updatedAt": "2026-10-11T21:09:52.631Z"
+      "commitPath": "commits/7527b8334d5e117e35ed4e77d04afe5e6c973f3a.json",
+      "sha": "7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
+      "updatedAt": "2026-10-11T22:29:15.689Z"
     }
   ]
 }
