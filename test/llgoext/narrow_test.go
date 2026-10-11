@@ -28,6 +28,76 @@ func TestLinknameNarrowCArguments(t *testing.T) {
 	}
 }
 
+type narrowGoFunction func(int8, uint8, int16, uint16) narrowValues
+
+type narrowGoS8Function func(int8) int32
+
+//go:noinline
+func callNarrowGoS8Function(fn func(int8) int32, x int32) int32 {
+	// Truncate a wider value so the input has not already been sign-extended
+	// by a signed byte load before reaching the ordinary Go call.
+	return fn(int8(x))
+}
+
+func TestLinknameNarrowCGoFunctionScalar(t *testing.T) {
+	for _, call := range []struct {
+		name string
+		fn   func(int8) int32
+	}{
+		{"declaration", linkedNarrowPromoteS8},
+		{"converted-C-function", narrowPromoteS8Function(linkedNarrowPromoteS8)},
+		{"returned-C-pointer", linkedNarrowPromoteS8Address()},
+		{"named-Go-function", narrowGoS8Function(linkedNarrowPromoteS8Address())},
+	} {
+		t.Run(call.name, func(t *testing.T) {
+			for _, x := range []int32{248, 128, 255, 0, 127} {
+				want := int32(int8(x))
+				if got := callNarrowGoS8Function(call.fn, x); got != want {
+					t.Errorf("(%d): got %d, want %d", x, got, want)
+				}
+			}
+		})
+	}
+	var nativeNil narrowPromoteS8Function
+	var goNil func(int8) int32 = nativeNil
+	if goNil != nil {
+		t.Error("nil C function converted to a non-nil Go function")
+	}
+}
+
+//go:noinline
+func callNarrowGoFunction(fn func(int8, uint8, int16, uint16) narrowValues, a int8, b uint8, c int16, d uint16) narrowValues {
+	return fn(a, b, c, d)
+}
+
+func TestLinknameNarrowCGoFunctionValues(t *testing.T) {
+	// Ordinary Go function values need an adapter to call C with its argument
+	// extension and aggregate return conventions. Keep the call indirect.
+	for _, call := range []struct {
+		name string
+		fn   func(int8, uint8, int16, uint16) narrowValues
+	}{
+		{"declaration", linkedNarrow},
+		{"converted-C-function", narrowFunction(linkedNarrow)},
+		{"returned-C-pointer", linkedNarrowAddress()},
+		{"named-Go-function", narrowGoFunction(linkedNarrowAddress())},
+	} {
+		t.Run(call.name, func(t *testing.T) {
+			for _, want := range []narrowValues{
+				{-8, 250, -300, 60000},
+				{-128, 255, -32768, 65535},
+				{-1, 128, -1, 32768},
+				{127, 0, 32767, 0},
+			} {
+				got := callNarrowGoFunction(call.fn, int8(want.s8), uint8(want.u8), int16(want.s16), uint16(want.u16))
+				if got != want {
+					t.Errorf("got %+v, want %+v", got, want)
+				}
+			}
+		})
+	}
+}
+
 func TestLinknameNarrowCStackArguments(t *testing.T) {
 	for _, flag := range []bool{false, true} {
 		want := narrowValues{-8, 250, -300, 60000}

@@ -1,5 +1,9 @@
 #include <stdarg.h>
 
+__attribute__((noinline)) int narrow_promote_s8(signed char x) { return x; }
+typedef int (*narrow_promote_s8_function)(signed char);
+narrow_promote_s8_function narrow_promote_s8_address(void) { return narrow_promote_s8; }
+
 typedef struct {
     long long s8;
     unsigned long long u8;

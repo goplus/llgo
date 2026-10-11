@@ -4,6 +4,15 @@ package llgoext
 
 import _ "unsafe" // for go:linkname
 
+//llgo:type C
+type narrowPromoteS8Function func(int8) int32
+
+//go:linkname linkedNarrowPromoteS8 C.narrow_promote_s8
+func linkedNarrowPromoteS8(int8) int32
+
+//go:linkname linkedNarrowPromoteS8Address C.narrow_promote_s8_address
+func linkedNarrowPromoteS8Address() narrowPromoteS8Function
+
 type narrowValues struct {
 	s8  int64
 	u8  uint64

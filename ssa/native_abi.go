@@ -1,6 +1,8 @@
 package ssa
 
 import (
+	"fmt"
+	"go/token"
 	"go/types"
 
 	"github.com/xgo-dev/llvm"
@@ -97,4 +99,86 @@ func (b Builder) setNativeIntegerCallAttrs(call llvm.Value, fn Expr, sig *types.
 			copyInteger(i+1, physical)
 		}
 	}
+}
+
+// needsNativeIntegerFuncval identifies C entries whose argument extension is
+// absent from the Go funcval ABI. The adapter keeps that distinction at the
+// conversion boundary instead of changing calls through arbitrary Go values.
+func (b Builder) needsNativeIntegerFuncval(fn Expr) bool {
+	if !b.Prog.nativeIntegerExtensionRequired() {
+		return false
+	}
+	switch fn.kind {
+	case vkFuncPtr:
+		sig := fn.raw.Type.Underlying().(*types.Signature)
+		needed := false
+		b.Prog.nativeIntegerAttrs(sig, b.Prog.FuncDecl(sig, InC).ll, func(int, llvm.Attribute) {
+			needed = true
+		})
+		return needed
+	case vkFuncDecl:
+		if direct := fn.impl.IsAFunction(); !direct.IsNil() {
+			for i := range fn.ll.ParamTypes() {
+				for _, kind := range nativeIntegerAttributeKinds {
+					if !direct.GetEnumAttributeAtIndex(i+1, kind).IsNil() {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// nativeFuncval adapts a native function pointer to LLGo's ordinary funcval
+// representation. Its environment holds the native pointer directly, and the
+// Go entry calls that pointer with the native ABI. This avoids an allocation
+// while preserving nil: a nil native pointer produces a
+// funcval with a nil code pointer.
+func (b Builder) nativeFuncval(dst Type, fn Expr, callConv llvm.CallConv, abi string) Expr {
+	closure, ok := types.Unalias(dst.raw.Type).Underlying().(*types.Struct)
+	if !ok || !IsClosure(closure) {
+		panic(fmt.Errorf("native funcval target must be a Go function, got %s", dst.raw.Type))
+	}
+	goSig := closure.Field(0).Type().(*types.Signature)
+	nativeSig := types.Unalias(fn.raw.Type).Underlying().(*types.Signature)
+	// A Go variadic slice cannot forward an arbitrary C ellipsis tail. Keep
+	// those calls on the native function-pointer path, where the caller knows
+	// the concrete promoted argument types.
+	if HasNameValist(nativeSig) {
+		panic("C variadic functions require a native function pointer; use //llgo:type C")
+	}
+	wrapperName := b.Pkg.Path() + ".__llgo_" + abi + "_funcval$" + b.Prog.abi.FuncName(goSig)
+	wrapper := b.Pkg.FuncOf(wrapperName)
+	if wrapper == nil {
+		env := types.NewVar(token.NoPos, nil, "$env", types.Typ[types.UnsafePointer])
+		wrapper = b.Pkg.NewEnvFunc(wrapperName, goSig, InGo, env, false)
+		wrapper.impl.SetLinkage(llvm.InternalLinkage)
+		body := wrapper.MakeBody(1)
+		args := make([]Expr, goSig.Params().Len())
+		for i := range args {
+			args[i] = wrapper.Param(i)
+		}
+		native := Expr{wrapper.Env().impl, b.Prog.rawType(nativeSig)}
+		result := body.Call(native, args...)
+		if callConv != llvm.CCallConv {
+			result.impl.SetInstructionCallConv(callConv)
+		}
+		switch n := goSig.Results().Len(); n {
+		case 0:
+			body.Return()
+		case 1:
+			body.Return(result)
+		default:
+			results := make([]Expr, n)
+			for i := range results {
+				results[i] = body.Extract(result, i)
+			}
+			body.Return(results...)
+		}
+	}
+
+	isNil := llvm.CreateICmp(b.impl, llvm.IntEQ, fn.impl, llvm.ConstNull(fn.impl.Type()))
+	code := llvm.CreateSelect(b.impl, isNil, llvm.ConstNull(wrapper.impl.Type()), wrapper.impl)
+	return b.aggregateValue(dst, code, fn.impl)
 }

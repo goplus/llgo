@@ -1032,6 +1032,9 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		if b.needsStdcallFuncval(x) {
 			return b.stdcallFuncval(t, x)
 		}
+		if b.needsNativeIntegerFuncval(x) {
+			return b.nativeFuncval(t, x, llvm.CCallConv, "c")
+		}
 		if b.Prog.isStdcallType(x.raw.Type) {
 			return checkExpr(x, t.raw.Type, b)
 		}
@@ -1053,7 +1056,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	}
 	if t.kind == vkClosure {
 		switch x.kind {
-		case vkFuncDecl:
+		case vkFuncDecl, vkFuncPtr:
 			ret.impl = checkExpr(x, t.raw.Type, b).impl
 		case vkClosure:
 			// TODO(xsw): change type should be a noop instruction
@@ -2135,6 +2138,9 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		tclosure := b.Prog.rawType(t)
 		if b.needsStdcallFuncval(v) {
 			return b.stdcallFuncval(tclosure, v)
+		}
+		if b.needsNativeIntegerFuncval(v) {
+			return b.nativeFuncval(tclosure, v, llvm.CCallConv, "c")
 		}
 		if v.kind == vkClosure {
 			return v
