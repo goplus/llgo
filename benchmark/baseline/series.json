@@ -1712,10 +1712,10 @@
       "label": "Branch cpunion/llgo:codex/runtime-flakes-20261011",
       "path": "series/branch/3e4256f6bb8750bc/summary.json",
       "configPath": "series/branch/3e4256f6bb8750bc/config.json",
-      "commitPath": "commits/209c2f255de48e389704edc30a66d868ddc3fed1.json",
-      "sha": "209c2f255de48e389704edc30a66d868ddc3fed1",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/209c2f255de48e389704edc30a66d868ddc3fed1",
-      "updatedAt": "2026-10-11T06:53:16.341Z"
+      "commitPath": "commits/54e59b41ca9de5d54460208bd539d30bcf3db45a.json",
+      "sha": "54e59b41ca9de5d54460208bd539d30bcf3db45a",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/54e59b41ca9de5d54460208bd539d30bcf3db45a",
+      "updatedAt": "2026-10-11T09:11:44.753Z"
     },
     {
       "kind": "branch",
@@ -8455,10 +8455,10 @@
       "label": "PR #2781",
       "path": "series/pull/2781/summary.json",
       "configPath": "series/pull/2781/config.json",
-      "commitPath": "commits/209c2f255de48e389704edc30a66d868ddc3fed1.json",
-      "sha": "209c2f255de48e389704edc30a66d868ddc3fed1",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/209c2f255de48e389704edc30a66d868ddc3fed1",
-      "updatedAt": "2026-10-11T06:53:14.560Z"
+      "commitPath": "commits/54e59b41ca9de5d54460208bd539d30bcf3db45a.json",
+      "sha": "54e59b41ca9de5d54460208bd539d30bcf3db45a",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/54e59b41ca9de5d54460208bd539d30bcf3db45a",
+      "updatedAt": "2026-10-11T09:11:42.936Z"
     }
   ]
 }
