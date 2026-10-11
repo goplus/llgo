@@ -12,7 +12,7 @@ package tinygogc
 // arenas in the logical block index, so allocations never cross libc regions.
 type heapSegment struct {
 	start, end  uintptr
-	metadata    uintptr
+	metadata    uintptr // configure places metadata before end
 	first, last uintptr // [first, last) are usable blocks; last is the sentinel
 }
 
@@ -25,8 +25,8 @@ var heapSegmentCount int
 var heapSegmentsByAddress [maxHeapSegments]*heapSegment
 
 func segmentForAddress(address uintptr) *heapSegment {
-	// Most scanned words are not pointers. Reject values below the first
-	// arena before searching, and avoid a search for the single-arena heap.
+	// Reject an empty heap or values below the first arena before searching,
+	// and avoid a search for the single-arena heap.
 	if heapSegmentCount == 0 || address < heapSegmentsByAddress[0].start {
 		return nil
 	}
