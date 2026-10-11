@@ -5,6 +5,12 @@
 # Applicability is global: entries must not select a Go version or platform.
 not_applicable:
   - directive: run
+    case: typeparam/chans.go
+    reason: "not applicable: the Ranger subtest requires its receiver finalizer to run after a single GC at an exact last-use boundary; LLGo uses conservative native and WebAssembly roots, so exact finalizer timing is not currently an LLGo compatibility goal"
+  - directive: rundir
+    case: typeparam/chansimp.go
+    reason: "not applicable: the Ranger subtest requires its receiver finalizer to run after a single GC at an exact last-use boundary; LLGo uses conservative native and WebAssembly roots, so exact finalizer timing is not currently an LLGo compatibility goal"
+  - directive: run
     case: fixedbugs/issue5493.go
     reason: "not applicable: this case requires every captured function variable to be finalized within 20 GC cycles and explicitly skips gccgo's conservative GC; LLGo uses conservative BDWGC or tinygogc roots, so exact finalizer timing is not currently an LLGo compatibility goal"
   - directive: run

@@ -2,10 +2,7 @@
 
 package wasmtest
 
-import (
-	"runtime"
-	"testing"
-)
+import "testing"
 
 func TestMapKeyHashNoAlloc(t *testing.T) {
 	testMapKeyHashNoAlloc(t, uint32(1<<31))
@@ -21,10 +18,13 @@ func testMapKeyHashNoAlloc[K ~uint32 | ~int32 | ~uint64](t *testing.T, highBit K
 		key := K(i) | highBit
 		m[key] = key
 	}
-	var before, after runtime.MemStats
-	runtime.ReadMemStats(&before)
-	for i := 0; i < 4096; i++ {
+	// Match the call boundary in this instrumented binary: pushing a caller
+	// frame can allocate even when the map operations themselves do not.
+	base := testing.AllocsPerRun(100, emptyAllocControl)
+	i := 0
+	allocs := testing.AllocsPerRun(4096, func() {
 		key := K(i%64) | highBit
+		i++
 		if m[key] != key {
 			t.Fatal("single-result lookup returned the wrong value")
 		}
@@ -35,9 +35,8 @@ func testMapKeyHashNoAlloc[K ~uint32 | ~int32 | ~uint64](t *testing.T, highBit K
 		m[key] = value
 		delete(m, key)
 		m[key] = key
-	}
-	runtime.ReadMemStats(&after)
-	if after.Mallocs != before.Mallocs {
-		t.Fatalf("%T map hashing allocated %d objects", highBit, after.Mallocs-before.Mallocs)
+	})
+	if allocs != base {
+		t.Fatalf("%T map operations added %v allocations per iteration", highBit, allocs-base)
 	}
 }

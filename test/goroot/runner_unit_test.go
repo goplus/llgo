@@ -390,8 +390,8 @@ func TestObservedFailuresHaveXFailClassifications(t *testing.T) {
 		{version: "go1.26.7", platform: "windows-msvc/amd64", tc: testCase{RelPath: "fixedbugs/issue58300.go", Directive: "run"}},
 		{version: "go1.26.7", platform: "windows-msvc/386", tc: testCase{RelPath: "fixedbugs/issue23305.go", Directive: "run"}},
 		{version: "go1.26.7", platform: "windows-msvc/386", tc: testCase{RelPath: "fixedbugs/issue42032.go", Directive: "run"}},
-		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "init1.go", Directive: "run"}},
-		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "typeparam/chansimp.go", Directive: "rundir"}},
+		{version: "go1.27.0", platform: "J32-GoJS", tc: testCase{RelPath: "init1.go", Directive: "run"}},
+		{version: "go1.27.0", platform: "J32-Emscripten", tc: testCase{RelPath: "init1.go", Directive: "run"}},
 		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "fixedbugs/issue5089.go", Directive: "errorcheck"}},
 		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "fixedbugs/issue59680.go", Directive: "run"}},
 	}
@@ -560,13 +560,13 @@ func TestBoundedCaseEnv(t *testing.T) {
 	}
 }
 
-func TestWindows386Index0IsFlakyWithTimeout(t *testing.T) {
+func TestWindows386Index0RequiresSuccessWithTimeout(t *testing.T) {
 	repo := repoRoot(t)
 	cfg := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
 	tc := testCase{RelPath: "index0.go", Directive: "runoutput"}
 	for _, platform := range []string{"windows-msvc/386", "windows-mingw/386"} {
-		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); !match {
-			t.Errorf("%s did not match flake for %s", tc.RelPath, platform)
+		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); match {
+			t.Errorf("%s still permits flaky failure for %s", tc.RelPath, platform)
 		}
 		if timeout, _, match := cfg.MatchTimeout("go1.27.0", platform, tc); !match || timeout != 90*time.Second {
 			t.Errorf("timeout for %s/%s = %s, %v; want 1m30s, true", tc.RelPath, platform, timeout, match)
@@ -574,13 +574,13 @@ func TestWindows386Index0IsFlakyWithTimeout(t *testing.T) {
 	}
 }
 
-func TestWindows386UglyfibIsFlakyWithTimeout(t *testing.T) {
+func TestWindows386UglyfibRequiresSuccessWithTimeout(t *testing.T) {
 	repo := repoRoot(t)
 	cfg := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
 	tc := testCase{RelPath: "abi/uglyfib.go", Directive: "run"}
 	for _, platform := range []string{"windows-msvc/386", "windows-mingw/386"} {
-		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); !match {
-			t.Errorf("%s did not match flake for %s", tc.RelPath, platform)
+		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); match {
+			t.Errorf("%s still permits flaky failure for %s", tc.RelPath, platform)
 		}
 		if timeout, _, match := cfg.MatchTimeout("go1.27.0", platform, tc); !match || timeout != 90*time.Second {
 			t.Errorf("timeout for %s/%s = %s, %v; want 1m30s, true", tc.RelPath, platform, timeout, match)
@@ -629,19 +629,39 @@ func TestHostUnsafeCasesAreGloballySkipped(t *testing.T) {
 	}
 }
 
-func TestTypeparamChansIsGloballyFlaky(t *testing.T) {
+func TestRangerCasesAreGloballyNotApplicable(t *testing.T) {
 	repo := repoRoot(t)
-	cfg := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
-	tc := testCase{RelPath: "typeparam/chans.go", Directive: "run"}
-	for _, target := range []struct {
-		version  string
-		platform string
-	}{
-		{version: "go1.26.7", platform: "linux/amd64"},
-		{version: "go1.27.0", platform: "darwin/arm64"},
+	cfg := loadNotApplicableConfig(t, repo, filepath.Join("test", "goroot", "notapplicable.yaml"))
+	xfails := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
+	for _, tc := range []testCase{
+		{RelPath: "typeparam/chans.go", Directive: "run"},
+		{RelPath: "typeparam/chansimp.go", Directive: "rundir"},
 	} {
-		if match, _ := cfg.MatchFlaky(target.version, target.platform, tc); !match {
-			t.Errorf("typeparam/chans.go did not match flake for %s/%s", target.version, target.platform)
+		for _, version := range []string{"go1.26.7", "go1.27.0"} {
+			for _, platform := range []string{"linux/amd64", "darwin/arm64", "windows-msvc/386", "J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI"} {
+				if match, _ := cfg.Match(version, platform, tc); !match {
+					t.Errorf("%s did not match not-applicable for %s/%s", tc.RelPath, version, platform)
+				}
+				if match, _ := xfails.Match(version, platform, tc); match {
+					t.Errorf("%s still matches xfail for %s/%s", tc.RelPath, version, platform)
+				}
+				if match, _ := xfails.MatchFlaky(version, platform, tc); match {
+					t.Errorf("%s still matches flake for %s/%s", tc.RelPath, version, platform)
+				}
+			}
+		}
+	}
+}
+
+func TestWasmExpectationsRespectProfile(t *testing.T) {
+	cfg := loadXFailConfig(t, repoRoot(t), filepath.Join("test", "goroot", "xfail.yaml"))
+	for _, profile := range []string{"J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI"} {
+		for _, version := range []string{"go1.26.7", "go1.27.0"} {
+			want := profile == "J32-GoJS" || profile == "J32-Emscripten"
+			got, _ := cfg.Match(version, profile, testCase{RelPath: "init1.go", Directive: "run"})
+			if got != want {
+				t.Errorf("init1.go %s %s: xfail = %v, want %v", profile, version, got, want)
+			}
 		}
 	}
 }
