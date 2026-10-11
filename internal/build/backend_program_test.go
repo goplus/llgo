@@ -172,7 +172,8 @@ func TestReleaseSingleExecutableBackendPreservesOtherConsumers(t *testing.T) {
 		{"shared library header", ModeBuild, BuildModeCShared, 1, false},
 		{"archive header", ModeBuild, BuildModeCArchive, 1, false},
 		{"generated module", ModeGen, BuildModeExe, 1, false},
-		{"test DAG", ModeTest, BuildModeExe, 1, false},
+		{"single test executable", ModeTest, BuildModeExe, 1, true},
+		{"test DAG", ModeTest, BuildModeExe, 2, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			coordinator := llssa.NewProgram(nil)

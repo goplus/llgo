@@ -3243,23 +3243,28 @@ func TestFormatPackageError(t *testing.T) {
 func TestLinkExecutionKeepsSitePolicyAfterBackendDisposal(t *testing.T) {
 	t.Setenv("LLGO_PCLNPOST", "1")
 	for _, test := range []struct {
+		mode       Mode
 		goos       string
 		dwarf      bool
 		entrySites bool
 	}{
-		{goos: "linux", entrySites: true},
-		{goos: "linux", dwarf: true, entrySites: true},
-		{goos: "darwin", entrySites: true},
-		{goos: "darwin", dwarf: true},
+		{mode: ModeBuild, goos: "linux", entrySites: true},
+		{mode: ModeBuild, goos: "linux", dwarf: true, entrySites: true},
+		{mode: ModeBuild, goos: "darwin", entrySites: true},
+		{mode: ModeBuild, goos: "darwin", dwarf: true},
+		{mode: ModeTest, goos: "linux", entrySites: true},
+		{mode: ModeTest, goos: "linux", dwarf: true, entrySites: true},
+		{mode: ModeTest, goos: "darwin", entrySites: true},
+		{mode: ModeTest, goos: "darwin", dwarf: true},
 	} {
 		for _, enabled := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/dwarf=%v/sites=%v", test.goos, test.dwarf, enabled), func(t *testing.T) {
+			t.Run(fmt.Sprintf("mode=%d/%s/dwarf=%v/sites=%v", test.mode, test.goos, test.dwarf, enabled), func(t *testing.T) {
 				prog := llssa.NewProgram(nil)
 				defer prog.Dispose()
 				prog.EnableFuncInfoSites(enabled)
 				ctx := &context{
 					prog: prog,
-					buildConf: &Config{Mode: ModeBuild, BuildMode: BuildModeExe,
+					buildConf: &Config{Mode: test.mode, BuildMode: BuildModeExe,
 						Goos: test.goos, Goarch: "amd64", PCLNMode: PCLNEmbedded,
 						OmitDWARFByDefault: !test.dwarf},
 					initial: []*packages.Package{{}},
