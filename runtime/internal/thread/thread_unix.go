@@ -89,8 +89,6 @@ func Exit() {
 	pthreadExit(nil)
 }
 
-type Key c.Uint
-
 // llgo:link (*Key).Create C.pthread_key_create
 func (key *Key) Create(destructor KeyDestructor) c.Int { return 0 }
 

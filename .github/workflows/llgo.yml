@@ -215,6 +215,8 @@ jobs:
           if [[ "$RUNNER_OS" == Windows ]]; then
             # The TLS regression lives in the runtime submodule, outside test/.
             (cd runtime && "$LLGO" test -v -run '^TestSlotGCAllocation$' -count=20 -timeout=2m ./internal/clite/tls)
+          else
+            (cd runtime && "$LLGO" test -v -run '^TestKeyNativeLayout$' -timeout=2m ./internal/thread)
           fi
 
       - name: Install Codecov CLI with Windows host Python
