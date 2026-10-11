@@ -31,10 +31,15 @@ func TestABIAttributeTransport(t *testing.T) {
 %Large = type { i64, i64, i64, i64 }
 %Empty = type {}
 declare nonnull ptr @allocate(%Large, %Empty, i32, ptr returned) allocsize(2) nounwind
+declare ptr @allocate_count(%Large, %Empty, i32, i64) allocsize(2, 3)
 declare %Large @produce(%Large, ptr readonly captures(none)) memory(none) nounwind willreturn
 
 define nonnull ptr @forward(%Large %v, %Empty %empty, i32 %n, ptr returned %p) allocsize(2) nounwind {
   %r = call nonnull ptr @allocate(%Large %v, %Empty %empty, i32 %n, ptr returned %p) allocsize(2) nounwind
+  ret ptr %r
+}
+define ptr @forward_count(%Large %v, %Empty %empty, i32 %size, i64 %count) allocsize(2, 3) {
+  %r = call ptr @allocate_count(%Large %v, %Empty %empty, i32 %size, i64 %count) allocsize(2, 3)
   ret ptr %r
 }
 define %Large @roundtrip(%Large %v, ptr readonly captures(none) %p) memory(none) nounwind willreturn {
@@ -87,6 +92,22 @@ define %Large @roundtrip(%Large %v, ptr readonly captures(none) %p) memory(none)
 						t.Fatal("call allocsize differs")
 					}
 					requireABIAttr(t, call.GetCallSiteEnumAttribute, len(types), "returned")
+				}
+			}
+			// Both calloc-style indices move when ABI lowering removes the empty
+			// argument. Check declarations, definitions and rewritten calls.
+			for _, name := range []string{"allocate_count", "forward_count"} {
+				fn := mod.NamedFunction(name)
+				params := fn.GlobalValueType().ParamTypes()
+				want := llvmattr.AllocSize(uint32(len(params)-2), uint32(len(params)-1))
+				if requireABIAttr(t, fn.GetEnumAttributeAtIndex, -1, "allocsize").GetEnumValue() != want {
+					t.Fatalf("bad allocation size/count indices: %s", fn.String())
+				}
+				if name == "forward_count" {
+					call := findAttributeCall(t, fn, "allocate_count")
+					if requireABIAttr(t, call.GetCallSiteEnumAttribute, -1, "allocsize").GetEnumValue() != want {
+						t.Fatalf("bad call allocation size/count indices: %s", call.String())
+					}
 				}
 			}
 			for _, name := range []string{"produce", "roundtrip"} {
