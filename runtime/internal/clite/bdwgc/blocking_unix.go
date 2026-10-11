@@ -1,4 +1,4 @@
-//go:build !windows && !wasm && !baremetal
+//go:build !windows && !darwin && !wasm && !baremetal
 
 package bdwgc
 

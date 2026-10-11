@@ -1,4 +1,4 @@
-//go:build !windows && !wasm && !baremetal && !nogc
+//go:build !windows && !darwin && !wasm && !baremetal && !nogc
 
 package sync
 
