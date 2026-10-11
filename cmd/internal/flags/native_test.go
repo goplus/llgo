@@ -30,12 +30,12 @@ func TestDirectoryAndGOFLAGSPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		if err := os.Chdir(old); err != nil {
 			t.Error(err)
 		}
 	})
-	dir := t.TempDir()
 	for _, args := range [][]string{{"-C", dir, "-tags=explicit", "."}, {"-C=" + dir, "-tags=explicit", "."}, {"--C", dir, "-tags=explicit", "."}} {
 		t.Setenv("GOENV", "off")
 		t.Setenv("GOFLAGS", "-tags=env -v")

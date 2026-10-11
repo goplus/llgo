@@ -166,10 +166,14 @@ func TestNativeDirectoryAndOverlaySourceSelection(t *testing.T) {
 	nativeFile(t, filepath.Join(project, "replacement.txt"), "package main\nconst Value=40\n")
 	nativeFile(t, filepath.Join(project, "addition.txt"), "package main\nconst Added=2\n")
 	nativeFile(t, filepath.Join(project, "overlay.json"), `{"Replace":{"value.go":"replacement.txt","added.go":"addition.txt","removed.go":""}}`)
+	artifact := "result"
+	if runtime.GOOS == "windows" {
+		artifact += ".exe"
+	}
 	for _, command := range []string{"build", "run"} {
 		args := []string{command, "-C", project, "-overlay=overlay.json"}
 		if command == "build" {
-			args = append(args, "-o=result")
+			args = append(args, "-o="+artifact)
 		}
 		args = append(args, ".")
 		env := []string(nil)
@@ -181,7 +185,7 @@ func TestNativeDirectoryAndOverlaySourceSelection(t *testing.T) {
 			t.Fatalf("%s exit=%d output=%s", command, code, out)
 		}
 		if command == "build" {
-			output, err := exec.Command(filepath.Join(project, "result")).CombinedOutput()
+			output, err := exec.Command(filepath.Join(project, artifact)).CombinedOutput()
 			if err != nil {
 				t.Fatalf("run overlay artifact: %v %s", err, output)
 			}
