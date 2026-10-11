@@ -170,6 +170,14 @@ func LoadEx(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) 
 // LoadExWithGoVersion is LoadEx with an optional go/types language version
 // override. The version uses go/types syntax, such as "go1.22".
 func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) types.Sizes, cfg *Config, goVersion string, patterns ...string) ([]*Package, error) {
+	return LoadExWithSourceOverlay(dedup, sizes, cfg, goVersion, nil, patterns...)
+}
+
+// LoadExWithSourceOverlay supplies an additional source view to LLGo's parser
+// without changing the metadata driver's overlay. This lets a Go -overlay
+// JSON select deleted and added files while native source patches and virtual
+// files reach the parser without generating a conflicting go/packages overlay.
+func LoadExWithSourceOverlay(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) types.Sizes, cfg *Config, goVersion string, sourceOverlay map[string][]byte, patterns ...string) ([]*Package, error) {
 	var driverCfg Config
 	if cfg != nil {
 		driverCfg = *cfg
@@ -210,12 +218,13 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 
 	if origMode&(NeedTypes|NeedTypesInfo|NeedTypesSizes|NeedSyntax) != 0 {
 		tc := &typecheckContext{
-			dedup:     dedup,
-			sizesFn:   sizes,
-			cfg:       &driverCfg,
-			fset:      fset,
-			goVersion: goVersion,
-			origMode:  origMode,
+			dedup:         dedup,
+			sizesFn:       sizes,
+			cfg:           &driverCfg,
+			fset:          fset,
+			goVersion:     goVersion,
+			origMode:      origMode,
+			sourceOverlay: sourceOverlay,
 		}
 
 		// Perform bottom-up typechecking in dependency post-order
@@ -228,12 +237,13 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 }
 
 type typecheckContext struct {
-	dedup     Deduper
-	sizesFn   func(sizes types.Sizes, compiler, arch string) types.Sizes
-	cfg       *Config
-	fset      *token.FileSet
-	goVersion string
-	origMode  LoadMode
+	dedup         Deduper
+	sizesFn       func(sizes types.Sizes, compiler, arch string) types.Sizes
+	cfg           *Config
+	fset          *token.FileSet
+	goVersion     string
+	origMode      LoadMode
+	sourceOverlay map[string][]byte
 }
 
 func (tc *typecheckContext) targetGoVersion(pkg *Package) string {
@@ -257,6 +267,13 @@ func (tc *typecheckContext) parseFile(filename string, fset *token.FileSet) (*as
 		if data, ok := tc.cfg.Overlay[fullPath]; ok {
 			src, hasSrc = data, true
 		} else if data, ok := tc.cfg.Overlay[filename]; ok {
+			src, hasSrc = data, true
+		}
+	}
+	if !hasSrc && tc.sourceOverlay != nil {
+		if data, ok := tc.sourceOverlay[fullPath]; ok {
+			src, hasSrc = data, true
+		} else if data, ok := tc.sourceOverlay[filename]; ok {
 			src, hasSrc = data, true
 		}
 	}

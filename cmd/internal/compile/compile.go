@@ -62,11 +62,6 @@ type options struct {
 	concurrency int
 	debug       stringListFlag
 	lang        string
-	output      string
-	pkgPath     string
-	importCfg   string
-	localImport string
-	includes    stringListFlag
 
 	noBounds  countFlag
 	noColumns countFlag
@@ -91,8 +86,8 @@ func newFlagSet(opts *options) *flag.FlagSet {
 	fs.SetOutput(os.Stderr)
 	fs.Var(&opts.noBounds, "B", "disable bounds checking")
 	fs.Var(&opts.noColumns, "C", "disable printing of columns in error messages")
-	fs.StringVar(&opts.localImport, "D", "", "set relative path for local imports")
-	fs.Var(&opts.includes, "I", "add directory to import search path")
+	fs.Func("D", "Unsupported: gc local import paths", func(string) error { return fmt.Errorf("-D is unsupported by LLGo") })
+	fs.Func("I", "Unsupported: gc import search paths", func(string) error { return fmt.Errorf("-I is unsupported by LLGo") })
 	fs.Var(&opts.noOpt, "N", "disable optimizations")
 	fs.BoolVar(&opts.runtimePkg, "+", false, "compiling runtime")
 	fs.BoolVar(&opts.version, "V", false, "print version and exit")
@@ -101,13 +96,13 @@ func newFlagSet(opts *options) *flag.FlagSet {
 	fs.Var(&opts.debug, "d", "enable debugging settings")
 	fs.BoolVar(&opts.dynlink, "dynlink", false, "support references to Go symbols defined in shared libraries")
 	fs.Var(&opts.allErrors, "e", "no limit on number of errors reported")
-	fs.StringVar(&opts.importCfg, "importcfg", "", "read import configuration from file")
+	fs.Func("importcfg", "Unsupported: gc object import configuration", func(string) error { return fmt.Errorf("-importcfg is unsupported by LLGo") })
 	fs.StringVar(&opts.lang, "lang", "", "Go language version source code expects")
 	fs.Var(&opts.noInline, "l", "disable inlining")
 	fs.Var(&opts.showOpt, "m", "print optimization decisions")
 	fs.BoolVar(&opts.live, "live", false, "debug liveness analysis")
-	fs.StringVar(&opts.output, "o", "", "write output to file")
-	fs.StringVar(&opts.pkgPath, "p", "", "set expected package import path")
+	fs.Func("o", "Unsupported: gc object output", func(string) error { return fmt.Errorf("-o is unsupported by LLGo") })
+	fs.Func("p", "Unsupported: gc package import identity", func(string) error { return fmt.Errorf("-p is unsupported by LLGo") })
 	fs.BoolVar(&opts.race, "race", false, "enable race detector")
 	fs.BoolVar(&opts.smallFrames, "smallframes", false, "reduce the size limit for stack allocated objects")
 	fs.BoolVar(&opts.standard, "std", false, "compiling standard library")
@@ -123,7 +118,9 @@ func runCmd(_ *base.Command, args []string) {
 	opts := new(options)
 	fs := newFlagSet(opts)
 	if err := fs.Parse(args); err != nil {
-		mockable.Exit(2)
+		if err != flag.ErrHelp {
+			mockable.Exit(2)
+		}
 		return
 	}
 	if opts.version {

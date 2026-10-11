@@ -52,3 +52,79 @@ func TestCleanMainPkgRemovesSidecars(t *testing.T) {
 		t.Fatalf("unrelated file was removed: %v", err)
 	}
 }
+
+func TestCleanPackageExportsAndListErrors(t *testing.T) {
+	dir := t.TempDir()
+	export := filepath.Join(dir, "package.a")
+	write := func(file string) {
+		t.Helper()
+		if err := os.WriteFile(file, []byte("artifact"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(export + ".ll")
+	if err := cleanPkgs([]*packages.Package{{PkgPath: "example.com/p", ExportFile: export}, {PkgPath: "synthetic"}}, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(export + ".ll"); !os.IsNotExist(err) {
+		t.Fatal("did not remove the LLGo export artifact")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/clean\ngo 1.24\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	oldDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldDir)
+	t.Setenv("GOWORK", "off")
+	t.Setenv("GOENV", "off")
+	t.Setenv("GOFLAGS", "")
+	if err := Clean([]string{filepath.Join(dir, "missing")}, &Config{}); err == nil {
+		t.Fatal("silently ignored invalid package")
+	}
+	// Successful cleanup also preserves gc's export file.
+	if err := os.WriteFile(filepath.Join(dir, "value.go"), []byte("package p\nconst Value=42\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Clean([]string{"."}, &Config{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCleanMainAndDriverFailures(t *testing.T) {
+	dir := t.TempDir()
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(old)
+	t.Setenv("GOENV", "off")
+	t.Setenv("GOFLAGS", "")
+	t.Setenv("GOWORK", "off")
+	if err := os.WriteFile("go.mod", []byte("module example.com/program\ngo 1.24\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("main.go", []byte("package main\nfunc main(){}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("program", []byte("artifact"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Clean(nil, &Config{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat("program"); !os.IsNotExist(err) {
+		t.Fatal("did not remove main artifact")
+	}
+	t.Setenv("GOPACKAGESDRIVER", filepath.Join(dir, "missing-driver"))
+	if err := Clean(nil, &Config{}); err == nil {
+		t.Fatal("did not report driver failure")
+	}
+}

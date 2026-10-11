@@ -21,8 +21,6 @@ func TestGoCompilerFlagNamesAndTypes(t *testing.T) {
 		"-l=4",
 		"-lang=go1.17",
 		"-d=panic,ssa/check/on",
-		"-p=p",
-		"-importcfg=importcfg",
 		"case.go",
 	})
 	if err != nil {
@@ -31,7 +29,7 @@ func TestGoCompilerFlagNamesAndTypes(t *testing.T) {
 	if opts.noBounds.value != 1 || opts.concurrency != 2 || opts.noColumns.value != 1 || opts.allErrors.value != 1 || opts.noInline.value != 4 {
 		t.Fatalf("parsed flags: %+v", opts)
 	}
-	if opts.lang != "go1.17" || opts.pkgPath != "p" || opts.importCfg != "importcfg" {
+	if opts.lang != "go1.17" {
 		t.Fatalf("parsed flags: %+v", opts)
 	}
 	if !reflect.DeepEqual(fs.Args(), []string{"case.go"}) {

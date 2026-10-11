@@ -29,7 +29,6 @@ func TestApplyBuildFlagsNormalizesNativeSpellings(t *testing.T) {
 	args := []string{
 		"--gcflags", "all=-N -l",
 		"--ldflags=-s -w=false",
-		"-toolexec", "tool --mode check",
 	}
 	if err := ApplyBuildFlags(conf, args); err != nil {
 		t.Fatal(err)
@@ -37,7 +36,6 @@ func TestApplyBuildFlagsNormalizesNativeSpellings(t *testing.T) {
 	want := []string{
 		"-gcflags=all=-N -l",
 		"-ldflags=-s -w=false",
-		"-toolexec=tool --mode check",
 	}
 	if !reflect.DeepEqual(conf.GoBuildFlags, want) {
 		t.Fatalf("GoBuildFlags = %#v, want %#v", conf.GoBuildFlags, want)
@@ -117,28 +115,29 @@ func TestApplyBuildFlagsFrontendGCFlagSemantics(t *testing.T) {
 		wantLevel      optlevel.Level
 		wantGo         string
 		wantSaturating bool
+		wantError      bool
 	}{
 		{name: "unpatterned", flags: []string{"-gcflags=-lang=go1.25 -N"}, wantLevel: optlevel.O0, wantGo: "go1.25"},
 		{name: "all pattern", flags: []string{"-gcflags=all='-lang=go1.24' '-l'"}, wantLevel: optlevel.O0, wantGo: "go1.24"},
-		{name: "unrelated pattern", flags: []string{"-gcflags=example.com/other=-N"}},
+		{name: "unrelated pattern", flags: []string{"-gcflags=example.com/other=-N"}, wantError: true},
 		{name: "last applicable list wins", flags: []string{"-gcflags=-N -lang=go1.23", "-gcflags="}},
 		{name: "converthash enabled", flags: []string{"-gcflags=-d=converthash=qy"}, wantSaturating: true},
-		{name: "converthash enabled in debug list", flags: []string{"-gcflags=-d=other=1,converthash=y"}, wantSaturating: true},
-		{name: "unrelated debug flag preserves converthash", flags: []string{"-gcflags=-d=converthash=qy -d=other=1"}, wantSaturating: true},
+		{name: "converthash enabled in debug list", flags: []string{"-gcflags=-d=other=1,converthash=y"}, wantSaturating: true, wantError: true},
+		{name: "unrelated debug flag preserves converthash", flags: []string{"-gcflags=-d=converthash=qy -d=other=1"}, wantSaturating: true, wantError: true},
 		{name: "converthash verbose all", flags: []string{"-gcflags=-d=converthash=vy"}, wantSaturating: true},
 		{name: "converthash quiet verbose all", flags: []string{"-gcflags=-d=converthash=qvy"}, wantSaturating: true},
 		{name: "converthash double negation", flags: []string{"-gcflags=-d=converthash=!!y"}, wantSaturating: true},
 		{name: "converthash negated no", flags: []string{"-gcflags=-d=converthash=!n"}, wantSaturating: true},
 		{name: "converthash disabled", flags: []string{"-gcflags=-d=converthash=qn"}},
-		{name: "converthash uppercase is invalid", flags: []string{"-gcflags=-d=converthash=QY"}},
+		{name: "converthash uppercase is invalid", flags: []string{"-gcflags=-d=converthash=QY"}, wantError: true},
 		{name: "last converthash debug value wins", flags: []string{"-gcflags=-d=converthash=qy,converthash=qn"}},
 		{name: "last converthash list wins", flags: []string{"-gcflags=-d=converthash=qy", "-gcflags=-d=converthash=qn"}},
-		{name: "package converthash ignored", flags: []string{"-gcflags=example.com/other=-d=converthash=qy"}},
+		{name: "package converthash ignored", flags: []string{"-gcflags=example.com/other=-d=converthash=qy"}, wantError: true},
 		{name: "N false", flags: []string{"-gcflags=-N=false"}},
 		{name: "N zero", flags: []string{"-gcflags=-N=0"}},
 		{name: "l false", flags: []string{"-gcflags=-l=false"}},
 		{name: "l zero", flags: []string{"-gcflags=-l=0"}},
-		{name: "l debug count", flags: []string{"-gcflags=-l=4"}},
+		{name: "l debug count", flags: []string{"-gcflags=-l=4"}, wantError: true},
 		{name: "N true", flags: []string{"-gcflags=-N=true"}, wantLevel: optlevel.O0},
 		{name: "l true", flags: []string{"-gcflags=-l=true"}, wantLevel: optlevel.O0},
 	}
@@ -146,7 +145,13 @@ func TestApplyBuildFlagsFrontendGCFlagSemantics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := &build.Config{}
 			if err := ApplyBuildFlags(conf, tt.flags); err != nil {
-				t.Fatal(err)
+				if !tt.wantError {
+					t.Fatal(err)
+				}
+				return
+			}
+			if tt.wantError {
+				t.Fatal("accepted an unsupported gc flag")
 			}
 			if conf.OptLevel != tt.wantLevel || conf.GoVersion != tt.wantGo || conf.SaturatingFloatToInt != tt.wantSaturating {
 				t.Fatalf("frontend config = (%v, %q, saturating=%v), want (%v, %q, saturating=%v)", conf.OptLevel, conf.GoVersion, conf.SaturatingFloatToInt, tt.wantLevel, tt.wantGo, tt.wantSaturating)

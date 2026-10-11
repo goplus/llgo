@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
+import (
+	"fmt"
+	"github.com/xgo-dev/llgo/cmd/internal/gocommand"
+)
+
 use "tool [command]"
 
 short "Run a specified llgo tool"
 
-run => {
+run args => {
+	if len(args) != 0 {
+		gocommand.Exit "tool", fmt.Errorf("unknown LLGo tool %q", args[0])
+		return
+	}
 	help
 }

@@ -19,6 +19,7 @@ package debug
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -77,8 +78,10 @@ func init() {
 
 func runCmd(cmd *base.Command, args []string) {
 	commandArgs, debuggerArgs := splitDebuggerArgs(args)
-	if err := cmd.Flag.Parse(commandArgs); err != nil {
-		mockable.Exit(2)
+	if err := flags.Parse(&cmd.Flag, commandArgs); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(2)
+		}
 		return
 	}
 	if err := run(cmd.Flag.Args(), debuggerArgs, options{

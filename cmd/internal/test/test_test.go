@@ -68,14 +68,9 @@ func resetTestFlags() {
 	flags.TestFullpath = false
 	flags.TestBenchmem = false
 	flags.TestBenchtime = ""
-	flags.TestBlockProfileRate = 0
 	flags.TestCPUProfile = ""
 	flags.TestMemProfile = ""
 	flags.TestMemProfileRate = 0
-	flags.TestBlockProfile = ""
-	flags.TestMutexProfile = ""
-	flags.TestMutexProfileFrac = 0
-	flags.TestTrace = ""
 	flags.TestOutputDir = ""
 	flags.TestPaniconexit0 = false
 	flags.TestTestLogFile = ""
@@ -255,12 +250,10 @@ func TestBuildTestArgs(t *testing.T) {
 		{
 			name: "profiling rate flags",
 			setupFlags: func() {
-				flags.TestBlockProfileRate = 10
 				flags.TestMemProfileRate = 1
-				flags.TestMutexProfileFrac = 5
 			},
 			customArgs:  nil,
-			wantContain: []string{"-test.blockprofilerate=10", "-test.memprofilerate=1", "-test.mutexprofilefraction=5"},
+			wantContain: []string{"-test.memprofilerate=1"},
 		},
 		{
 			name: "panic on exit and test log file",
@@ -362,5 +355,18 @@ func TestBuildTestArgs(t *testing.T) {
 
 			// Ensure we didn't drop required flags; allow default timeout to be present.
 		})
+	}
+}
+
+func TestUnsupportedRuntimeArgsRespectFlagValues(t *testing.T) {
+	for _, args := range [][]string{{"-trace=out"}, {"-test.trace=out"}, {"-args", "-test.blockprofile=out"}, {"-run", "TestFoo", "-mutexprofile=out"}} {
+		if err := rejectUnsupportedTestArgs(&Cmd.Flag, args); err == nil {
+			t.Fatalf("accepted %v", args)
+		}
+	}
+	for _, args := range [][]string{{"-run", "-trace"}, {"-args", "-test.run", "-test.trace"}, {"-args", "-custom-trace=out"}, {"-args", "-trace=custom-value"}, {"-args", "--", "-test.trace=literal"}, {"-v", "-run=Trace"}} {
+		if err := rejectUnsupportedTestArgs(&Cmd.Flag, args); err != nil {
+			t.Fatalf("rejected a flag value: %v: %v", args, err)
+		}
 	}
 }

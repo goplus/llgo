@@ -56,7 +56,7 @@ func TestApplyGoBuildFlagsMapsFrontendGCFlags(t *testing.T) {
 		"-tags=integration",
 		"-gcflags=",
 		"-gcflags=-l",
-		"-gcflags=all=-lang=go1.17 -N -l=4",
+		"-gcflags=all=-lang=go1.17 -N -l=0",
 	}}
 	if err := ApplyGoBuildFlags(conf, nil); err != nil {
 		t.Fatal(err)

@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"github.com/goplus/cobra/xcmd"
-	"github.com/qiniu/x/stringutil"
+	"github.com/xgo-dev/llgo/cmd/internal/bug"
 	"github.com/xgo-dev/llgo/cmd/internal/build"
 	"github.com/xgo-dev/llgo/cmd/internal/clean"
 	"github.com/xgo-dev/llgo/cmd/internal/compile"
@@ -21,12 +21,15 @@ import (
 	"github.com/xgo-dev/llgo/cmd/internal/monitor"
 	"github.com/xgo-dev/llgo/cmd/internal/run"
 	"github.com/xgo-dev/llgo/cmd/internal/test"
-	env1 "github.com/xgo-dev/llgo/internal/env"
-	"runtime"
+	"github.com/xgo-dev/llgo/cmd/internal/version"
 )
 
 const _ = true
 
+type Cmd_bug struct {
+	xcmd.Command
+	*App
+}
 type Cmd_build struct {
 	xcmd.Command
 	*App
@@ -43,6 +46,10 @@ type Cmd_debug struct {
 	xcmd.Command
 	*App
 }
+type Cmd_doc struct {
+	xcmd.Command
+	*App
+}
 type Cmd_env struct {
 	xcmd.Command
 	*App
@@ -52,6 +59,10 @@ type Cmd_fix struct {
 	*App
 }
 type Cmd_fmt struct {
+	xcmd.Command
+	*App
+}
+type Cmd_gdb struct {
 	xcmd.Command
 	*App
 }
@@ -68,10 +79,6 @@ type Cmd_install struct {
 	*App
 }
 type Cmd_list struct {
-	xcmd.Command
-	*App
-}
-type Cmd_gdb struct {
 	xcmd.Command
 	*App
 }
@@ -118,38 +125,56 @@ type Cmd_work struct {
 	xcmd.Command
 	*App
 }
-
 //line cmd/llgo/main_app.gox:1
 func (this *App) MainEntry() {
 //line cmd/llgo/main_app.gox:1:1
 	this.Short(`llgo is a Go compiler based on LLVM in order to better integrate Go with the C ecosystem including Python.`)
 }
 func (this *App) Main() {
-	_xgo_obj0 := &Cmd_build{App: this}
-	_xgo_obj1 := &Cmd_clean{App: this}
-	_xgo_obj2 := &Cmd_cmptest{App: this}
-	_xgo_obj3 := &Cmd_env{App: this}
-	_xgo_obj4 := &Cmd_fix{App: this}
-	_xgo_obj5 := &Cmd_fmt{App: this}
-	_xgo_obj6 := &Cmd_generate{App: this}
-	_xgo_obj7 := &Cmd_get{App: this}
-	_xgo_obj8 := &Cmd_install{App: this}
-	_xgo_obj9 := &Cmd_list{App: this}
-	_xgo_obj10 := &Cmd_lldb{App: this}
-	_xgo_obj11 := &Cmd_mod{App: this}
-	_xgo_obj12 := &Cmd_monitor{App: this}
-	_xgo_obj13 := &Cmd_run{App: this}
-	_xgo_obj14 := &Cmd_test{App: this}
-	_xgo_obj15 := &Cmd_tool{App: this}
-	_xgo_obj16 := &Cmd_tool_compile{App: this}
-	_xgo_obj17 := &Cmd_version{App: this}
-	_xgo_obj18 := &Cmd_vet{App: this}
-	_xgo_obj19 := &Cmd_work{App: this}
-	_xgo_obj20 := &Cmd_gdb{App: this}
-	_xgo_debug := &Cmd_debug{App: this}
-	xcmd.Gopt_App_Main(this, _xgo_debug, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7, _xgo_obj8, _xgo_obj9, _xgo_obj10, _xgo_obj11, _xgo_obj12, _xgo_obj13, _xgo_obj14, _xgo_obj15, _xgo_obj16, _xgo_obj17, _xgo_obj18, _xgo_obj19, _xgo_obj20)
+	_xgo_obj0 := &Cmd_bug{App: this}
+	_xgo_obj1 := &Cmd_build{App: this}
+	_xgo_obj2 := &Cmd_clean{App: this}
+	_xgo_obj3 := &Cmd_cmptest{App: this}
+	_xgo_obj4 := &Cmd_debug{App: this}
+	_xgo_obj5 := &Cmd_doc{App: this}
+	_xgo_obj6 := &Cmd_env{App: this}
+	_xgo_obj7 := &Cmd_fix{App: this}
+	_xgo_obj8 := &Cmd_fmt{App: this}
+	_xgo_obj9 := &Cmd_gdb{App: this}
+	_xgo_obj10 := &Cmd_generate{App: this}
+	_xgo_obj11 := &Cmd_get{App: this}
+	_xgo_obj12 := &Cmd_install{App: this}
+	_xgo_obj13 := &Cmd_list{App: this}
+	_xgo_obj14 := &Cmd_lldb{App: this}
+	_xgo_obj15 := &Cmd_mod{App: this}
+	_xgo_obj16 := &Cmd_monitor{App: this}
+	_xgo_obj17 := &Cmd_run{App: this}
+	_xgo_obj18 := &Cmd_test{App: this}
+	_xgo_obj19 := &Cmd_tool{App: this}
+	_xgo_obj20 := &Cmd_tool_compile{App: this}
+	_xgo_obj21 := &Cmd_version{App: this}
+	_xgo_obj22 := &Cmd_vet{App: this}
+	_xgo_obj23 := &Cmd_work{App: this}
+	xcmd.Gopt_App_Main(this, _xgo_obj0, _xgo_obj1, _xgo_obj2, _xgo_obj3, _xgo_obj4, _xgo_obj5, _xgo_obj6, _xgo_obj7, _xgo_obj8, _xgo_obj9, _xgo_obj10, _xgo_obj11, _xgo_obj12, _xgo_obj13, _xgo_obj14, _xgo_obj15, _xgo_obj16, _xgo_obj17, _xgo_obj18, _xgo_obj19, _xgo_obj20, _xgo_obj21, _xgo_obj22, _xgo_obj23)
 }
-
+//line cmd/llgo/bug_cmd.gox:16
+func (this *Cmd_bug) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/bug_cmd.gox:16:1
+	this.Use("bug [-n]")
+//line cmd/llgo/bug_cmd.gox:17:1
+	this.Short("Start an LLGo bug report (-n prints the report)")
+//line cmd/llgo/bug_cmd.gox:18:1
+	this.FlagOff()
+//line cmd/llgo/bug_cmd.gox:19:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/bug_cmd.gox:20:1
+		bug.Cmd.Run(bug.Cmd, args)
+	})
+}
+func (this *Cmd_bug) Classfname() string {
+	return "bug"
+}
 //line cmd/llgo/build_cmd.gox:20
 func (this *Cmd_build) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -168,7 +193,6 @@ func (this *Cmd_build) Main(_xgo_arg0 string) {
 func (this *Cmd_build) Classfname() string {
 	return "build"
 }
-
 //line cmd/llgo/clean_cmd.gox:20
 func (this *Cmd_clean) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -187,7 +211,6 @@ func (this *Cmd_clean) Main(_xgo_arg0 string) {
 func (this *Cmd_clean) Classfname() string {
 	return "clean"
 }
-
 //line cmd/llgo/cmptest_cmd.gox:20
 func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -206,12 +229,11 @@ func (this *Cmd_cmptest) Main(_xgo_arg0 string) {
 func (this *Cmd_cmptest) Classfname() string {
 	return "cmptest"
 }
-
 //line cmd/llgo/debug_cmd.gox:20
 func (this *Cmd_debug) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
 //line cmd/llgo/debug_cmd.gox:20:1
-	this.Use("debug [-backend auto|lldb|gdb|wasmtime|browser] [-target platform] [build flags] [package] [-- debugger arguments...]")
+	this.Use("debug [-backend auto|lldb|gdb|browser] [-target platform] [build flags] [package] [-- debugger arguments...]")
 //line cmd/llgo/debug_cmd.gox:22:1
 	this.Short("Build and debug an LLGo program")
 //line cmd/llgo/debug_cmd.gox:24:1
@@ -225,7 +247,24 @@ func (this *Cmd_debug) Main(_xgo_arg0 string) {
 func (this *Cmd_debug) Classfname() string {
 	return "debug"
 }
-
+//line cmd/llgo/doc_cmd.gox:16
+func (this *Cmd_doc) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/doc_cmd.gox:16:1
+	this.Use("doc [doc flags] [package|symbol]")
+//line cmd/llgo/doc_cmd.gox:17:1
+	this.Short("Show documentation for a package or symbol using Go")
+//line cmd/llgo/doc_cmd.gox:18:1
+	this.FlagOff()
+//line cmd/llgo/doc_cmd.gox:19:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/doc_cmd.gox:20:1
+		gocommand.Main("doc", args)
+	})
+}
+func (this *Cmd_doc) Classfname() string {
+	return "doc"
+}
 //line cmd/llgo/env_cmd.gox:16
 func (this *Cmd_env) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -244,7 +283,6 @@ func (this *Cmd_env) Main(_xgo_arg0 string) {
 func (this *Cmd_env) Classfname() string {
 	return "env"
 }
-
 //line cmd/llgo/fix_cmd.gox:16
 func (this *Cmd_fix) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -263,7 +301,6 @@ func (this *Cmd_fix) Main(_xgo_arg0 string) {
 func (this *Cmd_fix) Classfname() string {
 	return "fix"
 }
-
 //line cmd/llgo/fmt_cmd.gox:16
 func (this *Cmd_fmt) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -282,83 +319,6 @@ func (this *Cmd_fmt) Main(_xgo_arg0 string) {
 func (this *Cmd_fmt) Classfname() string {
 	return "fmt"
 }
-
-//line cmd/llgo/generate_cmd.gox:16
-func (this *Cmd_generate) Main(_xgo_arg0 string) {
-	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/generate_cmd.gox:16:1
-	this.Use("generate [-target name] [build flags] [file.go... | packages]")
-//line cmd/llgo/generate_cmd.gox:18:1
-	this.Short("Generate Go files by processing source")
-//line cmd/llgo/generate_cmd.gox:20:1
-	this.FlagOff()
-//line cmd/llgo/generate_cmd.gox:22:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/generate_cmd.gox:23:1
-		gocommand.BuildMain("generate", args)
-	})
-}
-func (this *Cmd_generate) Classfname() string {
-	return "generate"
-}
-
-//line cmd/llgo/get_cmd.gox:18
-func (this *Cmd_get) Main(_xgo_arg0 string) {
-	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/get_cmd.gox:18:1
-	this.Use("get [-target name] [flags] [packages]")
-//line cmd/llgo/get_cmd.gox:20:1
-	this.Short("Add dependencies to the current module")
-//line cmd/llgo/get_cmd.gox:22:1
-	this.FlagOff()
-//line cmd/llgo/get_cmd.gox:24:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/get_cmd.gox:25:1
-		get.Main(args)
-	})
-}
-func (this *Cmd_get) Classfname() string {
-	return "get"
-}
-
-//line cmd/llgo/install_cmd.gox:20
-func (this *Cmd_install) Main(_xgo_arg0 string) {
-	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/install_cmd.gox:20:1
-	this.Use("install [flags] [packages]")
-//line cmd/llgo/install_cmd.gox:22:1
-	this.Short("Compile and install packages and dependencies")
-//line cmd/llgo/install_cmd.gox:24:1
-	this.FlagOff()
-//line cmd/llgo/install_cmd.gox:26:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/install_cmd.gox:27:1
-		install.Cmd.Run(install.Cmd, args)
-	})
-}
-func (this *Cmd_install) Classfname() string {
-	return "install"
-}
-
-//line cmd/llgo/list_cmd.gox:16
-func (this *Cmd_list) Main(_xgo_arg0 string) {
-	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/list_cmd.gox:16:1
-	this.Use("list [-target name] [list flags] [packages]")
-//line cmd/llgo/list_cmd.gox:18:1
-	this.Short("List packages using LLGo source-selection rules")
-//line cmd/llgo/list_cmd.gox:22:1
-	this.FlagOff()
-//line cmd/llgo/list_cmd.gox:24:1
-	this.Run__1(func(args []string) {
-//line cmd/llgo/list_cmd.gox:25:1
-		list.Main(args)
-	})
-}
-func (this *Cmd_list) Classfname() string {
-	return "list"
-}
-
 //line cmd/llgo/gdb_cmd.gox:20
 func (this *Cmd_gdb) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -377,7 +337,78 @@ func (this *Cmd_gdb) Main(_xgo_arg0 string) {
 func (this *Cmd_gdb) Classfname() string {
 	return "gdb"
 }
-
+//line cmd/llgo/generate_cmd.gox:16
+func (this *Cmd_generate) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/generate_cmd.gox:16:1
+	this.Use("generate [-target name] [build flags] [file.go... | packages]")
+//line cmd/llgo/generate_cmd.gox:18:1
+	this.Short("Generate Go files by processing source")
+//line cmd/llgo/generate_cmd.gox:20:1
+	this.FlagOff()
+//line cmd/llgo/generate_cmd.gox:22:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/generate_cmd.gox:23:1
+		gocommand.BuildMain("generate", args)
+	})
+}
+func (this *Cmd_generate) Classfname() string {
+	return "generate"
+}
+//line cmd/llgo/get_cmd.gox:18
+func (this *Cmd_get) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/get_cmd.gox:18:1
+	this.Use("get [-target name] [flags] [packages]")
+//line cmd/llgo/get_cmd.gox:20:1
+	this.Short("Add dependencies to the current module")
+//line cmd/llgo/get_cmd.gox:22:1
+	this.FlagOff()
+//line cmd/llgo/get_cmd.gox:24:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/get_cmd.gox:25:1
+		get.Main(args)
+	})
+}
+func (this *Cmd_get) Classfname() string {
+	return "get"
+}
+//line cmd/llgo/install_cmd.gox:20
+func (this *Cmd_install) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/install_cmd.gox:20:1
+	this.Use("install [flags] [packages]")
+//line cmd/llgo/install_cmd.gox:22:1
+	this.Short("Compile and install packages and dependencies")
+//line cmd/llgo/install_cmd.gox:24:1
+	this.FlagOff()
+//line cmd/llgo/install_cmd.gox:26:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/install_cmd.gox:27:1
+		install.Cmd.Run(install.Cmd, args)
+	})
+}
+func (this *Cmd_install) Classfname() string {
+	return "install"
+}
+//line cmd/llgo/list_cmd.gox:16
+func (this *Cmd_list) Main(_xgo_arg0 string) {
+	this.Command.Main(_xgo_arg0)
+//line cmd/llgo/list_cmd.gox:16:1
+	this.Use("list [-target name] [list flags] [packages]")
+//line cmd/llgo/list_cmd.gox:18:1
+	this.Short("List packages using LLGo source-selection rules")
+//line cmd/llgo/list_cmd.gox:22:1
+	this.FlagOff()
+//line cmd/llgo/list_cmd.gox:24:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/list_cmd.gox:25:1
+		list.Main(args)
+	})
+}
+func (this *Cmd_list) Classfname() string {
+	return "list"
+}
 //line cmd/llgo/lldb_cmd.gox:20
 func (this *Cmd_lldb) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -396,7 +427,6 @@ func (this *Cmd_lldb) Main(_xgo_arg0 string) {
 func (this *Cmd_lldb) Classfname() string {
 	return "lldb"
 }
-
 //line cmd/llgo/mod_cmd.gox:16
 func (this *Cmd_mod) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -415,7 +445,6 @@ func (this *Cmd_mod) Main(_xgo_arg0 string) {
 func (this *Cmd_mod) Classfname() string {
 	return "mod"
 }
-
 //line cmd/llgo/monitor_cmd.gox:21
 func (this *Cmd_monitor) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -434,7 +463,6 @@ func (this *Cmd_monitor) Main(_xgo_arg0 string) {
 func (this *Cmd_monitor) Classfname() string {
 	return "monitor"
 }
-
 //line cmd/llgo/run_cmd.gox:20
 func (this *Cmd_run) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -453,7 +481,6 @@ func (this *Cmd_run) Main(_xgo_arg0 string) {
 func (this *Cmd_run) Classfname() string {
 	return "run"
 }
-
 //line cmd/llgo/test_cmd.gox:20
 func (this *Cmd_test) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -472,24 +499,29 @@ func (this *Cmd_test) Main(_xgo_arg0 string) {
 func (this *Cmd_test) Classfname() string {
 	return "test"
 }
-
-//line cmd/llgo/tool_cmd.gox:16
+//line cmd/llgo/tool_cmd.gox:21
 func (this *Cmd_tool) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/tool_cmd.gox:16:1
-	this.Use("tool [command]")
-//line cmd/llgo/tool_cmd.gox:18:1
-	this.Short("Run a specified llgo tool")
-//line cmd/llgo/tool_cmd.gox:20:1
-	this.Run__0(func() {
 //line cmd/llgo/tool_cmd.gox:21:1
+	this.Use("tool [command]")
+//line cmd/llgo/tool_cmd.gox:23:1
+	this.Short("Run a specified llgo tool")
+//line cmd/llgo/tool_cmd.gox:25:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/tool_cmd.gox:26:1
+		if len(args) != 0 {
+//line cmd/llgo/tool_cmd.gox:27:1
+			gocommand.Exit("tool", fmt.Errorf("unknown LLGo tool %q", args[0]))
+//line cmd/llgo/tool_cmd.gox:28:1
+			return
+		}
+//line cmd/llgo/tool_cmd.gox:30:1
 		this.Help()
 	})
 }
 func (this *Cmd_tool) Classfname() string {
 	return "tool"
 }
-
 //line cmd/llgo/tool_compile_cmd.gox:20
 func (this *Cmd_tool_compile) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -508,24 +540,24 @@ func (this *Cmd_tool_compile) Main(_xgo_arg0 string) {
 func (this *Cmd_tool_compile) Classfname() string {
 	return "tool_compile"
 }
-
-//line cmd/llgo/version_cmd.gox:22
+//line cmd/llgo/version_cmd.gox:18
 func (this *Cmd_version) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
-//line cmd/llgo/version_cmd.gox:22:1
+//line cmd/llgo/version_cmd.gox:18:1
 	this.Use("version")
-//line cmd/llgo/version_cmd.gox:24:1
+//line cmd/llgo/version_cmd.gox:20:1
 	this.Short("Print LLGo version")
-//line cmd/llgo/version_cmd.gox:26:1
-	this.Run__0(func() {
-//line cmd/llgo/version_cmd.gox:27:1
-		fmt.Println(stringutil.Concat("llgo ", env1.Version(), " ", runtime.GOOS, "/", runtime.GOARCH))
+//line cmd/llgo/version_cmd.gox:22:1
+	this.FlagOff()
+//line cmd/llgo/version_cmd.gox:23:1
+	this.Run__1(func(args []string) {
+//line cmd/llgo/version_cmd.gox:24:1
+		version.Cmd.Run(version.Cmd, args)
 	})
 }
 func (this *Cmd_version) Classfname() string {
 	return "version"
 }
-
 //line cmd/llgo/vet_cmd.gox:16
 func (this *Cmd_vet) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
@@ -544,7 +576,6 @@ func (this *Cmd_vet) Main(_xgo_arg0 string) {
 func (this *Cmd_vet) Classfname() string {
 	return "vet"
 }
-
 //line cmd/llgo/work_cmd.gox:16
 func (this *Cmd_work) Main(_xgo_arg0 string) {
 	this.Command.Main(_xgo_arg0)
