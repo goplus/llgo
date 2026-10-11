@@ -228,9 +228,11 @@ else
       else
         finished_status=$?
       fi
-    else
-      # Bash 3.2 has no wait -n. Waiting for the oldest job keeps the
-      # implementation portable while still running up to $jobs cases.
+    fi
+    if [ -z "${finished_pid:-}" ]; then
+      # wait -n can omit an already completed job. Reap a
+      # known PID to preserve its exit status and always drain the queue.
+      # This also supports Bash 3.2, which has no wait -n.
       finished_pid="${active_pids[0]}"
       if wait "$finished_pid"; then
         finished_status=0
