@@ -239,7 +239,7 @@ func restoreFinalizer(ptr unsafe.Pointer, entry *finalizerEntry) {
 }
 
 func runFinalizers() {
-	markSystemGoroutine()
+	llruntime.MarkSystemGoroutine()
 	for {
 		finalizerState.queueMu.Lock()
 		for finalizerState.head == nil {
@@ -263,7 +263,9 @@ func runFinalizers() {
 
 		state := atomic.Load(&entry.state)
 		if state != finalizerStopped {
+			llruntime.MarkUserGoroutine()
 			callFinalizer(entry, state == finalizerInterfaceState)
+			llruntime.MarkSystemGoroutine()
 		}
 		// A finalizerEntry is registered and dequeued at most once, so no
 		// callback can race this release of its retained argument.

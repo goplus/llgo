@@ -151,7 +151,9 @@ func runCleanups() {
 func runCleanup(e *entry) {
 	_, run := atomic.CompareAndExchange(&e.state, cleanupActive, cleanupRunning)
 	if run {
+		MarkUserGoroutine()
 		e.fn()
+		MarkSystemGoroutine()
 	}
 	atomic.Store(&e.state, cleanupDone)
 	freeCleanupSlot(e)

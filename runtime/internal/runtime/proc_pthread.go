@@ -148,6 +148,17 @@ func MarkSystemGoroutine() {
 	releaseGAndCheckDeadlock()
 }
 
+// MarkUserGoroutine counts a runtime worker while it calls user code. Such a
+// callback can still make progress after the main goroutine calls Goexit.
+func MarkUserGoroutine() {
+	gp := getg()
+	if !gp.context.platform.systemG {
+		return
+	}
+	retainG()
+	gp.context.platform.systemG = false
+}
+
 // GMPForTesting reports the current runtime ownership graph.
 func SchedulerMultiplexesGoroutinesForTesting() bool { return false }
 
