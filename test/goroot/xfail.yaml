@@ -237,7 +237,7 @@ flakes:
     reason: concurrent GC can either preserve reflect-call results or expose incomplete result scanning on darwin/arm64
   - directive: run
     case: typeparam/chans.go
-    reason: select over the unbuffered channel can either complete or miss the final receive and time out
+    reason: Ranger runs GC once after a send, which does not ensure the receiver goroutine has exited and released its finalizer root
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue25897a.go
@@ -458,7 +458,11 @@ xfails:
     directive: rundir
     case: typeparam/chansimp.go
     reason: the Ranger subtest requires its receiver finalizer to run at an exact liveness boundary, while LLGo's conservative WebAssembly roots can retain the receiver
-  - platform: js/wasm
+  - platform: J32-GoJS
+    directive: run
+    case: init1.go
+    reason: the conservative linear collector retains enough loop-temporary pointers to grow memory past this Go allocator threshold
+  - platform: J32-Emscripten
     directive: run
     case: init1.go
     reason: the conservative linear collector retains enough loop-temporary pointers to grow memory past this Go allocator threshold
@@ -466,7 +470,8 @@ xfails:
     directive: errorcheck
     case: fixedbugs/issue5089.go
     reason: LLGo does not yet diagnose a method declaration on a non-local type
-  - platform: js/wasm
+  - version: go1.27
+    platform: js/wasm
     directive: run
     case: fixedbugs/issue59680.go
     reason: the fixed WebAssembly goroutine stack cannot grow through the test's 10,101 recursive frames

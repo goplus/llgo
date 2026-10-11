@@ -305,6 +305,9 @@ func TestGoRootRunCases(t *testing.T) {
 		envInfo.CGOEnabled = "0"
 	}
 	targetPlatform := expectationPlatform(envInfo.GOOS, envInfo.GOARCH, os.Getenv("LLGO_WINDOWS_ABI"))
+	if wasmTarget {
+		targetPlatform = *flagWasmProfile
+	}
 	hostPlatform := expectationPlatform(runtime.GOOS, runtime.GOARCH, os.Getenv("LLGO_WINDOWS_ABI"))
 	testRoot := filepath.Join(goroot, "test")
 	info, err := os.Stat(testRoot)
@@ -402,7 +405,7 @@ func TestGoRootRunCases(t *testing.T) {
 				// different failure when a toolchain or host environment changes.
 				t.Logf("expected failure: %s\n%.4096s", reason, err)
 			case err != nil && flaky:
-				t.Logf("known flaky failure: %s", flakyReason)
+				t.Logf("known flaky failure: %s\n%.4096s", flakyReason, err)
 			case err != nil:
 				t.Fatal(err)
 			}
@@ -2385,6 +2388,12 @@ func expectationPlatform(goos, goarch, windowsABI string) string {
 func matchPlatform(want, got string) bool {
 	if want == got {
 		return true
+	}
+	switch got {
+	case "J32-GoJS", "J32-Emscripten", "J64-Emscripten":
+		return want == "js/wasm"
+	case "W32-WASI":
+		return want == "wasip1/wasm"
 	}
 	if strings.HasPrefix(got, "windows-msvc/") || strings.HasPrefix(got, "windows-mingw/") {
 		_, arch, ok := strings.Cut(got, "/")

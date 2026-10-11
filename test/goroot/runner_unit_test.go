@@ -390,7 +390,8 @@ func TestObservedFailuresHaveXFailClassifications(t *testing.T) {
 		{version: "go1.26.7", platform: "windows-msvc/amd64", tc: testCase{RelPath: "fixedbugs/issue58300.go", Directive: "run"}},
 		{version: "go1.26.7", platform: "windows-msvc/386", tc: testCase{RelPath: "fixedbugs/issue23305.go", Directive: "run"}},
 		{version: "go1.26.7", platform: "windows-msvc/386", tc: testCase{RelPath: "fixedbugs/issue42032.go", Directive: "run"}},
-		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "init1.go", Directive: "run"}},
+		{version: "go1.27.0", platform: "J32-GoJS", tc: testCase{RelPath: "init1.go", Directive: "run"}},
+		{version: "go1.27.0", platform: "J32-Emscripten", tc: testCase{RelPath: "init1.go", Directive: "run"}},
 		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "typeparam/chansimp.go", Directive: "rundir"}},
 		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "fixedbugs/issue5089.go", Directive: "errorcheck"}},
 		{version: "go1.27.0", platform: "js/wasm", tc: testCase{RelPath: "fixedbugs/issue59680.go", Directive: "run"}},
@@ -642,6 +643,26 @@ func TestTypeparamChansIsGloballyFlaky(t *testing.T) {
 	} {
 		if match, _ := cfg.MatchFlaky(target.version, target.platform, tc); !match {
 			t.Errorf("typeparam/chans.go did not match flake for %s/%s", target.version, target.platform)
+		}
+	}
+}
+
+func TestWasmExpectationsRespectProfileAndGoVersion(t *testing.T) {
+	cfg := loadXFailConfig(t, repoRoot(t), filepath.Join("test", "goroot", "xfail.yaml"))
+	for _, profile := range []string{"J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI"} {
+		for _, version := range []string{"go1.26.7", "go1.27.0"} {
+			for _, test := range []struct {
+				path string
+				want bool
+			}{
+				{"init1.go", profile == "J32-GoJS" || profile == "J32-Emscripten"},
+				{"fixedbugs/issue59680.go", version == "go1.27.0" && profile != "W32-WASI"},
+			} {
+				got, _ := cfg.Match(version, profile, testCase{RelPath: test.path, Directive: "run"})
+				if got != test.want {
+					t.Errorf("%s %s %s: xfail = %v, want %v", test.path, profile, version, got, test.want)
+				}
+			}
 		}
 	}
 }
