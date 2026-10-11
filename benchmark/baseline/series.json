@@ -1356,6 +1356,17 @@
     },
     {
       "kind": "branch",
+      "id": "bd832c51bc7277d8",
+      "label": "Branch cpunion/llgo:codex/goroot-stability-20261011",
+      "path": "series/branch/bd832c51bc7277d8/summary.json",
+      "configPath": "series/branch/bd832c51bc7277d8/config.json",
+      "commitPath": "commits/ed2e4733b941c36f2093611e0dc3563db8f23ee2.json",
+      "sha": "ed2e4733b941c36f2093611e0dc3563db8f23ee2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ed2e4733b941c36f2093611e0dc3563db8f23ee2",
+      "updatedAt": "2026-10-11T07:30:35.508Z"
+    },
+    {
+      "kind": "branch",
       "id": "7abc4227aac7e4f0",
       "label": "Branch cpunion/llgo:codex/goroot-stale-finalizer-xfails-20260801",
       "path": "series/branch/7abc4227aac7e4f0/summary.json",
@@ -8426,6 +8437,17 @@
       "sha": "5ce4429de9ed45cf49c1dc73a9487538c19402b4",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/5ce4429de9ed45cf49c1dc73a9487538c19402b4",
       "updatedAt": "2026-10-11T04:17:53.042Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2777",
+      "label": "PR #2777",
+      "path": "series/pull/2777/summary.json",
+      "configPath": "series/pull/2777/config.json",
+      "commitPath": "commits/ed2e4733b941c36f2093611e0dc3563db8f23ee2.json",
+      "sha": "ed2e4733b941c36f2093611e0dc3563db8f23ee2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ed2e4733b941c36f2093611e0dc3563db8f23ee2",
+      "updatedAt": "2026-10-11T07:30:34.542Z"
     },
     {
       "kind": "pull",
