@@ -29,7 +29,7 @@ import (
 type runtimeContextPlatform struct {
 	m m
 	p p
-	// systemG is excluded from the WASI user-goroutine deadlock count.
+	// systemG is excluded from the user-goroutine deadlock count.
 	systemG bool
 
 	// foreignThreadAttached records that LLGo, rather than the selected GC
@@ -135,6 +135,17 @@ func mexit(mp *m) {
 
 func goschedBackend() {
 	thread.Yield()
+}
+
+// MarkSystemGoroutine excludes a persistent runtime service from the user
+// goroutine count, so an idle service cannot suppress the main Goexit check.
+func MarkSystemGoroutine() {
+	gp := getg()
+	if gp.context.platform.systemG {
+		return
+	}
+	gp.context.platform.systemG = true
+	releaseGAndCheckDeadlock()
 }
 
 // GMPForTesting reports the current runtime ownership graph.

@@ -39,6 +39,6 @@ func GC() {
 	// reaching a compiler-inserted slow safepoint for a long time. The
 	// collection is complete at this point, so give already-runnable goroutines
 	// the same scheduling opportunity that a stop-the-world Go GC naturally
-	// provides. Threaded backends yield to the host scheduler.
+	// provides. WASI pthreads yield to the host scheduler.
 	llruntime.Gosched()
 }

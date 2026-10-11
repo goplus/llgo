@@ -239,6 +239,7 @@ func restoreFinalizer(ptr unsafe.Pointer, entry *finalizerEntry) {
 }
 
 func runFinalizers() {
+	llruntime.MarkSystemGoroutine()
 	for {
 		finalizerState.queueMu.Lock()
 		for finalizerState.head == nil {

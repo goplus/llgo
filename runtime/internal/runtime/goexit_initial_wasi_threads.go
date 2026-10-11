@@ -18,15 +18,3 @@ func parkInitialWasiThread(gp *g) {
 		c.Usleep(1000)
 	}
 }
-
-// MarkTimerSystemGoroutine excludes the persistent timer pthread from the
-// user-goroutine count. Otherwise main Goexit can wait forever after the last
-// user G returns because the idle timer service remains registered.
-func MarkTimerSystemGoroutine() {
-	gp := getg()
-	if gp.context.platform.systemG {
-		return
-	}
-	gp.context.platform.systemG = true
-	releaseGAndCheckDeadlock()
-}
