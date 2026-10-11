@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Conda's pkg-config shell wrapper does not quote its executable path.
+# --define-prefix also keeps relocated .pc paths containing spaces intact.
+exec "${LLGO_PKG_CONFIG_PREFIX:?run inside the development environment}/bin/pkg-config.bin" --define-prefix "$@"

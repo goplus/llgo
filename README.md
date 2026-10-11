@@ -109,7 +109,7 @@ func main() {
 }
 ```
 
-Or organize such bindings into a package, as [c/math](https://github.com/goplus/lib/blob/main/c/math/math.go) does:
+Or organize such bindings into a package, as [c/math](https://github.com/goplus/lib/tree/main/c/math) does:
 
 <!-- embedme doc/_readme/llgo_call_cmath/call_cmath.go -->
 
@@ -211,9 +211,9 @@ Available bindings include:
 Examples built on these bindings:
 
 * [llama2-c](_demo/c/llama2-c): inference Llama 2 (the first LLGo AI example)
-* [mkjson](https://github.com/goplus/lib/tree/main/c/cjson/_demo/mkjson/mkjson.go): create a JSON object and print it
-* [sqlitedemo](https://github.com/goplus/lib/tree/main/c/sqlite/_demo/sqlitedemo/demo.go): a basic SQLite demo
-* [tetris](https://github.com/goplus/lib/tree/main/c/raylib/_demo/tetris/tetris.go): a Tetris game based on raylib
+* [mkjson](https://github.com/goplus/lib/tree/main/c/cjson/_demo/mkjson): create a JSON object and print it
+* [sqlitedemo](https://github.com/goplus/lib/tree/main/c/sqlite/_demo/sqlitedemo): a basic SQLite demo
+* [tetris](https://github.com/goplus/lib/tree/main/c/raylib/_demo/tetris): a Tetris game based on raylib
 
 
 ## Python support
@@ -329,6 +329,28 @@ llgo run .
 ## How to install
 
 Use the platform package manager instructions below whenever possible.
+
+### with mise or Pixi (development)
+
+Install [mise](https://mise.jdx.dev/installing-mise.html) or
+[Pixi](https://pixi.prefix.dev/latest/installation/), then enter the environment
+from the repository root:
+
+```sh
+mise -C dev trust
+mise -C dev install --locked
+mise -C dev en
+```
+
+Or, with Pixi:
+
+```sh
+cd dev
+pixi shell --locked
+```
+
+In either shell, run `cd ..`, then use `go run ./cmd/llgo version` or
+`go build ./cmd/llgo`. See [development tooling](dev/README.md) for details.
 
 ### on macOS
 
