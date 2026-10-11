@@ -27,6 +27,8 @@ LLGO_ROOT = "{{ config_root | dirname }}"
 LLGO_LLVM_PREFIX = { value = "{{ tools.llvmdev.path }}", tools = true }
 LLGO_CLANG_PREFIX = { value = "{{ tools.clangxx.path }}", tools = true }
 LLGO_LLD_PREFIX = { value = "{{ tools.lld.path }}", tools = true }
+LLGO_PKG_CONFIG_PREFIX = { value = "{{ tools['pkg-config'].path }}", tools = true }
+PKG_CONFIG = { value = "{% if os() == 'windows' %}pkg-config{% else %}\"{{ config_root }}/conda-tools/pkg-config\"{% endif %}", tools = true }
 # Use the full compiler prefix: clangxx is a metapackage, whose actual
 # executables are dependencies and are not exposed by mise's conda launchers.
 _.path = { path = [
@@ -45,6 +47,6 @@ LD_LIBRARY_PATH = { value = "{% if os() == 'linux' %}{{ env.LLGO_CLANG_PREFIX }}
 CC = { value = "{% if os() == 'linux' %}\"{{ config_root }}/conda-tools/clang\"{% elif os() == 'windows' %}clang -fuse-ld=lld -fms-runtime-lib=dll{% else %}clang{% endif %}", tools = true }
 CXX = { value = "{% if os() == 'linux' %}\"{{ config_root }}/conda-tools/clang++\"{% elif os() == 'windows' %}clang++ -fuse-ld=lld -fms-runtime-lib=dll{% else %}clang++{% endif %}", tools = true }
 LLVM_CONFIG = "llvm-config"
-CGO_CPPFLAGS = { value = "{{ exec(command='llvm-config --cppflags') }}", tools = true }
+CGO_CPPFLAGS = { value = "{% if os() == 'windows' %}{{ exec(command='powershell.exe -NoProfile -ExecutionPolicy Bypass -File devenv_windows_flags.ps1 -CppFlags') }}{% else %}{{ exec(command='bash devenv_unix_flags.sh cppflags') }}{% endif %}", tools = true }
 CGO_CXXFLAGS = "-std=c++17"
-CGO_LDFLAGS = { value = "{% if os() == 'windows' %}{{ exec(command='powershell.exe -NoProfile -ExecutionPolicy Bypass -File devenv_windows_ldflags.ps1') }}{% else %}{{ exec(command='llvm-config --ldflags --link-shared --libs all --system-libs') }} \"-Wl,-rpath,{{ env.LLGO_LLVM_PREFIX }}/lib\"{% endif %}", tools = true }
+CGO_LDFLAGS = { value = "{% if os() == 'windows' %}{{ exec(command='powershell.exe -NoProfile -ExecutionPolicy Bypass -File devenv_windows_flags.ps1') }}{% else %}{{ exec(command='bash devenv_unix_flags.sh ldflags') }}{% endif %}", tools = true }

@@ -1,4 +1,20 @@
+param([switch]$CppFlags)
+
 $ErrorActionPreference = 'Stop'
+
+if ($CppFlags) {
+  $includeDirectory = ((& llvm-config --includedir) -join ' ').Trim()
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $includeDirectory)) {
+    throw "llvm-config reported an invalid include directory: $includeDirectory"
+  }
+  $flags = ((& llvm-config --cppflags) -join ' ').Trim()
+  $prefix = '-I' + $includeDirectory
+  if ($LASTEXITCODE -ne 0 -or -not $flags.StartsWith($prefix, [StringComparison]::Ordinal)) {
+    throw 'llvm-config failed to report the expected include flag'
+  }
+  '"-I' + $includeDirectory.Replace('\', '/') + '"' + $flags.Substring($prefix.Length)
+  return
+}
 
 $libraryDirectory = ((& llvm-config --libdir) -join ' ').Trim().Replace('\', '/')
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $libraryDirectory)) {

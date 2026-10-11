@@ -70,8 +70,9 @@ pixi run --manifest-path dev/pixi.toml --locked go run ./cmd/llgo version
 Both configurations enable the LLVM Go bindings' `byollvm` tag and obtain
 headers and linker flags from `llvm-config`. Include `byollvm` if you supply
 `-tags` explicitly. The shared Linux wrappers in `conda-tools/` activate the
-compiler's prefix and sysroot; `devenv_windows_ldflags.ps1` supplies Windows
-linker flags while preserving Visual Studio's SDK/CRT library discovery.
+compiler's prefix and sysroot; the shared flag helpers quote LLVM paths and
+preserve Visual Studio's SDK/CRT library discovery on Windows.
+The Unix pkg-config wrapper handles Conda prefixes containing spaces.
 
 mise installs packages in its user data directory; keep `MISE_DATA_DIR` local
 to each host if you override it. Pixi stores its environment in `dev/.pixi/`,

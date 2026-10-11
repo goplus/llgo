@@ -18,6 +18,9 @@ jobs:
     name: Mise (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: llgo dev
     strategy:
       fail-fast: false
       matrix:
@@ -29,11 +32,14 @@ jobs:
           - windows-2025
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Exercise activation and builds from a checkout path containing spaces.
+          path: llgo dev
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
         with:
           version: 2026.10.7
           install_args: --locked
-          working_directory: dev
+          working_directory: llgo dev/dev
           env: true
           export_path: true
       - name: Build LLGo and check native dependencies
