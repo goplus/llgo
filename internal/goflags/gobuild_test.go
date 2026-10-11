@@ -139,6 +139,7 @@ func TestApplyBuildFlagsFrontendGCFlagSemantics(t *testing.T) {
 		{name: "l zero", flags: []string{"-gcflags=-l=0"}},
 		{name: "l debug count", flags: []string{"-gcflags=-l=4"}, wantError: true},
 		{name: "N true", flags: []string{"-gcflags=-N=true"}, wantLevel: optlevel.O0},
+		{name: "N nonzero count", flags: []string{"-gcflags=-N=2"}, wantLevel: optlevel.O0},
 		{name: "l true", flags: []string{"-gcflags=-l=true"}, wantLevel: optlevel.O0},
 	}
 	for _, tt := range tests {

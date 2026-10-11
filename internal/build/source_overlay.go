@@ -32,6 +32,10 @@ type SourceOverlayFile struct {
 // forwarded unchanged. The owning Build removes the file after all child
 // groups and failure recovery finish; children reuse the prepared parser view.
 func prepareSourceOverlay(conf *Config) (string, error) {
+	return prepareSourceOverlayWithIO(conf, os.CreateTemp, (*os.File).Close)
+}
+
+func prepareSourceOverlayWithIO(conf *Config, createTemp func(string, string) (*os.File, error), closeFile func(*os.File) error) (string, error) {
 	if conf.sourceOverlayFile != "" {
 		return conf.sourceOverlayFile, nil
 	}
@@ -47,13 +51,13 @@ func prepareSourceOverlay(conf *Config) (string, error) {
 		replacements[name] = file.BackingFile
 		contents[name] = file.Contents
 	}
-	file, err := os.CreateTemp("", "llgo-overlay-*.json")
+	file, err := createTemp("", "llgo-overlay-*.json")
 	if err != nil {
 		return "", fmt.Errorf("create source overlay: %w", err)
 	}
 	name := file.Name()
 	err = json.NewEncoder(file).Encode(struct{ Replace map[string]string }{replacements})
-	closeErr := file.Close()
+	closeErr := closeFile(file)
 	if err == nil {
 		err = closeErr
 	}

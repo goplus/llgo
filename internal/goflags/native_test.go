@@ -15,9 +15,11 @@ package goflags
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -95,5 +97,50 @@ func TestNativeOverlayViewAndErrors(t *testing.T) {
 	}
 	if err := ApplyBuildFlags(conf, []string{"-overlay="}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNativeOverlayMissingWorkingDirectoryIsAtomic(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows cannot remove the current working directory")
+	}
+	for _, relativeBacking := range []bool{false, true} {
+		t.Run(map[bool]string{false: "logical path", true: "backing path"}[relativeBacking], func(t *testing.T) {
+			dir := t.TempDir()
+			cwd := filepath.Join(dir, "cwd")
+			if err := os.Mkdir(cwd, 0700); err != nil {
+				t.Fatal(err)
+			}
+			logical, backing := "virtual.go", ""
+			if relativeBacking {
+				logical, backing = filepath.Join(dir, "virtual.go"), "replacement.go"
+			}
+			data, err := json.Marshal(map[string]any{"Replace": map[string]string{logical: backing}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			file := filepath.Join(dir, "overlay.json")
+			if err := os.WriteFile(file, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(cwd)
+			if err := os.Remove(cwd); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Getwd(); err == nil {
+				t.Skip("operating system still resolves the removed working directory")
+			} else if !errors.Is(err, os.ErrNotExist) {
+				t.Fatal(err)
+			}
+			conf := &build.Config{GoBuildFlags: []string{"-tags=existing"}, Overlay: map[string][]byte{"original": []byte("original")}}
+			before := *conf
+			before.GoBuildFlags = append([]string(nil), conf.GoBuildFlags...)
+			if err := ApplyBuildFlags(conf, []string{"-overlay=" + file}); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("missing working directory error = %v", err)
+			}
+			if !reflect.DeepEqual(*conf, before) {
+				t.Fatal("changed the configuration after overlay path failure")
+			}
+		})
 	}
 }

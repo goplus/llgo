@@ -15,12 +15,63 @@ package build
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestSourceOverlayWriteFailuresAreAtomic(t *testing.T) {
+	closeFailure := errors.New("overlay close failed")
+	for _, failWrite := range []bool{true, false} {
+		t.Run(map[bool]string{true: "write", false: "close"}[failWrite], func(t *testing.T) {
+			dir := t.TempDir()
+			conf := &Config{
+				Overlay: map[string][]byte{"original.go": []byte("package original")},
+				SourceOverlay: map[string]SourceOverlayFile{
+					"selected.go": {BackingFile: "replacement.go", Contents: []byte("package replacement")},
+				},
+			}
+			before := conf.clone()
+			var created string
+			createTemp := func(_, pattern string) (*os.File, error) {
+				file, err := os.CreateTemp(dir, pattern)
+				if err == nil {
+					created = file.Name()
+					if failWrite {
+						err = file.Close()
+					}
+				}
+				return file, err
+			}
+			closed := false
+			closeFile := func(file *os.File) error {
+				closed = true
+				file.Close()
+				return closeFailure
+			}
+			name, err := prepareSourceOverlayWithIO(conf, createTemp, closeFile)
+			wantErr := closeFailure
+			if failWrite {
+				wantErr = os.ErrClosed
+			}
+			if name != "" || !errors.Is(err, wantErr) || !strings.Contains(err.Error(), "write source overlay:") {
+				t.Fatalf("overlay failure = (%q, %v), want %v", name, err, wantErr)
+			}
+			if !closed {
+				t.Fatal("did not close the temporary overlay after writing")
+			}
+			if _, err := os.Stat(created); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("failed overlay file survived: %v", err)
+			}
+			if !reflect.DeepEqual(conf, before) {
+				t.Fatal("changed the configuration after overlay failure")
+			}
+		})
+	}
+}
 
 func TestSourceOverlayViewsAndClone(t *testing.T) {
 	dir := t.TempDir()
