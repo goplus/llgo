@@ -8,22 +8,7 @@ import (
 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 )
 
-// Every arena owns its block-state bytes. A sentinel block separates adjacent
-// arenas in the logical block index, so allocations never cross libc regions.
-type heapSegment struct {
-	start, end  uintptr
-	metadata    uintptr
-	first, last uintptr // [first, last) are usable blocks; last is the sentinel
-}
-
-const maxHeapSegments = 128
-
 var heapSegments [maxHeapSegments]heapSegment
-var heapSegmentCount int
-
-// libc arenas need not be returned in address order. Keep a separate sorted
-// index for conservative pointer lookup; logical block indices stay append-only.
-var heapSegmentsByAddress [maxHeapSegments]*heapSegment
 
 func (segment *heapSegment) configure(end uintptr) bool {
 	segment.end = end
@@ -75,25 +60,6 @@ func segmentForBlock(block uintptr) *heapSegment {
 		}
 	}
 	gcPanic(c.Str("gc: invalid heap block"))
-	return nil
-}
-
-func segmentForAddress(address uintptr) *heapSegment {
-	low, high := 0, heapSegmentCount
-	for low < high {
-		mid := low + (high-low)/2
-		segment := heapSegmentsByAddress[mid]
-		if address < segment.start {
-			high = mid
-		} else if address >= segment.end {
-			low = mid + 1
-		} else {
-			if address < segment.metadata {
-				return segment
-			}
-			return nil
-		}
-	}
 	return nil
 }
 
