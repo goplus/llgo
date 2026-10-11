@@ -624,6 +624,10 @@ jobs:
           # Ensure the changed GNU libunwind path actually ran.
           grep -Eq '\[dynunwind\] flavor=linux-nongnu frames=[1-9]' "$RUNNER_TEMP/arm64-faults.log"
           "$LLGO" test -v -count=1 -timeout=2m ./test/std/runtime ./test/std/sync
+      - name: Run narrow C ABI regressions
+        run: |
+          "$LLGO" test -v -count=1 -timeout=2m \
+            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/cgo ./test/llgoext
       - name: Run caller regressions in C shared libraries and archives
         run: dev/test_std_buildmodes.sh ./test/std/runtime
 
@@ -651,6 +655,10 @@ jobs:
           go build -o "$RUNNER_TEMP/llgo-bin/llgo" ./cmd/llgo
           echo "$RUNNER_TEMP/llgo-bin" >> "$GITHUB_PATH"
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Run narrow C ABI regressions
+        run: |
+          llgo test -v -count=1 -timeout=2m \
+            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/cgo ./test/llgoext
       - name: Install GDB
         uses: ./.github/actions/setup-gdb
       - name: Enable native GDB on the ephemeral Intel runner

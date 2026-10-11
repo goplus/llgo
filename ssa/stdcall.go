@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"fmt"
-	"go/token"
 	"go/types"
 	"strings"
 
@@ -178,48 +177,6 @@ func (b Builder) needsStdcallFuncval(fn Expr) bool {
 	return !direct.IsNil() && direct.FunctionCallConv() == llvm.X86StdcallCallConv
 }
 
-// stdcallFuncval adapts a native stdcall function pointer to LLGo's ordinary
-// funcval representation. The funcval context carries the native pointer
-// directly; the Go entry retrieves it through the hidden closure-context
-// register and performs the final call with the stdcall convention. This
-// avoids an allocation while preserving nil: a nil native pointer produces a
-// funcval with a nil code pointer.
 func (b Builder) stdcallFuncval(dst Type, fn Expr) Expr {
-	closure, ok := types.Unalias(dst.raw.Type).Underlying().(*types.Struct)
-	if !ok || !IsClosure(closure) {
-		panic(fmt.Errorf("stdcall funcval target must be a Go function, got %s", dst.raw.Type))
-	}
-	goSig := closure.Field(0).Type().(*types.Signature)
-	nativeSig := types.Unalias(fn.raw.Type).Underlying().(*types.Signature)
-	wrapperName := b.Pkg.Path() + ".__llgo_stdcall_funcval$" + b.Prog.abi.FuncName(goSig)
-	wrapper := b.Pkg.FuncOf(wrapperName)
-	if wrapper == nil {
-		env := types.NewVar(token.NoPos, nil, "$env", types.Typ[types.UnsafePointer])
-		wrapper = b.Pkg.NewEnvFunc(wrapperName, goSig, InGo, env, false)
-		wrapper.impl.SetLinkage(llvm.InternalLinkage)
-		body := wrapper.MakeBody(1)
-		args := make([]Expr, goSig.Params().Len())
-		for i := range args {
-			args[i] = wrapper.Param(i)
-		}
-		native := Expr{wrapper.Env().impl, b.Prog.rawType(nativeSig)}
-		result := body.Call(native, args...)
-		result.impl.SetInstructionCallConv(b.Prog.stdcallCallConv())
-		switch n := goSig.Results().Len(); n {
-		case 0:
-			body.Return()
-		case 1:
-			body.Return(result)
-		default:
-			results := make([]Expr, n)
-			for i := range results {
-				results[i] = body.Extract(result, i)
-			}
-			body.Return(results...)
-		}
-	}
-
-	isNil := llvm.CreateICmp(b.impl, llvm.IntEQ, fn.impl, llvm.ConstNull(fn.impl.Type()))
-	code := llvm.CreateSelect(b.impl, isNil, llvm.ConstNull(wrapper.impl.Type()), wrapper.impl)
-	return b.aggregateValue(dst, code, fn.impl)
+	return b.nativeFuncval(dst, fn, b.Prog.stdcallCallConv(), "stdcall")
 }
