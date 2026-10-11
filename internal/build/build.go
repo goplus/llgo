@@ -3286,6 +3286,7 @@ func lowerMainCExportModule(ctx *context, pkg llssa.Package, exports []cExport) 
 	if !lowerMainCExportAggregates(ctx.prog, mod, exports) {
 		return false, nil
 	}
+	ctx.cTransformer.LowerWindowsVectorParams(mod)
 	ctx.cTransformer.TransformModule(pkg.Path(), mod)
 	if ctx.buildConf.Goarch != "wasm" {
 		return true, nil

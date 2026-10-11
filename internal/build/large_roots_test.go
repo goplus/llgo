@@ -1,6 +1,7 @@
 package build
 
 import (
+	"go/token"
 	"go/types"
 	"strings"
 	"testing"
@@ -9,6 +10,44 @@ import (
 	llssa "github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
+
+func TestLowerMainCExportModuleWindowsVectors(t *testing.T) {
+	llvm.InitializeAllTargets()
+	llvm.InitializeAllTargetMCs()
+	llvm.InitializeAllTargetInfos()
+	target := &llssa.Target{GOOS: "windows", GOARCH: "amd64"}
+	prog := llssa.NewProgram(target)
+	defer prog.Dispose()
+	pkg := prog.NewPackage("exportprobe", "exportprobe")
+	rawPkg := types.NewPackage("simd/archsimd", "archsimd")
+	marker := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, "v128", nil), types.NewStruct(nil, nil), nil)
+	vector := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, "Float32x4", nil), types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, rawPkg, "tag", marker, false),
+		types.NewField(token.NoPos, rawPkg, "vals", types.NewArray(types.Typ[types.Float32], 4), false),
+	}, nil), nil)
+	exports := []cExport{{goName: "main.Exported", cName: "Exported", sig: newSignature([]types.Type{vector}, []types.Type{vector})}}
+	defineCExportWrappers(pkg, exports, nil)
+	ctx := &context{
+		prog: prog, buildConf: &Config{Goos: "windows", Goarch: "amd64"},
+		cTransformer: cabi.NewTransformer(prog, target.Spec().Triple, "", true),
+	}
+	if changed, err := lowerMainCExportModule(ctx, pkg, exports); err != nil || !changed {
+		t.Fatalf("C export lowering = (%t, %v)", changed, err)
+	}
+	mod := pkg.Module()
+	for _, name := range []string{"Exported", "main.Exported"} {
+		fn := mod.NamedFunction(name)
+		if fn.Param(0).Type().TypeKind() != llvm.PointerTypeKind || fn.GlobalValueType().ReturnType().TypeKind() != llvm.VectorTypeKind {
+			t.Fatalf("Win64 export must use an indirect vector parameter and direct vector return:\n%s", fn.String())
+		}
+	}
+	if !strings.Contains(mod.NamedFunction("Exported").String(), "@main.Exported(ptr ") {
+		t.Fatalf("export call does not match the lowered implementation:\n%s", mod.String())
+	}
+	if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestLowerLargeAggregatesGCPolicy(t *testing.T) {
 	llvm.InitializeAllTargets()
