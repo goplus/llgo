@@ -2632,6 +2632,17 @@
     },
     {
       "kind": "branch",
+      "id": "7b97809b4fe57c11",
+      "label": "Branch cpunion/llgo:fix/debug-native-function-pointers",
+      "path": "series/branch/7b97809b4fe57c11/summary.json",
+      "configPath": "series/branch/7b97809b4fe57c11/config.json",
+      "commitPath": "commits/8f1e304068b49856ac9f899cbb5e26c12462a52d.json",
+      "sha": "8f1e304068b49856ac9f899cbb5e26c12462a52d",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f1e304068b49856ac9f899cbb5e26c12462a52d",
+      "updatedAt": "2026-10-11T11:11:58.823Z"
+    },
+    {
+      "kind": "branch",
       "id": "71cc83d6a28107b5",
       "label": "Branch cpunion/llgo:fix/narrow-cabi-extension",
       "path": "series/branch/71cc83d6a28107b5/summary.json",
@@ -8459,6 +8470,17 @@
       "sha": "54e59b41ca9de5d54460208bd539d30bcf3db45a",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/54e59b41ca9de5d54460208bd539d30bcf3db45a",
       "updatedAt": "2026-10-11T09:11:42.936Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2783",
+      "label": "PR #2783",
+      "path": "series/pull/2783/summary.json",
+      "configPath": "series/pull/2783/config.json",
+      "commitPath": "commits/8f1e304068b49856ac9f899cbb5e26c12462a52d.json",
+      "sha": "8f1e304068b49856ac9f899cbb5e26c12462a52d",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f1e304068b49856ac9f899cbb5e26c12462a52d",
+      "updatedAt": "2026-10-11T11:11:57.008Z"
     }
   ]
 }
