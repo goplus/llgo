@@ -147,6 +147,12 @@ A function type that models a C or Windows callback carries a calling-convention
 * `//llgo:stdcall` selects the Windows stdcall convention (distinct only on 386; Windows amd64 and arm64 use their unified native C ABI).
 
 ```go
+import (
+	"unsafe"
+
+	"github.com/goplus/lib/c"
+)
+
 //llgo:cdecl
 type Handler func(data unsafe.Pointer) c.Int
 
