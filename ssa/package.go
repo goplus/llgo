@@ -147,6 +147,8 @@ type aProgram struct {
 	// map to their native view, while native views map to themselves.
 	nativeStorage map[Type]Type
 	goWordSize    int
+	// Resolve the physical C ABI once, outside declaration/call lowering.
+	nativeIntegerExt nativeIntegerExtension
 
 	intType   llvm.Type
 	int1Type  llvm.Type
@@ -345,6 +347,7 @@ func NewProgram(target *Target) Program {
 		packageSyntax: packageSyntax, localities: newLocalityInfos(),
 		abiSymbol:          make(map[string]*AbiSymbol),
 		debugInfoOptimized: target.effectiveOptLevel() != optlevel.O0,
+		nativeIntegerExt:   nativeIntegerExtensionForTarget(target),
 	}
 	if goWordSize > prog.ptrSize {
 		prog.nativeStorage = make(map[Type]Type)

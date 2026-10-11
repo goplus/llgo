@@ -849,6 +849,20 @@ func copyFunctionABIAttrs(from, to llvm.Value, paramMap []int) {
 func copyCallABIAttrs(from, to llvm.Value, paramMap []int) {
 	fromType, toType := from.CalledFunctionType(), to.CalledFunctionType()
 	copyABIAttrs(fromType, toType, paramMap, from.GetCallSiteEnumAttribute, to.AddCallSiteAttribute)
+	if fromType.IsFunctionVarArg() {
+		// transformCallInstr appends promoted variadic arguments unchanged.
+		// Only the fixed parameter count shifts their attribute indices; the
+		// final call operand is the callee, not an argument.
+		fixed := fromType.ParamTypesCount()
+		offset := toType.ParamTypesCount() - fixed
+		for i := fixed; i < from.OperandsCount()-1; i++ {
+			for _, kind := range integerExtensionAttributeKinds {
+				if attr := from.GetCallSiteEnumAttribute(i+1, kind); !attr.IsNil() {
+					to.AddCallSiteAttribute(i+offset+1, attr)
+				}
+			}
+		}
+	}
 }
 
 // copyABIAttrs remaps existing attributes when aggregate lowering replaces a

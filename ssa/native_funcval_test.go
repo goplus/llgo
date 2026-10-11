@@ -11,29 +11,21 @@ import (
 )
 
 func TestNativeIntegerFuncvalAdapters(t *testing.T) {
-	for _, test := range []struct {
-		target Target
-		attrs  []string
-	}{
-		{Target{GOOS: "darwin", GOARCH: "arm64"}, []string{"", "signext", "zeroext", "zeroext"}},
-		{Target{GOOS: "darwin", GOARCH: "amd64"}, []string{"", "signext", "zeroext", "zeroext"}},
-		{Target{GOOS: "linux", GOARCH: "amd64"}, []string{"", "signext", "zeroext", "zeroext"}},
-		{Target{GOOS: "windows", GOARCH: "amd64"}, []string{"", "", "", "zeroext"}},
-		{Target{GOOS: "windows", GOARCH: "386"}, []string{"", "signext", "zeroext", "zeroext"}},
-		{Target{GOOS: "linux", GOARCH: "arm64"}, nil},
-		{Target{GOOS: "windows", GOARCH: "arm64"}, nil},
-		{Target{GOOS: "wasip1", GOARCH: "wasm", WasmProfile: "w32", WasmProvider: "wasi"}, []string{"", "signext", "zeroext", "zeroext"}},
-	} {
+	for _, test := range nativeIntegerABITests {
 		for _, source := range []string{"declaration", "pointer", "named-Go-function", "nil", "Go-declaration"} {
-			t.Run(test.target.GOOS+"/"+test.target.GOARCH+"/"+source, func(t *testing.T) {
+			t.Run(test.target.GOOS+"/"+test.target.GOARCH+"/"+test.target.LLVMTarget+"/"+source, func(t *testing.T) {
 				prog := NewProgram(&test.target)
 				defer prog.Dispose()
 				pkg := prog.NewPackage("p", "example.com/p")
 				rawPkg := types.NewPackage(pkg.Path(), "p")
 				params := types.NewTuple(
 					types.NewVar(token.NoPos, nil, "signed", types.Typ[types.Int8]),
+					types.NewVar(token.NoPos, nil, "unsigned8", types.Typ[types.Uint8]),
+					types.NewVar(token.NoPos, nil, "signed16", types.Typ[types.Int16]),
 					types.NewVar(token.NoPos, nil, "unsigned", types.Typ[types.Uint16]),
 					types.NewVar(token.NoPos, nil, "flag", types.Typ[types.Bool]),
+					types.NewVar(token.NoPos, nil, "signed32", types.Typ[types.Int32]),
+					types.NewVar(token.NoPos, nil, "unsigned32", types.Typ[types.Uint32]),
 				)
 				resultType := types.Typ[types.Int32]
 				if test.target.GOARCH == "wasm" {
@@ -103,7 +95,7 @@ func TestNativeIntegerFuncvalAdapters(t *testing.T) {
 					}
 					checkNarrowAttrs(t, nativeCall, true, test.attrs)
 					checkNarrowAttrs(t, wrapper.impl, false, make([]string, len(test.attrs)+1))
-					if test.target.GOARCH == "wasm" && !strings.Contains(wrapper.impl.String(), "zext i32") {
+					if test.target.WasmProfile == "w32" && !strings.Contains(wrapper.impl.String(), "zext i32") {
 						t.Fatalf("adapter did not widen the native uintptr result:\n%s", wrapper.impl)
 					}
 					if strings.Contains(pkg.String(), "runtime.Alloc") {

@@ -26,11 +26,17 @@ define i8 @small(%Empty %empty, %Split %split, i8 signext %a, i16 zeroext %b) {
   ret i8 %a
 }
 
-define void @caller(ptr %largePtr, ptr %smallPtr, i8 %a, i16 %b) {
+define %Large @variadic(%Empty %empty, %Split %split, i8 signext %a, i16 zeroext %b, ...) {
+  ret %Large zeroinitializer
+}
+
+define void @caller(ptr %largePtr, ptr %smallPtr, ptr %variadicPtr, i8 %a, i16 %b) {
   %largeDirect = call %Large @large(i8 signext %a, i16 zeroext %b)
   %largeIndirect = call %Large %largePtr(i8 signext %a, i16 zeroext %b)
   %smallDirect = call i8 @small(%Empty zeroinitializer, %Split zeroinitializer, i8 signext %a, i16 zeroext %b)
   %smallIndirect = call i8 %smallPtr(%Empty zeroinitializer, %Split zeroinitializer, i8 zeroext %a, i16 signext %b)
+  %variadicDirect = call %Large (%Empty, %Split, i8, i16, ...) @variadic(%Empty zeroinitializer, %Split zeroinitializer, i8 signext %a, i16 zeroext %b, i32 signext -1, i64 42)
+  %variadicIndirect = call %Large (%Empty, %Split, i8, i16, ...) %variadicPtr(%Empty zeroinitializer, %Split zeroinitializer, i8 signext %a, i16 zeroext %b, i32 signext -1, i64 42)
   ret void
 }
 `
@@ -68,6 +74,12 @@ define void @caller(ptr %largePtr, ptr %smallPtr, i8 %a, i16 %b) {
 			}
 			checkIntegerAttrs(t, mod.NamedFunction("large"), false, largeWant)
 			checkIntegerAttrs(t, mod.NamedFunction("small"), false, smallWant)
+			// Variadic calls combine sret insertion, empty removal and aggregate
+			// expansion. Their unchanged tails must keep existing RV64-style
+			// i32 extension attributes at the new argument positions.
+			variadicWant := append([]string{""}, smallWant...)
+			checkIntegerAttrs(t, mod.NamedFunction("variadic"), false, variadicWant)
+			variadicWant = append(variadicWant, "signext", "")
 			caller := mod.NamedFunction("caller")
 			var calls []llvm.Value
 			for bb := caller.FirstBasicBlock(); !bb.IsNil(); bb = llvm.NextBasicBlock(bb) {
@@ -77,10 +89,10 @@ define void @caller(ptr %largePtr, ptr %smallPtr, i8 %a, i16 %b) {
 					}
 				}
 			}
-			if len(calls) != 4 {
-				t.Fatalf("got %d calls, want 4\n%s", len(calls), caller.String())
+			if len(calls) != 6 {
+				t.Fatalf("got %d calls, want 6\n%s", len(calls), caller.String())
 			}
-			for i, want := range [][]string{largeWant, largeWant, smallWant, indirectWant} {
+			for i, want := range [][]string{largeWant, largeWant, smallWant, indirectWant, variadicWant, variadicWant} {
 				checkIntegerAttrs(t, calls[i], true, want)
 			}
 			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
