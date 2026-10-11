@@ -1129,7 +1129,7 @@ func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package,
 	if cc.replacement != "" {
 		fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", cc.name, fset.Position(cc.pos), cc.replacement)
 	}
-	prog.SetCallConv(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
+	prog.SetTypeBackground(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
 	return nil
 }
 

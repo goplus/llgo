@@ -500,7 +500,7 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
-func (p Program) SetCallConv(fullName string, bg Background) {
+func (p Program) SetTypeBackground(fullName string, bg Background) {
 	p.packageSyntax.mu.Lock()
 	p.packageSyntax.typeBackgrounds[fullName] = bg
 	p.packageSyntax.mu.Unlock()

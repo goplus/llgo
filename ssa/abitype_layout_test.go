@@ -73,7 +73,7 @@ func TestGo386StructPhysicalLayoutDiffersFromC(t *testing.T) {
 
 	pkg := types.NewPackage("example.com/c", "c")
 	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Pair", nil), st, nil)
-	prog.SetCallConv("example.com/c.Pair", InC)
+	prog.SetTypeBackground("example.com/c.Pair", InC)
 	cType := prog.Type(named, InC)
 	if got, want := prog.SizeOf(cType), uint64(16); got != want {
 		t.Fatalf("C Windows/386 struct size = %d, want %d", got, want)

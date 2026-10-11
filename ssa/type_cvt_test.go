@@ -187,7 +187,7 @@ func TestCFunctionAliasKeepsNativeRepresentation(t *testing.T) {
 	goCallback := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "GoCallback", nil), sig)
 	outer := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "Outer", nil), callback)
 	goOuter := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "GoOuter", nil), goCallback)
-	prog.SetCallConv("example.com/callback.Callback", InC)
+	prog.SetTypeBackground("example.com/callback.Callback", InC)
 
 	for _, alias := range []*types.Alias{callback, outer} {
 		if got, changed := prog.gocvt.cvtType(alias); changed || got != alias {

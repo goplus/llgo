@@ -35,7 +35,7 @@ func TestNativeIntegerFuncvalAdapters(t *testing.T) {
 				results := types.NewTuple(types.NewVar(token.NoPos, nil, "", resultType))
 				sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 				pointer := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, "Native", nil), sig, nil)
-				prog.SetCallConv(pkg.Path()+".Native", InC)
+				prog.SetTypeBackground(pkg.Path()+".Native", InC)
 				ownerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 					types.NewVar(token.NoPos, nil, "fn", pointer),
 				), nil, false)

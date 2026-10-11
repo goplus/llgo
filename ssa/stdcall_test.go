@@ -40,7 +40,7 @@ func requireStdcallPanic(t *testing.T, want string, fn func()) {
 func newStdcallType(prog Program, pkgPath, name string, sig *types.Signature) *types.Named {
 	pkg := types.NewPackage(pkgPath, "p")
 	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, name, nil), sig, nil)
-	prog.SetCallConv(pkgPath+"."+name, InStdcall)
+	prog.SetTypeBackground(pkgPath+"."+name, InStdcall)
 	return named
 }
 

@@ -43,7 +43,7 @@ func TestNewBackendProgramSharesPreparedGoState(t *testing.T) {
 	coordinator.SetLinkname("example.com/p.Entry", "entry")
 	coordinator.SetPackageExport("example.com/p.Entry", "entry")
 	coordinator.SetNoInterfaceMethod("example.com/p.T.Hidden")
-	coordinator.SetCallConv("example.com/p.CType", InC)
+	coordinator.SetTypeBackground("example.com/p.CType", InC)
 	coordinator.SetClosureEnvDirective(fset, "example.com/p.Entry", token.Pos(7))
 	coordinator.MarkPackageSyntaxParsed(pkg)
 	coordinator.SetLocalityInfo("example.com/p.Value", LocalityInfo{Locality: ThreadLocal})
