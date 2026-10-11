@@ -63,7 +63,10 @@ func initFinalizerState() {
 	finalizerState.queueMu.Init(nil)
 	finalizerState.ready.Init(nil)
 	finalizerState.m = make(map[uintptr]*finalizerEntry)
-	go runFinalizers()
+	started := make(chan struct{})
+	go runFinalizers(started)
+	// Exclude the idle worker from NumGoroutine before returning to user code.
+	<-started
 }
 
 func SetFinalizer(obj any, finalizer any) {
@@ -238,8 +241,9 @@ func restoreFinalizer(ptr unsafe.Pointer, entry *finalizerEntry) {
 	bdwgc.RegisterFinalizer(ptr, nil, nil, &oldFn, &oldCb)
 }
 
-func runFinalizers() {
+func runFinalizers(started chan struct{}) {
 	llruntime.MarkSystemGoroutine()
+	close(started)
 	for {
 		finalizerState.queueMu.Lock()
 		for finalizerState.head == nil {
