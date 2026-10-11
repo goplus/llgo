@@ -32,7 +32,7 @@ build LLGo and this runner from a selected repository revision, then run the
 `ci` directive set from the two most recent Go releases. Each platform/shard
 job runs those releases concurrently with isolated LLGo caches, and rotates the
 second release by half the shard count so the same expensive cases do not
-contend in both runners. Every run publishes per-platform outcome counts and a
+contend in both runners. Every run publishes per-platform/version outcome counts and a
 table of failures (including expected and flaky failures) and unexpected passes
 in its Actions summary. These counts distinguish successful execution from an
 accepted failure classification. The daily 01:00 Asia/Shanghai scheduled run
