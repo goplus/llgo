@@ -111,11 +111,14 @@ func Flag(command, name string) Record {
 	if in(name, "gcflags ldflags") {
 		return Record{"partial", "internal/goflags", "Only the documented portable subset; other values and per-package patterns are rejected"}
 	}
-	if command == "build" && in(name, "o cover covermode coverpkg buildmode") {
+	if name == "buildmode" && in(command, "build test") {
+		return Record{"partial", "cmd/internal/flags", "Only exe, c-archive and c-shared; gc shared-package, plugin, PIE and other modes are rejected"}
+	}
+	if command == "build" && in(name, "o cover covermode coverpkg") {
 		return Record{"native", "cmd/internal/build", "Artifact output, coverage or C ABI build modes"}
 	}
 	if command == "test" {
-		if in(name, "c o buildmode cover covermode coverpkg coverprofile args bench benchmem benchtime count cpuprofile failfast fullpath json list memprofile memprofilerate outputdir parallel run short shuffle skip timeout") {
+		if in(name, "c o cover covermode coverpkg coverprofile args bench benchmem benchtime count cpuprofile failfast fullpath json list memprofile memprofilerate outputdir parallel run short shuffle skip timeout") {
 			return Record{"native", "cmd/internal/test", "Test driver, LLGo testing runtime or pprof output"}
 		}
 		if name == "cpu" {

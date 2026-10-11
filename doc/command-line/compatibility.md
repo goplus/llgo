@@ -43,7 +43,9 @@ options are rejected rather than discarded.
 `-race`, `-msan`, `-asan`, `-pgo`, `-linkshared`, compiler selection and gc object
 archive controls have no implemented LLGo backend contract. `-n`, `-work`,
 `-trimpath`, `-buildvcs` and build JSON are also rejected pending native artifact
-support. `-buildenv` has been removed because it had no consumer. `clean` exposes
+support. `-buildmode` supports `exe`, `c-archive` and `c-shared`; gc shared-package,
+plugin, PIE and other modes are rejected. `-buildenv` has been removed because it
+had no consumer. `clean` exposes
 only its implemented package tags, verbosity and directory selection; cleanup
 planning and cache controls are pending. Size reports belong to `build`, and
 LTO pass plugins belong to build-producing commands rather than `monitor`.
