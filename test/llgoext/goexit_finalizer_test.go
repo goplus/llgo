@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unique"
 )
 
 const mainGoexitWorkerChild = "LLGO_TEST_MAIN_GOEXIT_WORKER"
@@ -22,6 +23,8 @@ func init() {
 		runtime.AddCleanup(new([64]byte), func(int) {}, 0)
 	case "timer":
 		time.NewTimer(time.Hour).Stop()
+	case "unique":
+		unique.Make("main-goexit-worker")
 	default:
 		return
 	}
@@ -40,6 +43,10 @@ func TestMainGoexitWithCleanupWorker(t *testing.T) {
 
 func TestMainGoexitWithTimerWorker(t *testing.T) {
 	testMainGoexitWithWorker(t, "timer")
+}
+
+func TestMainGoexitWithUniqueCleanupWorker(t *testing.T) {
+	testMainGoexitWithWorker(t, "unique")
 }
 
 func testMainGoexitWithWorker(t *testing.T, worker string) {

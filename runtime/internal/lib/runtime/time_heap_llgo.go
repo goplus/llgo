@@ -9,7 +9,6 @@ package runtime
 import (
 	_ "unsafe"
 
-	llruntime "github.com/xgo-dev/llgo/runtime/internal/runtime"
 	psync "github.com/xgo-dev/llgo/runtime/internal/sync"
 )
 
@@ -133,7 +132,7 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64, update func()) bool 
 }
 
 func timerSchedulerLoop() {
-	llruntime.MarkSystemGoroutine()
+	markSystemGoroutine()
 	timerSchedulerMu.Lock()
 	for {
 		if len(timerSchedulerHeap) == 0 {
