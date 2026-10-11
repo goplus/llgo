@@ -34,9 +34,6 @@ func testReflectMakeFuncGoroutineStartup(t *testing.T, withArg bool) {
 				return
 			default:
 				runtime.GC()
-				// Keep this a GC/startup race without requiring asynchronous
-				// preemption from a single-threaded cooperative runtime.
-				runtime.Gosched()
 			}
 		}
 	}()

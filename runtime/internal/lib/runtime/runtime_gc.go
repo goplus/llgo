@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/xgo-dev/llgo/runtime/internal/clite/bdwgc"
+	llruntime "github.com/xgo-dev/llgo/runtime/internal/runtime"
 )
 
 func init() {
@@ -45,6 +46,8 @@ func GC() {
 	if poolCleanup != nil {
 		poolCleanup()
 	}
+	// Let mutators run before a caller starts another stop-the-world cycle.
+	llruntime.Gosched()
 }
 
 func collectAndEnqueueFinalizers() {
