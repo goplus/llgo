@@ -72,14 +72,14 @@ func PushCallerLocationFrame(entry uintptr, name, file string, startLine int) in
 	}
 	// Reuse the slot directly. Constructing an append argument on every call
 	// makes a temporary CallerFrame escape in the current lowering.
-	frame := &store.stack[mark]
-	frame.PC = entry
-	frame.Entry = entry
-	frame.Function = name
-	frame.File = file
-	frame.Line = startLine
-	frame.StartLine = startLine
-	frame.captured = 0
+	store.stack[mark] = CallerFrame{
+		PC:        entry,
+		Entry:     entry,
+		Function:  name,
+		File:      file,
+		Line:      startLine,
+		StartLine: startLine,
+	}
 	return mark
 }
 
