@@ -174,18 +174,21 @@ func (s *commonSection) empty() bool {
 }
 
 type packageSection struct {
-	PthreadStackSize int64            `yaml:"pthread_stack_size,omitempty"`
-	PkgPath          string           `yaml:"pkg_path,omitempty"`
-	PkgID            string           `yaml:"pkg_id,omitempty"`
-	GoFiles          []fileDigest     `yaml:"go_files,omitempty"`
-	AltGoFiles       []fileDigest     `yaml:"alt_go_files,omitempty"`
-	OtherFiles       []fileDigest     `yaml:"other_files,omitempty"`
-	LLGoFiles        []llgoFileDigest `yaml:"llgo_files,omitempty"`
-	RewriteVars      orderedStringMap `yaml:"rewrite_vars,omitempty"`
+	PthreadStackSize int64             `yaml:"pthread_stack_size,omitempty"`
+	PkgPath          string            `yaml:"pkg_path,omitempty"`
+	PkgID            string            `yaml:"pkg_id,omitempty"`
+	GoFiles          []fileDigest      `yaml:"go_files,omitempty"`
+	AltGoFiles       []fileDigest      `yaml:"alt_go_files,omitempty"`
+	EmbedFiles       []embedFileDigest `yaml:"embed_files,omitempty"`
+	AltEmbedFiles    []embedFileDigest `yaml:"alt_embed_files,omitempty"`
+	OtherFiles       []fileDigest      `yaml:"other_files,omitempty"`
+	LLGoFiles        []llgoFileDigest  `yaml:"llgo_files,omitempty"`
+	RewriteVars      orderedStringMap  `yaml:"rewrite_vars,omitempty"`
 }
 
 func (s *packageSection) empty() bool {
 	return s.PkgPath == "" && s.PkgID == "" && len(s.GoFiles) == 0 && len(s.AltGoFiles) == 0 &&
+		len(s.EmbedFiles) == 0 && len(s.AltEmbedFiles) == 0 &&
 		len(s.OtherFiles) == 0 && len(s.LLGoFiles) == 0 && len(s.RewriteVars) == 0 && s.PthreadStackSize == 0
 }
 
@@ -307,6 +310,31 @@ type fileDigest struct {
 	Size        int64  `yaml:"size"`
 	ModTime     int64  `yaml:"mtime"`
 	OverlayHash string `yaml:"overlay_hash,omitempty"`
+}
+
+// embedFileDigest records the path and SHA-256 hash of an embedded resource.
+// Content hashes detect edits preserving the size and timestamp used by fileDigest.
+type embedFileDigest struct {
+	Path        string `yaml:"path"`
+	ContentHash string `yaml:"content_hash"`
+}
+
+// digestEmbedFiles hashes embedded file contents so edits preserving size and
+// timestamps still invalidate the package cache.
+func digestEmbedFiles(paths []string) ([]embedFileDigest, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	digests := make([]embedFileDigest, 0, len(paths))
+	for _, path := range paths {
+		hash, err := digestFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read embedded file %q: %w", path, err)
+		}
+		digests = append(digests, embedFileDigest{Path: path, ContentHash: hash})
+	}
+	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
+	return digests, nil
 }
 
 // llgoFileDigest records the preprocessed content and per-file flags of an
