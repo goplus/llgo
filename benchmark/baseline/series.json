@@ -542,6 +542,17 @@
     },
     {
       "kind": "branch",
+      "id": "2ef2efa4f03ea7e5",
+      "label": "Branch cpunion/llgo:codex/cli-contract-2649",
+      "path": "series/branch/2ef2efa4f03ea7e5/summary.json",
+      "configPath": "series/branch/2ef2efa4f03ea7e5/config.json",
+      "commitPath": "commits/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42.json",
+      "sha": "bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
+      "updatedAt": "2026-10-11T12:34:44.973Z"
+    },
+    {
+      "kind": "branch",
       "id": "6ecaf1d18c49176b",
       "label": "Branch cpunion/llgo:codex/closure-env-2170-v2",
       "path": "series/branch/6ecaf1d18c49176b/summary.json",
@@ -8503,6 +8514,17 @@
       "sha": "faaa900770eb64e9969c49fe3fc69d087c0aa786",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/faaa900770eb64e9969c49fe3fc69d087c0aa786",
       "updatedAt": "2026-10-11T12:05:24.299Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2785",
+      "label": "PR #2785",
+      "path": "series/pull/2785/summary.json",
+      "configPath": "series/pull/2785/config.json",
+      "commitPath": "commits/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42.json",
+      "sha": "bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
+      "updatedAt": "2026-10-11T12:34:43.166Z"
     }
   ]
 }
