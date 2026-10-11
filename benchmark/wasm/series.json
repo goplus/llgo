@@ -414,10 +414,10 @@
       "label": "Branch cpunion/llgo:codex/fix-embed-build-cache-20261010",
       "path": "series/branch/40e9a69763dc0352/summary.json",
       "configPath": "series/branch/40e9a69763dc0352/config.json",
-      "commitPath": "commits/45365c9c181ec9face7546b200d22659f22b8afd.json",
-      "sha": "45365c9c181ec9face7546b200d22659f22b8afd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/45365c9c181ec9face7546b200d22659f22b8afd",
-      "updatedAt": "2026-10-10T12:09:08.766Z"
+      "commitPath": "commits/1dd4857b3e8b6bf96634336fedef8cfcb9639f95.json",
+      "sha": "1dd4857b3e8b6bf96634336fedef8cfcb9639f95",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1dd4857b3e8b6bf96634336fedef8cfcb9639f95",
+      "updatedAt": "2026-10-11T05:57:26.305Z"
     },
     {
       "kind": "branch",
@@ -4506,10 +4506,10 @@
       "label": "PR #2774",
       "path": "series/pull/2774/summary.json",
       "configPath": "series/pull/2774/config.json",
-      "commitPath": "commits/45365c9c181ec9face7546b200d22659f22b8afd.json",
-      "sha": "45365c9c181ec9face7546b200d22659f22b8afd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/45365c9c181ec9face7546b200d22659f22b8afd",
-      "updatedAt": "2026-10-10T12:09:08.648Z"
+      "commitPath": "commits/1dd4857b3e8b6bf96634336fedef8cfcb9639f95.json",
+      "sha": "1dd4857b3e8b6bf96634336fedef8cfcb9639f95",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1dd4857b3e8b6bf96634336fedef8cfcb9639f95",
+      "updatedAt": "2026-10-11T05:57:26.196Z"
     },
     {
       "kind": "pull",
