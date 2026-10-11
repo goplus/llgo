@@ -293,10 +293,10 @@
       "label": "Branch cpunion/llgo:codex/cli-contract-2649",
       "path": "series/branch/2ef2efa4f03ea7e5/summary.json",
       "configPath": "series/branch/2ef2efa4f03ea7e5/config.json",
-      "commitPath": "commits/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42.json",
-      "sha": "bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
-      "updatedAt": "2026-10-11T12:32:56.257Z"
+      "commitPath": "commits/48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7.json",
+      "sha": "48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
+      "updatedAt": "2026-10-11T15:59:36.583Z"
     },
     {
       "kind": "branch",
@@ -4660,10 +4660,10 @@
       "label": "PR #2785",
       "path": "series/pull/2785/summary.json",
       "configPath": "series/pull/2785/config.json",
-      "commitPath": "commits/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42.json",
-      "sha": "bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/bc38f0d3dc0dd8ebb811e02a5bd8dfa289fe3d42",
-      "updatedAt": "2026-10-11T12:32:56.148Z"
+      "commitPath": "commits/48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7.json",
+      "sha": "48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
+      "updatedAt": "2026-10-11T15:59:36.462Z"
     }
   ]
 }
