@@ -368,3 +368,20 @@ func checkCallerFunctionSuffix(t *testing.T, pc uintptr, suffix string) {
 		t.Fatalf("function for pc = %q, want suffix %q", name, suffix)
 	}
 }
+
+func TestDeferredCallerClosingLine(t *testing.T) {
+	var file string
+	var line int
+	deferredCallerClosingLine(&file, &line)
+	if !strings.HasSuffix(file, "deferred_caller.go") || line != 104 {
+		t.Fatalf("deferred caller = %s:%d, want deferred_caller.go:104", file, line)
+	}
+}
+
+//go:noinline
+//line deferred_caller.go:100
+func deferredCallerClosingLine(file *string, line *int) {
+	defer func() {
+		_, *file, *line, _ = runtime.Caller(1)
+	}()
+}

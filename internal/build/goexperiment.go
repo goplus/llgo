@@ -17,6 +17,7 @@ type sourceGoConfig struct {
 	GOROOT       string
 	GOVERSION    string
 	GOEXPERIMENT string
+	GOFLAGS      string
 	toolTags     []string
 }
 
@@ -25,7 +26,7 @@ func resolveSourceGoConfig(commands commandEnv, experiment string, buildFlags ..
 		commands.environ = withEnv(commands.environ, "GOEXPERIMENT="+experiment)
 	}
 	var cfg sourceGoConfig
-	cmd := commands.configure(exec.Command("go", "env", "-json", "GOROOT", "GOVERSION", "GOEXPERIMENT"))
+	cmd := commands.configure(exec.Command("go", "env", "-json", "GOROOT", "GOVERSION", "GOEXPERIMENT", "GOFLAGS"))
 	output, err := cmd.Output()
 	if err != nil {
 		return cfg, sourceGoConfigError("resolve Go source configuration", err)

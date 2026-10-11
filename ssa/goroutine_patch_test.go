@@ -74,6 +74,24 @@ func TestGoInstallsContextForContextBackedLocals(t *testing.T) {
 	}
 }
 
+func TestWASIGoInstallsContextWithoutUserLocality(t *testing.T) {
+	prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "wasip1", GOARCH: "wasm", Target: "wasi"})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	b := outer.MakeBody(1)
+	b.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
+		return ssa.Expr{}
+	})
+	b.Return()
+
+	ir := pkg.String()
+	for _, want := range []string{"LocalContext", "EnterLocalContext", "LeaveLocalContext"} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("goroutine wrapper missing %q:\n%s", want, ir)
+		}
+	}
+}
+
 func TestGoPanicRoutineDoesNotReturnAfterUnreachable(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("bar", "foo/bar")

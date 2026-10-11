@@ -2,6 +2,7 @@ package runtime_test
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,24 @@ func TestRuntimeFunctionInformation(t *testing.T) {
 	}
 	if file, line := fn.FileLine(pc); file == "" || line == 0 {
 		t.Fatal("FileLine returned incomplete information")
+	}
+}
+
+var callerFunctionPC uintptr
+
+func callerFunctionOuter(skip int)  { callerFunctionMiddle(skip) }
+func callerFunctionMiddle(skip int) { callerFunctionInner(skip) }
+func callerFunctionInner(skip int) {
+	callerFunctionPC, _, _, _ = runtime.Caller(skip)
+}
+
+func TestCallerFunctionNames(t *testing.T) {
+	for skip, want := range []string{"callerFunctionInner", "callerFunctionMiddle", "callerFunctionOuter"} {
+		callerFunctionOuter(skip)
+		fn := runtime.FuncForPC(callerFunctionPC)
+		if fn == nil || !strings.HasSuffix(fn.Name(), "."+want) {
+			t.Fatalf("Caller(%d) function = %v, want %s", skip, fn, want)
+		}
 	}
 }
 

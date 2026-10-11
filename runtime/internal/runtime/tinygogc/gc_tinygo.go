@@ -390,7 +390,20 @@ func Alloc(size uintptr) unsafe.Pointer {
 		if gcStateOfIn(segment, index) != blockStateFree {
 			// This block is in use. Try again from this point.
 			numFreeBlocks = 0
-			index++
+			step := uintptr(1)
+			offset := index - segment.first
+			states := gcStateByteOfIn(segment, index)
+			if occupiedStates(uint64(states), 0x55) {
+				step = blocksPerStateByte - offset%blocksPerStateByte
+				// Read whole metadata words only at aligned addresses and
+				// when all represented blocks belong to this segment.
+				metadata := segment.metadata + offset/blocksPerStateByte
+				if offset%blocksPerStateByte == 0 && metadata%8 == 0 && segment.last-index >= 32 &&
+					occupiedStates(*(*uint64)(unsafe.Pointer(metadata)), 0x5555555555555555) {
+					step = 32
+				}
+			}
+			index = advanceAllocScan(index, segment.last, nextAlloc, step)
 			continue
 		}
 		numFreeBlocks++

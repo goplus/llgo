@@ -11,6 +11,46 @@ import (
 	"time"
 )
 
+func TestShadowStackByTarget(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/caller\n\ngo 1.24\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	const source = `package caller
+import "runtime"
+func Caller() (uintptr, string, int, bool) { return runtime.Caller(0) }
+`
+	if err := os.WriteFile(filepath.Join(dir, "caller.go"), []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []struct {
+		goos, goarch string
+		shadowStack  bool
+	}{
+		{runtime.GOOS, runtime.GOARCH, false},
+		{"js", "wasm", true},
+	} {
+		t.Run(target.goos+"/"+target.goarch, func(t *testing.T) {
+			conf := NewDefaultConf(ModeGen)
+			conf.Goos, conf.Goarch = target.goos, target.goarch
+			pkgs, err := Build(Invocation{Args: []string{"."}, Config: conf, Dir: dir})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(pkgs) != 1 || pkgs[0].LPkg == nil {
+				t.Fatalf("expected one generated package, got %+v", pkgs)
+			}
+			defer pkgs[0].LPkg.Prog.Dispose()
+			ir := pkgs[0].LPkg.String()
+			for _, symbol := range []string{"PushCallerLocationFrame", "RecordCallerLocation", "PopCallerLocationFrame"} {
+				if got := strings.Contains(ir, symbol); got != target.shadowStack {
+					t.Errorf("contains %s = %v, want %v:\n%s", symbol, got, target.shadowStack, ir)
+				}
+			}
+		})
+	}
+}
+
 func TestTracebackConfiguration(t *testing.T) {
 	bin := filepath.Join(t.TempDir(), "traceback-config")
 	if runtime.GOOS == "windows" {

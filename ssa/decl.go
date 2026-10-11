@@ -536,10 +536,12 @@ func (p Function) closureCtx(b Builder) Expr {
 		}
 		ptr := p.Env()
 		if b.blk.Index() != 0 {
-			blk := b.impl.GetInsertBlock()
+			blk := *b.blk
+			// A synthetic branch can be ahead of the logical block's tail.
+			blk.last = b.impl.GetInsertBlock()
 			b.SetBlockEx(p.blks[0], AtStart, false)
 			p.freeVars = b.Load(ptr)
-			b.impl.SetInsertPointAtEnd(blk)
+			b.SetBlockEx(&blk, AtEnd, false)
 		} else {
 			p.freeVars = b.Load(ptr)
 		}
@@ -622,8 +624,7 @@ func (p Function) HasBody() bool {
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
-	b.blk = p.blks[0]
-	b.impl.SetInsertPointAtEnd(b.blk.last)
+	b.SetBlock(p.blks[0])
 	return b
 }
 

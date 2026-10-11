@@ -53,6 +53,15 @@ func wasiGCMutexLock(mutex unsafe.Pointer) {
 		uintptr(wasiGCStackPointer()), wasiGCStackTop())
 }
 
+// WasiGCWaitUint32 publishes roots while an address-based semaphore is asleep.
+func WasiGCWaitUint32(addr *uint32, value uint32) c.Int {
+	return wasiGCAddressWait(addr, value, uintptr(gcroot.CurrentChain()),
+		uintptr(wasiGCStackPointer()), wasiGCStackTop())
+}
+
+//go:linkname wasiGCAddressWait C.llgo_wasi_gc_wait_uint32
+func wasiGCAddressWait(addr *uint32, value uint32, chain, bottom, top uintptr) c.Int
+
 // WasiGCCondTimedWait keeps the Go caller suspended while a pthread condition
 // wait releases and reacquires its lock. Only the C pthread state may change.
 // A negative waitNanos waits for a signal without a timer.

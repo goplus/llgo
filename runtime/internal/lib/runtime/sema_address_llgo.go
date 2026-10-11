@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows || (linux && !baremetal) || (llgo && wasip1 && wasm && llgo.wasi_threads)
 
 package runtime
 

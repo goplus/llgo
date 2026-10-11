@@ -208,6 +208,24 @@ type Visitor = func(a c.Int)
 
 ```
 
+C variadic function pointers use the reserved final parameter name
+`__llgo_va_list`:
+
+```go
+//llgo:type C
+type Variadic func(marker int32, __llgo_va_list ...any) int32
+
+func Call(function Variadic) int32 {
+    return function(7, int32(20), float64(22))
+}
+```
+
+Direct and indirect calls expand the trailing arguments into the native C
+ellipsis ABI instead of passing a Go slice. Use C-compatible argument types
+with the required default promotions, such as `int32` for C `int` and `float64`
+for C `double`. An empty variadic tail is also supported. This describes calls
+to C functions, not exporting a Go variadic function as a C callback.
+
 #### Handling Windows stdcall APIs
 
 Use the `stdcall.` linkname namespace for Windows functions declared with
@@ -229,11 +247,11 @@ and Windows/arm64 use their unified native C ABI. You may spell a 386 export
 explicitly as `_Name@N`; LLGo preserves that spelling on 386 and normalizes it
 to `Name` on 64-bit Windows.
 
-Both forms accept only non-variadic function types. A native callback carries
-one function pointer and no LLGo closure environment. Direct Go functions and
-function values with an empty environment can cross this boundary; a capturing
-closure panics before the C call. Pass callback state through an explicit
-context pointer.
+The `stdcall.` namespace and `//llgo:type stdcall` accept only non-variadic
+signatures. A native callback carries one function pointer and no LLGo closure
+environment. Direct Go functions and function values with an empty environment
+can cross this boundary; a capturing closure panics before the C call. Pass
+callback state through an explicit context pointer.
 
 #### Handling char ** Type in C
 

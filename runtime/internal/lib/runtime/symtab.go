@@ -1513,7 +1513,10 @@ func funcPCFrameForEntryPC(pc uintptr) (pcSymbol, bool) {
 	}
 	frame := frames[lo]
 	if frame.entry != pc {
-		if frame.entry-pc > runtimeFuncPCEntrySlack || !runtimeFuncPCMayUseEntrySlack(pc) {
+		// dlsym entries already point at the real function start. Looking
+		// ahead from a caller PC would select the next function, especially
+		// for byte-aligned amd64 return addresses.
+		if !runtimeFuncPCFramesFromSites || frame.entry-pc > runtimeFuncPCEntrySlack || !runtimeFuncPCMayUseEntrySlack(pc) {
 			return pcSymbol{}, false
 		}
 	}

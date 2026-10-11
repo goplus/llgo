@@ -480,7 +480,7 @@ class LLDBDebugger:
             self.process = self.target.LaunchSimple(None, None, os.getcwd())
         else:
             self.process.Continue()
-        self.continue_gc_signals()
+        self.continue_runtime_signals()
         if self.process.GetState() != lldb.eStateStopped:
             raise LLDBTestException("Process didn't stop at breakpoint")
 
@@ -575,37 +575,37 @@ class LLDBDebugger:
                 "Process did not hit the requested breakpoint: " + "; ".join(stops))
         return candidates
 
-    def continue_gc_signals(self) -> None:
-        # The Linux fixture uses Boehm's default thread suspend/restart
-        # signals. Pass them through to the collector rather than interpreting
-        # its internal handshake as the requested source breakpoint. Do not
-        # continue faults or other unexpected stops.
+    def continue_runtime_signals(self) -> None:
+        # The Linux fixture uses Boehm's suspend/restart signals and SIGURG
+        # for native thread snapshots. Deliver these runtime handshakes
+        # without mistaking them for a source breakpoint. Faults and other
+        # unexpected stops must remain visible.
         if "linux" not in (self.target.GetTriple() or ""):
             return
         signals = self.process.GetUnixSignals()
-        gc_signals = {
+        runtime_signals = {
             signals.GetSignalNumberFromName(name)
-            for name in ("SIGPWR", "SIGXCPU")
+            for name in ("SIGPWR", "SIGXCPU", "SIGURG")
         }
-        gc_signals.discard(-1)
-        for _attempt in range(4):
-            if self.process.GetState() != lldb.eStateStopped:
-                return
+        runtime_signals.discard(-1)
+        while self.process.GetState() == lldb.eStateStopped:
             thread = self.process.GetSelectedThread()
             if (thread.GetStopReason() != lldb.eStopReasonSignal or
-                    thread.GetStopReasonDataAtIndex(0) not in gc_signals):
+                    thread.GetStopReasonDataAtIndex(0) not in runtime_signals):
                 return
             for stopped_thread in self.process:
                 reason = stopped_thread.GetStopReason()
                 if (reason == lldb.eStopReasonException or
                         (reason == lldb.eStopReasonSignal and
-                         stopped_thread.GetStopReasonDataAtIndex(0) not in gc_signals)):
+                         stopped_thread.GetStopReasonDataAtIndex(0) not in runtime_signals)):
                     return
-            for number in gc_signals:
+            for number in runtime_signals:
                 signals.SetShouldStop(number, False)
                 signals.SetShouldNotify(number, False)
                 signals.SetShouldSuppress(number, False)
-            self.process.Continue()
+            error = self.process.Continue()
+            if error.Fail():
+                raise LLDBTestException(f"Cannot continue runtime signal: {error}")
 
     def get_selected_frame(self) -> lldb.SBFrame:
         if not self.frame or not self.frame.IsValid():

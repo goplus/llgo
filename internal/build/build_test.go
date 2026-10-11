@@ -34,6 +34,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv("LLGO_TEST_GODEBUG_METADATA") != "" {
+		runDefaultGODEBUGMetadataHelper()
+		os.Exit(0)
+	}
 	if mode := os.Getenv("LLGO_TEST_GO_CONFIG_HELPER"); mode != "" {
 		runGoConfigHelper(mode)
 		os.Exit(0)
@@ -205,20 +209,6 @@ func TestConfigCloneDropsGeneratedCoverageOverlay(t *testing.T) {
 	cloned.Overlay["source.go"][0] = 'P'
 	if got := string(base["source.go"]); got != "package source" {
 		t.Fatalf("cloned coverage overlay aliases its snapshot: %q", got)
-	}
-}
-
-func TestUseShadowStack(t *testing.T) {
-	t.Setenv(llgoShadowStack, "0")
-	if !useShadowStack("wasm") {
-		t.Fatal("WebAssembly must use the software shadow stack")
-	}
-	if useShadowStack("amd64") {
-		t.Fatal("native target unexpectedly enabled the shadow stack")
-	}
-	t.Setenv(llgoShadowStack, "1")
-	if !useShadowStack("amd64") {
-		t.Fatal("native target did not honor LLGO_SHADOW_STACK=1")
 	}
 }
 
@@ -2417,12 +2407,13 @@ func TestTestMultiplePackagesWithOutputFile(t *testing.T) {
 
 func TestCmpTestNonexistentPatternReturnsError(t *testing.T) {
 	cfg := &Config{Mode: ModeCmpTest}
-	_, err := Do([]string{"./this/path/does/not/exist/..."}, cfg)
+	const pattern = "./this/path/does/not/exist/..."
+	_, err := Do([]string{pattern}, cfg)
 	if err == nil {
 		t.Fatal("expected error for nonexistent cmptest pattern")
 	}
-	if !strings.Contains(err.Error(), "cannot build SSA for packages") && !strings.Contains(err.Error(), "no such file or directory") {
-		t.Fatalf("unexpected error: %v", err)
+	if !strings.Contains(err.Error(), pattern) {
+		t.Fatalf("package diagnostic lost the requested pattern: %v", err)
 	}
 }
 

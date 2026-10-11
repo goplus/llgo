@@ -61,7 +61,7 @@ static void world_begin_wait(uintptr_t chain, uintptr_t bottom, uintptr_t top) {
     __builtin_trap();
   world_is_blocked = 1;
   world_blocked++;
-  if (pthread_cond_broadcast(&world_changed) != 0)
+  if ((world_epoch & 1) && pthread_cond_broadcast(&world_changed) != 0)
     __builtin_trap();
   world_unlock();
 }
@@ -70,20 +70,34 @@ static void world_end_wait(void) {
   if (!world_is_registered)
     return;
   world_lock();
+  // Notify a collector waiting for the previous rendezvous to drain, but
+  // avoid waking every parked thread during ordinary semaphore traffic.
+  int notify = world_resuming != 0;
   world_resuming++;
-  while (world_epoch & 1)
+  while (world_epoch & 1) {
+    notify = 1;
     world_wait();
+  }
   if (!world_is_blocked || world_blocked == 0)
     __builtin_trap();
   world_blocked--;
   world_is_blocked = 0;
   world_resuming--;
-  if (pthread_cond_broadcast(&world_changed) != 0)
+  if (notify && world_resuming == 0 &&
+      pthread_cond_broadcast(&world_changed) != 0)
     __builtin_trap();
   world_unlock();
 }
 
 #if defined(__wasm__)
+int llgo_wasi_gc_wait_uint32(uint32_t *address, uint32_t value,
+                            uintptr_t chain, uintptr_t bottom, uintptr_t top) {
+  world_begin_wait(chain, bottom, top);
+  int status = __builtin_wasm_memory_atomic_wait32((int *)address, value, -1);
+  world_end_wait();
+  return status;
+}
+
 // TinyGC has one allocator mutex. Let an explicit collector hand it to a
 // pending allocator before collecting again, without imposing FIFO handoff
 // costs on every allocation.
@@ -93,6 +107,11 @@ static _Atomic uint32_t allocator_yielders;
 
 void llgo_wasi_gc_allocator_lock(pthread_mutex_t *mutex, uintptr_t chain,
                                  uintptr_t bottom, uintptr_t top) {
+  int status = pthread_mutex_trylock(mutex);
+  if (status == 0)
+    return;
+  if (status != EBUSY)
+    __builtin_trap();
   atomic_fetch_add(&allocator_waiters, 1);
   world_begin_wait(chain, bottom, top);
   if (pthread_mutex_lock(mutex) != 0)
@@ -128,6 +147,11 @@ void llgo_wasi_gc_allocator_finish(pthread_mutex_t *mutex, uintptr_t chain,
 
 void llgo_wasi_gc_mutex_lock(pthread_mutex_t *mutex, uintptr_t chain,
                              uintptr_t bottom, uintptr_t top) {
+  int status = pthread_mutex_trylock(mutex);
+  if (status == 0)
+    return;
+  if (status != EBUSY)
+    __builtin_trap();
   world_begin_wait(chain, bottom, top);
   if (pthread_mutex_lock(mutex) != 0)
     __builtin_trap();

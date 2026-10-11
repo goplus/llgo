@@ -392,6 +392,12 @@ func (p Program) PackageLocalitiesFor(pkg *types.Package) map[string]VariableLoc
 }
 
 func (p Program) NeedsLocalContext() bool {
+	// The WASI runtime uses package-local caller and panic state even when
+	// the compiling user package has no locality declarations. Every Go entry,
+	// including goroutine wrappers, must install an owner for that state.
+	if p.target.GOARCH == "wasm" && p.target.effectiveGOOS() == "wasip1" {
+		return true
+	}
 	p.localities.mu.RLock()
 	defer p.localities.mu.RUnlock()
 	return p.localities.needsContext(p.localities.activePackages, nil)

@@ -43,12 +43,18 @@ func runCmd(cmd *base.Command, args []string) {
 	llgoArgs, testBinaryArgs := splitArgsAt(args, "-args")
 
 	flagArgs, err := interspersedTestFlags(&cmd.Flag, llgoArgs)
-	if err == nil {
-		err = cmd.Flag.Parse(flagArgs)
-	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		mockable.Exit(1)
+		return
+	}
+	if err := cmd.Flag.Parse(flagArgs); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
+		// flag.Parse has already printed the diagnostic and usage.
+		mockable.Exit(1)
+		return
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)

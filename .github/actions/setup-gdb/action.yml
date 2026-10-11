@@ -40,11 +40,25 @@ runs:
       if: runner.os == 'Windows'
       id: msys2
       uses: msys2/setup-msys2@v2
+      env:
+        __SETUP_MSYS2_USE_MAIN_MIRROR_ONLY: "true"
       with:
         location: ${{ runner.temp }}/llgo-gdb-msys2
         msystem: ${{ runner.arch == 'ARM64' && 'CLANGARM64' || 'CLANG64' }}
         path-type: minimal
         update: false
+        # Cache dependency downloads below instead of bootstrap packages.
+        # Avoid Bash-based pruning, which has failed intermittently on ARM64.
+        cache: false
+
+    - name: Cache Windows GDB packages
+      uses: actions/cache@v6
+      if: runner.os == 'Windows'
+      with:
+        path: ${{ steps.msys2.outputs.msys2-location }}/var/cache/pacman/pkg
+        key: llgo-msys2-gdb-${{ runner.arch }}-${{ github.run_id }}
+        restore-keys: |
+          llgo-msys2-gdb-${{ runner.arch }}-
 
     - name: Populate Windows GDB package trust
       if: runner.os == 'Windows'

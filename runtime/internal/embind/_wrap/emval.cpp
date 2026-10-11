@@ -75,7 +75,7 @@ EM_VAL llgo_emval_get_module_property(const char *name) {
 static _Thread_local volatile uint8_t llgo_emval_invoke_pending;
 
 #if defined(LLGO_WASM_WORKERS) && LLGO_WASM_WORKERS > 1
-EM_JS_DEPS(llgo_emval_install_invoke_js, "$Emval,$getWasmTableEntry,$Asyncify,$Fibers");
+EM_JS_DEPS(llgo_emval_install_invoke_js, "$Emval,$getWasmTableEntry,$Asyncify,$Fibers,$ExitStatus,emscripten_stack_get_base,emscripten_stack_get_end,emscripten_stack_set_limits");
 EM_JS(void, llgo_emval_install_invoke_js, (uint8_t *unused_pending_flag, uintptr_t callback, int pointer_bytes), {
     const dispatch = Asyncify.instrumentFunction(getWasmTableEntry(Number(callback)));
     Module['_llgo_invoke'] = function(event) {
@@ -83,10 +83,23 @@ EM_JS(void, llgo_emval_install_invoke_js, (uint8_t *unused_pending_flag, uintptr
             const handle = Emval.toHandle(event);
             const callStack = Asyncify.exportCallStack;
             const trampolineRunning = Fibers.trampolineRunning;
+            const stackBase = _emscripten_stack_get_base();
+            const stackEnd = _emscripten_stack_get_end();
             Asyncify.exportCallStack = [];
             Fibers.trampolineRunning = false;
             try {
                 dispatch(pointer_bytes === 8 ? BigInt(handle) : handle);
+                // Asyncify.doRewind consumes ExitStatus; the suspended caller
+                // must not resume after another fiber exits.
+                if (ABORT) throw new ExitStatus(EXITSTATUS);
+            } catch (error) {
+                // ExitStatus can escape from another fiber while this callback
+                // is parked. Outer invoke wrappers restore the caller's SP.
+                _emscripten_stack_set_limits(stackBase, stackEnd);
+                if (typeof ___set_stack_limits === "function") {
+                    ___set_stack_limits(stackBase, stackEnd);
+                }
+                throw error;
             } finally {
                 Asyncify.exportCallStack = callStack;
                 Fibers.trampolineRunning = trampolineRunning;
@@ -101,7 +114,7 @@ EM_JS(void, llgo_emval_install_invoke_js, (uint8_t *unused_pending_flag, uintptr
     };
 });
 #else
-EM_JS_DEPS(llgo_emval_install_invoke_js, "$Emval,$getWasmTableEntry,$Asyncify,$Fibers");
+EM_JS_DEPS(llgo_emval_install_invoke_js, "$Emval,$getWasmTableEntry,$Asyncify,$Fibers,$ExitStatus,emscripten_stack_get_base,emscripten_stack_get_end,emscripten_stack_set_limits");
 EM_JS(void, llgo_emval_install_invoke_js, (uint8_t *pending_flag, uintptr_t callback, int pointer_bytes), {
     // Reinstalling would drop queued host events. Keep the first bridge for
     // the life of the module.
@@ -119,10 +132,23 @@ EM_JS(void, llgo_emval_install_invoke_js, (uint8_t *pending_flag, uintptr_t call
             // enclosing JS call would repeat arbitrary host side effects.
             const callStack = Asyncify.exportCallStack;
             const trampolineRunning = Fibers.trampolineRunning;
+            const stackBase = _emscripten_stack_get_base();
+            const stackEnd = _emscripten_stack_get_end();
             Asyncify.exportCallStack = [];
             Fibers.trampolineRunning = false;
             try {
                 dispatch(pointer_bytes === 8 ? BigInt(handle) : handle);
+                // Asyncify.doRewind consumes ExitStatus; the suspended caller
+                // must not resume after another fiber exits.
+                if (ABORT) throw new ExitStatus(EXITSTATUS);
+            } catch (error) {
+                // ExitStatus can escape from another fiber while this callback
+                // is parked. Outer invoke wrappers restore the caller's SP.
+                _emscripten_stack_set_limits(stackBase, stackEnd);
+                if (typeof ___set_stack_limits === "function") {
+                    ___set_stack_limits(stackBase, stackEnd);
+                }
+                throw error;
             } finally {
                 Asyncify.exportCallStack = callStack;
                 Fibers.trampolineRunning = trampolineRunning;

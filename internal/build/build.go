@@ -671,7 +671,8 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		// host entries even when selected through raw GOOS/GOARCH rather than a
 		// named -target.
 		ExportRename: conf.Target != "" || export.WasmProfile != crosscompile.WasmProfileNone,
-		ShadowStack:  useShadowStack(conf.Goarch),
+		// Wasm has no inspectable native return addresses for runtime callers.
+		ShadowStack: conf.Goarch == "wasm",
 	}
 	preloadOptions := frontendOptions
 	llssaInitOnce.Do(func() {
@@ -752,6 +753,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	conf.sourceGoVersion = sourceGo.GOVERSION
 	conf.toolTags = slices.Clone(sourceGo.toolTags)
 	cfg.Env = sourceGo.apply(cfg.Env)
+	if err := applyPackageLoadFlags(cfg, sourceGo.GOFLAGS); err != nil {
+		return nil, fmt.Errorf("parse Go package flags: %w", err)
+	}
 	commands.environ = sourceGo.apply(commands.environ)
 	var llgoFiles map[string][]string
 	conf.Overlay, llgoFiles, err = buildSourcePatchOverlayForGOROOT(conf.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT, sourcePatchBuildContext{
@@ -790,6 +794,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 	if conf.AllowNoBody {
 		allowMissingFunctionBodies(initial)
+	}
+	if err := initialPackageListErrors(initial); err != nil {
+		return nil, err
 	}
 	mode := conf.Mode
 	var multiOutputDir string
@@ -833,11 +840,14 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		return nil, err
 	}
 
+	defaultGODEBUG, err := resolveDefaultGODEBUG(cfg, sourcePatchGOROOT, initial, patterns)
+	if err != nil {
+		return nil, err
+	}
 	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
-	altCfg := *cfg
-	altCfg.Dir = env.LLGoRuntimeDir()
+	altCfg := runtimePackageConfig(cfg, env.LLGoRuntimeDir())
 	// The runtime submodule may otherwise select a different toolchain from its go.mod.
-	altCfg.Env = withResolvedGoToolchain(cfg.Env, sourcePatchGoVersion)
+	altCfg.Env = withResolvedGoToolchain(altCfg.Env, sourcePatchGoVersion)
 	loadAltSpan := buildTrace.startCoordinator("load runtime packages", map[string]any{
 		"packages": slices.Clone(altPkgPaths),
 	})
@@ -901,6 +911,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		cTransformer:    cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, true),
 		buildTrace:      buildTrace,
 		goVersion:       sourcePatchGoVersion,
+		defaultGODEBUG:  defaultGODEBUG,
 	}
 	defer ctx.closePackageMetas()
 	defer ctx.closePackageArchiveBuffers()
@@ -1083,13 +1094,6 @@ func resolveTestPthreadStackSize(conf *Config) {
 // single-worker scheduler and nogc builds keep their existing root model.
 func useThreadLocalGCRoots(conf *Config, wasmGC bool, workers wasmworkers.Config) bool {
 	return wasmGC && (workers.Enabled() || conf.Goos == "wasip1")
-}
-
-func useShadowStack(goarch string) bool {
-	// WebAssembly has no inspectable native return addresses. Its runtime
-	// callers implementation therefore relies on LLGo's selective software
-	// shadow stack; native targets retain the opt-in diagnostic behavior.
-	return goarch == "wasm" || isEnvOn(llgoShadowStack, false)
 }
 
 type initialPackageLink struct {
@@ -1686,7 +1690,8 @@ type context struct {
 	// goVersion is the GOVERSION of the GOROOT whose standard library is being
 	// compiled. collectEnvInputs records it through sourceGoVersion; compiled
 	// programs report it through addDefaultRuntimeGlobals as runtime.Version().
-	goVersion string
+	goVersion      string
+	defaultGODEBUG map[string]string // generated entry package ID -> effective defaults
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache       map[string][]string // pkg.ID -> absolute .s/.S file paths
@@ -2447,17 +2452,18 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 		return nil, err
 	}
 	gen := genConfig{
-		rtInit:        needRuntime,
-		pyInit:        needPyInit,
-		abiInit:       needAbiInit,
-		packageInits:  packageInits,
-		methodByIndex: methodByIndex,
-		methodByName:  methodByName,
-		abiSymbols:    linkedModuleGlobals(linkedOrder),
-		abiTypes:      ctx.backendAbiTypes(linkedOrder),
-		funcInfo:      funcInfo,
-		pcLineInfo:    pcLineInfo,
-		cExports:      cExports,
+		defaultGODEBUG: ctx.defaultGODEBUG[pkg.ID],
+		rtInit:         needRuntime,
+		pyInit:         needPyInit,
+		abiInit:        needAbiInit,
+		packageInits:   packageInits,
+		methodByIndex:  methodByIndex,
+		methodByName:   methodByName,
+		abiSymbols:     linkedModuleGlobals(linkedOrder),
+		abiTypes:       ctx.backendAbiTypes(linkedOrder),
+		funcInfo:       funcInfo,
+		pcLineInfo:     pcLineInfo,
+		cExports:       cExports,
 	}
 
 	if IsFullRpathEnabled() {
@@ -4200,7 +4206,6 @@ const llgoWasmWorkers = "LLGO_WASM_WORKERS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoFullRpath = "LLGO_FULL_RPATH"
 const llgoBuildCache = "LLGO_BUILD_CACHE"
-const llgoShadowStack = "LLGO_SHADOW_STACK"
 
 // for Plan9 asm translation debug
 const llgoPlan9ASMPkgs = "LLGO_PLAN9ASM_PKGS"

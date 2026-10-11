@@ -824,7 +824,7 @@ func TestGenMainModuleInstallsLocalContextWhenNeeded(t *testing.T) {
 func TestGenMainModuleWASIThreadsInstallsLocalContextWithoutUserLocality(t *testing.T) {
 	llvm.InitializeAllTargets()
 	t.Setenv(llgoWasiThreads, "1")
-	prog := llssa.NewProgram(nil)
+	prog := llssa.NewProgram(&llssa.Target{GOOS: "wasip1", GOARCH: "wasm", Target: "wasi"})
 	installLocalContextTestRuntime(prog)
 	ctx := &context{
 		prog: prog,

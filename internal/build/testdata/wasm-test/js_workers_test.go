@@ -92,8 +92,8 @@ func TestWorkerEmvalFinalizersStayInRealm(t *testing.T) {
 		t.Fatalf("JavaScript values were created on %d worker, want at least 2", len(owners))
 	}
 
-	finalizersDone := make(chan struct{})
-	installWorkerFinalizerBarrier(finalizersDone)
+	finalizersDone := make(chan struct{}, 3)
+	installRetiredWorkerFinalizerBarrier(t, finalizersDone)
 	for range 24 {
 		clobberWorkerStack(16, 1)
 		runtime.GC()
@@ -136,39 +136,8 @@ finalizersComplete:
 }
 
 func TestRetiredWorkerFiberReleasesFinalizer(t *testing.T) {
-	// A finalizable allocation can itself be kept alive by an unrelated
-	// conservative root. Check independent retired fibers before concluding
-	// that the fiber storage remains rooted.
-	for range 3 {
-		if retiredWorkerFiberReleasesFinalizer(t) {
-			return
-		}
-	}
-	t.Fatal("finalizers stayed reachable after their worker fibers exited")
-}
-
-//go:noinline
-func retiredWorkerFiberReleasesFinalizer(t *testing.T) bool {
-	finalized := make(chan struct{})
-	installed := make(chan struct{})
-	go func() {
-		installWorkerFinalizerBarrier(finalized)
-		close(installed)
-	}()
-	<-installed
-	// The notification precedes the goroutine's return. Run a later task on
-	// each worker so its scheduler has retired the finished fiber before GC.
-	settled := make(chan int, 2)
-	for range 2 {
-		wasmworkers.GoIndependent(func() { settled <- schedulerProcID() })
-	}
-	owners := map[int]bool{}
-	for range 2 {
-		owners[<-settled] = true
-	}
-	if len(owners) != 2 {
-		t.Fatalf("fiber retirement reached %d workers, want 2", len(owners))
-	}
+	finalized := make(chan struct{}, 3)
+	installRetiredWorkerFinalizerBarrier(t, finalized)
 
 	// The G has exited, but a conservative reference in its retired fiber
 	// storage must not keep the finalizable object alive indefinitely.
@@ -177,18 +146,46 @@ func retiredWorkerFiberReleasesFinalizer(t *testing.T) bool {
 		runtime.GC()
 		select {
 		case <-finalized:
-			return true
+			return
 		default:
 			time.Sleep(time.Millisecond)
 		}
 	}
-	return false
+	t.Fatal("finalizers stayed reachable after their worker fibers exited")
+}
+
+// Allocate the marker in a fiber that will retire before collection. A marker
+// installed on the collecting fiber may stay visible in its conservative stack
+// scan even after the factory returns; stack clobbering is optimizer dependent.
+func installRetiredWorkerFinalizerBarrier(t *testing.T, finalized chan struct{}) {
+	t.Helper()
+	retired := make(chan struct{})
+	go func() {
+		// Bind this parent and its child to one realm. Once the parent resumes,
+		// that worker has returned from and retired the child's fiber. Two
+		// independent spawns cannot guarantee this: finalizer goroutines may
+		// advance the scheduler's round-robin cursor between them.
+		js.Global()
+		installed := make(chan struct{})
+		go func() {
+			// Any one marker may be retained by an unrelated conservative
+			// root. Install independent markers together and require progress
+			// within the same collection budget, rather than retrying the test.
+			for range 3 {
+				installWorkerFinalizerBarrier(finalized)
+			}
+			close(installed)
+		}()
+		<-installed
+		close(retired)
+	}()
+	<-retired
 }
 
 //go:noinline
 func installWorkerFinalizerBarrier(done chan<- struct{}) {
 	barrier := &workerFinalizerBarrier{}
-	runtime.SetFinalizer(barrier, func(*workerFinalizerBarrier) { close(done) })
+	runtime.SetFinalizer(barrier, func(*workerFinalizerBarrier) { done <- struct{}{} })
 }
 
 //go:noinline

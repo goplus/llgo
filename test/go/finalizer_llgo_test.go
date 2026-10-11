@@ -21,6 +21,88 @@ func getBDWGCFinalizeOnDemand() int32
 //go:linkname setBDWGCFinalizeOnDemand C.GC_set_finalize_on_demand
 func setBDWGCFinalizeOnDemand(enabled int32)
 
+//go:noinline
+func finalizableClosure(value int, finalized chan<- int) func() int {
+	fn := func() int { return value }
+	runtime.SetFinalizer(&fn, func(fn *func() int) { finalized <- (*fn)() })
+	return func() int { return fn() }
+}
+
+func TestRuntimeGoroutineClosureFinalizers(t *testing.T) {
+	const n = 32
+	entered := make(chan struct{}, n)
+	completed := make(chan int, n)
+	finalized := make(chan int, n)
+	release := make(chan struct{})
+	released := false
+	t.Cleanup(func() {
+		if !released {
+			// Unblock workers on early failure; completed sends are buffered.
+			close(release)
+		}
+	})
+	go func() {
+		for i := range n {
+			fn := finalizableClosure(i, finalized)
+			go func() {
+				entered <- struct{}{}
+				<-release
+				completed <- fn()
+			}()
+		}
+	}()
+	for range n {
+		<-entered
+	}
+	for range 3 {
+		runGCWithTimeout(t)
+	}
+	if got := len(finalized); got != 0 {
+		t.Fatalf("finalized %d function variables still captured by live goroutines", got)
+	}
+	close(release)
+	released = true
+	seen := make([]bool, n)
+	for range n {
+		value := <-completed
+		if value < 0 || value >= n || seen[value] {
+			t.Fatalf("invalid closure result %d", value)
+		}
+		seen[value] = true
+	}
+	clear(seen)
+	count := 0
+	deadline := time.After(3 * time.Second)
+	for count <= n/2 {
+		runGCWithTimeout(t)
+		for {
+			select {
+			case value := <-finalized:
+				if value < 0 || value >= n || seen[value] {
+					t.Fatalf("invalid or duplicate finalized closure %d", value)
+				}
+				seen[value] = true
+				count++
+			default:
+				goto drained
+			}
+		}
+	drained:
+		// Conservative stack/register values can retain a few dead closures.
+		// As in the neighboring native finalizer tests, require progress and
+		// detect wholesale retention of the completed goroutines' captured
+		// function variables.
+		if count > n/2 {
+			return
+		}
+		select {
+		case <-deadline:
+			t.Fatalf("only %d/%d completed goroutine closures were finalized", count, n)
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+}
+
 func TestRuntimeAddCleanupStop(t *testing.T) {
 	old := getBDWGCFinalizeOnDemand()
 	setBDWGCFinalizeOnDemand(1)

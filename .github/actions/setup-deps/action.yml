@@ -530,6 +530,9 @@ runs:
       if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'
       id: windows_mingw
       uses: msys2/setup-msys2@v2
+      env:
+        # Configure mirrors before the action's initial package upgrade.
+        __SETUP_MSYS2_USE_MAIN_MIRROR_ONLY: "true"
       with:
         # CLANGARM64 supplies an architecture-native LLVM host and target on
         # the ARM64 runner. The x64 runner keeps CLANG64 as the LLGo host even
@@ -540,7 +543,18 @@ runs:
         release: ${{ runner.arch != 'ARM64' }}
         path-type: inherit
         update: true
-        install: pacman-contrib
+        # Cache dependency downloads below instead of bootstrap packages.
+        # Avoid Bash-based pruning, which has failed intermittently on ARM64.
+        cache: false
+
+    - name: Cache Windows MinGW packages
+      if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.windows_mingw.outputs.msys2-location }}/var/cache/pacman/pkg
+        key: llgo-msys2-mingw-${{ runner.arch }}-${{ inputs.windows-arch }}-llvm${{ inputs.llvm-version }}-${{ hashFiles('.github/actions/setup-deps/action.yml') }}
+        restore-keys: |
+          llgo-msys2-mingw-${{ runner.arch }}-${{ inputs.windows-arch }}-llvm${{ inputs.llvm-version }}-
 
     - name: Test MSYS2 package retry helper
       if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'

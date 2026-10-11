@@ -757,11 +757,12 @@ func (p *context) funcKind(vfn ssa.Value) int {
 					return fnIgnore
 				}
 			}
-		} else {
-			last := params.At(n - 1)
-			if last.Name() == llssa.NameValist {
-				return fnHasVArg
-			}
+		}
+	}
+	// Direct C symbols and indirect function values share the same varargs rule.
+	if vfn != nil {
+		if signature, ok := vfn.Type().Underlying().(*types.Signature); ok && llssa.HasNameValist(signature) {
+			return fnHasVArg
 		}
 	}
 	return fnNormal
@@ -2029,13 +2030,16 @@ func (p *context) recordRuntimeLocation(b llssa.Builder, pos token.Pos, fn strin
 	if position.Line <= 0 || position.Filename == "" {
 		return
 	}
-	p.callRuntimeLocation(
-		b, fn,
-		b.Convert(p.prog.Uintptr(), p.fn.Expr),
-		b.Str(p.runtimeCallerFrameName()),
-		b.Str(position.Filename),
-		p.prog.IntVal(uint64(position.Line), p.prog.Int()),
-	)
+	name := p.runtimeCallerFrameName()
+	b.EmitLocationRecord(fn, name, position.Filename, position.Line, func() llssa.Expr {
+		return p.callRuntimeLocation(
+			b, fn,
+			b.Convert(p.prog.Uintptr(), p.fn.Expr),
+			b.Str(name),
+			b.Str(position.Filename),
+			p.prog.IntVal(uint64(position.Line), p.prog.Int()),
+		)
+	})
 }
 
 // callRuntimeLocation keeps static strings out of the caller's Wasm C stack.

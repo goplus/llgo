@@ -272,6 +272,12 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: dev/test_runtime_go_versions.sh
 
+      - name: Run caller regressions in C shared libraries and archives
+        if: runner.os != 'Windows'
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+        run: dev/test_std_buildmodes.sh ./test/std/runtime
+
       - name: Validate the native Windows toolchain profile
         if: runner.os == 'Windows'
         shell: pwsh
@@ -515,6 +521,7 @@ jobs:
           msystem: MSYS
           path-type: inherit
           update: false
+          cache: false
 
       - name: Test from the MSYS2 host shell
         if: ${{ runner.os == 'Windows' }}
@@ -583,6 +590,42 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Complete GDB worker unwind failed with exit code $LASTEXITCODE"
           }
+
+  runtime-arm64:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: prepare
+    name: runtime regressions (Linux ARM64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      LLGO_ROOT: ${{ github.workspace }}
+      LLGO_BUILD_CACHE: "1"
+      LLGO_DYNUNWIND: "1"
+      LLGO_DYNUNWIND_DEBUG: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 22
+      - uses: ./.github/actions/setup-go
+      - uses: ./.github/actions/setup-llgo-cache
+      - name: Install GNU libunwind for the changed fault-unwind path
+        run: sudo timeout 5m apt-get install -y libunwind8
+      - name: Build LLGo
+        run: |
+          go build -o "$RUNNER_TEMP/llgo" ./cmd/llgo
+          echo "LLGO=$RUNNER_TEMP/llgo" >> "$GITHUB_ENV"
+      - name: Run captured closures, hardware faults and synchronization
+        run: |
+          set -euo pipefail
+          "$LLGO" test -v -count=1 -timeout=2m \
+            -run '^(TestReflectCallCapturedClosure|TestRuntimeCallersDeepFault)$' ./test/go \
+            2>&1 | tee "$RUNNER_TEMP/arm64-faults.log"
+          # Ensure the changed GNU libunwind path actually ran.
+          grep -Eq '\[dynunwind\] flavor=linux-nongnu frames=[1-9]' "$RUNNER_TEMP/arm64-faults.log"
+          "$LLGO" test -v -count=1 -timeout=2m ./test/std/runtime ./test/std/sync
+      - name: Run caller regressions in C shared libraries and archives
+        run: dev/test_std_buildmodes.sh ./test/std/runtime
 
   native-debuggers-intel:
     name: Native debuggers (macOS Intel, GDB values and registry)
@@ -807,7 +850,7 @@ jobs:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
     name: wasm-runtime (${{ matrix.suite }})
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -867,7 +910,7 @@ jobs:
           dev/build_ci_tools.sh "$RUNNER_TEMP/llgo-bin"
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
-      - name: Test reflected method value calls
+      - name: Test reflected method calls and large initializers
         if: matrix.suite == 'runtime'
         shell: bash
         env:
@@ -878,6 +921,11 @@ jobs:
             for target in wasi emscripten emscripten-memory64; do
               "$LLGO" run -O2 -target "$target" -emulator "./test/wasm/$fixture"
             done
+          done
+          for profile in J32-GoJS J32-Emscripten J64-Emscripten W32-WASI; do
+            go test ./test/goroot -run '^TestGoRootRunCases$' -count=1 -timeout=4m -v -args \
+              -llgo "$LLGO" -goroot "$(go env GOROOT)" -directive-mode ci \
+              -case '^cmplxdivide\.go$' -wasm-profile "$profile"
           done
 
       - name: Compare WebAssembly EH encodings and Go/C++ boundary
@@ -986,3 +1034,21 @@ jobs:
         run: |
           bash dev/test_wasm_stdlib_test.sh
           bash dev/test_wasm_stdlib.sh
+
+      - name: Run caller and large-function regressions on browser targets
+        if: matrix.suite == 'test-command'
+        timeout-minutes: 15
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+        run: |
+          set -euo pipefail
+          for target in emscripten emscripten-memory64; do
+            "$LLGO" test -target "$target" -emulator -v -count=1 -timeout=90s ./test/std/runtime
+          done
+          GOOS=js GOARCH=wasm "$LLGO" test -v -count=1 -timeout=90s ./test/std/runtime
+          for profile in J32-Emscripten J64-Emscripten J32-GoJS; do
+            go test ./test/goroot -v -run '^TestGoRootRunCases$' -count=1 -timeout=10m -args \
+              -goroot "$(go env GOROOT)" -llgo "$LLGO" -wasm-profile "$profile" -directive-mode ci -dirs .,fixedbugs \
+              -case '^(clearfat\.go|fixedbugs/issue(22662|5856)\.go)$' -min-swap-free-mib=0
+          done

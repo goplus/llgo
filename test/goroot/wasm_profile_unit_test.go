@@ -47,7 +47,7 @@ func TestGOROOTWasmBuildAndRunCommands(t *testing.T) {
 		t.Fatalf("build args: %v", got)
 	}
 	app, args, targetEnv, err := gorootArtifactCommand("/work", "out.mjs", true, env, "one")
-	if err != nil || app != "node" || !reflect.DeepEqual(args, []string{filepath.Join("/llgo", "targets", "emscripten-memory64-runner.mjs"), "out.mjs", "one"}) {
+	if err != nil || app != "node" || !reflect.DeepEqual(args, []string{"--stack-size=8192", filepath.Join("/llgo", "targets", "emscripten-memory64-runner.mjs"), "out.mjs", "one"}) {
 		t.Fatalf("LLGo command: %q %v %v", app, args, err)
 	}
 	if envEntry(targetEnv, "GOOS") != "js" || envEntry(targetEnv, "GOARCH") != "wasm" || envEntry(targetEnv, "CGO_ENABLED") != "0" || envEntry(targetEnv, "GOMAXPROCS") != "1" {
@@ -63,7 +63,7 @@ func TestGOROOTGoJSRunCommandModelsBrowser(t *testing.T) {
 	withGOROOTWasmProfile(t, "J32-GoJS")
 	env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo"}
 	app, args, _, err := gorootArtifactCommand("/work", "out.mjs", true, env, "arg")
-	want := []string{filepath.Join("/llgo", "targets", "emscripten-runner.mjs"), "--browser-only", "out.mjs", "arg"}
+	want := []string{"--stack-size=8192", filepath.Join("/llgo", "targets", "emscripten-runner.mjs"), "--browser-only", "out.mjs", "arg"}
 	if err != nil || app != "node" || !reflect.DeepEqual(args, want) {
 		t.Fatalf("GoJS command: %q %v %v", app, args, err)
 	}
@@ -74,13 +74,17 @@ func TestGOROOTWasiRunCommand(t *testing.T) {
 	dir := t.TempDir()
 	for _, llgo := range []bool{false, true} {
 		for _, threads := range []string{"", "1"} {
-			env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo", "LLGO_WASI_THREADS=" + threads, "RUST_LOG=warn"}
+			env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo", "LLGO_WASI_THREADS=" + threads, "RUST_LOG=warn", "PATH=/tools/bin:/usr/bin"}
 			app, args, targetEnv, err := gorootArtifactCommand(dir, "out.wasm", llgo, env, "-test.v")
 			workVolume, tempVolume, guestCwd := dir, "/tmp", dir
 			if runtime.GOOS == "windows" {
 				workVolume, tempVolume, guestCwd = dir+":/work", os.TempDir()+":/tmp", "/work"
 			}
-			want := []string{"run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
+			rootVolume, guestRoot := "/go", "/go"
+			if runtime.GOOS == "windows" {
+				rootVolume, guestRoot = "/go:/goroot", "/goroot"
+			}
+			want := []string{"run", "--env=PATH=/tools/bin:/usr/bin", "--volume=" + rootVolume, "--env=GOROOT=" + guestRoot, "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
 				"--volume=" + workVolume, "--volume=" + tempVolume, "--env=PWD=" + guestCwd, "out.wasm", "--", "-test.v"}
 			if err != nil || app != "wasmer" || !reflect.DeepEqual(args, want) || envEntry(targetEnv, "GOWASIRUNTIME") != "wasmtime" || envEntry(targetEnv, "RUST_LOG") != "off" {
 				t.Fatalf("llgo=%v threads=%q: WASI command: %q %v %v %v", llgo, threads, app, args, targetEnv, err)

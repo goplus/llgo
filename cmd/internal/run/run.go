@@ -19,6 +19,7 @@ package run
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -80,6 +81,9 @@ func runCmpTest(cmd *base.Command, args []string) {
 func runCmdEx(cmd *base.Command, args []string, mode build.Mode, goBuildFlags *base.PassArgs) {
 
 	if err := cmd.Flag.Parse(args); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(1)
+		}
 		return
 	}
 

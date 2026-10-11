@@ -88,6 +88,8 @@ func main() {
 	waitForBaseline(baseline)
 	testPrivateRootsAndLifecycle(baseline)
 	testIdleForeignThread(baseline)
+	testSemaphoreContention(baseline)
+	testParkedSemaphore(baseline)
 
 	// A parked channel receiver still owns a pthread in this backend. It
 	// must acknowledge a collection without requiring a sender to wake it.
@@ -324,4 +326,76 @@ func waitForRegistered(expected int32) {
 		yieldC()
 	}
 	fail("WASI timer pthread did not start")
+}
+
+func testSemaphoreContention(baseline uint64) {
+	// All 256 pthreads must coexist: their 1 MiB stacks alone exhaust the old
+	// memory limit. Keep the workload short while forcing RWMutex handoffs.
+	const workers = 256
+	var mutex sync.RWMutex
+	m := make(map[int]int, workers)
+	for i := 0; i < workers; i++ {
+		m[i] = 0
+	}
+	ready := make(chan struct{}, workers)
+	start := make(chan struct{})
+	var done sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		done.Add(1)
+		go func(key int) {
+			defer done.Done()
+			ready <- struct{}{}
+			<-start
+			for round := 0; round < 16; round++ {
+				mutex.Lock()
+				m[key]++
+				mutex.Unlock()
+				mutex.RLock()
+				value := m[key]
+				mutex.RUnlock()
+				if value != round+1 {
+					fail("RWMutex handoff lost a map update")
+				}
+			}
+		}(i)
+	}
+	for i := 0; i < workers; i++ {
+		<-ready
+	}
+	close(start)
+	done.Wait()
+	waitForBaseline(baseline)
+}
+
+func testParkedSemaphore(baseline uint64) {
+	var mutex sync.Mutex
+	mutex.Lock()
+	ready := make(chan struct{})
+	done := make(chan bool, 1)
+	go func() {
+		private := &payload{value: 0x1234, next: &payload{value: 0x5678}}
+		close(ready)
+		mutex.Lock()
+		done <- private.value == 0x1234 && private.next.value == 0x5678
+		mutex.Unlock()
+	}()
+	<-ready
+	waitForRegistered(2)
+	for i := 0; i < 1000; i++ {
+		yieldC()
+	}
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for i := 0; i < 6; i++ {
+		runtime.GC()
+	}
+	runtime.ReadMemStats(&after)
+	if after.NumGC < before.NumGC+6 {
+		fail("collection stalled while semaphore waiter was parked")
+	}
+	mutex.Unlock()
+	if !<-done {
+		fail("parked semaphore waiter lost its private roots")
+	}
+	waitForBaseline(baseline)
 }

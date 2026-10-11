@@ -156,6 +156,24 @@ func iface(v int) any {
 	}
 }
 
+func TestCompileUnusedAllocation(t *testing.T) {
+	const src = `package foo
+type object struct { value int }
+func unused() { value := &object{}; _ = value }
+func escaping() *object { return &object{} }
+`
+	for _, mode := range []gossa.BuilderMode{0, gossa.GlobalDebug} {
+		ir := compileWithRewritesMode(t, src, nil, mode)
+		for _, name := range []string{"unused", "escaping"} {
+			body := llvmFunction(t, ir, "foo."+name)
+			want := name == "escaping"
+			if got := strings.Contains(body, "runtime.AllocZ"); got != want {
+				t.Errorf("%s allocation with SSA mode %v = %v, want %v:\n%s", name, mode, got, want, body)
+			}
+		}
+	}
+}
+
 func TestCompileAllocOnDemand(t *testing.T) {
 	ssaPkg, _, _ := buildGoSSAPkg(t, `
 package foo

@@ -5,6 +5,9 @@
 # Applicability is global: entries must not select a Go version or platform.
 not_applicable:
   - directive: run
+    case: fixedbugs/issue5493.go
+    reason: "not applicable: this case requires every captured function variable to be finalized within 20 GC cycles and explicitly skips gccgo's conservative GC; LLGo uses conservative BDWGC or tinygogc roots, so exact finalizer timing is not currently an LLGo compatibility goal"
+  - directive: run
     case: fixedbugs/issue75764.go
     reason: "not applicable: this case asserts cmd/compile's promoted-interface-wrapper tail-call optimization through a wall-clock ratio for 1,000 versus 10,000 wrappers; LLGo delegates optimization to LLVM and does not require gc's constant-time wrapper-chain performance, so this compiler-specific optimization benchmark is outside language compatibility goals"
   - directive: run

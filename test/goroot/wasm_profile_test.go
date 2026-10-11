@@ -124,6 +124,20 @@ func gorootArtifactCommand(dir, artifact string, llgo bool, env []string, progra
 			return "", nil, nil, fmt.Errorf("resolve Wasmer working directory: %w", err)
 		}
 		args := gorootWASIArgs(cwd, os.TempDir(), artifact, runtime.GOOS == "windows")
+		// Source-tree tests such as winbatch.go read runtime.GOROOT(). WASI
+		// guests need that directory preopened in addition to their workdir.
+		if goroot := envEntry(env, "GOROOT"); goroot != "" {
+			volume, guest := goroot, goroot
+			if runtime.GOOS == "windows" {
+				volume, guest = goroot+":/goroot", "/goroot"
+			}
+			args = append([]string{"run", "--volume=" + volume, "--env=GOROOT=" + guest}, args[1:]...)
+		}
+		// Wasmer does not inherit the host environment into the WASI guest.
+		// Keep PATH explicit, as in the public runner, so both baselines see it.
+		if path := envEntry(env, "PATH"); path != "" {
+			args = append([]string{"run", "--env=PATH=" + path}, args[1:]...)
+		}
 		// Suppress engine tracing at its source while preserving the module
 		// cache and guest stdout/stderr, including log-shaped guest output.
 		runEnv := upsertEnv(gorootRuntimeEnv(env), "RUST_LOG=off")
@@ -142,7 +156,9 @@ func gorootArtifactCommand(dir, artifact string, llgo bool, env []string, progra
 		return "", nil, nil, errors.New("target LLGo execution requires LLGO_ROOT")
 	}
 	runner := filepath.Join(root, "targets", p.runner)
-	args := []string{runner}
+	// Match Go's go_js_wasm_exec wrapper: the default 984 KiB V8 stack
+	// cannot run deep-recursion cases such as stackobj2.go.
+	args := []string{"--stack-size=8192", runner}
 	if p.browserOnly {
 		args = append(args, "--browser-only")
 	}

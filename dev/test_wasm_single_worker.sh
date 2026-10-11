@@ -180,18 +180,20 @@ expect_browser_load_failure() {
 
 run_host_call_boundaries() {
 	local module="$1"
+	local flags=()
+	if [[ $# -gt 1 ]]; then flags=("$2"); fi
 	local mode operation status expected marker
-	for mode in return throw exit-0 exit-7; do
+	for mode in return throw exit-0 exit-7 callback-exit-0 callback-exit-7; do
 		for operation in Call Invoke New; do
 			expected=0
 			marker="wasm host call boundary ok"
-			if [[ "${mode}" == exit-* ]]; then
-				expected="${mode#exit-}"
+			if [[ "${mode}" == *exit-* ]]; then
+				expected="${mode##*exit-}"
 				marker="wasm host exit reached"
 			fi
 			status=0
 			run_with_timeout "${node_cmd}" "${repo_root}/dev/test_wasm_js_boundary.mjs" \
-				"${module}" "${mode}" "${operation}" > "${work_dir}/host-call.out" 2>&1 || status=$?
+				"${module}" "${mode}" "${operation}" "${flags[@]}" > "${work_dir}/host-call.out" 2>&1 || status=$?
 			cat "${work_dir}/host-call.out"
 			if [[ ${status} -ne ${expected} ]]; then
 				echo "${mode}/${operation}: expected exit ${expected}, got ${status}" >&2
@@ -400,9 +402,10 @@ run_browser "${work_dir}/callback-gojs.mjs" "wasm callback-only wake ok"
 wasm_ci_run_case L32/wasm-alias scheduler 1 0 0 0 0 \
 	run_llgo_run wasm "${scheduler_fixture}" "wasm scheduler ok" "scheduler-legacy-wasm"
 
-# Reuse both callback modules: no extra compilations for the JS boundary cases.
+# Reuse the callback modules: no extra compilations for JS boundary cases.
 run_host_call_boundaries "${work_dir}/callback-emscripten.mjs"
 run_host_call_boundaries "${work_dir}/callback-memory64.mjs"
+run_host_call_boundaries "${work_dir}/callback-gojs.mjs" --browser-only
 
 fi
 

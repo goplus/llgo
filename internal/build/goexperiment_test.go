@@ -324,8 +324,12 @@ func runGoConfigHelper(mode string) {
 		fmt.Println(`{"GOROOT":"test-root"}`)
 	case "list-failure":
 		json.NewEncoder(os.Stdout).Encode(sourceGoConfig{GOROOT: os.Getenv("LLGO_TEST_SOURCE_GOROOT"), GOVERSION: "go1.27.0"})
-	case "selected-root":
-		json.NewEncoder(os.Stdout).Encode(sourceGoConfig{GOROOT: runtime.GOROOT(), GOVERSION: runtime.Version()})
+	case "selected-root", "invalid-goflags":
+		cfg := sourceGoConfig{GOROOT: runtime.GOROOT(), GOVERSION: runtime.Version()}
+		if mode == "invalid-goflags" {
+			cfg.GOFLAGS = "'-modfile=unterminated"
+		}
+		json.NewEncoder(os.Stdout).Encode(cfg)
 	}
 }
 

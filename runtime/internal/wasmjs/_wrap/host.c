@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <emscripten.h>
 
-EM_JS_DEPS(llgo_js_host, "$getWasmTableEntry,$Asyncify,$Fibers,$ExitStatus");
+EM_JS_DEPS(llgo_js_host, "$getWasmTableEntry,$Asyncify,$Fibers,$ExitStatus,emscripten_stack_get_base,emscripten_stack_get_end,emscripten_stack_set_limits");
 
 EM_JS(void, llgo_js_random_data, (uint8_t *data, size_t length), {
     globalThis.crypto.getRandomValues(HEAPU8.subarray(Number(data), Number(data) + Number(length)));
@@ -43,6 +43,49 @@ EM_JS(void, llgo_js_host, (int32_t op, uint64_t *frame), {
     }
     let state = Module['llgoGoJS'];
     if (!state) {
+        // The GoJS provider keeps GOROOT's syscall implementation. Match the
+        // browser fallbacks from wasm_exec.js, including console writes, while
+        // preserving Node's native fs/path or a host-supplied implementation.
+        if (!globalThis.fs) {
+            const decoder = new TextDecoder('utf-8');
+            let output = "";
+            const enosys = () => {
+                const error = new Error('not implemented');
+                error.code = 'ENOSYS';
+                return error;
+            };
+            globalThis.fs = {
+                constants: { O_WRONLY: -1, O_RDWR: -1, O_CREAT: -1, O_TRUNC: -1,
+                             O_APPEND: -1, O_EXCL: -1, O_DIRECTORY: -1 },
+                writeSync(fd, buffer) {
+                    output += decoder.decode(buffer);
+                    const newline = output.lastIndexOf('\n');
+                    if (newline !== -1) {
+                        console.log(output.substring(0, newline));
+                        output = output.substring(newline + 1);
+                    }
+                    return buffer.length;
+                },
+                write(fd, buffer, offset, length, position, callback) {
+                    if (offset !== 0 || length !== buffer.length || position !== null) {
+                        callback(enosys());
+                        return;
+                    }
+                    callback(null, this.writeSync(fd, buffer));
+                },
+                fsync(fd, callback) { callback(null); },
+            };
+            for (const name of ['chmod', 'chown', 'close', 'fchmod', 'fchown',
+                               'fstat', 'ftruncate', 'lchown', 'link', 'lstat',
+                               'mkdir', 'open', 'read', 'readdir', 'readlink',
+                               'rename', 'rmdir', 'stat', 'symlink', 'truncate',
+                               'unlink', 'utimes']) {
+                globalThis.fs[name] = (...args) => args[args.length - 1](enosys());
+            }
+        }
+        if (!globalThis.path) {
+            globalThis.path = { resolve(...segments) { return segments.join('/'); } };
+        }
         state = {
             _pendingEvent: null,
             pending: [],
@@ -66,10 +109,24 @@ EM_JS(void, llgo_js_host, (int32_t op, uint64_t *frame), {
                     // only after this handler finishes on its original G.
                     const callStack = Asyncify.exportCallStack;
                     const trampolineRunning = Fibers.trampolineRunning;
+                    const stackBase = _emscripten_stack_get_base();
+                    const stackEnd = _emscripten_stack_get_end();
                     Asyncify.exportCallStack = [];
                     Fibers.trampolineRunning = false;
                     try {
                         state.handler();
+                        // Asyncify.doRewind consumes ExitStatus. Do not return
+                        // into the suspended caller after another fiber exits.
+                        if (ABORT) throw new ExitStatus(EXITSTATUS);
+                    } catch (error) {
+                        // A different fiber can exit while this handler is
+                        // parked. Restore the calling fiber before outer
+                        // invoke wrappers restore their saved stack pointers.
+                        _emscripten_stack_set_limits(stackBase, stackEnd);
+                        if (typeof ___set_stack_limits === "function") {
+                            ___set_stack_limits(stackBase, stackEnd);
+                        }
+                        throw error;
                     } finally {
                         Asyncify.exportCallStack = callStack;
                         Fibers.trampolineRunning = trampolineRunning;

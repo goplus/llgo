@@ -72,8 +72,9 @@ executable breakpoint lines with `LLDB_BREAK`, while `test.py` keeps the
 expected variables and values in an explicit SB API test table. Assertions are
 not parsed from source comments. The goroutine fixture forces a collection
 while workers are live. On Linux, the harness delivers Boehm's default
-`SIGPWR`/`SIGXCPU` handshake signals without stopping; faults and other
-unexpected stops still fail with their stop reason and source frames.
+`SIGPWR`/`SIGXCPU` handshake signals and the thread snapshot signal `SIGURG`
+without stopping. Faults and other unexpected stops still fail with their stop
+reason and source frames.
 
 ```text
 # github.com/xgo-dev/llgo/cl/_testdata/debug

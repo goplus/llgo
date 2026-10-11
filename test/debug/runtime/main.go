@@ -238,6 +238,7 @@ func RuntimeGoroutineValues() {
 	if <-ready+<-ready != readySum {
 		panic("goroutine ready mismatch")
 	}
+	waitForParkedWorkers()
 	InspectGoroutineValues(readySum)
 	close(release)
 	resultSum := <-results + <-results

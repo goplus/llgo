@@ -289,7 +289,7 @@ class CollectorSignalTests(unittest.TestCase):
             with self.assertRaises(fixture.LLDBTestException):
                 debugger.check_target_contract(replace(after, triple=triple))
 
-    def test_only_collector_signals_are_delivered_and_continued(self):
+    def test_only_runtime_signals_are_delivered_and_continued(self):
         lldb.eStateStopped = 5
         lldb.eStopReasonSignal = 5
         lldb.eStopReasonBreakpoint = 3
@@ -307,23 +307,47 @@ class CollectorSignalTests(unittest.TestCase):
         process.__iter__.return_value = [thread]
         thread.GetStopReason.return_value = lldb.eStopReasonSignal
         signals = process.GetUnixSignals.return_value
-        signals.GetSignalNumberFromName.side_effect = {"SIGPWR": 30, "SIGXCPU": 24}.get
-        for signal_number in (30, 24):
+        signals.GetSignalNumberFromName.side_effect = {"SIGPWR": 30, "SIGXCPU": 24, "SIGURG": 23}.get
+        resumed = Mock()
+        resumed.Fail.return_value = False
+
+        def hit_breakpoint():
+            thread.GetStopReason.return_value = lldb.eStopReasonBreakpoint
+            return resumed
+
+        for signal_number in (30, 24, 23):
             with self.subTest(signal=signal_number):
                 thread.GetStopReason.return_value = lldb.eStopReasonSignal
                 thread.GetStopReasonDataAtIndex.return_value = signal_number
-                process.Continue.side_effect = lambda: setattr(
-                    thread.GetStopReason, "return_value", lldb.eStopReasonBreakpoint)
+                process.Continue.side_effect = hit_breakpoint
                 process.Continue.reset_mock()
-                debugger.continue_gc_signals()
+                debugger.continue_runtime_signals()
                 process.Continue.assert_called_once()
                 signals.SetShouldStop.assert_any_call(signal_number, False)
                 signals.SetShouldSuppress.assert_any_call(signal_number, False)
+        # Repeated snapshot polls can produce more than four SIGURG stops.
+        thread.GetStopReason.return_value = lldb.eStopReasonSignal
+        thread.GetStopReasonDataAtIndex.return_value = 23
+        process.Continue.reset_mock()
+
+        def finish_snapshots():
+            if process.Continue.call_count == 8:
+                thread.GetStopReason.return_value = lldb.eStopReasonBreakpoint
+            return resumed
+
+        process.Continue.side_effect = finish_snapshots
+        debugger.continue_runtime_signals()
+        self.assertEqual(process.Continue.call_count, 8)
+        # A failed continue must not turn the signal-draining loop into a hang.
+        thread.GetStopReason.return_value = lldb.eStopReasonSignal
+        resumed.Fail.return_value = True
+        with self.assertRaisesRegex(fixture.LLDBTestException, "Cannot continue"):
+            debugger.continue_runtime_signals()
         # SIGSEGV must remain a visible failure, even after GC signal setup.
         thread.GetStopReason.return_value = lldb.eStopReasonSignal
         thread.GetStopReasonDataAtIndex.return_value = 11
         process.Continue.reset_mock()
-        debugger.continue_gc_signals()
+        debugger.continue_runtime_signals()
         process.Continue.assert_not_called()
         # A selected GC stop cannot resume past another thread's real fault.
         other_fault = Mock()
@@ -331,7 +355,7 @@ class CollectorSignalTests(unittest.TestCase):
         other_fault.GetStopReasonDataAtIndex.return_value = 11
         process.__iter__.return_value = [thread, other_fault]
         thread.GetStopReasonDataAtIndex.return_value = 30
-        debugger.continue_gc_signals()
+        debugger.continue_runtime_signals()
         process.Continue.assert_not_called()
         thread.GetStopReasonDataAtIndex.return_value = 11
         # A second thread at the right source line cannot hide a real fault.

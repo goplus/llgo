@@ -34,17 +34,18 @@ import (
 )
 
 type genConfig struct {
-	rtInit        bool
-	pyInit        bool
-	abiInit       int
-	packageInits  []string
-	methodByIndex map[int]none
-	methodByName  map[string]none
-	abiSymbols    map[string]none
-	abiTypes      []llssa.AbiTypeInfo
-	funcInfo      []funcInfoRecord
-	pcLineInfo    []pcLineRecord
-	cExports      []cExport
+	defaultGODEBUG string
+	rtInit         bool
+	pyInit         bool
+	abiInit        int
+	packageInits   []string
+	methodByIndex  map[int]none
+	methodByName   map[string]none
+	abiSymbols     map[string]none
+	abiTypes       []llssa.AbiTypeInfo
+	funcInfo       []funcInfoRecord
+	pcLineInfo     []pcLineRecord
+	cExports       []cExport
 }
 
 type cExport struct {
@@ -122,6 +123,10 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 	}
 
 	runtimeStub := defineWeakNoArgStub(mainPkg, "runtime.init")
+	var godebugInit llssa.Function
+	if _, ok := cfg.abiSymbols["runtime.godebugDefault"]; ok && cfg.defaultGODEBUG != "" {
+		godebugInit = defineDefaultGODEBUGInit(mainPkg, cfg.defaultGODEBUG)
+	}
 	// TODO(lijie): workaround for syscall patch
 	defineWeakNoArgStub(mainPkg, "syscall.init")
 
@@ -177,7 +182,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		if ctx.buildConf.BuildMode == BuildModeCShared && ctx.buildConf.Goos == "linux" {
 			initArraySection = ".init_array"
 		}
-		inits := []llssa.Function{pyInit, rtInit, abiInit, runtimeStub}
+		inits := []llssa.Function{godebugInit, pyInit, rtInit, abiInit, runtimeStub}
 		// Windows already enables this during runtime initialization because
 		// callbacks in ordinary executables also enter from foreign threads.
 		// Other platforms enable it at startup when linked C exports exist.
@@ -226,6 +231,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 			newSignature([]types.Type{types.Typ[types.Int]}, nil), llssa.InGo)
 	}
 	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, entryFunctions{
+		godebugInit:  godebugInit,
 		runtimeStub:  runtimeStub,
 		mainInit:     mainInit,
 		mainMain:     mainMain,
@@ -454,6 +460,7 @@ func filterAbiSymbol(abiInit int, sym *llssa.AbiSymbol) bool {
 }
 
 type entryFunctions struct {
+	godebugInit  llssa.Function
 	runtimeStub  llssa.Function
 	mainInit     llssa.Function
 	mainMain     llssa.Function
@@ -498,11 +505,7 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	// user program has no TLS/GLS declarations. Root that state on the host
 	// entry stack before runtime.init and keep it installed while logical Go
 	// stacks are dispatched by RunWasmMain.
-	// The WASI pthread runtime uses thread-local state during runtime.init,
-	// including caller-location storage. A small program may have no user
-	// locality declarations, so the linked-program query alone is insufficient.
-	hasLocalContext := prog.NeedsLocalContext() || fns.wasmRunMain != nil ||
-		ctx.buildConf.Goos == "wasip1"
+	hasLocalContext := prog.NeedsLocalContext() || fns.wasmRunMain != nil
 	if hasLocalContext {
 		localCtx, previousLocalCtx = b.EnterLocalContext()
 	}
@@ -538,6 +541,9 @@ func defineRuntimeMainFunction(pkg llssa.Package, fns entryFunctions) llssa.Func
 }
 
 func emitRuntimeMainBody(b llssa.Builder, fns entryFunctions) {
+	if fns.godebugInit != nil {
+		b.Call(fns.godebugInit.Expr)
+	}
 	if fns.pyInit != nil {
 		b.Call(fns.pyInit.Expr)
 	}
@@ -573,6 +579,31 @@ func emitRuntimeMainBody(b llssa.Builder, fns entryFunctions) {
 		b.Call(fns.stdioFlush.Expr, b.Prog.Nil(b.Prog.VoidPtr()))
 		b.Call(fns.processExit.Expr, b.Prog.IntVal(0, b.Prog.Int32()))
 	}
+}
+
+// This uncached entry initializer runs before runtime and package init, so
+// internal/godebug's first update already observes the executable's defaults.
+func defineDefaultGODEBUGInit(pkg llssa.Package, defaults string) llssa.Function {
+	prog := pkg.Prog
+	global := pkg.NewVarEx("runtime.godebugDefault", prog.Pointer(prog.String()))
+	// The entry bypasses source-module optimization, which normally names
+	// anonymous literals before ThinLTO summary emission. Give these bytes
+	// an explicit local name so ThinLTO can rename and import them safely.
+	array := prog.Type(types.NewArray(types.Typ[types.Byte], int64(len(defaults))), llssa.InGo)
+	data := pkg.NewVarEx("__llgo_godebug_data", prog.Pointer(array))
+	data.Init(prog.ConstByteArray(array, []byte(defaults)))
+	dataValue := pkg.Module().NamedGlobal("__llgo_godebug_data")
+	dataValue.SetLinkage(llvm.PrivateLinkage)
+	dataValue.SetGlobalConstant(true)
+	dataValue.SetUnnamedAddr(true)
+	value := prog.ConstStruct(prog.String(), []llssa.Expr{data.Expr, prog.IntVal(uint64(len(defaults)), prog.Uintptr())})
+	fn := pkg.NewFunc("__llgo_godebug_init", llssa.NoArgsNoRet, llssa.InGo)
+	fnValue := pkg.Module().NamedFunction("__llgo_godebug_init")
+	fnValue.SetLinkage(llvm.InternalLinkage)
+	b := fn.MakeBody(1)
+	b.Store(global.Expr, value)
+	b.Return()
+	return fn
 }
 
 func defineWasmMainTask(pkg llssa.Package, packageInits []llssa.Function, mainInit, mainMain llssa.Function) {

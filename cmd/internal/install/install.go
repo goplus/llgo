@@ -18,6 +18,7 @@
 package install
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -46,6 +47,9 @@ func init() {
 func runCmd(cmd *base.Command, args []string) {
 
 	if err := cmd.Flag.Parse(args); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(1)
+		}
 		return
 	}
 

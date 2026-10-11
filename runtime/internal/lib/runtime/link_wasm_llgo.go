@@ -75,9 +75,3 @@ func os_beforeExit(exitCode int) {
 //
 //go:linkname os_sigpipe os.sigpipe
 func os_sigpipe() {}
-
-//go:linkname syscall_Exit syscall.Exit
-//go:nosplit
-func syscall_Exit(code int) {
-	c.Exit(c.Int(code))
-}

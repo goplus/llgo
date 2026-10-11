@@ -299,10 +299,10 @@ func TestUseWASIThreadsImportsMemory(t *testing.T) {
 	if slices.Contains(export.LDFLAGS, "-lwasi-emulated-pthread") {
 		t.Fatalf("LDFLAGS select the single-thread pthread shim: %v", export.LDFLAGS)
 	}
-	if !slices.Contains(export.LDFLAGS, "-Wl,--initial-memory=67108864") {
-		t.Fatalf("WASI pthread initial-memory contract changed: %v", export.LDFLAGS)
+	if slices.Contains(export.LDFLAGS, "-Wl,--initial-memory=67108864") {
+		t.Fatalf("WASI pthread memory must include static data in addition to the default heap: %v", export.LDFLAGS)
 	}
-	if !slices.Contains(export.LDFLAGS, "-Wl,--max-memory=268435456") {
+	if !slices.Contains(export.LDFLAGS, "-Wl,--max-memory=536870912") {
 		t.Fatalf("WASI pthread memory has no room for additional GC arenas: %v", export.LDFLAGS)
 	}
 	if export.WasmPostLink.Asyncify {

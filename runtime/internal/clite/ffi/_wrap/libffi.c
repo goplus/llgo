@@ -46,7 +46,8 @@ void *llgo_ffi_closure_alloc(void **code) {
 /*
  * Use libffi's Go ABI directly when its static-chain register is LLGo's nest
  * register. ARM32 needs only a final register bridge from libffi's IP/R12 to
- * swiftself/R10. Use the public-ffi_call trampoline when libffi does not
+ * swiftself/R10. AArch64 ELF bridges libffi's X18 to LLVM's nest/X15.
+ * Use the public-ffi_call trampoline when libffi does not
  * expose its Go ABI on x86, and on AArch64 Apple/Android where X18 is reserved
  * and LLGo uses swiftself/X20 instead.
  *
@@ -61,10 +62,11 @@ void *llgo_ffi_closure_alloc(void **code) {
 
 #if defined(FFI_GO_CLOSURES) &&                                           \
     (defined(__x86_64__) || defined(__i386__) || defined(__riscv) ||       \
-     defined(__riscv__) ||                                                 \
-     (defined(__aarch64__) && !defined(__APPLE__) && !defined(__ANDROID__) && \
-      !defined(_WIN32)))
+     defined(__riscv__))
 #define LLGO_FFI_CALL_GO_DIRECT 1
+#elif defined(FFI_GO_CLOSURES) && defined(__aarch64__) && !defined(__APPLE__) && \
+    !defined(__ANDROID__) && !defined(_WIN32)
+#define LLGO_FFI_CALL_GO_AARCH64_BRIDGE 1
 #elif !defined(_WIN32) && defined(__arm__)
 #define LLGO_FFI_CALL_GO_ARM_BRIDGE 1
 #elif (defined(_WIN32) && defined(__aarch64__)) ||                         \
@@ -85,6 +87,7 @@ void *llgo_ffi_closure_alloc(void **code) {
 #error "LLGo hidden closure environments require libffi Go closures on this target"
 #elif defined(LLGO_FFI_HIDDEN_ENV_TARGET) &&                              \
     (defined(LLGO_FFI_CALL_GO_DIRECT) +                                   \
+         defined(LLGO_FFI_CALL_GO_AARCH64_BRIDGE) +                       \
          defined(LLGO_FFI_CALL_GO_ARM_BRIDGE) +                           \
          defined(LLGO_FFI_CALL_PUBLIC_TRAMPOLINE) !=                      \
      1)
@@ -96,6 +99,28 @@ void *llgo_ffi_closure_alloc(void **code) {
 void llgo_ffi_call_with_env(ffi_cif *cif, void (*fn)(void), void *rvalue,
                             void **avalue, void *env) {
     ffi_call_go(cif, fn, rvalue, avalue, env);
+}
+
+#elif defined(LLGO_FFI_CALL_GO_AARCH64_BRIDGE)
+
+struct llgo_ffi_call_context {
+    void (*target)(void);
+    void *env;
+};
+
+/* libffi installs the context in X18; LLVM's AArch64 nest entry reads X15.
+ * A tail branch preserves every C argument, the return address and SP. */
+__attribute__((naked)) static void llgo_ffi_env_trampoline(void) {
+    __asm__ volatile(
+        "ldr x16, [x18, #0]\n\t"
+        "ldr x15, [x18, #8]\n\t"
+        "br x16");
+}
+
+void llgo_ffi_call_with_env(ffi_cif *cif, void (*fn)(void), void *rvalue,
+                            void **avalue, void *env) {
+    struct llgo_ffi_call_context call = { .target = fn, .env = env };
+    ffi_call_go(cif, llgo_ffi_env_trampoline, rvalue, avalue, &call);
 }
 
 #elif defined(LLGO_FFI_CALL_GO_ARM_BRIDGE)

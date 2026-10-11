@@ -1,4 +1,4 @@
-//go:build darwin || linux || (llgo && wasip1 && wasm && llgo.wasi_threads)
+//go:build darwin || (linux && baremetal)
 
 package runtime
 

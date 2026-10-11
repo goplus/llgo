@@ -128,8 +128,9 @@ def main():
                         "-o", str(simd)], check=True, timeout=30)
         subprocess.run(wasmer_command(simd), env=env, check=True, timeout=30)
         print("wasi SIMD/thread/standard-EH boundary ok", flush=True)
-        run_probe(env, directory, "startup", "wasm-wasi-thread-startup", "nogc",
-                  "wasi thread startup ok", 30)
+        for tags in ("nogc", ""):
+            run_probe(env, directory, f"startup-{tags or 'gc'}", "wasm-wasi-thread-startup", tags,
+                      "wasi thread startup ok", 30)
         # Accept a host error (1) or the guest fatal status (2), never success.
         deadlock_exits = (1, 2)
         # LLVM lowers both Go defer/Goexit and C setjmp/longjmp through standard
@@ -182,6 +183,9 @@ def main():
                   "wasi threads ok", 30)
         run_probe(env, directory, "threaded-gc", "wasm-wasi-threaded-gc",
                   "", "wasi threaded gc ok", 180)
+        run_llgo(env, ["test", "-v", "-count=1", "-target", "wasi", "-emulator",
+                       str(ROOT / "test/std/runtime"), str(ROOT / "test/std/sync")],
+                 "PASS", timeout=300)
         run_arena_boundaries(env, directory)
         for _ in range(2):
             # The second build exercises the bridge-enabled package cache.
@@ -244,7 +248,7 @@ def main():
             ["go", "test", "./test/goroot", "-run", "^TestGoRootRunCases$",
              "-count=1", "-args", "-goroot", goroot, "-llgo", LLGO,
              "-wasm-profile", "W32-WASI", "-directive-mode", "ci",
-             "-case", r"^helloworld\.go$", "-min-swap-free-mib=0"],
+             "-case", r"^(helloworld|env)\.go$", "-min-swap-free-mib=0"],
             check=True, cwd=ROOT, env=env, timeout=180,
         )
 
