@@ -18,7 +18,11 @@
 
 package runtime
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/xgo-dev/llgo/runtime/internal/thread"
+)
 
 // The pthread backend keeps its one-to-one M/P pair in the G context without
 // exposing those fields to other execution-context backends.
@@ -130,6 +134,7 @@ func mexit(mp *m) {
 }
 
 func goschedBackend() {
+	thread.Yield()
 }
 
 // GMPForTesting reports the current runtime ownership graph.

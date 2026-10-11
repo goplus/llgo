@@ -52,6 +52,7 @@ var finalizerState struct {
 	once       psync.Once
 	registryMu psync.Mutex // protects m
 	queueMu    psync.Mutex // protects queue state and callback argument publication
+	ready      psync.Cond
 	m          map[uintptr]*finalizerEntry
 	head       *finalizerEntry
 	tail       *finalizerEntry
@@ -60,7 +61,9 @@ var finalizerState struct {
 func initFinalizerState() {
 	finalizerState.registryMu.Init(nil)
 	finalizerState.queueMu.Init(nil)
+	finalizerState.ready.Init(nil)
 	finalizerState.m = make(map[uintptr]*finalizerEntry)
+	go runFinalizers()
 }
 
 func SetFinalizer(obj any, finalizer any) {
@@ -202,7 +205,7 @@ func setFinalizerCallback(ptr unsafe.Pointer, cb unsafe.Pointer) {
 	// GC_invoke_finalizers may run on several threads concurrently. BDWGC
 	// releases its allocation lock before invoking client finalizers, including
 	// from its default allocation-time path, so serialize queue publication
-	// with concurrent drainers.
+	// with the finalizer worker.
 	// Do not acquire registryMu here: this callback may run during an allocation
 	// made while registryMu is held.
 	finalizerState.queueMu.Lock()
@@ -221,6 +224,7 @@ func setFinalizerCallback(ptr unsafe.Pointer, cb unsafe.Pointer) {
 		finalizerState.tail.next = entry
 		finalizerState.tail = entry
 	}
+	finalizerState.ready.Signal()
 	finalizerState.queueMu.Unlock()
 }
 
@@ -235,14 +239,12 @@ func restoreFinalizer(ptr unsafe.Pointer, entry *finalizerEntry) {
 }
 
 func runFinalizers() {
-	finalizerState.once.Do(initFinalizerState)
 	for {
 		finalizerState.queueMu.Lock()
-		entry := finalizerState.head
-		if entry == nil {
-			finalizerState.queueMu.Unlock()
-			return
+		for finalizerState.head == nil {
+			finalizerState.ready.Wait(&finalizerState.queueMu)
 		}
+		entry := finalizerState.head
 		finalizerState.head = entry.next
 		if finalizerState.head == nil {
 			finalizerState.tail = nil

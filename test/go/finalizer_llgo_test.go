@@ -15,11 +15,75 @@ type concurrentFinalizerValue struct {
 	pad   [64]byte
 }
 
+func TestRuntimeBlockedFinalizerDoesNotBlockGC(t *testing.T) {
+	entered := make(chan struct{}, 32)
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	created := make(chan struct{})
+	go func() {
+		for i := range 32 {
+			p := &concurrentFinalizerValue{value: i}
+			runtime.SetFinalizer(p, func(*concurrentFinalizerValue) {
+				entered <- struct{}{}
+				<-release
+			})
+		}
+		close(created)
+	}()
+	<-created
+	deadline := time.After(3 * time.Second)
+	for {
+		runGCWithTimeout(t)
+		select {
+		case <-entered:
+			// An already-running finalizer must not prevent a subsequent GC
+			// from completing either.
+			runGCWithTimeout(t)
+			return
+		case <-deadline:
+			t.Fatal("no finalizer started")
+		default:
+			runtime.Gosched()
+		}
+	}
+}
+
 //go:linkname getBDWGCFinalizeOnDemand C.GC_get_finalize_on_demand
 func getBDWGCFinalizeOnDemand() int32
 
 //go:linkname setBDWGCFinalizeOnDemand C.GC_set_finalize_on_demand
 func setBDWGCFinalizeOnDemand(enabled int32)
+
+//go:linkname collectBDWGC C.GC_gcollect
+func collectBDWGC()
+
+//go:linkname invokeBDWGCFinalizers C.GC_invoke_finalizers
+func invokeBDWGCFinalizers() int32
+
+func TestRuntimeCollectorFinalizersWakeWorker(t *testing.T) {
+	const n = 32
+	finalized := make(chan int32, n)
+	created := make(chan struct{})
+	go func() {
+		makeFinalizerTinyObjects(n, finalized)
+		close(created)
+	}()
+	<-created
+
+	deadline := time.After(3 * time.Second)
+	for len(finalized) <= n/2 {
+		// Exercise the collector callback without runtime.GC's explicit drain,
+		// as happens when BDWGC invokes callbacks during an allocation.
+		collectBDWGC()
+		invokeBDWGCFinalizers()
+		runtime.Gosched()
+		select {
+		case <-deadline:
+			t.Fatalf("only %d/%d collector finalizers ran", len(finalized), n)
+		default:
+		}
+	}
+}
 
 //go:noinline
 func finalizableClosure(value int, finalized chan<- int) func() int {
@@ -175,18 +239,21 @@ func TestRuntimeGCDrainsBDWGCFinalizersOnDemand(t *testing.T) {
 	}()
 	<-created
 
-	// InvokeFinalizers runs synchronously once BDWGC has queued an object.
-	// The retries only let the producer goroutine exit so that conservative
-	// stack and register roots no longer keep the objects reachable.
-	for range 8 {
+	// BDWGC callbacks enqueue work, and the independent worker executes user
+	// finalizers. Let both the producer's conservative roots disappear and the
+	// worker run; GC completion does not imply finalizer completion.
+	deadline := time.After(3 * time.Second)
+	for {
 		runtime.Gosched()
 		runGCWithTimeout(t)
 		if len(finalized) > n/2 {
 			return
 		}
-	}
-	if got := len(finalized); got <= n/2 {
-		t.Fatalf("runtime.GC ran only %d/%d on-demand finalizers", got, n)
+		select {
+		case <-deadline:
+			t.Fatalf("only %d/%d on-demand finalizers completed", len(finalized), n)
+		default:
+		}
 	}
 }
 

@@ -44,6 +44,11 @@ func createDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int
 //go:linkname exit C.llgo_win_thread_exit
 func exit()
 
+// Yield lets another runnable host thread execute.
+//
+//go:linkname Yield C.llgo_win_thread_yield
+func Yield()
+
 //go:linkname exitProcess C.llgo_win_thread_exit_process
 func exitProcess(code c.Uint)
 
