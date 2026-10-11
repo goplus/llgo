@@ -25,6 +25,17 @@
     },
     {
       "kind": "branch",
+      "id": "a4ade9aa706468b1",
+      "label": "Branch MeteorsLiu/llgo:codex/reuse-test-backend-release",
+      "path": "series/branch/a4ade9aa706468b1/summary.json",
+      "configPath": "series/branch/a4ade9aa706468b1/config.json",
+      "commitPath": "commits/faaa900770eb64e9969c49fe3fc69d087c0aa786.json",
+      "sha": "faaa900770eb64e9969c49fe3fc69d087c0aa786",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/faaa900770eb64e9969c49fe3fc69d087c0aa786",
+      "updatedAt": "2026-10-11T12:05:26.242Z"
+    },
+    {
+      "kind": "branch",
       "id": "89a358ed453566a0",
       "label": "Branch MeteorsLiu/llgo:feat/llar-wrapper",
       "path": "series/branch/89a358ed453566a0/summary.json",
@@ -8481,6 +8492,17 @@
       "sha": "8f1e304068b49856ac9f899cbb5e26c12462a52d",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/8f1e304068b49856ac9f899cbb5e26c12462a52d",
       "updatedAt": "2026-10-11T11:11:57.008Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2784",
+      "label": "PR #2784",
+      "path": "series/pull/2784/summary.json",
+      "configPath": "series/pull/2784/config.json",
+      "commitPath": "commits/faaa900770eb64e9969c49fe3fc69d087c0aa786.json",
+      "sha": "faaa900770eb64e9969c49fe3fc69d087c0aa786",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/faaa900770eb64e9969c49fe3fc69d087c0aa786",
+      "updatedAt": "2026-10-11T12:05:24.299Z"
     }
   ]
 }
