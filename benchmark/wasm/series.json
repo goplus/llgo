@@ -1719,6 +1719,17 @@
     },
     {
       "kind": "branch",
+      "id": "00a0dfe92a461a90",
+      "label": "Branch fennoai/issue-2786-1791749696",
+      "path": "series/branch/00a0dfe92a461a90/summary.json",
+      "configPath": "series/branch/00a0dfe92a461a90/config.json",
+      "commitPath": "commits/0d5a7b963c7e7be83846df719e9f72f0dfde56bd.json",
+      "sha": "0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
+      "updatedAt": "2026-10-11T21:09:52.827Z"
+    },
+    {
+      "kind": "branch",
       "id": "6e9d4575c3aa21ea",
       "label": "Branch visualfc/llgo:experiment/bool-clang-mem",
       "path": "series/branch/6e9d4575c3aa21ea/summary.json",
@@ -4664,6 +4675,17 @@
       "sha": "48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/48c8e9bf9ab7c58aa50cc2702500f2d9105b75d7",
       "updatedAt": "2026-10-11T15:59:36.462Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2787",
+      "label": "PR #2787",
+      "path": "series/pull/2787/summary.json",
+      "configPath": "series/pull/2787/config.json",
+      "commitPath": "commits/0d5a7b963c7e7be83846df719e9f72f0dfde56bd.json",
+      "sha": "0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/0d5a7b963c7e7be83846df719e9f72f0dfde56bd",
+      "updatedAt": "2026-10-11T21:09:52.631Z"
     }
   ]
 }
