@@ -175,6 +175,14 @@ func Run(mod llvm.Module, baseline string) error {
 		variant := fn.CloneFunction()
 		variant.SetName(fn.Name() + variantSuffix)
 		if !fn.IsDeclaration() {
+			// CloneFunction preserves linkage but drops COMDAT. Give the
+			// variant its own group so generic instances merge independently
+			// of their original definitions when linking COFF objects.
+			if original := fn.Comdat(); original.C != nil {
+				group := mod.Comdat(variant.Name())
+				group.SetSelectionKind(original.SelectionKind())
+				variant.SetComdat(group)
+			}
 			source.clone(fn, variant)
 		}
 		features := stringAttribute(fn, "target-features")
