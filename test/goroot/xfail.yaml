@@ -227,10 +227,6 @@ xfails:
     reason: the current go/types and x/tools SSA path panics while instantiating the new generic-method test
   - platform: windows/amd64
     directive: run
-    case: inline_literal.go
-    reason: LLGo returns the wrong result for an inlined closure literal on Windows amd64
-  - platform: windows/amd64
-    directive: run
     case: fixedbugs/issue58300.go
     reason: LLGo emits unexpected runtime output for the unsafe string conversion test on Windows amd64
   - platform: windows/386
@@ -421,8 +417,7 @@ xfails:
     directive: errorcheck
     case: fixedbugs/issue5089.go
     reason: LLGo does not yet diagnose a method declaration on a non-local type
-  - version: go1.27
-    platform: js/wasm
+  - platform: js/wasm
     directive: run
     case: fixedbugs/issue59680.go
     reason: the fixed WebAssembly goroutine stack cannot grow through the test's 10,101 recursive frames

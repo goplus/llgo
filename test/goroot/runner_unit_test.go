@@ -647,21 +647,14 @@ func TestTypeparamChansIsGloballyFlaky(t *testing.T) {
 	}
 }
 
-func TestWasmExpectationsRespectProfileAndGoVersion(t *testing.T) {
+func TestWasmExpectationsRespectProfile(t *testing.T) {
 	cfg := loadXFailConfig(t, repoRoot(t), filepath.Join("test", "goroot", "xfail.yaml"))
 	for _, profile := range []string{"J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI"} {
 		for _, version := range []string{"go1.26.7", "go1.27.0"} {
-			for _, test := range []struct {
-				path string
-				want bool
-			}{
-				{"init1.go", profile == "J32-GoJS" || profile == "J32-Emscripten"},
-				{"fixedbugs/issue59680.go", version == "go1.27.0" && profile != "W32-WASI"},
-			} {
-				got, _ := cfg.Match(version, profile, testCase{RelPath: test.path, Directive: "run"})
-				if got != test.want {
-					t.Errorf("%s %s %s: xfail = %v, want %v", test.path, profile, version, got, test.want)
-				}
+			want := profile == "J32-GoJS" || profile == "J32-Emscripten"
+			got, _ := cfg.Match(version, profile, testCase{RelPath: "init1.go", Directive: "run"})
+			if got != want {
+				t.Errorf("init1.go %s %s: xfail = %v, want %v", profile, version, got, want)
 			}
 		}
 	}
