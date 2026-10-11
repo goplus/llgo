@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -85,6 +86,11 @@ func TestSourceOverlayViewsAndClone(t *testing.T) {
 	}
 	if !reflect.DeepEqual(unprepared.Overlay, before) {
 		t.Fatal("changed parser view on error")
+	}
+	buildConf := NewDefaultConf(ModeBuild)
+	buildConf.SourceOverlay = conf.SourceOverlay
+	if _, err := Do([]string{"../../benchmark/binary_size/println"}, buildConf); err == nil || !strings.Contains(err.Error(), "create source overlay:") {
+		t.Fatalf("Build did not report overlay preparation failure: %v", err)
 	}
 }
 

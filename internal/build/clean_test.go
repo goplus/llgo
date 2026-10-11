@@ -93,6 +93,15 @@ func TestCleanPackageExportsAndListErrors(t *testing.T) {
 	if err := Clean([]string{"."}, &Config{}); err != nil {
 		t.Fatal(err)
 	}
+	// The command layer ignores build-only LLGo defaults for clean. The Go
+	// package loader must not try to parse those defaults a second time.
+	t.Setenv("GOFLAGS", "-size")
+	if err := Clean([]string{"."}, &Config{GoFlagsParsed: true}); err != nil {
+		t.Fatalf("reparsed native command defaults: %v", err)
+	}
+	if got := os.Getenv("GOFLAGS"); got != "-size" {
+		t.Fatalf("clean changed caller GOFLAGS: %q", got)
+	}
 }
 
 func TestCleanMainAndDriverFailures(t *testing.T) {
