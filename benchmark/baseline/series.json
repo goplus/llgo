@@ -3956,10 +3956,10 @@
       "label": "Branch zhouguangyuan0718/llgo:codex/simd-fmv-20261007",
       "path": "series/branch/d496c6d418d507eb/summary.json",
       "configPath": "series/branch/d496c6d418d507eb/config.json",
-      "commitPath": "commits/e0b3507d6507046dd767d19c6e628b7bf0694f05.json",
-      "sha": "e0b3507d6507046dd767d19c6e628b7bf0694f05",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/e0b3507d6507046dd767d19c6e628b7bf0694f05",
-      "updatedAt": "2026-10-10T14:39:45.171Z"
+      "commitPath": "commits/0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3.json",
+      "sha": "0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3",
+      "updatedAt": "2026-10-11T03:17:00.314Z"
     },
     {
       "kind": "branch",
@@ -8191,10 +8191,10 @@
       "label": "PR #2748",
       "path": "series/pull/2748/summary.json",
       "configPath": "series/pull/2748/config.json",
-      "commitPath": "commits/e0b3507d6507046dd767d19c6e628b7bf0694f05.json",
-      "sha": "e0b3507d6507046dd767d19c6e628b7bf0694f05",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/e0b3507d6507046dd767d19c6e628b7bf0694f05",
-      "updatedAt": "2026-10-10T14:39:42.802Z"
+      "commitPath": "commits/0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3.json",
+      "sha": "0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/0b68785fcc89b44fc74f997bfe3f6a75b18fa4f3",
+      "updatedAt": "2026-10-11T03:16:57.617Z"
     },
     {
       "kind": "pull",
