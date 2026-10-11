@@ -125,6 +125,7 @@ func queueCleanup(e *entry) {
 }
 
 func runCleanups() {
+	MarkSystemGoroutine()
 	for {
 		cleanupQueue.mu.Lock()
 		for cleanupQueue.head == nil {

@@ -12,26 +12,45 @@ import (
 	"time"
 )
 
-const mainGoexitFinalizerChild = "LLGO_TEST_MAIN_GOEXIT_FINALIZER"
+const mainGoexitWorkerChild = "LLGO_TEST_MAIN_GOEXIT_WORKER"
 
 func init() {
-	if os.Getenv(mainGoexitFinalizerChild) != "1" {
+	switch os.Getenv(mainGoexitWorkerChild) {
+	case "finalizer":
+		runtime.SetFinalizer(new([64]byte), func(*[64]byte) {})
+	case "cleanup":
+		runtime.AddCleanup(new([64]byte), func(int) {}, 0)
+	case "timer":
+		time.NewTimer(time.Hour).Stop()
+	default:
 		return
 	}
-	// Starting the persistent finalizer worker must not keep this process alive
+	// Starting a persistent runtime worker must not keep this process alive
 	// once its only user goroutine exits.
-	runtime.SetFinalizer(new([64]byte), func(*[64]byte) {})
 	runtime.Goexit()
 }
 
 func TestMainGoexitWithFinalizerWorker(t *testing.T) {
+	testMainGoexitWithWorker(t, "finalizer")
+}
+
+func TestMainGoexitWithCleanupWorker(t *testing.T) {
+	testMainGoexitWithWorker(t, "cleanup")
+}
+
+func TestMainGoexitWithTimerWorker(t *testing.T) {
+	testMainGoexitWithWorker(t, "timer")
+}
+
+func testMainGoexitWithWorker(t *testing.T, worker string) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^$")
-	cmd.Env = append(os.Environ(), mainGoexitFinalizerChild+"=1")
+	cmd.Env = append(os.Environ(), mainGoexitWorkerChild+"="+worker)
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() != nil {
-		t.Fatalf("finalizer worker suppressed the main Goexit deadlock: %v\n%s", ctx.Err(), output)
+		t.Fatalf("%s worker suppressed the main Goexit deadlock: %v\n%s", worker, ctx.Err(), output)
 	}
 	if err == nil || !strings.Contains(string(output), "no goroutines (main called runtime.Goexit) - deadlock!") {
 		t.Fatalf("main Goexit did not report the last user goroutine: %v\n%s", err, output)
