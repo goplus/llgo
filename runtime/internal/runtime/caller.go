@@ -65,14 +65,21 @@ type callerLocationStore struct {
 func PushCallerLocationFrame(entry uintptr, name, file string, startLine int) int {
 	store := callerLocationStoreForGoroutine()
 	mark := len(store.stack)
-	store.stack = append(store.stack, CallerFrame{
-		PC:        entry,
-		Entry:     entry,
-		Function:  name,
-		File:      file,
-		Line:      startLine,
-		StartLine: startLine,
-	})
+	if mark == cap(store.stack) {
+		store.stack = append(store.stack, CallerFrame{})
+	} else {
+		store.stack = store.stack[:mark+1]
+	}
+	// Reuse the slot directly. Constructing an append argument on every call
+	// makes a temporary CallerFrame escape in the current lowering.
+	frame := &store.stack[mark]
+	frame.PC = entry
+	frame.Entry = entry
+	frame.Function = name
+	frame.File = file
+	frame.Line = startLine
+	frame.StartLine = startLine
+	frame.captured = 0
 	return mark
 }
 
