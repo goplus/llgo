@@ -202,9 +202,6 @@ flakes:
     directive: run
     case: fixedbugs/issue25897a.go
     reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the 1m run timeout on linux/amd64
-  - directive: run
-    case: typeparam/chans.go
-    reason: Ranger runs GC once after a send, which does not ensure the receiver goroutine has exited and released its finalizer root
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue25897a.go
@@ -401,10 +398,6 @@ xfails:
   - directive: run
     case: heapsampling.go
     reason: LLGo does not currently report the heap-profile samples required by this runtime test
-  - platform: js/wasm
-    directive: rundir
-    case: typeparam/chansimp.go
-    reason: the Ranger subtest requires its receiver finalizer to run at an exact liveness boundary, while LLGo's conservative WebAssembly roots can retain the receiver
   - platform: J32-GoJS
     directive: run
     case: init1.go
