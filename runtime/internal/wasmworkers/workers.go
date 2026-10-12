@@ -29,7 +29,7 @@ import (
 
 const LLGoFiles = "_wrap/workers.c"
 
-//llgo:type C
+//llgo:cdecl
 type Entry func(unsafe.Pointer) unsafe.Pointer
 
 func Count() int {

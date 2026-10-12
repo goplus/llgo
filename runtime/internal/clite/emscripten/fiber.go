@@ -23,12 +23,12 @@ import c "github.com/xgo-dev/llgo/runtime/internal/clite"
 // Fiber is the opaque emscripten_fiber_t storage. The C layout consists of
 // eight pointer-sized fields.
 //
-//llgo:type C
+//llgo:cdecl
 type Fiber struct {
 	_ [8]uintptr
 }
 
-//llgo:type C
+//llgo:cdecl
 type FiberEntry func(c.Pointer)
 
 // llgo:link FiberInit C.emscripten_fiber_init

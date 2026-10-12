@@ -8,7 +8,7 @@ const (
 	LLGoPackage = "decl"
 )
 
-// llgo:type C
+// llgo:cdecl
 type Comp func(a, b unsafe.Pointer) int32
 
 //go:linkname Qsort C.qsort

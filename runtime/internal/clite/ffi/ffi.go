@@ -32,7 +32,7 @@ const (
 	BAD_ARGTYPE
 )
 
-//llgo:type C
+//llgo:cdecl
 type Type struct {
 	Size      uintptr
 	Alignment uint16
@@ -53,7 +53,7 @@ type Type struct {
 } ffi_cif;
 */
 
-//llgo:type C
+//llgo:cdecl
 type Cif struct {
 	Abi      c.Uint
 	NArgs    c.Uint
@@ -64,5 +64,5 @@ type Cif struct {
 	Extra    c.Uint
 }
 
-//llgo:type C
+//llgo:cdecl
 type ClosureFunc func(cif *Cif, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer)

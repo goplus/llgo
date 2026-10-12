@@ -9,7 +9,7 @@ import (
 
 func TestIndirectCVariadicArguments(t *testing.T) {
 	const source = `package foo
-//llgo:type C
+//llgo:cdecl
 type Variadic func(marker int32, __llgo_va_list ...any) int32
 func Call(function Variadic, marker int32, integer int32, floating float64) int32 {
 	return function(marker, integer, floating)

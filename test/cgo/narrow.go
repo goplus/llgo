@@ -27,16 +27,16 @@ import "C"
 
 import "unsafe"
 
-//llgo:type C
+//llgo:cdecl
 type narrowS8 func(int8) int32
 
-//llgo:type C
+//llgo:cdecl
 type narrowU8 func(uint8) uint32
 
-//llgo:type C
+//llgo:cdecl
 type narrowS16 func(int16) int32
 
-//llgo:type C
+//llgo:cdecl
 type narrowU16 func(uint16) uint32
 
 func directNarrow(a int8, b uint8, c int16, d uint16) (int32, uint32, int32, uint32) {

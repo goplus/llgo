@@ -187,7 +187,7 @@ func (b Builder) nativeFuncval(dst Type, fn Expr, callConv llvm.CallConv, abi st
 	// those calls on the native function-pointer path, where the caller knows
 	// the concrete promoted argument types.
 	if HasNameValist(nativeSig) {
-		panic("C variadic functions require a native function pointer; use //llgo:type C")
+		panic("C variadic functions require a native function pointer; use //llgo:cdecl")
 	}
 	wrapperName := b.Pkg.Path() + ".__llgo_" + abi + "_funcval$" + b.Prog.abi.FuncName(goSig)
 	wrapper := b.Pkg.FuncOf(wrapperName)

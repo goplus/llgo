@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-//llgo:type C
+//llgo:cdecl
 type reflectGenericIntFormatter func(int) string
 
 func reflectGenericFormatter[T any](v T) string {

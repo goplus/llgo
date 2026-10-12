@@ -25,7 +25,7 @@ import (
 // goroutineFunc is the target-independent entry ABI between compiler-generated
 // goroutine wrappers and the runtime scheduler.
 //
-//llgo:type C
+//llgo:cdecl
 type goroutineFunc func(unsafe.Pointer) unsafe.Pointer
 
 // runtimeContext owns one G and its target-specific suspended execution state.

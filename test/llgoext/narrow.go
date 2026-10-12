@@ -4,7 +4,7 @@ package llgoext
 
 import _ "unsafe" // for go:linkname
 
-//llgo:type C
+//llgo:cdecl
 type narrowPromoteS8Function func(int8) int32
 
 //go:linkname linkedNarrowPromoteS8 C.narrow_promote_s8
@@ -20,7 +20,7 @@ type narrowValues struct {
 	u16 uint64
 }
 
-//llgo:type C
+//llgo:cdecl
 type narrowFunction func(int8, uint8, int16, uint16) narrowValues
 
 //go:linkname linkedNarrow C.narrow_promote
@@ -32,7 +32,7 @@ func linkedNarrowAddress() narrowFunction
 type narrowSigned int8
 type narrowUnsigned = uint16
 
-//llgo:type C
+//llgo:cdecl
 type narrowStackFunction func(int32, int32, int32, int32, int32, int32, int32, int32,
 	narrowSigned, uint8, int16, narrowUnsigned, bool) narrowValues
 
@@ -43,13 +43,13 @@ func linkedNarrowStack(int32, int32, int32, int32, int32, int32, int32, int32,
 //go:linkname linkedNarrowStackAddress C.narrow_stack_address
 func linkedNarrowStackAddress() narrowStackFunction
 
-//llgo:type C
+//llgo:cdecl
 type narrowArgumentsCallback func(int8, uint8, int16, uint16, bool) int32
 
 //go:linkname linkedNarrowInvoke C.narrow_invoke
 func linkedNarrowInvoke(narrowArgumentsCallback, bool) int32
 
-//llgo:type C
+//llgo:cdecl
 type narrowVariadicFunction func(a int8, b int16, flag bool, marker int32, __llgo_va_list ...any) int32
 
 //go:linkname linkedNarrowVariadic C.narrow_variadic
@@ -58,16 +58,16 @@ func linkedNarrowVariadic(a int8, b int16, flag bool, marker int32, __llgo_va_li
 //go:linkname linkedNarrowVariadicAddress C.narrow_variadic_address
 func linkedNarrowVariadicAddress() narrowVariadicFunction
 
-//llgo:type C
+//llgo:cdecl
 type narrowS8Callback func(int32) int8
 
-//llgo:type C
+//llgo:cdecl
 type narrowU8Callback func(int32) uint8
 
-//llgo:type C
+//llgo:cdecl
 type narrowS16Callback func(int32) int16
 
-//llgo:type C
+//llgo:cdecl
 type narrowU16Callback func(int32) uint16
 
 //go:linkname linkedNarrowReturnS8 C.narrow_return_s8

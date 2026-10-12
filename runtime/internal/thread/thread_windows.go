@@ -25,10 +25,10 @@ import (
 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 )
 
-//llgo:type C
+//llgo:cdecl
 type RoutineFunc func(c.Pointer) c.Pointer
 
-//llgo:type C
+//llgo:cdecl
 type KeyDestructor func(c.Pointer)
 
 type Key struct {
