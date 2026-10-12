@@ -7,10 +7,10 @@
       "label": "Main",
       "path": "series/main/main/summary.json",
       "configPath": "series/main/main/config.json",
-      "commitPath": "commits/02f07cee735309ea2f313634acd6f2c7920269f0.json",
-      "sha": "02f07cee735309ea2f313634acd6f2c7920269f0",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/02f07cee735309ea2f313634acd6f2c7920269f0",
-      "updatedAt": "2026-10-12T14:02:30.906Z"
+      "commitPath": "commits/1f3baf90db6dadd6438fbc822a02ab4d9967f598.json",
+      "sha": "1f3baf90db6dadd6438fbc822a02ab4d9967f598",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f3baf90db6dadd6438fbc822a02ab4d9967f598",
+      "updatedAt": "2026-10-12T23:04:15.122Z"
     },
     {
       "kind": "branch",
