@@ -82,14 +82,14 @@ func (p Program) markPackageSyntaxParsed(pkg *types.Package) {
 	p.packageSyntax.mu.Unlock()
 }
 
-func (p Program) packageTypeBackground(name string) (CallConv, bool) {
+func (p Program) packageTypeCallConv(name string) (CallConv, bool) {
 	p.packageSyntax.mu.RLock()
 	background, ok := p.packageSyntax.typeCallConvs[name]
 	p.packageSyntax.mu.RUnlock()
 	return background, ok
 }
 
-func (p *packageSyntaxData) typeBackground(name string) (CallConv, bool) {
+func (p *packageSyntaxData) typeCallConv(name string) (CallConv, bool) {
 	p.mu.RLock()
 	background, ok := p.typeCallConvs[name]
 	p.mu.RUnlock()

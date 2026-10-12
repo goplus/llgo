@@ -500,9 +500,8 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
-// SetTypeCallConv sets the default calling convention for the type identified
-// by its full name. All fields of that type will use this calling convention
-// by default.
+// SetTypeCallConv sets the default calling convention for the named type, controlling
+// how that type (and functions using it) are lowered.
 func (p Program) SetTypeCallConv(typFullName string, cc CallConv) {
 	p.packageSyntax.mu.Lock()
 	p.packageSyntax.typeCallConvs[typFullName] = cc

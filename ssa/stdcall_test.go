@@ -46,7 +46,7 @@ func newStdcallType(prog Program, pkgPath, name string, sig *types.Signature) *t
 
 func TestStdcallCallConventions(t *testing.T) {
 	if !isNativeCallConv(CDecl) || !isNativeCallConv(Stdcall) || isNativeCallConv(GoDecl) {
-		t.Fatal("native function background classification is inconsistent")
+		t.Fatal("native function CallConv classification is inconsistent")
 	}
 	for _, test := range []struct {
 		arch string
