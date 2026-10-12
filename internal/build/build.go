@@ -1121,7 +1121,8 @@ func linkInitialPackage(ctx *context, pkg *packages.Package, allPkgs []*aPackage
 // link plan, so a single executable no longer needs LLVM modules. Keep them for
 // other roots and library headers, which still consume backend state.
 func (ctx *context) releaseSingleExecutableBackend() {
-	if ctx.buildConf.Mode != ModeBuild || ctx.buildConf.BuildMode != BuildModeExe || len(ctx.initial) != 1 {
+	mode := ctx.buildConf.Mode
+	if (mode != ModeBuild && mode != ModeTest) || ctx.buildConf.BuildMode != BuildModeExe || len(ctx.initial) != 1 {
 		return
 	}
 	ctx.disposeBackendPrograms()
