@@ -27,7 +27,7 @@ func Ordinary(function func(marker int32, values ...any) int32, marker int32, in
 		t.Run(target.GOOS+"/"+target.GOARCH, func(t *testing.T) {
 			prog := newLLSSAProgForTarget(t, &target)
 			defer prog.Dispose()
-			pkg, err := NewPackage(prog, ssaPkg, files)
+			pkg, err := compileTestPackage(prog, ssaPkg, files)
 			if err != nil {
 				t.Fatal(err)
 			}
