@@ -3259,6 +3259,17 @@
     },
     {
       "kind": "branch",
+      "id": "a40992fdc1b80d11",
+      "label": "Branch visualfc/llgo:experiment/selected-go-path-pin",
+      "path": "series/branch/a40992fdc1b80d11/summary.json",
+      "configPath": "series/branch/a40992fdc1b80d11/config.json",
+      "commitPath": "commits/8252ec9a91fba09d5d71574a620a88713e7b6ae7.json",
+      "sha": "8252ec9a91fba09d5d71574a620a88713e7b6ae7",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/8252ec9a91fba09d5d71574a620a88713e7b6ae7",
+      "updatedAt": "2026-10-12T06:20:19.754Z"
+    },
+    {
+      "kind": "branch",
       "id": "de56bb62d4a2d2da",
       "label": "Branch visualfc/llgo:fix/can-ssa-array-copies",
       "path": "series/branch/de56bb62d4a2d2da/summary.json",
@@ -8547,6 +8558,17 @@
       "sha": "661a263efff011a2371ffa8c4fe9096c756b1216",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/661a263efff011a2371ffa8c4fe9096c756b1216",
       "updatedAt": "2026-10-11T23:38:19.297Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2789",
+      "label": "PR #2789",
+      "path": "series/pull/2789/summary.json",
+      "configPath": "series/pull/2789/config.json",
+      "commitPath": "commits/8252ec9a91fba09d5d71574a620a88713e7b6ae7.json",
+      "sha": "8252ec9a91fba09d5d71574a620a88713e7b6ae7",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/8252ec9a91fba09d5d71574a620a88713e7b6ae7",
+      "updatedAt": "2026-10-12T06:20:18.779Z"
     }
   ]
 }
