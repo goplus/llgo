@@ -2170,6 +2170,17 @@
     },
     {
       "kind": "branch",
+      "id": "30b348a668805c54",
+      "label": "Branch zhouguangyuan0718/llgo:codex/simd-fmv-aggregates-20261012",
+      "path": "series/branch/30b348a668805c54/summary.json",
+      "configPath": "series/branch/30b348a668805c54/config.json",
+      "commitPath": "commits/7d4479c4788d9b31078ad49e5b1a66ea09050edc.json",
+      "sha": "7d4479c4788d9b31078ad49e5b1a66ea09050edc",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/7d4479c4788d9b31078ad49e5b1a66ea09050edc",
+      "updatedAt": "2026-10-12T10:15:32.444Z"
+    },
+    {
+      "kind": "branch",
       "id": "96102b3d1a090c26",
       "label": "Branch zhouguangyuan0718/llgo:codex/simd-foundation-20260912",
       "path": "series/branch/96102b3d1a090c26/summary.json",
@@ -4686,6 +4697,17 @@
       "sha": "7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/7527b8334d5e117e35ed4e77d04afe5e6c973f3a",
       "updatedAt": "2026-10-11T22:29:15.689Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2799",
+      "label": "PR #2799",
+      "path": "series/pull/2799/summary.json",
+      "configPath": "series/pull/2799/config.json",
+      "commitPath": "commits/7d4479c4788d9b31078ad49e5b1a66ea09050edc.json",
+      "sha": "7d4479c4788d9b31078ad49e5b1a66ea09050edc",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/7d4479c4788d9b31078ad49e5b1a66ea09050edc",
+      "updatedAt": "2026-10-12T10:15:32.310Z"
     }
   ]
 }
