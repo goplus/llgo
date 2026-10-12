@@ -902,7 +902,13 @@ func (b Builder) doConstructDebugAddrWithStore(v Expr, t types.Type) (dbgPtr, st
 	case *types.Slice:
 		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), GoDecl)
 	case *types.Signature:
-		ty = b.Prog.Closure(t)
+		if v.kind == vkFuncPtr {
+			// Native entries already have pointer storage. A debug snapshot must
+			// not adapt them into Go closures, especially for C ellipsis entries.
+			ty = v.Type
+		} else {
+			ty = b.Prog.Closure(t)
+		}
 	case *types.Named:
 		ty = b.Prog.Type(t.Underlying(), GoDecl)
 	default:
