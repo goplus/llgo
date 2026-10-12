@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	LLGoFiles = "_wrap/sync_windows.c"
 	// MinGW exposes the address-wait imports used by this backend through
 	// libsynchronization rather than libkernel32.
 	LLGoPackage = "link: -lsynchronization"

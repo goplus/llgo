@@ -2,9 +2,14 @@
 
 package main
 
-import "runtime"
+import (
+	"runtime"
+	"unique"
+)
 
 func verifyWorkerGC() {
+	// Its persistent cleanup worker must not suppress main-Goexit detection.
+	unique.Make("wasi-goexit-worker")
 	var before, after runtime.MemStats
 	runtime.ReadMemStats(&before)
 	runtime.GC()

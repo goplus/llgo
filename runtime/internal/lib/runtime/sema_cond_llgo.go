@@ -50,9 +50,14 @@ func semaAcquire(addr *uint32) {
 		st.mu.Lock()
 		for {
 			v = latomic.LoadUint32(addr)
-			if v != 0 && latomic.CompareAndSwapUint32(addr, v, v-1) {
-				st.mu.Unlock()
-				return
+			if v != 0 {
+				if latomic.CompareAndSwapUint32(addr, v, v-1) {
+					st.mu.Unlock()
+					return
+				}
+				// Fast-path acquirers can change the count without st.mu.
+				// A failed CAS does not mean it is zero: recheck before sleeping.
+				continue
 			}
 			st.waiters++
 			st.cond.Wait(&st.mu)

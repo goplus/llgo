@@ -103,7 +103,10 @@ func initCleanupSlots() {
 	cleanupSlots.mu.Init(nil)
 	cleanupQueue.mu.Init(nil)
 	cleanupQueue.ready.Init(nil)
-	go runCleanups()
+	started := make(chan struct{})
+	go runCleanups(started)
+	// Exclude the idle worker from NumGoroutine before returning to user code.
+	<-started
 }
 
 // BDWGC may invoke finalizers synchronously from any allocation, including
@@ -124,7 +127,9 @@ func queueCleanup(e *entry) {
 	cleanupQueue.mu.Unlock()
 }
 
-func runCleanups() {
+func runCleanups(started chan struct{}) {
+	MarkSystemGoroutine()
+	close(started)
 	for {
 		cleanupQueue.mu.Lock()
 		for cleanupQueue.head == nil {
@@ -150,7 +155,9 @@ func runCleanups() {
 func runCleanup(e *entry) {
 	_, run := atomic.CompareAndExchange(&e.state, cleanupActive, cleanupRunning)
 	if run {
+		MarkUserGoroutine()
 		e.fn()
+		MarkSystemGoroutine()
 	}
 	atomic.Store(&e.state, cleanupDone)
 	freeCleanupSlot(e)

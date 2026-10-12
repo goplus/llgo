@@ -123,7 +123,9 @@ func destroyG(ptr c.Pointer) {
 	if gp == nil {
 		return
 	}
-	releaseGAndCheckDeadlock()
+	if !gp.context.platform.systemG {
+		releaseGAndCheckDeadlock()
+	}
 	if gp.panic_ != nil {
 		c.Free(gp.panic_)
 	}

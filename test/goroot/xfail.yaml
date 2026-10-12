@@ -186,38 +186,6 @@ timeouts:
     timeout: 2m
     reason: nosplit run runs past the default timeout on linux/amd64
 flakes:
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the 1m run timeout on linux/amd64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the 1m run timeout on darwin/arm64
-  - platform: windows/amd64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows amd64
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows 386
-  - platform: windows/arm64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows ARM64
 xfails:
   - directive: run
     case: genmeth1.go

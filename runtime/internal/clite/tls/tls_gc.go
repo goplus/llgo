@@ -40,3 +40,13 @@ func allocSlot(size uintptr) c.Pointer {
 func freeSlot(ptr c.Pointer) {
 	bdwgc.Free(ptr)
 }
+
+func enterSlotDestructor() bool {
+	return bdwgc.RegisterDestructorThread()
+}
+
+func leaveSlotDestructor(registered bool) {
+	if registered {
+		bdwgc.UnregisterMyThread()
+	}
+}
