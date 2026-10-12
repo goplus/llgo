@@ -87,8 +87,8 @@ func TestDCEEntryRootCandidatesIncludesCExports(t *testing.T) {
 	lpkg := prog.NewPackage("pkg", "pkg")
 	lpkg.SetExport("main.Z", "Zed")
 	lpkg.SetExport("main.A", "Add")
-	lpkg.NewFunc("main.Z", llssa.NoArgsNoRet, llssa.InGo)
-	lpkg.NewFunc("main.A", llssa.NoArgsNoRet, llssa.InGo)
+	lpkg.NewFunc("main.Z", llssa.NoArgsNoRet, llssa.GoDecl)
+	lpkg.NewFunc("main.A", llssa.NoArgsNoRet, llssa.GoDecl)
 	pkgs := []Package{&aPackage{LPkg: lpkg}}
 
 	want := []string{"main.init", "main.main", "main.A", "main.Z"}
@@ -103,7 +103,7 @@ func TestLinkedCExportsIncludesDependencyAndExecutableCallbacks(t *testing.T) {
 	newExport := func(path, name, goName, cName string) Package {
 		lpkg := prog.NewPackage(path, path)
 		lpkg.SetExport(goName, cName)
-		lpkg.NewFunc(goName, llssa.NoArgsNoRet, llssa.InGo)
+		lpkg.NewFunc(goName, llssa.NoArgsNoRet, llssa.GoDecl)
 		return &aPackage{
 			Package: &packages.Package{Name: name, PkgPath: path},
 			LPkg:    lpkg,
@@ -143,7 +143,7 @@ func TestLinkedCExportsValidation(t *testing.T) {
 		lpkg := prog.NewPackage(path, path)
 		lpkg.SetExport(goName, cName)
 		if define {
-			lpkg.NewFunc(goName, sig, llssa.InGo)
+			lpkg.NewFunc(goName, sig, llssa.GoDecl)
 		}
 		return &aPackage{
 			Package: &packages.Package{Name: "main", PkgPath: path},

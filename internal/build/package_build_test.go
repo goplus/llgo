@@ -563,7 +563,7 @@ func TestSnapshotBackendPackageAndConsumers(t *testing.T) {
 	lpkg := isolated.NewPackage("p", "example.com/p")
 	lpkg.NeedAbiInit = 3
 	lpkg.SetExport("example.com/p.Export", "Export")
-	lpkg.NewFunc("example.com/p.Export", llssa.NoArgsNoRet, llssa.InGo)
+	lpkg.NewFunc("example.com/p.Export", llssa.NoArgsNoRet, llssa.GoDecl)
 	lpkg.RecordReflectMethodByIndex("example.com/p.useIndex", 7)
 	lpkg.RecordReflectMethodByName("example.com/p.useName", "Method")
 	pkg := &aPackage{

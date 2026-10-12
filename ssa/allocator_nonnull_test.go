@@ -23,7 +23,7 @@ func TestAllocatorNonNullAcrossModules(t *testing.T) {
 			for _, module := range []string{PkgRuntime, "example.com/caller"} {
 				pkg := prog.NewPackage("p", module)
 				for _, name := range []string{"AllocU", "AllocZ", "AllocRoot", "Nullable"} {
-					fn := pkg.NewFunc(PkgRuntime+"."+name, prog.tyMalloc(), InGo)
+					fn := pkg.NewFunc(PkgRuntime+"."+name, prog.tyMalloc(), GoDecl)
 					want := name != "Nullable"
 					if got := !fn.impl.GetEnumAttributeAtIndex(0, kind).IsNil(); got != want {
 						t.Fatalf("%s in %s: nonnull = %v, want %v", name, module, got, want)
@@ -38,7 +38,7 @@ func TestAllocatorNonNullAcrossModules(t *testing.T) {
 					// attributes. Its optimizer must use the external declaration.
 					results := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool]))
 					sig := types.NewSignatureType(nil, nil, nil, prog.tyMalloc().Params(), results, false)
-					caller := pkg.NewFunc("check"+name, sig, InGo)
+					caller := pkg.NewFunc("check"+name, sig, GoDecl)
 					body := caller.MakeBody(1)
 					ptr := body.Call(fn.Expr, caller.Param(0))
 					if !ptr.impl.GetCallSiteEnumAttribute(0, kind).IsNil() {

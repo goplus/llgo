@@ -223,7 +223,7 @@ func genExternDeclsByClang(compiler *llclang.Cmd, pkg *aPackage, src string, cfl
 			if gofn != nil {
 				pkg.LPkg.ReplaceVarWith(cgoName, gofn.Expr)
 			} else {
-				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InC)
+				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.CDecl)
 				pkg.LPkg.ReplaceVarWith(cgoName, cfn.Expr)
 			}
 		} else {

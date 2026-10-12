@@ -306,5 +306,5 @@ func (p *context) simdResultType(sig *types.Signature) llssa.Type {
 	if sig.Results().Len() == 0 {
 		return p.prog.Void()
 	}
-	return p.prog.Type(sig.Results().At(0).Type(), llssa.InGo)
+	return p.prog.Type(sig.Results().At(0).Type(), llssa.GoDecl)
 }

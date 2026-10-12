@@ -13,10 +13,10 @@ func TestWindowsODRDefinitionsUseCOMDAT(t *testing.T) {
 	defer prog.Dispose()
 	pkg := prog.NewPackage("example.com/p", "example.com/p")
 
-	global := pkg.NewVar("shared.global", types.NewPointer(types.Typ[types.Int]), InGo)
+	global := pkg.NewVar("shared.global", types.NewPointer(types.Typ[types.Int]), GoDecl)
 	global.Init(prog.IntVal(0, prog.Int()))
 	pkg.setODRLinkage(global.impl, llvm.WeakODRLinkage)
-	fn := pkg.NewFuncEx("shared.func", NoArgsNoRet, InGo, false, true)
+	fn := pkg.NewFuncEx("shared.func", NoArgsNoRet, GoDecl, false, true)
 	body := fn.MakeBody(1)
 	body.Return()
 	body.EndBuild()
@@ -42,7 +42,7 @@ func TestUnixODRDefinitionsDoNotGainCOMDAT(t *testing.T) {
 	defer prog.Dispose()
 	pkg := prog.NewPackage("example.com/p", "example.com/p")
 
-	global := pkg.NewVar("shared.global", types.NewPointer(types.Typ[types.Int]), InGo)
+	global := pkg.NewVar("shared.global", types.NewPointer(types.Typ[types.Int]), GoDecl)
 	global.Init(prog.IntVal(0, prog.Int()))
 	pkg.setODRLinkage(global.impl, llvm.WeakODRLinkage)
 
@@ -59,7 +59,7 @@ func TestWindowsZeroSizedGlobalUsesModuleLocalSentinel(t *testing.T) {
 	})
 	pkg := prog.NewPackage("example.com/p", "example.com/p")
 	typ := types.NewPointer(types.NewArray(types.Typ[types.Int], 0))
-	global := pkg.NewVar("example.com/p.zero", typ, InGo)
+	global := pkg.NewVar("example.com/p.zero", typ, GoDecl)
 	global.InitNil()
 
 	ir := pkg.String()

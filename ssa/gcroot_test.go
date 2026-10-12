@@ -17,9 +17,9 @@ func TestGCRootFrameIR(t *testing.T) {
 
 	param := types.NewParam(token.NoPos, nil, "p", types.NewPointer(types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), nil, false)
-	fn := pkg.NewFunc("main.keep", sig, ssa.InGo)
+	fn := pkg.NewFunc("main.keep", sig, ssa.GoDecl)
 	b := fn.MakeBody(1)
-	mayGC := pkg.NewFunc("runtime.mayGC", ssa.NoArgsNoRet, ssa.InGo)
+	mayGC := pkg.NewFunc("runtime.mayGC", ssa.NoArgsNoRet, ssa.GoDecl)
 	b.Call(mayGC.Expr)
 	root := fn.NewGCRoots(1)[0]
 	assertPanics(t, func() {
@@ -77,7 +77,7 @@ func TestGCRootReservationAndClosureContext(t *testing.T) {
 	prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "js", GOARCH: "wasm"})
 	pkg := prog.NewPackage("main", "main")
 
-	fn := pkg.NewFunc("main.empty", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main.empty", ssa.NoArgsNoRet, ssa.GoDecl)
 	if roots := fn.NewGCRoots(0); roots != nil {
 		t.Fatalf("NewGCRoots(0) = %v, want nil", roots)
 	}
@@ -86,7 +86,7 @@ func TestGCRootReservationAndClosureContext(t *testing.T) {
 	}
 
 	context := types.NewParam(token.NoPos, nil, "__llgo_ctx", types.Typ[types.UnsafePointer])
-	closure := pkg.NewEnvFunc("main.closure", ssa.NoArgsNoRet, ssa.InGo, context, false)
+	closure := pkg.NewEnvFunc("main.closure", ssa.NoArgsNoRet, ssa.GoDecl, context, false)
 	if context := closure.ClosureContextParam(); context.IsNil() {
 		t.Fatal("closure function is missing its hidden context")
 	}
@@ -119,7 +119,7 @@ func testThreadLocalGCRootFrameIR(t *testing.T, goos, triple, profile, chainType
 	}
 	pkg := prog.NewPackage("main", "main")
 
-	fn := pkg.NewFunc("main.keep", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main.keep", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.NewGCRoots(1)
 	b.Return()
@@ -167,7 +167,7 @@ func TestAggregateGCRootPointers(t *testing.T) {
 	holder := types.NewStruct(fields, nil)
 	param := types.NewParam(token.NoPos, nil, "holder", holder)
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), nil, false)
-	fn := pkg.NewFunc("main.aggregate", sig, ssa.InGo)
+	fn := pkg.NewFunc("main.aggregate", sig, ssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	value := b.Param(0)
@@ -204,7 +204,7 @@ func TestGCRootPointersSkipPointerFreeAggregates(t *testing.T) {
 		pkg := prog.NewPackage("main", "main")
 		param := types.NewParam(token.NoPos, nil, "value", typ)
 		sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), nil, false)
-		fn := pkg.NewFunc("main.roots", sig, ssa.InGo)
+		fn := pkg.NewFunc("main.roots", sig, ssa.GoDecl)
 		b := fn.MakeBody(1)
 		if roots := b.GCRootPointers(b.Param(0)); len(roots) != i {
 			t.Fatalf("root count=%d, want %d", len(roots), i)

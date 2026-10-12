@@ -46,14 +46,14 @@ func TestGenCHeaderExport(t *testing.T) {
 	mainPkg := prog.NewPackage("main", mainPkgPath)
 
 	// Define exported functions in mainPkg
-	mainPkg.NewFunc("HelloWorld", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InGo)
+	mainPkg.NewFunc("HelloWorld", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.GoDecl)
 	useFooPtrParams := types.NewTuple(types.NewVar(token.NoPos, nil, "f", types.NewPointer(fooNamed)))
 	useFooPtrResults := types.NewTuple(types.NewVar(token.NoPos, nil, "", fooNamed))
 	useFooPtrSig := types.NewSignatureType(nil, nil, nil, useFooPtrParams, useFooPtrResults, false)
-	mainPkg.NewFunc("UseFooPtr", useFooPtrSig, ssa.InGo)
+	mainPkg.NewFunc("UseFooPtr", useFooPtrSig, ssa.GoDecl)
 	useFooParams := types.NewTuple(types.NewVar(token.NoPos, nil, "f", fooNamed))
 	useFooSig := types.NewSignatureType(nil, nil, nil, useFooParams, useFooPtrResults, false)
-	mainPkg.NewFunc("UseFoo", useFooSig, ssa.InGo)
+	mainPkg.NewFunc("UseFoo", useFooSig, ssa.GoDecl)
 
 	// Set exports for main
 	mainPkg.SetExport("HelloWorld", "HelloWorld")
@@ -71,8 +71,8 @@ func TestGenCHeaderExport(t *testing.T) {
 		types.NewVar(token.NoPos, nil, "b", types.Typ[types.Int]))
 	addResults := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]))
 	addSig := types.NewSignatureType(nil, nil, nil, addParams, addResults, false)
-	cPkg.NewFunc(cPkgPath+".XAdd", addSig, ssa.InGo)
-	cPkg.NewFunc("Sub", addSig, ssa.InGo)
+	cPkg.NewFunc(cPkgPath+".XAdd", addSig, ssa.GoDecl)
+	cPkg.NewFunc("Sub", addSig, ssa.GoDecl)
 	cPkg.SetExport(cPkgPath+".XAdd", "Add")
 	cPkg.SetExport("XSub", "Sub")
 
@@ -931,7 +931,7 @@ func TestGenHeaderWithInitFunction(t *testing.T) {
 
 	// Create the init function with the expected name format
 	initFnName := pkgPath + ".init"
-	_ = pkg.NewFunc(initFnName, initSig, ssa.InGo)
+	_ = pkg.NewFunc(initFnName, initSig, ssa.GoDecl)
 
 	// Test genHeader which should now detect the init function
 	var output bytes.Buffer

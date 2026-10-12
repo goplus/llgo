@@ -115,7 +115,7 @@ func (p *context) applyEmbedFSInit(b llssa.Builder, g llssa.Global, entries []go
 	filesPtr := types.Unalias(fsStruct.Field(embedFSFieldFiles).Type()).(*types.Pointer)
 	filesSlice := types.Unalias(filesPtr.Elem()).(*types.Slice)
 	fileTyp := filesSlice.Elem()
-	llFileTyp := p.type_(fileTyp, llssa.InGo)
+	llFileTyp := p.type_(fileTyp, llssa.GoDecl)
 	llFilesSliceTyp := p.prog.Slice(llFileTyp)
 
 	n := p.prog.IntVal(uint64(len(entries)), p.prog.Int())

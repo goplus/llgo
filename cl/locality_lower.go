@@ -173,10 +173,10 @@ func (p *context) localVariableFor(pkg llssa.Package, global *ssa.Global, define
 	return &localVariable{planned: planned, owner: owner}, true, nil
 }
 
-func (p *context) localityGlobalStorage(pkg llssa.Package, global *ssa.Global, name string, typ types.Type, bg llssa.Background) (llssa.Global, bool) {
+func (p *context) localityGlobalStorage(pkg llssa.Package, global *ssa.Global, name string, typ types.Type, cc llssa.CallConv) (llssa.Global, bool) {
 	info, ok := p.resolveLocality(global.Pkg.Pkg, llssa.FullName(global.Pkg.Pkg, global.Name()))
 	if !ok || info.Locality == locality.None {
-		return pkg.NewVar(name, typ, bg), false
+		return pkg.NewVar(name, typ, cc), false
 	}
 	variable := p.locality.variables[global]
 	if variable == nil {
@@ -281,7 +281,7 @@ func (p *context) buildLocalPackage(pkg llssa.Package, owner *localPackage, defi
 			continue
 		}
 		typ := types.NewPointer(p.patchType(variable.Type))
-		global := pkg.NewThreadLocalVar(variable.Name, typ, llssa.InGo)
+		global := pkg.NewThreadLocalVar(variable.Name, typ, llssa.GoDecl)
 		owner.direct[variable.Name] = global
 	}
 	if len(blockVariables) != 0 {
@@ -292,13 +292,13 @@ func (p *context) buildLocalPackage(pkg llssa.Package, owner *localPackage, defi
 			owner.blockFields[variable.Name] = index
 		}
 		structType := types.NewStruct(fields, nil)
-		owner.typ = p.prog.Type(structType, llssa.InGo)
-		cache := pkg.NewThreadLocalVar(localitylayout.BlockCacheName(owner.plan.Path), types.NewPointer(types.Typ[types.Uintptr]), llssa.InGo)
+		owner.typ = p.prog.Type(structType, llssa.GoDecl)
+		cache := pkg.NewThreadLocalVar(localitylayout.BlockCacheName(owner.plan.Path), types.NewPointer(types.Typ[types.Uintptr]), llssa.GoDecl)
 		if define {
 			cache.InitNil()
 		}
 		result := types.NewPointer(structType)
-		owner.blockFunc = pkg.NewFunc(localitylayout.BlockName(owner.plan.Path), noArgResultSignature(result), llssa.InGo)
+		owner.blockFunc = pkg.NewFunc(localitylayout.BlockName(owner.plan.Path), noArgResultSignature(result), llssa.GoDecl)
 		owner.blockFunc.Inline(llssa.AlwaysInline)
 		if define && !owner.blockFunc.HasBody() {
 			owner.blockFunc.BuildLocalPackageAccessor(
@@ -324,13 +324,13 @@ func (p *context) buildLocalPackage(pkg llssa.Package, owner *localPackage, defi
 			fields = append(fields, types.NewField(token.NoPos, nil, "initFailure", p.prog.Any().RawType(), false))
 		}
 		structType := types.NewStruct(fields, nil)
-		owner.glsTyp = p.prog.Type(structType, llssa.InGo)
-		key := pkg.NewVar(localitylayout.GoroutineBlockKeyName(owner.plan.Path), types.NewPointer(types.Typ[types.Uintptr]), llssa.InGo)
+		owner.glsTyp = p.prog.Type(structType, llssa.GoDecl)
+		key := pkg.NewVar(localitylayout.GoroutineBlockKeyName(owner.plan.Path), types.NewPointer(types.Typ[types.Uintptr]), llssa.GoDecl)
 		if define {
 			key.InitNil()
 		}
 		result := types.NewPointer(structType)
-		owner.glsBlockFunc = pkg.NewFunc(localitylayout.GoroutineBlockName(owner.plan.Path), noArgResultSignature(result), llssa.InGo)
+		owner.glsBlockFunc = pkg.NewFunc(localitylayout.GoroutineBlockName(owner.plan.Path), noArgResultSignature(result), llssa.GoDecl)
 		owner.glsBlockFunc.Inline(llssa.AlwaysInline)
 		if define && !owner.glsBlockFunc.HasBody() {
 			owner.glsBlockFunc.BuildGoroutineLocalPackageAccessor(
@@ -355,11 +355,11 @@ func (p *context) buildLocalInitializer(pkg llssa.Package, owner *localPackage, 
 	if ret.logical {
 		ret.fields = owner.glsInitFields
 	} else {
-		ret.guard = pkg.NewThreadLocalVar(localitylayout.GuardName(owner.plan.Path, kind), types.NewPointer(types.Typ[types.Uint8]), llssa.InGo)
-		ret.failureCache = pkg.NewThreadLocalVar(localitylayout.FailureCacheName(owner.plan.Path, kind), types.NewPointer(types.Typ[types.Uintptr]), llssa.InGo)
+		ret.guard = pkg.NewThreadLocalVar(localitylayout.GuardName(owner.plan.Path, kind), types.NewPointer(types.Typ[types.Uint8]), llssa.GoDecl)
+		ret.failureCache = pkg.NewThreadLocalVar(localitylayout.FailureCacheName(owner.plan.Path, kind), types.NewPointer(types.Typ[types.Uintptr]), llssa.GoDecl)
 	}
-	ret.dispatch = pkg.NewFunc(localitylayout.InitName(owner.plan.Path, kind), llssa.NoArgsNoRet, llssa.InGo)
-	ret.ensure = pkg.NewFunc(localitylayout.EnsureName(owner.plan.Path, kind), llssa.NoArgsNoRet, llssa.InGo)
+	ret.dispatch = pkg.NewFunc(localitylayout.InitName(owner.plan.Path, kind), llssa.NoArgsNoRet, llssa.GoDecl)
+	ret.ensure = pkg.NewFunc(localitylayout.EnsureName(owner.plan.Path, kind), llssa.NoArgsNoRet, llssa.GoDecl)
 	ret.ensure.Inline(llssa.AlwaysInline)
 	if !define {
 		return ret
@@ -371,7 +371,7 @@ func (p *context) buildLocalInitializer(pkg llssa.Package, owner *localPackage, 
 	if !ret.dispatch.HasBody() {
 		b := ret.dispatch.MakeBody(1)
 		for _, initializer := range initializers {
-			helper := pkg.NewFunc(initializer.Name, llssa.NoArgsNoRet, llssa.InGo)
+			helper := pkg.NewFunc(initializer.Name, llssa.NoArgsNoRet, llssa.GoDecl)
 			b.Call(helper.Expr)
 		}
 		b.Return()

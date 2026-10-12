@@ -73,7 +73,7 @@ func (p Program) SetPython(py any) {
 
 func (p Package) pyFunc(fullName string, sig *types.Signature) Expr {
 	p.NeedPyInit = true
-	return p.NewFunc(fullName, sig, InC).Expr
+	return p.NewFunc(fullName, sig, CDecl).Expr
 }
 
 func (p Program) paramObjPtr() *types.Var {
@@ -307,7 +307,7 @@ func (p Package) PyNewModVar(name string, doInit bool) Global {
 	}
 	prog := p.Prog
 	objPtr := prog.PyObjectPtrPtr().raw.Type
-	g := p.NewVar(name, objPtr, InC)
+	g := p.NewVar(name, objPtr, CDecl)
 	if doInit {
 		g.InitNil()
 		p.setODRLinkage(g.impl, llvm.LinkOnceAnyLinkage)
@@ -587,7 +587,7 @@ func (p Package) PyNewFunc(name string, sig *types.Signature, doInit bool) PyObj
 		return v
 	}
 	prog := p.Prog
-	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), InC)
+	obj := p.NewVar(name, prog.PyObjectPtrPtr().RawType(), CDecl)
 	if doInit {
 		p.NeedPyInit = true
 		obj.InitNil()

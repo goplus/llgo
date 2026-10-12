@@ -44,7 +44,7 @@ func (p *context) debugAlloc(b llssa.Builder, alloc *ssa.Alloc, addr llssa.Expr)
 	pos := p.goProg.Fset.Position(variable.Pos())
 	var dbgVar llssa.DIVar
 	if argNo := debugParameterArgNo(p.goFn, variable); argNo != 0 {
-		dbgVar = b.DIVarParam(p.fn, pos, variable.Name(), p.type_(variable.Type(), llssa.InGo), argNo)
+		dbgVar = b.DIVarParam(p.fn, pos, variable.Name(), p.type_(variable.Type(), llssa.GoDecl), argNo)
 		p.debugDIVars[variable] = dbgVar
 	} else {
 		dbgVar = p.getLocalVariable(b, p.goFn, variable)

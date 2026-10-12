@@ -659,7 +659,7 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	// This ensures function values are correctly wrapped as closures, similar to
 	// interface assignment (see MakeInterface).
 	if v.kind == vkFuncDecl {
-		typ := b.Prog.Type(v.raw.Type, InGo)
+		typ := b.Prog.Type(v.raw.Type, GoDecl)
 		v = checkExpr(v, typ.raw.Type, b)
 	}
 	dbgInstrf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
@@ -815,7 +815,7 @@ func (b Builder) mapKeyPtr(m, x Expr) Expr {
 	if !ok {
 		panic("mapKeyPtr called with non-map value")
 	}
-	typ := b.Prog.Type(mapType.Key(), InGo)
+	typ := b.Prog.Type(mapType.Key(), GoDecl)
 	// Generic map bodies can expose either the instantiated key type or the
 	// type-parameter representation at this point. Keep the larger physical
 	// representation so runtime mapassign never reads past the temporary key.
@@ -879,8 +879,8 @@ func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
 	prog := b.Prog
-	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), InGo)
-	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), InGo)
+	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), GoDecl)
+	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), GoDecl)
 	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
 	ok := b.getField(rets, 0).impl
 	t := prog.Struct(prog.Bool(), ktyp, vtyp)

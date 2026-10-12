@@ -74,10 +74,10 @@ func compactWasmBridgeUint64(value uint64) string {
 
 func (p Program) wasmReflectBridgeShape(sig *types.Signature) string {
 	var shape strings.Builder
-	appendWasmLLVMTypeShape(&shape, p.toLLVMFuncBackground(sig, InC))
+	appendWasmLLVMTypeShape(&shape, p.toLLVMFuncBackground(sig, CDecl))
 	shape.WriteByte('/')
 	for i := 0; i < sig.Params().Len(); i++ {
-		p.appendWasmRootShape(&shape, p.Type(sig.Params().At(i).Type(), InC))
+		p.appendWasmRootShape(&shape, p.Type(sig.Params().At(i).Type(), CDecl))
 		shape.WriteByte(';')
 	}
 	return shape.String()
@@ -203,14 +203,14 @@ func (p Package) newWasmReflectCallBridge(rawSig *types.Signature, name string) 
 		types.NewParam(token.NoPos, nil, "args", ptrs),
 		types.NewParam(token.NoPos, nil, "results", ptrs),
 	)
-	fn := p.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, nil, false), InC)
+	fn := p.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, nil, false), CDecl)
 	fn.impl.SetLinkage(llvm.InternalLinkage)
 	b := fn.MakeBody(3)
 	defer b.Dispose()
 	prog := p.Prog
 	args := make([]Expr, rawSig.Params().Len())
 	for i := range args {
-		typ := prog.Type(rawSig.Params().At(i).Type(), InC)
+		typ := prog.Type(rawSig.Params().At(i).Type(), CDecl)
 		args[i] = b.Load(b.Convert(prog.Pointer(typ), b.wasmReflectSlot(fn.Param(3), i)))
 	}
 	b.If(fn.Param(2), fn.Block(1), fn.Block(2))
@@ -222,7 +222,7 @@ func (p Package) newWasmReflectCallBridge(rawSig *types.Signature, name string) 
 			block = 1
 		}
 		b.SetBlock(fn.Block(block))
-		entry := Expr{fn.Param(0).impl, prog.FuncDecl(entrySig, InC)}
+		entry := Expr{fn.Param(0).impl, prog.FuncDecl(entrySig, CDecl)}
 		ret := b.Call(entry, callArgs...)
 		for i := 0; i < rawSig.Results().Len(); i++ {
 			value := ret
@@ -253,7 +253,7 @@ func (b Builder) wasmReflectSlot(base Expr, i int) Expr {
 // arguments are published as roots before reflection can allocate or suspend.
 func (p Package) newWasmReflectMakeBridge(sig *types.Signature, name string) Function {
 	ptr := types.Typ[types.UnsafePointer]
-	fn := p.NewEnvFunc(name, sig, InGo, types.NewParam(token.NoPos, nil, "env", ptr), false)
+	fn := p.NewEnvFunc(name, sig, GoDecl, types.NewParam(token.NoPos, nil, "env", ptr), false)
 	fn.impl.SetLinkage(llvm.InternalLinkage)
 	b := fn.MakeBody(1)
 	defer b.Dispose()
@@ -277,7 +277,7 @@ func (p Package) newWasmReflectMakeBridge(sig *types.Signature, name string) Fun
 		types.NewParam(token.NoPos, nil, "results", types.NewPointer(ptr)),
 	), nil, false)
 	callback := b.Load(b.Convert(prog.Pointer(prog.VoidPtr()), fn.Env()))
-	b.Call(Expr{callback.impl, prog.FuncDecl(callbackSig, InC)}, fn.Env(), args, results)
+	b.Call(Expr{callback.impl, prog.FuncDecl(callbackSig, CDecl)}, fn.Env(), args, results)
 	ret := make([]Expr, len(slots))
 	for i, slot := range slots {
 		ret[i] = b.Load(slot)
@@ -299,7 +299,7 @@ func (b Builder) wasmReflectFrame(tuple *types.Tuple, value func(int) Expr) (Exp
 	}
 	slots := make([]Expr, tuple.Len())
 	for i := range slots {
-		typ := prog.Type(tuple.At(i).Type(), InC)
+		typ := prog.Type(tuple.At(i).Type(), CDecl)
 		slots[i] = b.AllocaT(typ)
 		initial := prog.Nil(typ)
 		if value != nil {

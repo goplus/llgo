@@ -184,7 +184,7 @@ func TestLocalityLoweringDiagnostics(t *testing.T) {
 	t.Run("missing prepared layout", func(t *testing.T) {
 		ctx := &context{prog: newProgram()}
 		assertLocalityPanic(t, "localityGlobalStorage", func() {
-			ctx.localityGlobalStorage(nil, global, name, global.Type(), llssa.InGo)
+			ctx.localityGlobalStorage(nil, global, name, global.Type(), llssa.GoDecl)
 		})
 	})
 

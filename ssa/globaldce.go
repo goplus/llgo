@@ -353,7 +353,7 @@ func (p Program) addMethodTypeMetadata(global llvm.Value, fullType Type, methods
 	p.setVCallVisibilityMetadata(global, vcallVisibilityLinkageUnit)
 	mt := p.rtNamed("Method")
 	methodArrayOffset := p.OffsetOf(fullType, 2)
-	methodType := p.Type(mt, InGo)
+	methodType := p.Type(mt, GoDecl)
 	ifnOffset := p.OffsetOf(methodType, abiMethodIFnFieldIndex)
 	tfnOffset := p.OffsetOf(methodType, abiMethodTFnFieldIndex)
 	methodStride := p.SizeOf(methodType)

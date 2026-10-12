@@ -30,8 +30,8 @@ func TestDropUnusedWindowsTestMain(t *testing.T) {
 		prog := llssa.NewProgram(&llssa.Target{GOOS: "windows", GOARCH: "arm64"})
 		t.Cleanup(prog.Dispose)
 		lpkg := prog.NewPackage("main", "example.com/cmd")
-		missing := lpkg.NewFunc("main.missing", llssa.NoArgsNoRet, llssa.InGo)
-		mainFn := lpkg.NewFunc(symbol, llssa.NoArgsNoRet, llssa.InGo)
+		missing := lpkg.NewFunc("main.missing", llssa.NoArgsNoRet, llssa.GoDecl)
+		mainFn := lpkg.NewFunc(symbol, llssa.NoArgsNoRet, llssa.GoDecl)
 		body := mainFn.MakeBody(1)
 		body.Call(missing.Expr)
 		body.Return()
@@ -62,8 +62,8 @@ func TestDropUnusedWindowsTestMain(t *testing.T) {
 
 	t.Run("local call", func(t *testing.T) {
 		ctx, pkg, lpkg := newFixture(t)
-		mainFn := lpkg.NewFunc(symbol, llssa.NoArgsNoRet, llssa.InGo)
-		caller := lpkg.NewFunc("example.com/cmd.TestMain", llssa.NoArgsNoRet, llssa.InGo)
+		mainFn := lpkg.NewFunc(symbol, llssa.NoArgsNoRet, llssa.GoDecl)
+		caller := lpkg.NewFunc("example.com/cmd.TestMain", llssa.NoArgsNoRet, llssa.GoDecl)
 		body := caller.MakeBody(1)
 		body.Call(mainFn.Expr)
 		body.Return()

@@ -24,8 +24,8 @@ import (
 	"github.com/xgo-dev/llvm"
 )
 
-func isNativeFuncBackground(background Background) bool {
-	return background == InC || background == InStdcall
+func isNativeCallConv(cc CallConv) bool {
+	return cc == CDecl || cc == Stdcall
 }
 
 // stdcallCallConv follows the source-level __stdcall semantics used by the
@@ -111,7 +111,7 @@ func (p Program) isStdcallType(typ types.Type) bool {
 		return false
 	}
 	background, ok := p.packageTypeBackground(namedLinkname(named))
-	return ok && background == InStdcall
+	return ok && background == Stdcall
 }
 
 func (b Builder) setNativeCallConv(call llvm.Value, fn Expr) {
@@ -128,7 +128,7 @@ func (b Builder) setNativeCallConv(call llvm.Value, fn Expr) {
 // deliberately rejects Go func values: the native representation is one
 // function pointer and has no implicit slot for an LLGo closure environment.
 func (b Builder) stdcallCallback(typ types.Type, fn Expr) Expr {
-	dst := b.Prog.Type(typ, InStdcall)
+	dst := b.Prog.Type(typ, Stdcall)
 	expected := b.Prog.stdcallCallConv()
 	direct := fn.impl.IsAFunction()
 	if direct.IsNil() {
@@ -142,7 +142,7 @@ func (b Builder) stdcallCallback(typ types.Type, fn Expr) Expr {
 	name := b.Pkg.Path() + ".__llgo_stdcall$" + direct.Name() + "$" + b.Prog.abi.FuncName(sig)
 	wrapper := b.Pkg.FuncOf(name)
 	if wrapper == nil {
-		wrapper = b.Pkg.NewFunc(name, sig, InStdcall)
+		wrapper = b.Pkg.NewFunc(name, sig, Stdcall)
 		wrapper.impl.SetLinkage(llvm.InternalLinkage)
 		body := wrapper.MakeBody(1)
 		args := make([]Expr, sig.Params().Len())

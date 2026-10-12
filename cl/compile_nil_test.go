@@ -17,7 +17,7 @@ func newNilCompileContext(t *testing.T) (*context, llssa.Builder) {
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("foo", "foo")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("test", sig, llssa.InGo)
+	fn := pkg.NewFunc("test", sig, llssa.GoDecl)
 	b := fn.MakeBody(1)
 	ctx := &context{
 		prog:  prog,

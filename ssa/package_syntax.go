@@ -33,7 +33,7 @@ type packageSyntaxData struct {
 	closureEnvDirectives map[closureEnvDirectiveKey]none
 	parsedPackages       map[*types.Package]struct{}
 	noInterface          map[string]none
-	typeBackgrounds      map[string]Background
+	typeCallConvs        map[string]CallConv
 }
 
 func newPackageSyntaxData() *packageSyntaxData {
@@ -44,7 +44,7 @@ func newPackageSyntaxData() *packageSyntaxData {
 		closureEnvDirectives: make(map[closureEnvDirectiveKey]none),
 		parsedPackages:       make(map[*types.Package]struct{}),
 		noInterface:          make(map[string]none),
-		typeBackgrounds:      make(map[string]Background),
+		typeCallConvs:        make(map[string]CallConv),
 	}
 }
 
@@ -82,16 +82,16 @@ func (p Program) markPackageSyntaxParsed(pkg *types.Package) {
 	p.packageSyntax.mu.Unlock()
 }
 
-func (p Program) packageTypeBackground(name string) (Background, bool) {
+func (p Program) packageTypeBackground(name string) (CallConv, bool) {
 	p.packageSyntax.mu.RLock()
-	background, ok := p.packageSyntax.typeBackgrounds[name]
+	background, ok := p.packageSyntax.typeCallConvs[name]
 	p.packageSyntax.mu.RUnlock()
 	return background, ok
 }
 
-func (p *packageSyntaxData) typeBackground(name string) (Background, bool) {
+func (p *packageSyntaxData) typeBackground(name string) (CallConv, bool) {
 	p.mu.RLock()
-	background, ok := p.typeBackgrounds[name]
+	background, ok := p.typeCallConvs[name]
 	p.mu.RUnlock()
 	return background, ok
 }

@@ -681,7 +681,7 @@ func (p *context) buildStaticSliceValue(name string, typ types.Type, init *stati
 			return llssa.Expr{}, false
 		}
 	}
-	return p.pkg.ConstSlice(name, p.type_(typ, llssa.InGo), values), true
+	return p.pkg.ConstSlice(name, p.type_(typ, llssa.GoDecl), values), true
 }
 
 func (p *context) ensureStaticInitState() {
@@ -1000,7 +1000,7 @@ func (p *context) buildStaticInitExpr(typ types.Type, node *staticInitNode) (lls
 }
 
 func (p *context) buildStaticInitExprNamed(typ types.Type, node *staticInitNode, name string) (llssa.Expr, bool) {
-	lltyp := p.type_(typ, llssa.InGo)
+	lltyp := p.type_(typ, llssa.GoDecl)
 	if node == nil {
 		return p.prog.Zero(lltyp), true
 	}
@@ -1096,7 +1096,7 @@ func (p *context) buildStaticPointerValue(name string, typ types.Type, init *sta
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	data := p.pkg.NewVarEx(name, p.prog.Pointer(p.type_(ptr.Elem(), llssa.InGo)))
+	data := p.pkg.NewVarEx(name, p.prog.Pointer(p.type_(ptr.Elem(), llssa.GoDecl)))
 	data.Init(value)
 	return data.Expr, true
 }

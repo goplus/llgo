@@ -50,7 +50,7 @@ func (p *context) prepareGCRoots(fn *ssa.Function, hasClosureContext bool) {
 		if !mayContainGCRoot(value.Type()) {
 			return false
 		}
-		typ := p.type_(value.Type(), llssa.InGo)
+		typ := p.type_(value.Type(), llssa.GoDecl)
 		return p.prog.GCRootCount(typ) != 0
 	}, p.isGCSafepoint)
 	for value := range uintptrEscapesRoots(fn) {
@@ -61,7 +61,7 @@ func (p *context) prepareGCRoots(fn *ssa.Function, hasClosureContext bool) {
 			if !mayContainGCRoot(param.Type()) {
 				continue
 			}
-			typ := p.type_(param.Type(), llssa.InGo)
+			typ := p.type_(param.Type(), llssa.GoDecl)
 			if p.prog.GCRootCount(typ) != 0 {
 				planned[param] = struct{}{}
 			}
@@ -73,7 +73,7 @@ func (p *context) prepareGCRoots(fn *ssa.Function, hasClosureContext bool) {
 		if _, ok := planned[value]; !ok {
 			return
 		}
-		typ := p.type_(value.Type(), llssa.InGo)
+		typ := p.type_(value.Type(), llssa.GoDecl)
 		n := p.prog.GCRootCount(typ)
 		if basicKind(value.Type()) == types.Uintptr {
 			// Only pragma-designated uintptr parameters enter planned. Keep this
@@ -197,7 +197,7 @@ func (p *context) isGCSafepoint(instr ssa.Instruction) bool {
 		case *types.Array, *types.Struct:
 			// ABI lowering snapshots large aggregate loads on the heap after
 			// this root plan is built. Account for that added allocation now.
-			size := p.prog.SizeOf(p.type_(load.Type(), llssa.InGo))
+			size := p.prog.SizeOf(p.type_(load.Type(), llssa.GoDecl))
 			if size > llabi.MaxImplicitStackVarSize ||
 				(p.prog.Target().GOARCH == "wasm" && size >= llabi.MinWasmAggregateCopySize) {
 				return true

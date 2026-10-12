@@ -40,12 +40,12 @@ func requireStdcallPanic(t *testing.T, want string, fn func()) {
 func newStdcallType(prog Program, pkgPath, name string, sig *types.Signature) *types.Named {
 	pkg := types.NewPackage(pkgPath, "p")
 	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, name, nil), sig, nil)
-	prog.SetTypeBackground(pkgPath+"."+name, InStdcall)
+	prog.SetTypeCallConv(pkgPath+"."+name, Stdcall)
 	return named
 }
 
 func TestStdcallCallConventions(t *testing.T) {
-	if !isNativeFuncBackground(InC) || !isNativeFuncBackground(InStdcall) || isNativeFuncBackground(InGo) {
+	if !isNativeCallConv(CDecl) || !isNativeCallConv(Stdcall) || isNativeCallConv(GoDecl) {
 		t.Fatal("native function background classification is inconsistent")
 	}
 	for _, test := range []struct {
@@ -64,11 +64,11 @@ func TestStdcallCallConventions(t *testing.T) {
 			}
 			sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 			pkg := prog.NewPackage("p", "example.com/p")
-			callee := pkg.NewFunc("Native", sig, InStdcall)
+			callee := pkg.NewFunc("Native", sig, Stdcall)
 			if got := callee.impl.FunctionCallConv(); got != test.want {
 				t.Fatalf("native declaration convention = %v, want %v", got, test.want)
 			}
-			caller := pkg.NewFunc("example.com/p.caller", sig, InGo)
+			caller := pkg.NewFunc("example.com/p.caller", sig, GoDecl)
 			body := caller.MakeBody(1)
 			call := body.Call(callee.Expr)
 			body.Return()
@@ -134,7 +134,7 @@ func TestStdcallTypeValidationAndIndirectCall(t *testing.T) {
 	callerSig := types.NewSignatureType(nil, nil, nil,
 		types.NewTuple(types.NewVar(token.NoPos, nil, "callback", callback)),
 		types.NewTuple(result), false)
-	caller := pkg.NewFunc("example.com/p.indirect", callerSig, InGo)
+	caller := pkg.NewFunc("example.com/p.indirect", callerSig, GoDecl)
 	body := caller.MakeBody(1)
 	call := body.Call(caller.Param(0), prog.IntVal(7, prog.Int32()))
 	body.Return(call)
@@ -164,7 +164,7 @@ func TestStdcallCallbackAdapters(t *testing.T) {
 			pkg := prog.NewPackage("p", "example.com/p")
 
 			sourceName := fmt.Sprintf("example.com/p.source%d", resultCount)
-			source := pkg.NewFunc(sourceName, sig, InGo)
+			source := pkg.NewFunc(sourceName, sig, GoDecl)
 			sourceBody := source.MakeBody(1)
 			values := make([]Expr, resultCount)
 			for i := range values {
@@ -172,14 +172,14 @@ func TestStdcallCallbackAdapters(t *testing.T) {
 			}
 			sourceBody.Return(values...)
 
-			adapterOwner := pkg.NewFunc(fmt.Sprintf("example.com/p.adapterOwner%d", resultCount), NoArgsNoRet, InGo)
+			adapterOwner := pkg.NewFunc(fmt.Sprintf("example.com/p.adapterOwner%d", resultCount), NoArgsNoRet, GoDecl)
 			body := adapterOwner.MakeBody(1)
 			consumerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 				types.NewVar(token.NoPos, nil, "callback", callback),
 			), nil, false)
-			consumer := pkg.NewFunc(fmt.Sprintf("Consume%d", resultCount), consumerSig, InStdcall)
+			consumer := pkg.NewFunc(fmt.Sprintf("Consume%d", resultCount), consumerSig, Stdcall)
 			nativeCall := body.Call(consumer.Expr, source.Expr)
-			dst := prog.Type(callback, InGo)
+			dst := prog.Type(callback, GoDecl)
 			first := body.ChangeType(dst, source.Expr)
 			second := body.ChangeType(dst, source.Expr)
 			body.Return()
@@ -223,11 +223,11 @@ func TestStdcallCallbackConversionWithoutX86Adapter(t *testing.T) {
 			sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 			callback := newStdcallType(prog, "example.com/p", "Callback", sig)
 			pkg := prog.NewPackage("p", "example.com/p")
-			source := pkg.NewFunc("example.com/p.source", sig, InGo)
+			source := pkg.NewFunc("example.com/p.source", sig, GoDecl)
 			source.MakeBody(1).Return()
-			owner := pkg.NewFunc("example.com/p.owner", sig, InGo)
+			owner := pkg.NewFunc("example.com/p.owner", sig, GoDecl)
 			body := owner.MakeBody(1)
-			converted := body.ChangeType(prog.Type(callback, InGo), source.Expr)
+			converted := body.ChangeType(prog.Type(callback, GoDecl), source.Expr)
 			body.Return()
 			if converted.impl != source.impl {
 				t.Fatalf("windows/%s unnecessarily wrapped the callback", arch)
@@ -258,9 +258,9 @@ func TestStdcallFuncvalAdapters(t *testing.T) {
 			ownerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 				types.NewVar(token.NoPos, nil, "callback", callback),
 			), nil, false)
-			owner := pkg.NewFunc(fmt.Sprintf("example.com/p.owner%d", resultCount), ownerSig, InGo)
+			owner := pkg.NewFunc(fmt.Sprintf("example.com/p.owner%d", resultCount), ownerSig, GoDecl)
 			body := owner.MakeBody(1)
-			goFunc := prog.Type(sig, InGo)
+			goFunc := prog.Type(sig, GoDecl)
 			converted := body.ChangeType(goFunc, owner.Param(0))
 			body.Return()
 
@@ -321,9 +321,9 @@ func TestStdcallFuncvalWithoutAdapter(t *testing.T) {
 			ownerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 				types.NewVar(token.NoPos, nil, "callback", callback),
 			), nil, false)
-			owner := pkg.NewFunc("example.com/p.owner", ownerSig, InGo)
+			owner := pkg.NewFunc("example.com/p.owner", ownerSig, GoDecl)
 			body := owner.MakeBody(1)
-			converted := body.ChangeType(prog.Type(sig, InGo), owner.Param(0))
+			converted := body.ChangeType(prog.Type(sig, GoDecl), owner.Param(0))
 			body.Return()
 
 			if converted.kind != vkClosure {
@@ -371,18 +371,18 @@ func TestStdcallFuncvalAdapterSelection(t *testing.T) {
 			sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 			pkg := prog.NewPackage("p", "example.com/p")
 
-			owner := pkg.NewFunc("example.com/p.owner", NoArgsNoRet, InGo)
+			owner := pkg.NewFunc("example.com/p.owner", NoArgsNoRet, GoDecl)
 			body := owner.MakeBody(1)
 			var value Expr
 			if test.named {
 				typ := newStdcallType(prog, pkg.Path(), "Callback", sig)
 				ownerSig := types.NewSignatureType(nil, nil, nil,
 					types.NewTuple(types.NewVar(token.NoPos, nil, "fn", typ)), nil, false)
-				owner = pkg.NewFunc("example.com/p.namedOwner", ownerSig, InGo)
+				owner = pkg.NewFunc("example.com/p.namedOwner", ownerSig, GoDecl)
 				body = owner.MakeBody(1)
 				value = owner.Param(0)
 			} else {
-				value = pkg.NewFunc("Native", sig, InStdcall).Expr
+				value = pkg.NewFunc("Native", sig, Stdcall).Expr
 			}
 			if got := body.needsStdcallFuncval(value); got != test.want {
 				t.Fatalf("needsStdcallFuncval() = %v, want %v", got, test.want)
@@ -402,12 +402,12 @@ func TestStdcallRejectsNonDirectCallback(t *testing.T) {
 		types.NewField(token.NoPos, nil, "value", types.Typ[types.Int], false),
 	}, nil)
 	env := types.NewVar(token.NoPos, nil, "$env", types.NewPointer(envStruct))
-	source := pkg.NewEnvFunc("example.com/p.capturing", sig, InGo, env, false)
+	source := pkg.NewEnvFunc("example.com/p.capturing", sig, GoDecl, env, false)
 	source.MakeBody(1).Return()
-	owner := pkg.NewFunc("example.com/p.owner", sig, InGo)
+	owner := pkg.NewFunc("example.com/p.owner", sig, GoDecl)
 	body := owner.MakeBody(1)
 	closure := body.MakeClosure(source.Expr, []Expr{prog.Val(1)})
 	requireStdcallPanic(t, "must be a direct function reference", func() {
-		body.ChangeType(prog.Type(callback, InGo), closure)
+		body.ChangeType(prog.Type(callback, GoDecl), closure)
 	})
 }

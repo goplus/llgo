@@ -945,7 +945,7 @@ func (b Builder) callArrayEqual(x, y, xaddr, yaddr Expr, t *types.Array) Expr {
 		ret = b.Call(b.Pkg.rtFunc("memequal"), xaddr, yaddr, prog.IntVal(prog.SizeOf(x.Type), prog.Uintptr()))
 	} else {
 		equal := b.Pkg.rtEnvFunc("arrayequal")
-		equal = b.aggregateValue(prog.Type(equalFunc, InGo), equal.impl, b.abiType(x.raw.Type).impl)
+		equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, b.abiType(x.raw.Type).impl)
 		ret = b.Call(equal, xaddr, yaddr)
 	}
 	if !sp.IsNil() {
@@ -1527,7 +1527,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
-		ll = b.Prog.FuncDecl(sig, InC).ll
+		ll = b.Prog.FuncDecl(sig, CDecl).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
 		ll = fn.ll
@@ -2160,7 +2160,7 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	}
 	if v.kind == vkClosure {
 		if _, ok := t.Underlying().(*types.Signature); ok {
-			if dst := b.Prog.Type(t, InGo); dst.kind == vkFuncPtr {
+			if dst := b.Prog.Type(t, GoDecl); dst.kind == vkFuncPtr {
 				return b.ChangeType(dst, v)
 			}
 		}
@@ -2171,7 +2171,7 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if b.Prog.isStdcallType(t) {
 		return b.stdcallCallback(t, v)
 	}
-	dst := b.Prog.Type(t, InGo)
+	dst := b.Prog.Type(t, GoDecl)
 	// Range and assignment lowering can produce a value whose source type is
 	// assignable but not identical to the destination, so preserve the value
 	// while retagging it with the destination runtime type.

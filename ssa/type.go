@@ -133,14 +133,14 @@ retry:
 	switch t := typ.(type) {
 	case *types.Named:
 		prog := Program(unsafe.Pointer(p))
-		if background, ok := prog.packageTypeBackground(namedLinkname(t)); ok && isNativeFuncBackground(background) {
+		if background, ok := prog.packageTypeBackground(namedLinkname(t)); ok && isNativeCallConv(background) {
 			return 0
 		}
 		typ = t.Underlying()
 		goto retry
 	case *types.Alias:
 		prog := Program(unsafe.Pointer(p))
-		if background, ok := prog.packageTypeBackground(typeNameLinkname(t.Obj())); ok && isNativeFuncBackground(background) {
+		if background, ok := prog.packageTypeBackground(typeNameLinkname(t.Obj())); ok && isNativeCallConv(background) {
 			return 0
 		}
 		typ = t.Rhs()
@@ -564,15 +564,15 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 }
 
 func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
-	return p.toLLVMFuncBackground(sig, InGo)
+	return p.toLLVMFuncBackground(sig, GoDecl)
 }
 
-func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.Type {
-	valueBackground := bg
-	if bg == InStdcall {
+func (p Program) toLLVMFuncBackground(sig *types.Signature, cc CallConv) llvm.Type {
+	valueBackground := cc
+	if cc == Stdcall {
 		// Stdcall validation applies to the function type as a whole; its scalar
 		// parameter and result types use the same native storage rules as C.
-		valueBackground = InC
+		valueBackground = CDecl
 	}
 	tParams := sig.Params()
 	n := tParams.Len()
@@ -592,7 +592,7 @@ func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.
 	case 1:
 		ret = p.Type(p.patch(out.At(0).Type()), valueBackground).ll
 	default:
-		if isNativeFuncBackground(bg) {
+		if isNativeCallConv(cc) {
 			ret = p.ctx.StructType(p.toLLVMNativeTypes(out, out.Len()), false)
 		} else {
 			ret = p.toLLVMTuple(out)
@@ -604,7 +604,7 @@ func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.
 func (p Program) toLLVMNativeTypes(t *types.Tuple, n int) []llvm.Type {
 	ret := make([]llvm.Type, n)
 	for i := range ret {
-		ret[i] = p.Type(p.patch(t.At(i).Type()), InC).ll
+		ret[i] = p.Type(p.patch(t.At(i).Type()), CDecl).ll
 	}
 	return ret
 }
@@ -655,7 +655,7 @@ func isPkgScope(parent, pkgScope *types.Scope) bool {
 }
 
 func (p Program) toNamed(raw *types.Named) Type {
-	if background, ok := p.packageTypeBackground(namedLinkname(raw)); ok && background == InStdcall {
+	if background, ok := p.packageTypeBackground(namedLinkname(raw)); ok && background == Stdcall {
 		p.validateStdcallType(raw)
 	}
 	name := p.llvmNameOf(raw)
