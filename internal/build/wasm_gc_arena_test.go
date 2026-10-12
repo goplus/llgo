@@ -18,7 +18,7 @@ func TestWasmGCArenaCapacity(t *testing.T) {
 	fset := token.NewFileSet()
 	var source bytes.Buffer
 	source.WriteString(gcArenaTestSource)
-	for _, name := range []string{"gc_segment_wasi_threads.go", "gc_wasm.go", "segments.go", "gc_tinygo.go"} {
+	for _, name := range []string{"gc_segment_wasi_threads.go", "gc_wasm.go", "segments.go", "segment_lookup.go", "gc_tinygo.go"} {
 		file, err := parser.ParseFile(fset, filepath.Join("..", "..", "runtime", "internal", "runtime", "tinygogc", name), nil, 0)
 		if err != nil {
 			t.Fatal(err)
@@ -27,7 +27,7 @@ func TestWasmGCArenaCapacity(t *testing.T) {
 			if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
 				continue
 			}
-			if name != "segments.go" {
+			if name != "segments.go" && name != "segment_lookup.go" {
 				fn, ok := decl.(*ast.FuncDecl)
 				if !ok || (fn.Name.Name != "newHeapSegment" && fn.Name.Name != "alignUp" && fn.Name.Name != "alignDown" && fn.Name.Name != "growHeapWithWorldStopped") {
 					continue

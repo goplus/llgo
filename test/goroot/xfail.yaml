@@ -378,7 +378,3 @@ xfails:
     directive: errorcheck
     case: fixedbugs/issue5089.go
     reason: LLGo does not yet diagnose a method declaration on a non-local type
-  - platform: js/wasm
-    directive: run
-    case: fixedbugs/issue59680.go
-    reason: the fixed WebAssembly goroutine stack cannot grow through the test's 10,101 recursive frames
