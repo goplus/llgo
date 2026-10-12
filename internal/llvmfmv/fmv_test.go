@@ -250,3 +250,49 @@ fallback:
 		})
 	}
 }
+
+func TestInvalidQuerySignaturesUnchanged(t *testing.T) {
+	for _, tc := range []struct {
+		name, triple, declaration, call string
+	}{
+		{"extra receiver", "x86_64-unknown-linux-gnu", "i1 @avx2({}, {})", "i1 @avx2({} zeroinitializer, {} zeroinitializer)"},
+		{"nonboolean result", "x86_64-unknown-linux-gnu", "i32 @avx2()", "i32 @avx2()"},
+		{"variadic query", "x86_64-unknown-linux-gnu", "i1 @avx2(...)", "i1 (...) @avx2()"},
+		{"integer receiver on SysV", "x86_64-unknown-linux-gnu", "i1 @avx2(i32)", "i1 @avx2(i32 0)"},
+		{"wrong Win64 receiver width", "x86_64-w64-windows-gnu", "i1 @avx2(i64)", "i1 @avx2(i64 0)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mod := parseModule(t, `target triple = "`+tc.triple+`"
+declare `+tc.declaration+` "llgo.cpu.query"="x86.avx2"
+define void @root() {
+  %q = call `+tc.call+`
+  ret void
+}
+`)
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			before := mod.String()
+			if err := Run(mod, "v1"); err != nil || mod.String() != before {
+				t.Fatalf("invalid CPU query established an AVX2 guard: %v\n%s", err, mod.String())
+			}
+		})
+	}
+}
+
+func TestIncompleteAggregateABI(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+	// An opaque named type has no defined layout. It must not be mistaken
+	// for a defined empty struct just because both have zero fields.
+	typ := ctx.StructCreateNamed("Block")
+	if supportedType(typ) {
+		t.Fatal("incomplete aggregate accepted at the FMV boundary")
+	}
+	typ.StructSetBody([]llvm.Type{ctx.StructType([]llvm.Type{
+		llvm.ArrayType(llvm.VectorType(ctx.FloatType(), 4), 2), ctx.Int64Type(),
+	}, false)}, false)
+	if !supportedType(typ) {
+		t.Fatal("resolved nested SIMD128 aggregate rejected at the FMV boundary")
+	}
+}
