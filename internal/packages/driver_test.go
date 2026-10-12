@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/types"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -258,6 +259,48 @@ func TestLoadMetadataExternalDriver(t *testing.T) {
 			t.Fatalf("NotHandled fallback %q: %v / %v", selection, err, pkgs)
 		}
 	}
+}
+
+func TestLoadMetadataExternalDriverWithoutSelectedGo(t *testing.T) {
+	cfg := metadataTestConfig(t)
+	cfg.Mode = NeedName | NeedFiles | NeedImports | NeedTypesSizes
+	cfg.Env = replaceEnvironment(cfg.Env, "GOROOT", t.TempDir())
+	if _, err := LoadMetadata(cfg, "."); err == nil || !strings.Contains(err.Error(), "selected Go executable") {
+		t.Fatalf("missing selected Go fell back to PATH: %v", err)
+	}
+	driver := copyDriverTestTool(t, t.TempDir(), "custom-driver")
+	cfg.Env = replaceEnvironment(cfg.Env, "GOPACKAGESDRIVER", driver)
+	pkgs, err := LoadMetadata(cfg, "driver:handled")
+	if err != nil || len(pkgs) != 1 || pkgs[0].ID != "external" {
+		t.Fatalf("external driver without selected Go: %v / %v", err, pkgs)
+	}
+}
+
+func TestGoCommandIgnoresPinnedPath(t *testing.T) {
+	bin := t.TempDir()
+	copyDriverTestTool(t, bin, "go")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	cfg := metadataTestConfig(t)
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 10 {
+				if _, err := LoadMetadata(cfg, "."); err != nil {
+					t.Errorf("LoadMetadata: %v", err)
+					return
+				}
+				out, err := GoCommand("env", "GOVERSION").CombinedOutput()
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != 19 {
+					t.Errorf("GoCommand used pinned toolchain: %v / %s", err, out)
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestLoadMetadataErrorsAndCancellation(t *testing.T) {

@@ -17,7 +17,8 @@ import (
 )
 
 // loadPathMu serializes PATH pins so concurrent loads cannot restore another
-// caller's toolchain into the process environment.
+// caller's toolchain into the process environment. GoCommand takes the same
+// lock so LookPath never observes a pin.
 var loadPathMu sync.Mutex
 
 // LoadMetadata runs go/packages with the selected GOROOT/bin first on the
@@ -25,27 +26,32 @@ var loadPathMu sync.Mutex
 // do this: x/tools resolves exec.Command("go") using the process environment,
 // including for GO111MODULE=off release-tag probes.
 //
-// This matches cmd/go's AppendPATH contract for one load. The parent PATH is
-// restored afterward and Config.Env is not mutated. Concurrent loads are
-// serialized. This loader is for metadata only; LoadEx supplies LLGo's parser
-// and typechecker.
+// The caller's Config.Env slice is not mutated. A copy is used, with
+// GOROOT/bin prepended to its PATH so go list subprocesses inherit the same
+// toolchain. The parent process PATH is restored after the load. Concurrent
+// LoadMetadata calls are serialized.
+//
+// Other process-wide go invocations should use GoCommand: it resolves `go`
+// while no pin is active and keeps an absolute Path, so a later pin cannot
+// retarget that command. If GOROOT/bin/go is missing and GOPACKAGESDRIVER
+// names an external driver, the load proceeds without a pin. This loader is
+// for metadata only; LoadEx supplies LLGo's parser and typechecker.
 func LoadMetadata(cfg *Config, patterns ...string) ([]*Package, error) {
 	if cfg == nil {
-		return packages.Load(cfg, patterns...)
+		return loadPackages(cfg, patterns...)
 	}
 	if cfg.Mode&(NeedTypes|NeedTypesInfo|NeedSyntax) != 0 {
 		return nil, fmt.Errorf("package driver requires a metadata-only load mode")
 	}
 	goroot := environmentValue(cfg.Env, "GOROOT")
 	if goroot == "" {
-		return packages.Load(cfg, patterns...)
+		return loadPackages(cfg, patterns...)
 	}
-	goName := "go"
-	if runtime.GOOS == "windows" {
-		goName += ".exe"
-	}
-	goBin := filepath.Join(goroot, "bin")
-	if _, err := exec.LookPath(filepath.Join(goBin, goName)); err != nil {
+	goBin, err := selectedGoBin(goroot)
+	if err != nil {
+		if usesExternalPackageDriver(cfg.Env) {
+			return loadPackages(cfg, patterns...)
+		}
 		return nil, fmt.Errorf("selected Go executable: %w", err)
 	}
 
@@ -63,11 +69,44 @@ func LoadMetadata(cfg *Config, patterns ...string) ([]*Package, error) {
 	// executable per load, including its GO111MODULE=off probes.
 	loadCfg := *cfg
 	loadCfg.Env = replaceEnvironment(cfg.Env, "PATH", goBin+string(os.PathListSeparator)+environmentValue(cfg.Env, "PATH"))
-	pkgs, err := packages.Load(&loadCfg, patterns...)
-	if err != nil && cfg.Context != nil && cfg.Context.Err() != nil {
+	return loadPackages(&loadCfg, patterns...)
+}
+
+// GoCommand is exec.Command("go", args...) with Path resolved while
+// LoadMetadata is not pinning PATH. The absolute Path is immune to a later pin.
+func GoCommand(args ...string) *exec.Cmd {
+	loadPathMu.Lock()
+	defer loadPathMu.Unlock()
+	path, err := exec.LookPath("go")
+	if err != nil {
+		return exec.Command("go", args...)
+	}
+	return exec.Command(path, args...)
+}
+
+func loadPackages(cfg *Config, patterns ...string) ([]*Package, error) {
+	pkgs, err := packages.Load(cfg, patterns...)
+	if err != nil && cfg != nil && cfg.Context != nil && cfg.Context.Err() != nil {
 		return nil, cfg.Context.Err()
 	}
 	return pkgs, err
+}
+
+func selectedGoBin(goroot string) (string, error) {
+	goName := "go"
+	if runtime.GOOS == "windows" {
+		goName += ".exe"
+	}
+	goBin := filepath.Join(goroot, "bin")
+	if _, err := exec.LookPath(filepath.Join(goBin, goName)); err != nil {
+		return "", err
+	}
+	return goBin, nil
+}
+
+func usesExternalPackageDriver(env []string) bool {
+	driver := environmentValue(env, "GOPACKAGESDRIVER")
+	return driver != "" && driver != "off"
 }
 
 func environmentKeyEqual(a, b string) bool {
