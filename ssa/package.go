@@ -500,9 +500,11 @@ func (p Program) SetRuntime(runtime any) {
 	}
 }
 
-func (p Program) SetTypeBackground(fullName string, bg Background) {
+// SetTypeCallConv sets the default calling convention for the named type, controlling
+// how that type (and functions using it) are lowered.
+func (p Program) SetTypeCallConv(typFullName string, cc CallConv) {
 	p.packageSyntax.mu.Lock()
-	p.packageSyntax.typeBackgrounds[fullName] = bg
+	p.packageSyntax.typeCallConvs[typFullName] = cc
 	p.packageSyntax.mu.Unlock()
 }
 
@@ -1052,7 +1054,7 @@ func (p Package) rtFunc(fnName string) Expr {
 		name = p.fnlink(name)
 	}
 	sig := fn.Type().(*types.Signature)
-	return p.NewFunc(name, sig, InGo).Expr
+	return p.NewFunc(name, sig, GoDecl).Expr
 }
 
 // rtEnvFunc returns a runtime entry whose source-level signature excludes its
@@ -1067,7 +1069,7 @@ func (p Package) rtEnvFunc(fnName string) Expr {
 	}
 	sig := fn.Type().(*types.Signature)
 	env := types.NewVar(token.NoPos, nil, "$env", types.Typ[types.UnsafePointer])
-	return p.NewEnvFunc(name, sig, InGo, env, false).Expr
+	return p.NewEnvFunc(name, sig, GoDecl, env, false).Expr
 }
 
 // RuntimeFunc returns a declaration for a function in LLGo's internal runtime.
@@ -1076,7 +1078,7 @@ func (p Package) RuntimeFunc(fnName string) Expr {
 }
 
 func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
-	return p.NewFunc(fullName, sig, InC).Expr
+	return p.NewFunc(fullName, sig, CDecl).Expr
 }
 
 // -----------------------------------------------------------------------------

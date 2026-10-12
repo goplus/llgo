@@ -24,7 +24,7 @@ func use() { f(1); new(Set[string]).Visit() }
 		if root.Parent() != nil || len(root.TypeArgs()) == 0 || len(root.AnonFuncs) == 0 {
 			continue
 		}
-		owner := pkg.NewFunc(root.String(), llssa.NoArgsNoRet, llssa.InGo)
+		owner := pkg.NewFunc(root.String(), llssa.NoArgsNoRet, llssa.GoDecl)
 		ctx := &context{funcs: map[*ssa.Function]llssa.Function{root: owner}}
 		if got := ctx.deferStackOwner(root); got != owner {
 			t.Fatalf("%s: generic frame lost its defer ownership", root)

@@ -45,9 +45,9 @@ func TestAMD64FloatToIntegerConversionIR(t *testing.T) {
 			params := types.NewTuple(types.NewParam(0, nil, "x", types.Typ[types.Float64]))
 			results := types.NewTuple(types.NewParam(0, nil, "", tt.typ))
 			sig := types.NewSignatureType(nil, nil, nil, params, results, false)
-			fn := pkg.NewFunc(tt.name, sig, InGo)
+			fn := pkg.NewFunc(tt.name, sig, GoDecl)
 			b := fn.MakeBody(1)
-			b.Return(b.Convert(prog.Type(tt.typ, InGo), fn.Param(0)))
+			b.Return(b.Convert(prog.Type(tt.typ, GoDecl), fn.Param(0)))
 
 			ir := fn.impl.String()
 			for _, want := range tt.wants {
@@ -100,9 +100,9 @@ func Test386FloatToIntegerConversionIR(t *testing.T) {
 			params := types.NewTuple(types.NewParam(0, nil, "x", tt.src))
 			results := types.NewTuple(types.NewParam(0, nil, "", tt.dst))
 			sig := types.NewSignatureType(nil, nil, nil, params, results, false)
-			fn := pkg.NewFunc(tt.name, sig, InGo)
+			fn := pkg.NewFunc(tt.name, sig, GoDecl)
 			b := fn.MakeBody(1)
-			b.Return(b.Convert(prog.Type(tt.dst, InGo), fn.Param(0)))
+			b.Return(b.Convert(prog.Type(tt.dst, GoDecl), fn.Param(0)))
 
 			ir := fn.impl.String()
 			for _, want := range tt.wants {
@@ -154,9 +154,9 @@ func TestSaturatingFloatToIntegerConversionIR(t *testing.T) {
 					t.Run(name, func(t *testing.T) {
 						params := types.NewTuple(types.NewParam(0, nil, "x", src.typ))
 						results := types.NewTuple(types.NewParam(0, nil, "", dst.typ))
-						fn := pkg.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, results, false), InGo)
+						fn := pkg.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, results, false), GoDecl)
 						b := fn.MakeBody(1)
-						b.Return(b.Convert(prog.Type(dst.typ, InGo), fn.Param(0)))
+						b.Return(b.Convert(prog.Type(dst.typ, GoDecl), fn.Param(0)))
 						ir := fn.impl.String()
 						intrinsic, trunc := dst.intrinsic, dst.trunc
 						if dst.typ == types.Typ[types.Uint32] && target.SaturatingFloatToInt {

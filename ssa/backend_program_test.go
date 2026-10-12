@@ -43,7 +43,7 @@ func TestNewBackendProgramSharesPreparedGoState(t *testing.T) {
 	coordinator.SetLinkname("example.com/p.Entry", "entry")
 	coordinator.SetPackageExport("example.com/p.Entry", "entry")
 	coordinator.SetNoInterfaceMethod("example.com/p.T.Hidden")
-	coordinator.SetTypeBackground("example.com/p.CType", InC)
+	coordinator.SetTypeCallConv("example.com/p.CType", CDecl)
 	coordinator.SetClosureEnvDirective(fset, "example.com/p.Entry", token.Pos(7))
 	coordinator.MarkPackageSyntaxParsed(pkg)
 	coordinator.SetLocalityInfo("example.com/p.Value", LocalityInfo{Locality: ThreadLocal})
@@ -75,7 +75,7 @@ func TestNewBackendProgramSharesPreparedGoState(t *testing.T) {
 	if !backend.HasClosureEnvDirective(fset, "example.com/p.Entry", token.Pos(7)) || !backend.PackageSyntaxParsed(pkg) {
 		t.Fatal("backend Program lost prepared syntax metadata")
 	}
-	if background, ok := backend.packageTypeBackground("example.com/p.CType"); !ok || background != InC {
+	if background, ok := backend.packageTypeCallConv("example.com/p.CType"); !ok || background != CDecl {
 		t.Fatalf("type background = (%v, %v), want (InC, true)", background, ok)
 	}
 	if locality, ok := backend.VariableLocality("example.com/p.Value"); !ok || locality.Locality != ThreadLocal {

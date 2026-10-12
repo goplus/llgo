@@ -38,7 +38,7 @@ import (
 func TestEndDefer(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("main", NoArgsNoRet, InC)
+	fn := pkg.NewFunc("main", NoArgsNoRet, CDecl)
 	b := fn.MakeBody(1)
 	fn.defer_ = &aDefer{}
 	fn.endDefer(b)
@@ -54,12 +54,12 @@ func TestDeferToPendingLoopCasesAndFallback(t *testing.T) {
 	})
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("callee", NoArgsNoRet, GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("main", NoArgsNoRet, GoDecl)
 	fn.SetRecover(fn.MakeBlock())
 	b := fn.MakeBody(1)
 
@@ -95,7 +95,7 @@ func TestDeferToPendingLoopCasesAndFallback(t *testing.T) {
 		t.Fatalf("loopCases len after direct append = %d, want 2", got)
 	}
 
-	fallback := pkg.NewFunc("fallback", NoArgsNoRet, InGo)
+	fallback := pkg.NewFunc("fallback", NoArgsNoRet, GoDecl)
 	fallback.SetRecover(fallback.MakeBlock())
 	fb := fallback.MakeBody(1)
 	fb.Return()
@@ -121,7 +121,7 @@ func TestUnsafeString(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackage("foo", "foo")
-	b := pkg.NewFunc("main", NoArgsNoRet, InC).MakeBody(1)
+	b := pkg.NewFunc("main", NoArgsNoRet, CDecl).MakeBody(1)
 	b.Println(b.BuiltinCall("String", b.CStr("hello"), prog.Val(5)))
 	b.Return()
 }
@@ -143,8 +143,8 @@ func TestTooManyConditionalDefers(t *testing.T) {
 	})
 
 	pkg := prog.NewPackage("foo", "foo")
-	target := pkg.NewFunc("f", NoArgsNoRet, InGo)
-	fn := pkg.NewFunc("main", NoArgsNoRet, InGo)
+	target := pkg.NewFunc("f", NoArgsNoRet, GoDecl)
+	fn := pkg.NewFunc("main", NoArgsNoRet, GoDecl)
 	fn.SetRecover(fn.MakeBlock())
 	b := fn.MakeBody(1)
 
@@ -177,9 +177,9 @@ func TestNewFuncExLLVMUsed(t *testing.T) {
 	// Mark the exported name before function creation so NewFuncEx can protect it via llvm.compiler.used.
 	pkg.SetExport("main.Foo", "Foo")
 	pkg.SetExport("main.Bar", "Bar")
-	pkg.NewFunc("Foo", sig, InGo)
-	pkg.NewFunc("Bar", sig, InGo)
-	pkg.NewFunc("Baz", sig, InGo)
+	pkg.NewFunc("Foo", sig, GoDecl)
+	pkg.NewFunc("Bar", sig, GoDecl)
+	pkg.NewFunc("Baz", sig, GoDecl)
 	pkg.MaterializePreserveSyms()
 
 	used := pkg.Module().NamedGlobal("llvm.compiler.used")
@@ -257,7 +257,7 @@ func testFuncInfoMetadataDoesNotPreserveFunctions(t *testing.T) {
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 
-	pkg.NewFunc("main.unused", sig, InGo)
+	pkg.NewFunc("main.unused", sig, GoDecl)
 	pkg.EmitFuncInfo("", "ignored", "ignored.go", -1, -1)
 	if ir := pkg.String(); strings.Contains(ir, FuncInfoMetadataName) {
 		t.Fatalf("empty symbol should not emit funcinfo metadata:\n%s", ir)
@@ -295,12 +295,12 @@ func testFuncInfoMetadataDoesNotBlockGlobalDCE(t *testing.T) {
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 
-	live := pkg.NewFunc("main.main", sig, InGo)
+	live := pkg.NewFunc("main.main", sig, GoDecl)
 	lb := live.MakeBody(1)
 	lb.Return()
 	lb.EndBuild()
 
-	unused := pkg.NewFuncEx("main.unused", sig, InGo, false, true)
+	unused := pkg.NewFuncEx("main.unused", sig, GoDecl, false, true)
 	ub := unused.MakeBody(1)
 	ub.Return()
 	ub.EndBuild()
@@ -642,8 +642,8 @@ func TestDevLTOGlobalDCEFakeUseValueInlineAsm(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	target := pkg.NewFunc("Target", sig, InGo)
-	fn := pkg.NewFunc("Use", sig, InGo)
+	target := pkg.NewFunc("Target", sig, GoDecl)
+	fn := pkg.NewFunc("Use", sig, GoDecl)
 	b := fn.MakeBody(1)
 	prog.fakeUseValueInlineAsm(b.impl, target.impl)
 	b.Return()
@@ -664,7 +664,7 @@ func TestDevLTOGlobalDCEMethodCheckedLoadEmitsIntrinsicAndAssume(t *testing.T) {
 	pkg := prog.NewPackage("main", "main")
 	g := pkg.NewVarEx("itab", prog.Pointer(prog.VoidPtr()))
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("Use", sig, InGo)
+	fn := pkg.NewFunc("Use", sig, GoDecl)
 	b := fn.MakeBody(1)
 	loaded := prog.methodCheckedLoad(b.impl, g.impl, "go.method.M:func()")
 	prog.methodCheckedLoad(b.impl, g.impl, "go.method.N:func()")
@@ -718,9 +718,9 @@ func TestDevLTOGlobalDCEConcreteInterfaceEmitsStaticItabTemplate(t *testing.T) {
 
 	pkg := prog.NewPackage("staticitab", pkgTypes.Path())
 	returns := types.NewTuple(types.NewVar(token.NoPos, nil, "", intf))
-	fn := pkg.NewFunc("Make", types.NewSignatureType(nil, nil, nil, nil, returns, false), InGo)
+	fn := pkg.NewFunc("Make", types.NewSignatureType(nil, nil, nil, nil, returns, false), GoDecl)
 	b := fn.MakeBody(1)
-	ifaceValue := b.MakeInterface(prog.Type(intf, InGo), prog.Zero(prog.Type(concrete, InGo)))
+	ifaceValue := b.MakeInterface(prog.Type(intf, GoDecl), prog.Zero(prog.Type(concrete, GoDecl)))
 	b.Imethod(ifaceValue, interfaceMethodM)
 	prog.EnableLTOPluginMarkers(false)
 	b.Imethod(ifaceValue, interfaceMethodM)
@@ -803,7 +803,7 @@ func TestDevLTOGlobalDCEReflectMethodByNameCallMarkers(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("main", "main")
-	fn := pkg.NewFunc("UseReflectMethodByName", NoArgsNoRet, InC)
+	fn := pkg.NewFunc("UseReflectMethodByName", NoArgsNoRet, CDecl)
 	b := fn.MakeBody(1)
 	callTy := llvm.FunctionType(prog.tyVoid(), []llvm.Type{
 		prog.tyVoidPtr(),
@@ -847,12 +847,12 @@ func TestDevLTOGlobalDCEEmitFakeUsesInlineAsmAtEntry(t *testing.T) {
 	prog.EnableGoGlobalDCE(true)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	targetA := pkg.NewFunc("TargetA", sig, InGo)
-	targetB := pkg.NewFunc("TargetB", sig, InGo)
-	fn := pkg.NewFunc("UseIntrinsic", sig, InGo)
+	targetA := pkg.NewFunc("TargetA", sig, GoDecl)
+	targetB := pkg.NewFunc("TargetB", sig, GoDecl)
+	fn := pkg.NewFunc("UseIntrinsic", sig, GoDecl)
 	b := fn.MakeBody(1)
 
-	pkg.NewFunc("NoFakeUses", sig, InGo).emitFakeUsesInlineAsm(b)
+	pkg.NewFunc("NoFakeUses", sig, GoDecl).emitFakeUsesInlineAsm(b)
 	fn.recordFakeUse(targetA.impl)
 	fn.recordFakeUse(targetB.impl)
 	b.Return()
@@ -897,7 +897,7 @@ func TestDevLTOGlobalDCEInterfaceMethodCheckedLoadAttributes(t *testing.T) {
 	methodM := types.NewFunc(token.NoPos, nil, "M", methodSig)
 	methodN := types.NewFunc(token.NoPos, nil, "N", methodSig)
 	intf := types.NewInterfaceType([]*types.Func{methodM, methodN}, nil).Complete()
-	fn := pkg.NewFunc("Use", types.NewSignatureType(nil, nil, nil, nil, nil, false), InGo)
+	fn := pkg.NewFunc("Use", types.NewSignatureType(nil, nil, nil, nil, nil, false), GoDecl)
 	b := fn.MakeBody(1)
 	prog.interfaceMethodCheckedLoad(b.impl, g.impl, intf, 1)
 	b.Return()
@@ -945,11 +945,11 @@ func TestDevLTOGlobalDCEAddMethodTypeMetadataMarksIFnAndTFnForReflectContexts(t 
 	named.AddMethod(method)
 	mset := types.NewMethodSet(named)
 
-	methodArray := prog.Type(types.NewArray(prog.rtNamed("Method"), 1), InGo)
+	methodArray := prog.Type(types.NewArray(prog.rtNamed("Method"), 1), GoDecl)
 	fullType := prog.Struct(prog.Int(), prog.Int(), methodArray)
 	prog.addMethodTypeMetadata(g.impl, fullType, []*types.Selection{mset.At(0)})
 
-	methodType := prog.Type(prog.rtNamed("Method"), InGo)
+	methodType := prog.Type(prog.rtNamed("Method"), GoDecl)
 	methodArrayOffset := prog.OffsetOf(fullType, 2)
 	ifnOffset := methodArrayOffset + prog.OffsetOf(methodType, abiMethodIFnFieldIndex)
 	tfnOffset := methodArrayOffset + prog.OffsetOf(methodType, abiMethodTFnFieldIndex)
@@ -983,8 +983,8 @@ func TestDevLTOGlobalDCERecordAbiTypeFakeUsesEarlyReturns(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	target := pkg.NewFunc("CachedTarget", sig, InGo)
-	fn := pkg.NewFunc("UseAbiType", sig, InGo)
+	target := pkg.NewFunc("CachedTarget", sig, GoDecl)
+	fn := pkg.NewFunc("UseAbiType", sig, GoDecl)
 	b := fn.MakeBody(1)
 	g := pkg.NewVarEx("typeinfo", prog.Pointer(prog.Int()))
 	pkg.abiTypeFakeUseCache[g.impl] = []llvm.Value{target.impl}
@@ -1128,7 +1128,7 @@ func TestAbiTypeLazyPtrToThis(t *testing.T) {
 	withMethod.AddMethod(types.NewFunc(token.NoPos, goPkg, "M", types.NewSignatureType(recv, nil, nil, nil, nil, false)))
 
 	pkg := prog.NewPackageEx("pkg", goPkg.Path(), true)
-	fn := pkg.NewFunc("use", types.NewSignatureType(nil, nil, nil, nil, nil, false), InGo)
+	fn := pkg.NewFunc("use", types.NewSignatureType(nil, nil, nil, nil, nil, false), GoDecl)
 	b := fn.MakeBody(1)
 	b.abiType(plain)
 	b.abiType(withMethod)
@@ -1162,7 +1162,7 @@ func TestRecordMethodSlots(t *testing.T) {
 	named.AddMethod(types.NewFunc(token.NoPos, goPkg, "M", types.NewSignatureType(recv, nil, nil, nil, nil, false)))
 
 	pkg := prog.NewPackageEx("pkg", goPkg.Path(), true)
-	fn := pkg.NewFunc("use", types.NewSignatureType(nil, nil, nil, nil, nil, false), InGo)
+	fn := pkg.NewFunc("use", types.NewSignatureType(nil, nil, nil, nil, nil, false), GoDecl)
 	b := fn.MakeBody(1)
 	b.abiType(named)
 	b.Return()
@@ -1221,8 +1221,8 @@ func TestReflectSliceAtDemandsSliceTypeInit(t *testing.T) {
 	prog := NewProgram(nil)
 	defer prog.Dispose()
 	pkg := prog.NewPackage("pkg", "pkg")
-	sliceAt := pkg.NewFunc("reflect.SliceAt", NoArgsNoRet, InGo)
-	caller := pkg.NewFunc("pkg.callSliceAt", NoArgsNoRet, InGo)
+	sliceAt := pkg.NewFunc("reflect.SliceAt", NoArgsNoRet, GoDecl)
+	caller := pkg.NewFunc("pkg.callSliceAt", NoArgsNoRet, GoDecl)
 	b := caller.MakeBody(1)
 	b.Call(sliceAt.Expr)
 	b.Return()
@@ -1244,8 +1244,8 @@ func TestReflectPointerOperationsDemandPointerTypeInit(t *testing.T) {
 			prog := NewProgram(nil)
 			defer prog.Dispose()
 			pkg := prog.NewPackage("pkg", "pkg")
-			operation := pkg.NewFunc(name, NoArgsNoRet, InGo)
-			caller := pkg.NewFunc("pkg.call", NoArgsNoRet, InGo)
+			operation := pkg.NewFunc(name, NoArgsNoRet, GoDecl)
+			caller := pkg.NewFunc("pkg.call", NoArgsNoRet, GoDecl)
 			b := caller.MakeBody(1)
 			b.Call(operation.Expr)
 			b.Return()
@@ -1268,7 +1268,7 @@ func TestRecordUseIface(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackageEx("pkg", "pkg", true)
-	fn := pkg.NewFunc("caller", types.NewSignatureType(nil, nil, nil, nil, nil, false), InGo)
+	fn := pkg.NewFunc("caller", types.NewSignatureType(nil, nil, nil, nil, nil, false), GoDecl)
 	b := fn.MakeBody(1)
 	b.recordUseIface(prog.Int())
 	b.recordUseIface(prog.Any())
@@ -1297,8 +1297,8 @@ func TestDevLTOGlobalDCERecordAbiTypeFakeUsesUsesCache(t *testing.T) {
 	prog.EnableGoGlobalDCE(true)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	target := pkg.NewFunc("CachedTarget", sig, InGo)
-	fn := pkg.NewFunc("UseCachedAbiType", sig, InGo)
+	target := pkg.NewFunc("CachedTarget", sig, GoDecl)
+	fn := pkg.NewFunc("UseCachedAbiType", sig, GoDecl)
 	b := fn.MakeBody(1)
 	g := pkg.NewVarEx("typeinfo", prog.Pointer(prog.Int()))
 	pkg.abiTypeFakeUseCache[g.impl] = []llvm.Value{target.impl}
@@ -1317,12 +1317,12 @@ func TestDevLTOGlobalDCERecordAbiTypeFakeUsesCacheIsPerGlobal(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 
 	pkgA := prog.NewPackage("a", "a")
-	targetA := pkgA.NewFunc("CachedTargetA", sig, InGo)
+	targetA := pkgA.NewFunc("CachedTargetA", sig, GoDecl)
 	gA := pkgA.NewVarEx("typeinfo", prog.Pointer(prog.Int()))
 	pkgA.abiTypeFakeUseCache[gA.impl] = []llvm.Value{targetA.impl}
 
 	pkgB := prog.NewPackage("b", "b")
-	fnB := pkgB.NewFunc("UseCachedAbiTypeB", sig, InGo)
+	fnB := pkgB.NewFunc("UseCachedAbiTypeB", sig, GoDecl)
 	b := fnB.MakeBody(1)
 	gB := pkgB.NewVarEx("typeinfo", prog.Pointer(prog.Int()))
 	b.recordAbiTypeFakeUses(gB.impl)
@@ -1346,7 +1346,7 @@ func TestDevLTOGlobalDCEAbiTypeFakeUsesRecordedDuringAbiTypeBuild(t *testing.T) 
 	prog.EnableGoGlobalDCE(true)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("UseAbiType", sig, InGo)
+	fn := pkg.NewFunc("UseAbiType", sig, GoDecl)
 	b := fn.MakeBody(1)
 
 	stringType := types.Typ[types.String]
@@ -1391,7 +1391,7 @@ func TestMapKeyPtrCoverage(t *testing.T) {
 			types.NewVar(token.NoPos, nil, "m", mapType),
 			types.NewVar(token.NoPos, nil, "k", key),
 		), nil, false)
-	fn := pkg.NewFunc("mapKeyPtr", sig, InGo)
+	fn := pkg.NewFunc("mapKeyPtr", sig, GoDecl)
 	b := fn.MakeBody(1)
 
 	// The map uses the named key while the expression uses its underlying
@@ -1411,7 +1411,7 @@ func TestMapKeyPtrCoverage(t *testing.T) {
 			types.NewVar(token.NoPos, nil, "m", smallMap),
 			types.NewVar(token.NoPos, nil, "k", key),
 		), nil, false)
-		smallFn := pkg.NewFunc("mapKeyPtrLarger", smallSig, InGo)
+		smallFn := pkg.NewFunc("mapKeyPtrLarger", smallSig, GoDecl)
 		smallBody := smallFn.MakeBody(1)
 		smallBody.mapKeyPtr(smallFn.Param(0), smallFn.Param(1))
 	}()
@@ -1437,9 +1437,9 @@ func TestDevLTOGlobalDCEEmitFakeUsesAtEntry(t *testing.T) {
 	prog.EnableGoGlobalDCE(true)
 	pkg := prog.NewPackage("main", "main")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	targetA := pkg.NewFunc("TargetA", sig, InGo)
-	targetB := pkg.NewFunc("TargetB", sig, InGo)
-	fn := pkg.NewFunc("Use", sig, InGo)
+	targetA := pkg.NewFunc("TargetA", sig, GoDecl)
+	targetB := pkg.NewFunc("TargetB", sig, GoDecl)
+	fn := pkg.NewFunc("Use", sig, GoDecl)
 	b := fn.MakeBody(1)
 	fn.recordFakeUse(targetA.impl)
 	fn.recordFakeUse(targetB.impl)
@@ -1500,12 +1500,12 @@ func TestClosureNoCtxValue(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 	b.Return(fn.Param(0))
 
 	holderSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	holder := pkg.NewFunc("holder", holderSig, InGo)
+	holder := pkg.NewFunc("holder", holderSig, GoDecl)
 	hb := holder.MakeBody(1)
 	closureT := prog.Closure(sig)
 	ptr := hb.AllocaT(closureT)
@@ -1546,12 +1546,12 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 	b.Return(fn.Param(0))
 
 	holderSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	holder := pkg.NewFunc("holder", holderSig, InGo)
+	holder := pkg.NewFunc("holder", holderSig, GoDecl)
 	hb := holder.MakeBody(1)
 	closureT := prog.Closure(sig)
 	ptr := hb.AllocaT(closureT)
@@ -1601,9 +1601,9 @@ func TestChangeTypeNamedClosureUsesGoTypeIdentity(t *testing.T) {
 		types.NewTuple(types.NewParam(0, tpkg, "", dstNamed)),
 		false,
 	)
-	convertFn := pkg.NewFunc("convertNamedClosure", convertSig, InGo)
+	convertFn := pkg.NewFunc("convertNamedClosure", convertSig, GoDecl)
 	b := convertFn.MakeBody(1)
-	b.Return(b.ChangeType(prog.Type(dstNamed, InGo), convertFn.Param(0)))
+	b.Return(b.ChangeType(prog.Type(dstNamed, GoDecl), convertFn.Param(0)))
 
 	ir := convertFn.impl.String()
 	if !strings.Contains(ir, `insertvalue %"foo/bar.DstFn"`) {
@@ -1624,9 +1624,9 @@ func TestChangeTypeNamedClosureUsesGoTypeIdentity(t *testing.T) {
 		types.NewTuple(types.NewParam(0, tpkg, "", srcNamed)),
 		false,
 	)
-	sameFn := pkg.NewFunc("sameNamedClosure", sameSig, InGo)
+	sameFn := pkg.NewFunc("sameNamedClosure", sameSig, GoDecl)
 	sb := sameFn.MakeBody(1)
-	sb.Return(sb.ChangeType(prog.Type(srcNamed, InGo), sameFn.Param(0)))
+	sb.Return(sb.ChangeType(prog.Type(srcNamed, GoDecl), sameFn.Param(0)))
 
 	sameIR := sameFn.impl.String()
 	if strings.Contains(sameIR, "insertvalue") {
@@ -1655,10 +1655,10 @@ func TestConvertNamedStructValue(t *testing.T) {
 		types.NewTuple(types.NewParam(0, tpkg, "", dstNamed)),
 		false,
 	)
-	fn := pkg.NewFunc("convertNamed", sig, InGo)
+	fn := pkg.NewFunc("convertNamed", sig, GoDecl)
 	b := fn.MakeBody(1)
 	src := fn.Param(0)
-	dst := b.Convert(prog.Type(dstNamed, InGo), src)
+	dst := b.Convert(prog.Type(dstNamed, GoDecl), src)
 	b.Return(dst)
 
 	ir := fn.impl.String()
@@ -1693,9 +1693,9 @@ func TestConvertStringFromWideIntegers(t *testing.T) {
 		types.NewVar(0, nil, "", types.Typ[types.String]),
 	)
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("convertStrings", sig, InGo)
+	fn := pkg.NewFunc("convertStrings", sig, GoDecl)
 	b := fn.MakeBody(1)
-	str := prog.Type(types.Typ[types.String], InGo)
+	str := prog.Type(types.Typ[types.String], GoDecl)
 	b.Return(
 		b.Convert(str, fn.Param(0)),
 		b.Convert(str, fn.Param(1)),
@@ -1732,7 +1732,7 @@ func TestCallClosureDynamic(t *testing.T) {
 		types.NewVar(0, nil, "x", types.Typ[types.Int]),
 	)
 	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
-	caller := pkg.NewFunc("caller", callerSig, InGo)
+	caller := pkg.NewFunc("caller", callerSig, GoDecl)
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
 
@@ -1765,7 +1765,7 @@ func TestMakeClosureWithCtx(t *testing.T) {
 	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
 	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
-	inner := pkg.NewEnvFunc("inner", innerSig, InGo, ctxParam, false)
+	inner := pkg.NewEnvFunc("inner", innerSig, GoDecl, ctxParam, false)
 	ib := inner.MakeBody(1)
 	ib.Return(inner.Param(0))
 
@@ -1775,7 +1775,7 @@ func TestMakeClosureWithCtx(t *testing.T) {
 		innerRets, false)
 	outerSig := types.NewSignatureType(nil, nil, nil, outerParams,
 		types.NewTuple(types.NewVar(0, nil, "", outerRetSig)), false)
-	outer := pkg.NewFunc("outer", outerSig, InGo)
+	outer := pkg.NewFunc("outer", outerSig, GoDecl)
 	ob := outer.MakeBody(1)
 	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
 	ob.Return(closure)
@@ -1851,7 +1851,7 @@ func TestIfaceMethodClosureCallIR(t *testing.T) {
 	callerSig := types.NewSignatureType(nil, nil, nil,
 		types.NewTuple(types.NewVar(0, pkgTypes, "i", namedIface)),
 		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), false)
-	caller := pkg.NewFunc("caller", callerSig, InGo)
+	caller := pkg.NewFunc("caller", callerSig, GoDecl)
 	b := caller.MakeBody(1)
 	closure := b.Imethod(caller.Param(0), recvMeth)
 	ret := b.Call(closure, prog.Val(100), prog.Val(200))
@@ -1920,11 +1920,11 @@ func TestMakeInterfaceKinds(t *testing.T) {
 
 	emptyIface := types.NewInterfaceType(nil, nil)
 	emptyIface.Complete()
-	emptyType := prog.Type(emptyIface, InGo)
+	emptyType := prog.Type(emptyIface, GoDecl)
 
 	makeFn := func(name string, x Expr) {
 		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		iface := b.MakeInterface(emptyType, x)
 		b.Return(iface)
@@ -1938,21 +1938,21 @@ func TestMakeInterfaceKinds(t *testing.T) {
 		types.NewVar(0, nil, "a", types.Typ[types.Int]),
 		types.NewVar(0, nil, "b", types.Typ[types.Int]),
 	}, nil)
-	makeFn("structIface", prog.Zero(prog.Type(st, InGo)))
+	makeFn("structIface", prog.Zero(prog.Type(st, GoDecl)))
 
 	single := types.NewStruct([]*types.Var{
 		types.NewVar(0, nil, "v", types.Typ[types.Int]),
 	}, nil)
-	makeFn("singleFieldIface", prog.Zero(prog.Type(single, InGo)))
+	makeFn("singleFieldIface", prog.Zero(prog.Type(single, GoDecl)))
 
 	pkgTypes := types.NewPackage("foo/bar", "bar")
 	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	rawMeth := types.NewFunc(0, pkgTypes, "M", rawSig)
 	nonEmpty := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
 	nonEmpty.Complete()
-	nonEmptyType := prog.Type(nonEmpty, InGo)
+	nonEmptyType := prog.Type(nonEmpty, GoDecl)
 	sigNE := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", nonEmpty)), false)
-	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, InGo)
+	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, GoDecl)
 	bNE := fnNE.MakeBody(1)
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 }
@@ -1968,13 +1968,13 @@ func TestCheckExprAssignmentConversions(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackage("bar", "foo/bar")
-	fn := pkg.NewFunc("checkExprAssignmentConversions", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("checkExprAssignmentConversions", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 
 	pkgTypes := types.NewPackage("foo/bar", "bar")
 	intSlice := types.NewSlice(types.Typ[types.Int])
 	namedSlice := types.NewNamed(types.NewTypeName(token.NoPos, pkgTypes, "checkExprSlice", nil), intSlice, nil)
-	concrete := checkExpr(prog.Zero(prog.Type(namedSlice, InGo)), intSlice, b)
+	concrete := checkExpr(prog.Zero(prog.Type(namedSlice, GoDecl)), intSlice, b)
 	if !types.Identical(concrete.RawType(), intSlice) {
 		t.Fatalf("concrete retag type = %v, want %v", concrete.RawType(), intSlice)
 	}
@@ -1987,7 +1987,7 @@ func TestCheckExprAssignmentConversions(t *testing.T) {
 	}
 
 	namedIface := types.NewNamed(types.NewTypeName(token.NoPos, pkgTypes, "checkExprIface", nil), emptyIface, nil)
-	fromIface := b.MakeInterface(prog.Type(namedIface, InGo), prog.Val(7))
+	fromIface := b.MakeInterface(prog.Type(namedIface, GoDecl), prog.Val(7))
 	changedIface := checkExpr(fromIface, emptyIface, b)
 	if !types.Identical(changedIface.RawType(), emptyIface) {
 		t.Fatalf("interface-to-interface type = %v, want %v", changedIface.RawType(), emptyIface)
@@ -2010,14 +2010,14 @@ func TestMakeInterfaceFromPtrKinds(t *testing.T) {
 
 	emptyIface := types.NewInterfaceType(nil, nil)
 	emptyIface.Complete()
-	emptyType := prog.Type(emptyIface, InGo)
+	emptyType := prog.Type(emptyIface, GoDecl)
 	returns := types.NewTuple(types.NewVar(0, nil, "", emptyIface))
 
 	makePtrIface := func(name string, elem types.Type) {
 		ptrTyp := types.NewPointer(elem)
 		params := types.NewTuple(types.NewVar(0, nil, "p", ptrTyp))
 		sig := types.NewSignatureType(nil, nil, nil, params, returns, false)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		b.Return(b.MakeInterfaceFromPtr(emptyType, fn.Param(0)))
 		b.EndBuild()
@@ -2051,7 +2051,7 @@ func TestZeroSizedLoadEmitsNilDerefGuard(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "p", types.NewPointer(emptyStruct)))
 	results := types.NewTuple(types.NewVar(0, nil, "", emptyStruct))
 	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
-	fn := pkg.NewFunc("loadZero", sig, InGo)
+	fn := pkg.NewFunc("loadZero", sig, GoDecl)
 	b := fn.MakeBody(1)
 	b.Return(b.Load(fn.Param(0)))
 	b.EndBuild()
@@ -2077,7 +2077,7 @@ func TestTypeAssertSingleElemArrayUsesInsertValue(t *testing.T) {
 	emptyIface := types.NewInterfaceType(nil, nil)
 	emptyIface.Complete()
 	arrayRaw := types.NewArray(types.Typ[types.Int], 1)
-	arrayType := prog.Type(arrayRaw, InGo)
+	arrayType := prog.Type(arrayRaw, GoDecl)
 
 	params := types.NewTuple(types.NewVar(0, nil, "x", emptyIface))
 	results := types.NewTuple(
@@ -2085,7 +2085,7 @@ func TestTypeAssertSingleElemArrayUsesInsertValue(t *testing.T) {
 		types.NewVar(0, nil, "", types.Typ[types.Bool]),
 	)
 	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
-	fn := pkg.NewFunc("assertArray", sig, InGo)
+	fn := pkg.NewFunc("assertArray", sig, GoDecl)
 	b := fn.MakeBody(1)
 	ret := b.TypeAssert(fn.Param(0), arrayType, true)
 	b.Return(b.Extract(ret, 0), b.Extract(ret, 1))
@@ -2118,9 +2118,9 @@ func TestInterfaceHelpers(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackage("bar", "foo/bar")
-	intfType := prog.Type(rawIface, InGo)
+	intfType := prog.Type(rawIface, GoDecl)
 	fn := pkg.NewFunc("call", types.NewSignatureType(nil, nil, nil,
-		types.NewTuple(types.NewVar(0, nil, "i", rawIface)), nil, false), InGo)
+		types.NewTuple(types.NewVar(0, nil, "i", rawIface)), nil, false), GoDecl)
 	b := fn.MakeBody(1)
 
 	// Method signature with first param being the interface itself.
@@ -2140,27 +2140,27 @@ func TestValFromDataKinds(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("caller", sig, InGo)
+	fn := pkg.NewFunc("caller", sig, GoDecl)
 	b := fn.MakeBody(1)
 	data := prog.Nil(prog.VoidPtr()).impl
 
 	b.valFromData(prog.Int(), data)
 	b.valFromData(prog.Float32(), data)
-	b.valFromData(prog.Type(types.NewPointer(types.Typ[types.Int]), InGo), data)
+	b.valFromData(prog.Type(types.NewPointer(types.Typ[types.Int]), GoDecl), data)
 
 	st := types.NewStruct([]*types.Var{
 		types.NewVar(0, nil, "a", types.Typ[types.Int]),
 		types.NewVar(0, nil, "b", types.Typ[types.Int]),
 	}, nil)
-	b.valFromData(prog.Type(st, InGo), data)
+	b.valFromData(prog.Type(st, GoDecl), data)
 
 	single := types.NewStruct([]*types.Var{
 		types.NewVar(0, nil, "v", types.Typ[types.Int]),
 	}, nil)
-	b.valFromData(prog.Type(single, InGo), data)
+	b.valFromData(prog.Type(single, GoDecl), data)
 
 	arr := types.NewArray(types.Typ[types.Int], 1)
-	b.valFromData(prog.Type(arr, InGo), data)
+	b.valFromData(prog.Type(arr, GoDecl), data)
 
 	b.Return()
 }
@@ -2179,7 +2179,7 @@ func TestPackageCoverageHelpers(t *testing.T) {
 		t.Fatal("ExportFuncs should be empty for new package")
 	}
 
-	fn := pkg.NewFunc("noop", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("noop", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	b.Return()
 }
@@ -2188,7 +2188,7 @@ func TestExprCoverageHelpers(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 
 	// SetName coverage
@@ -2303,13 +2303,13 @@ func TestVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 	typ := types.NewPointer(types.Typ[types.Int])
-	a := pkg.NewVar("a", typ, InGo)
-	if pkg.NewVar("a", typ, InGo) != a {
+	a := pkg.NewVar("a", typ, GoDecl)
+	if pkg.NewVar("a", typ, GoDecl) != a {
 		t.Fatal("NewVar(a) failed")
 	}
-	pkg.NewVarEx("a", prog.Type(typ, InGo))
+	pkg.NewVarEx("a", prog.Type(typ, GoDecl))
 	a.Init(prog.Val(100))
-	b := pkg.NewVar("b", typ, InGo)
+	b := pkg.NewVar("b", typ, GoDecl)
 	b.Init(Expr{llvm.ConstPtrToInt(a.impl, prog.Int().ll), prog.Int()})
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -2322,13 +2322,13 @@ source_filename = "foo/bar"
 func TestThreadLocalVar(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	a := pkg.NewThreadLocalVar("a", types.NewPointer(types.Typ[types.Int]), InGo)
-	if got := pkg.NewThreadLocalVar("a", types.NewPointer(types.Typ[types.Int]), InGo); got != a {
+	a := pkg.NewThreadLocalVar("a", types.NewPointer(types.Typ[types.Int]), GoDecl)
+	if got := pkg.NewThreadLocalVar("a", types.NewPointer(types.Typ[types.Int]), GoDecl); got != a {
 		t.Fatal("NewThreadLocalVar(a) did not reuse the existing global")
 	}
 	a.InitNil()
 	empty := types.NewStruct(nil, nil)
-	z := pkg.NewThreadLocalVar("z", types.NewPointer(empty), InGo)
+	z := pkg.NewThreadLocalVar("z", types.NewPointer(empty), GoDecl)
 	z.InitNil()
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -2343,7 +2343,7 @@ func TestConst(t *testing.T) {
 	pkg := prog.NewPackage("bar", "foo/bar")
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
 	sig := types.NewSignatureType(nil, nil, nil, nil, rets, false)
-	b := pkg.NewFunc("fn", sig, InGo).MakeBody(1)
+	b := pkg.NewFunc("fn", sig, GoDecl).MakeBody(1)
 	b.Return(b.Const(constant.MakeBool(true), prog.Bool()))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -2363,7 +2363,7 @@ func TestStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", types.NewPointer(empty), InGo)
+	pkg.NewVar("a", types.NewPointer(empty), GoDecl)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -2380,7 +2380,7 @@ func TestNamedStruct(t *testing.T) {
 
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	pkg.NewVar("a", types.NewPointer(empty), InGo)
+	pkg.NewVar("a", types.NewPointer(empty), GoDecl)
 	if pkg.VarOf("a") == nil {
 		t.Fatal("VarOf failed")
 	}
@@ -2398,7 +2398,7 @@ func TestDeclFunc(t *testing.T) {
 	pkg := prog.NewPackage("bar", "foo/bar")
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
-	pkg.NewFunc("fn", sig, InGo)
+	pkg.NewFunc("fn", sig, GoDecl)
 	if pkg.FuncOf("fn") == nil {
 		t.Fatal("FuncOf failed")
 	}
@@ -2423,7 +2423,7 @@ func TestBasicFunc(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	pkg.NewFunc("fn", sig, InGo).MakeBody(1).
+	pkg.NewFunc("fn", sig, GoDecl).MakeBody(1).
 		Return(prog.Val(1))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -2446,7 +2446,7 @@ func TestFuncParam(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	fn.MakeBody(1).Return(fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -2470,11 +2470,11 @@ func TestFuncCall(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	fn.MakeBody(1).
 		Return(prog.Val(1))
 
-	b := pkg.NewFunc("main", NoArgsNoRet, InGo).MakeBody(1)
+	b := pkg.NewFunc("main", NoArgsNoRet, GoDecl).MakeBody(1)
 	b.Call(fn.Expr, prog.Val(1), prog.Val(1.2))
 	b.Return()
 
@@ -2507,8 +2507,8 @@ func TestFuncMultiRet(t *testing.T) {
 		types.NewVar(0, nil, "c", types.Typ[types.Int]),
 		types.NewVar(0, nil, "d", types.Typ[types.Float64]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	a := pkg.NewVar("a", types.NewPointer(types.Typ[types.Int]), InGo)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	a := pkg.NewVar("a", types.NewPointer(types.Typ[types.Int]), GoDecl)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 	aInt := Expr{llvm.ConstPtrToInt(a.impl, prog.Int().ll), prog.Int()}
 	b.Return(aInt, fn.Param(0))
@@ -2531,7 +2531,7 @@ attributes #0 = { null_pointer_is_valid "frame-pointer"="non-leaf" }
 func TestJump(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	fn := pkg.NewFunc("loop", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("loop", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	b.Jump(fn.Block(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
@@ -2553,7 +2553,7 @@ func TestIf(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(3)
 	iftrue := fn.Block(1)
 	iffalse := fn.Block(2)
@@ -2591,7 +2591,7 @@ func TestPrintf(t *testing.T) {
 	params := types.NewTuple(types.NewVar(0, nil, "format", pchar), VArg())
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, true)
-	pkg.NewFunc("printf", sig, InC)
+	pkg.NewFunc("printf", sig, CDecl)
 	expected := `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -2618,7 +2618,7 @@ func TestBinOp(t *testing.T) {
 		types.NewVar(0, nil, "b", types.Typ[types.Float64]))
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 	ret := b.BinOp(token.ADD, fn.Param(0), prog.Val(1))
 	b.Return(ret)
@@ -2658,7 +2658,7 @@ func TestArrayEqualLowering(t *testing.T) {
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])),
 			false,
 		)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		xaddr, yaddr := Nil, Nil
 		if addrMask&1 != 0 {
@@ -2699,7 +2699,7 @@ func TestArrayEqualLowering(t *testing.T) {
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])),
 		false,
 	)
-	fn := pkg.NewFunc("direct", sig, InGo)
+	fn := pkg.NewFunc("direct", sig, GoDecl)
 	b := fn.MakeBody(1)
 	mustPanic := func(want string, call func()) {
 		t.Helper()
@@ -2764,7 +2764,7 @@ func TestStructEqualLowering(t *testing.T) {
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])),
 			false,
 		)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		x, y := fn.Param(0), fn.Param(1)
 		xaddr, yaddr := Nil, Nil
@@ -2839,7 +2839,7 @@ func TestStructEqualLowering(t *testing.T) {
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])),
 		false,
 	)
-	fn := pkg.NewFunc("invalidStructCompare", sig, InGo)
+	fn := pkg.NewFunc("invalidStructCompare", sig, GoDecl)
 	b := fn.MakeBody(1)
 	mustPanic := func(want string, call func()) {
 		t.Helper()
@@ -2870,7 +2870,7 @@ func TestUnOp(t *testing.T) {
 	)
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 	b := fn.MakeBody(1)
 	ptr := fn.Param(0)
 	val := b.UnOp(token.MUL, ptr)
@@ -2929,7 +2929,7 @@ func TestCompareSelect(t *testing.T) {
 	)
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
+	fn := pkg.NewFunc("fn", sig, GoDecl)
 
 	b := fn.MakeBody(1)
 	result := b.compareSelect(token.GTR, fn.Param(0), fn.Param(1), fn.Param(2))
@@ -2962,15 +2962,15 @@ func TestGlobalStrings(t *testing.T) {
 	})
 	pkg := prog.NewPackage("bar", "foo/bar")
 	typ := types.NewPointer(types.Typ[types.String])
-	a := pkg.NewVar("foo/bar.a", typ, InGo)
-	if pkg.NewVar("foo/bar.a", typ, InGo) != a {
+	a := pkg.NewVar("foo/bar.a", typ, GoDecl)
+	if pkg.NewVar("foo/bar.a", typ, GoDecl) != a {
 		t.Fatal("NewVar(a) failed")
 	}
 	a.InitNil()
-	pkg.NewVarEx("foo/bar.a", prog.Type(typ, InGo))
-	b := pkg.NewVar("foo/bar.b", typ, InGo)
+	pkg.NewVarEx("foo/bar.a", prog.Type(typ, GoDecl))
+	b := pkg.NewVar("foo/bar.b", typ, GoDecl)
 	b.InitNil()
-	c := pkg.NewVar("foo/bar.c", types.NewPointer(types.Typ[types.Int]), InGo)
+	c := pkg.NewVar("foo/bar.c", types.NewPointer(types.Typ[types.Int]), GoDecl)
 	c.Init(prog.Val(100))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
@@ -3035,10 +3035,10 @@ func TestZeroSizedGlobalEmitsAliasSymbol(t *testing.T) {
 	pkg := prog.NewPackage("bar", "foo/bar")
 	elem := types.NewArray(types.Typ[types.Int], 0)
 	typ := types.NewPointer(elem)
-	a := pkg.NewVar("foo/bar.a", typ, InGo)
-	a.Init(prog.Zero(prog.Type(elem, InGo)))
+	a := pkg.NewVar("foo/bar.a", typ, GoDecl)
+	a.Init(prog.Zero(prog.Type(elem, GoDecl)))
 	a.InitNil()
-	pkg.NewVar("other/pkg.a", typ, InGo)
+	pkg.NewVar("other/pkg.a", typ, GoDecl)
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -3096,7 +3096,7 @@ func TestSetjmpReturnsTwice(t *testing.T) {
 	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
 
-	fn := pkg.NewFunc("test", sig, InGo)
+	fn := pkg.NewFunc("test", sig, GoDecl)
 	b := fn.MakeBody(1)
 	ret := b.Setjmp(fn.Param(0))
 	b.Return(ret)
@@ -3230,11 +3230,11 @@ func TestAbiTables(t *testing.T) {
 
 	emptyIface := types.NewInterfaceType(nil, nil)
 	emptyIface.Complete()
-	emptyType := prog.Type(emptyIface, InGo)
+	emptyType := prog.Type(emptyIface, GoDecl)
 
 	makeFn := func(name string, x Expr) {
 		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		iface := b.MakeInterface(emptyType, x)
 		b.Return(iface)
@@ -3248,21 +3248,21 @@ func TestAbiTables(t *testing.T) {
 		types.NewVar(0, nil, "a", types.Typ[types.Int]),
 		types.NewVar(0, nil, "b", types.Typ[types.Int]),
 	}, nil)
-	makeFn("structIface", prog.Zero(prog.Type(st, InGo)))
+	makeFn("structIface", prog.Zero(prog.Type(st, GoDecl)))
 
 	single := types.NewStruct([]*types.Var{
 		types.NewVar(0, nil, "v", types.Typ[types.Int]),
 	}, nil)
-	makeFn("singleFieldIface", prog.Zero(prog.Type(single, InGo)))
+	makeFn("singleFieldIface", prog.Zero(prog.Type(single, GoDecl)))
 
 	pkgTypes := types.NewPackage("foo/bar", "bar")
 	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	rawMeth := types.NewFunc(0, pkgTypes, "M", rawSig)
 	nonEmpty := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
 	nonEmpty.Complete()
-	nonEmptyType := prog.Type(nonEmpty, InGo)
+	nonEmptyType := prog.Type(nonEmpty, GoDecl)
 	sigNE := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", nonEmpty)), false)
-	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, InGo)
+	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, GoDecl)
 	bNE := fnNE.MakeBody(1)
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 
@@ -3289,10 +3289,10 @@ func TestInitAbiTypesForSubset(t *testing.T) {
 
 	emptyIface := types.NewInterfaceType(nil, nil)
 	emptyIface.Complete()
-	emptyType := prog.Type(emptyIface, InGo)
+	emptyType := prog.Type(emptyIface, GoDecl)
 	makeFn := func(name string, x Expr) {
 		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
-		fn := pkg.NewFunc(name, sig, InGo)
+		fn := pkg.NewFunc(name, sig, GoDecl)
 		b := fn.MakeBody(1)
 		b.Return(b.MakeInterface(emptyType, x))
 	}
@@ -3348,7 +3348,7 @@ func TestRegisterAbiTypesAcrossPrograms(t *testing.T) {
 	source := newProgram()
 	defer source.Dispose()
 	sourcePkg := source.NewPackage("source", "example.com/source")
-	sourceFn := sourcePkg.NewFunc("source", NoArgsNoRet, InC)
+	sourceFn := sourcePkg.NewFunc("source", NoArgsNoRet, CDecl)
 	sourceBuilder := sourceFn.MakeBody(1)
 	sourceBuilder.abiType(types.NewSlice(types.Typ[types.Int]))
 	named := types.NewNamed(

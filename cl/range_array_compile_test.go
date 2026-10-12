@@ -352,7 +352,7 @@ func copyArray(p *[5]int) [5]int {
 		{name: "staticArrayLenPtr", arg: load.X},
 		{name: "staticArrayLenDeref", arg: load},
 	} {
-		fn := pkg.NewFunc(tc.name, sig, llssa.InGo)
+		fn := pkg.NewFunc(tc.name, sig, llssa.GoDecl)
 		b := fn.MakeBody(1)
 		ret := ctx.callEx(b, llssa.Call, &ssa.CallCommon{
 			Value: builtin,

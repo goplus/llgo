@@ -14,7 +14,7 @@ func TestReflectTypeMethodCheckRecordsDemands(t *testing.T) {
 	prog := llssa.NewProgram(nil)
 	defer prog.Dispose()
 	pkg := prog.NewPackageEx("pkg", "pkg", true)
-	fn := pkg.NewFunc("pkg.caller", types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InGo)
+	fn := pkg.NewFunc("pkg.caller", types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.GoDecl)
 	ctx := &context{pkg: pkg, fn: fn}
 
 	reflectPkg := types.NewPackage("reflect", "reflect")

@@ -716,10 +716,10 @@ func cgoIgnored(fnName string) bool {
 
 const (
 	ignoredFunc = iota
-	goFunc      = int(llssa.InGo)
-	cFunc       = int(llssa.InC)
-	pyFunc      = int(llssa.InPython)
-	stdcallFunc = int(llssa.InStdcall)
+	goFunc      = int(llssa.GoDecl)
+	cFunc       = int(llssa.CDecl)
+	pyFunc      = int(llssa.PyDecl)
+	stdcallFunc = int(llssa.Stdcall)
 	llgoInstr   = -1
 
 	llgoInstrBase   = 0x80
@@ -918,9 +918,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 
 const (
 	ignoredVar = iota
-	goVar      = int(llssa.InGo)
-	cVar       = int(llssa.InC)
-	pyVar      = int(llssa.InPython)
+	goVar      = int(llssa.GoDecl)
+	cVar       = int(llssa.CDecl)
+	pyVar      = int(llssa.PyDecl)
 )
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
@@ -964,7 +964,7 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {
-		ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.Background(vtype))
+		ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.CallConv(vtype))
 	}
 	return ret.Expr
 }
@@ -1129,7 +1129,7 @@ func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package,
 	if cc.replacement != "" {
 		fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", cc.name, fset.Position(cc.pos), cc.replacement)
 	}
-	prog.SetTypeBackground(pkg.Path()+"."+spec.Name.Name, toBackground(cc.bg))
+	prog.SetTypeCallConv(pkg.Path()+"."+spec.Name.Name, toCallConv(cc.bg))
 	return nil
 }
 
@@ -1195,14 +1195,14 @@ func typeCallConv(fset *token.FileSet, doc *ast.CommentGroup) (cc callConv, err 
 	return cc, nil
 }
 
-func toBackground(bg string) llssa.Background {
-	switch bg {
+func toCallConv(cc string) llssa.CallConv {
+	switch cc {
 	case "C":
-		return llssa.InC
+		return llssa.CDecl
 	case "stdcall":
-		return llssa.InStdcall
+		return llssa.Stdcall
 	}
-	return llssa.InGo
+	return llssa.GoDecl
 }
 
 // -----------------------------------------------------------------------------

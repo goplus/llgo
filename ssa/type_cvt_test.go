@@ -187,7 +187,7 @@ func TestCFunctionAliasKeepsNativeRepresentation(t *testing.T) {
 	goCallback := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "GoCallback", nil), sig)
 	outer := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "Outer", nil), callback)
 	goOuter := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "GoOuter", nil), goCallback)
-	prog.SetTypeBackground("example.com/callback.Callback", InC)
+	prog.SetTypeCallConv("example.com/callback.Callback", CDecl)
 
 	for _, alias := range []*types.Alias{callback, outer} {
 		if got, changed := prog.gocvt.cvtType(alias); changed || got != alias {
@@ -196,12 +196,12 @@ func TestCFunctionAliasKeepsNativeRepresentation(t *testing.T) {
 		if prog.gocvt.needsTypeConversion(alias, make(conversionNeedQuery)) {
 			t.Fatalf("C callback %s should not require closure conversion", alias.Obj().Name())
 		}
-		if got := prog.Type(alias, InGo); got.kind != vkFuncPtr || prog.SizeOf(got) != uint64(prog.PointerSize()) {
+		if got := prog.Type(alias, GoDecl); got.kind != vkFuncPtr || prog.SizeOf(got) != uint64(prog.PointerSize()) {
 			t.Fatalf("C callback %s representation = (%v, %d bytes), want pointer", alias.Obj().Name(), got.kind, prog.SizeOf(got))
 		}
 	}
 	for _, alias := range []*types.Alias{goCallback, goOuter} {
-		if got := prog.Type(alias, InGo); got.kind != vkClosure || prog.SizeOf(got) != uint64(2*prog.PointerSize()) {
+		if got := prog.Type(alias, GoDecl); got.kind != vkClosure || prog.SizeOf(got) != uint64(2*prog.PointerSize()) {
 			t.Fatalf("Go callback %s representation = (%v, %d bytes), want two-word closure", alias.Obj().Name(), got.kind, prog.SizeOf(got))
 		}
 	}

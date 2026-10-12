@@ -12,7 +12,7 @@ func TestSetjmpLongjmpIRPaths(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	jb := b.AllocaSigjmpBuf()
 	zero := prog.IntVal(0, prog.CInt())
@@ -42,7 +42,7 @@ func TestSigjmpUsesSetjmpOnExplicitTarget(t *testing.T) {
 	})
 	pkg := prog.NewPackage("foo", "foo")
 
-	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	jb := b.AllocaSigjmpBuf()
 	zero := prog.IntVal(0, prog.CInt())
@@ -64,7 +64,7 @@ func TestWindowsSigjmpBufferAlignment(t *testing.T) {
 			prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "windows", GOARCH: arch})
 			pkg := prog.NewPackage("foo", "foo")
 
-			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 			b := fn.MakeBody(1)
 			_ = b.AllocaSigjmpBuf()
 			b.Return()
@@ -96,7 +96,7 @@ func TestWindowsSetjmpABI(t *testing.T) {
 			prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "windows", GOARCH: test.arch, LLVMTarget: test.llvmTarget})
 			pkg := prog.NewPackage("foo", "foo")
 
-			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 			b := fn.MakeBody(1)
 			jb := b.AllocaSigjmpBuf()
 			zero := prog.IntVal(0, prog.CInt())
@@ -146,7 +146,7 @@ func TestWindowsDirectSetjmpABI(t *testing.T) {
 			prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "windows", GOARCH: test.arch, LLVMTarget: test.llvmTarget})
 			pkg := prog.NewPackage("foo", "foo")
 
-			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+			fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 			b := fn.MakeBody(1)
 			jb := b.AllocaSigjmpBuf()
 			one := prog.IntVal(1, prog.CInt())
@@ -174,7 +174,7 @@ func TestWindowsSetjmpRejectsUnsupportedArchitecture(t *testing.T) {
 		GOOS: "windows", GOARCH: "riscv64", LLVMTarget: "riscv64-unknown-unknown",
 	})
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("f", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	jb := b.AllocaSigjmpBuf()
 	zero := prog.IntVal(0, prog.CInt())
@@ -192,17 +192,17 @@ func TestDeferInLoopContiguousDrainerGeneration(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	c1 := pkg.NewFunc("c1", ssa.NoArgsNoRet, ssa.InGo)
+	c1 := pkg.NewFunc("c1", ssa.NoArgsNoRet, ssa.GoDecl)
 	b1 := c1.MakeBody(1)
 	b1.Return()
 	b1.EndBuild()
 
-	c2 := pkg.NewFunc("c2", ssa.NoArgsNoRet, ssa.InGo)
+	c2 := pkg.NewFunc("c2", ssa.NoArgsNoRet, ssa.GoDecl)
 	b2 := c2.MakeBody(1)
 	b2.Return()
 	b2.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 	b.Return()

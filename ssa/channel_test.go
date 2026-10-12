@@ -34,7 +34,7 @@ func TestChannelReceiveBufferLoads(t *testing.T) {
 					pkg := prog.NewPackage("p", "example.com/receive")
 					params := types.NewTuple(types.NewVar(token.NoPos, nil, "ch", types.NewChan(types.SendRecv, elem)))
 					results := types.NewTuple(types.NewVar(token.NoPos, nil, "", elem))
-					fn := pkg.NewFunc("receive", types.NewSignatureType(nil, nil, nil, params, results, false), InGo)
+					fn := pkg.NewFunc("receive", types.NewSignatureType(nil, nil, nil, params, results, false), GoDecl)
 					b := fn.MakeBody(1)
 					var value Expr
 					switch mode {
@@ -56,7 +56,7 @@ func TestChannelReceiveBufferLoads(t *testing.T) {
 					if restore < 0 {
 						t.Fatalf("missing stack restoration:\n%s", ir)
 					}
-					if prog.SizeOf(prog.Type(elem, InGo)) == 0 {
+					if prog.SizeOf(prog.Type(elem, GoDecl)) == 0 {
 						// Comma-ok and select wrap the constant in a tuple with
 						// dynamic fields, so extraction need not be folded yet.
 						if load >= 0 || (mode == "direct" && !value.impl.IsConstant()) {

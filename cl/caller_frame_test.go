@@ -727,7 +727,7 @@ func f() { runtime.Caller(0) }
 				prog.Target().GOARCH = tt.goarch
 			}
 			pkg := prog.NewPackage("foo", tt.pkgPath)
-			fn := pkg.NewFunc("f", llssa.NoArgsNoRet, llssa.InGo)
+			fn := pkg.NewFunc("f", llssa.NoArgsNoRet, llssa.GoDecl)
 			goFn := ssapkg.Func("f")
 			ctx := &context{
 				prog:               prog,
@@ -780,7 +780,7 @@ func TestRuntimeFrameNameNormalization(t *testing.T) {
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("main", "command-line-arguments")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	ctx := &context{fn: pkg.NewFuncEx("command-line-arguments.f$1", sig, llssa.InGo, false, false)}
+	ctx := &context{fn: pkg.NewFuncEx("command-line-arguments.f$1", sig, llssa.GoDecl, false, false)}
 	if got, want := ctx.runtimeCallerFrameName(), "main.f.func1"; got != want {
 		t.Fatalf("fallback runtimeCallerFrameName() = %q, want %q", got, want)
 	}
@@ -935,7 +935,7 @@ func top() {
 	prog.EnableFuncInfoMetadata(true)
 	prog.EnableFuncInfoSites(true)
 	pkg := prog.NewPackage("foo", "example.com/foo")
-	fn := pkg.NewFunc("example.com/foo.top", llssa.NoArgsNoRet, llssa.InGo)
+	fn := pkg.NewFunc("example.com/foo.top", llssa.NoArgsNoRet, llssa.GoDecl)
 	ctx := &context{
 		prog:               prog,
 		pkg:                pkg,

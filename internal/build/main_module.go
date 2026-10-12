@@ -148,7 +148,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		stdioFlush = mainPkg.NewFunc("fflush", newSignature(
 			[]types.Type{types.Typ[types.UnsafePointer]},
 			[]types.Type{types.Typ[types.Int32]},
-		), llssa.InC)
+		), llssa.CDecl)
 	}
 
 	var abiInit llssa.Function
@@ -228,7 +228,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		// main returns bypass os.Exit, so the generated entry must flush too,
 		// before Windows terminates the process or we leave the local context.
 		coverageExit = mainPkg.NewFunc("runtime.runCoverageExitHook",
-			newSignature([]types.Type{types.Typ[types.Int]}, nil), llssa.InGo)
+			newSignature([]types.Type{types.Typ[types.Int]}, nil), llssa.GoDecl)
 	}
 	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, entryFunctions{
 		godebugInit:  godebugInit,
@@ -279,7 +279,7 @@ func defineLibraryRuntimeInit(
 			nil,
 		)
 	}
-	ctor := pkg.NewFunc(ctorName, ctorSig, llssa.InC)
+	ctor := pkg.NewFunc(ctorName, ctorSig, llssa.CDecl)
 	ctorValue := pkg.Module().NamedFunction(ctorName)
 	ctorValue.SetLinkage(llvm.InternalLinkage)
 	b := ctor.MakeBody(1)
@@ -328,7 +328,7 @@ func defineWindowsSharedRuntimeInit(pkg llssa.Package, goarch string, inits ...l
 		callbackName   = "__llgo_runtime_init_once_callback"
 	)
 
-	initialize := pkg.NewFunc(initializeName, llssa.NoArgsNoRet, llssa.InC)
+	initialize := pkg.NewFunc(initializeName, llssa.NoArgsNoRet, llssa.CDecl)
 	initializeValue := pkg.Module().NamedFunction(initializeName)
 	initializeValue.SetLinkage(llvm.InternalLinkage)
 	b := initialize.MakeBody(1)
@@ -366,7 +366,7 @@ func defineWindowsSharedRuntimeInit(pkg llssa.Package, goarch string, inits ...l
 	builder.CreateCall(llvm.FunctionType(voidType, nil, false), initializeValue, nil, "")
 	builder.CreateRet(llvm.ConstInt(i32Type, 1, false))
 
-	ensure := pkg.NewFunc(ensureName, llssa.NoArgsNoRet, llssa.InC)
+	ensure := pkg.NewFunc(ensureName, llssa.NoArgsNoRet, llssa.CDecl)
 	ensureValue := mod.NamedFunction(ensureName)
 	ensureValue.SetVisibility(llvm.HiddenVisibility)
 	block := llvmCtx.AddBasicBlock(ensureValue, "entry")
@@ -387,20 +387,20 @@ func defineCExportWrappers(pkg llssa.Package, exports []cExport, ensureInit llss
 	}
 	enterForeignThread := pkg.NewFunc(
 		llssa.PkgRuntime+".EnterForeignThread",
-		newSignature(nil, []types.Type{types.Typ[types.Bool]}), llssa.InGo,
+		newSignature(nil, []types.Type{types.Typ[types.Bool]}), llssa.GoDecl,
 	)
 	exitForeignThread := pkg.NewFunc(
 		llssa.PkgRuntime+".ExitForeignThread",
-		newSignature([]types.Type{types.Typ[types.Bool]}, nil), llssa.InGo,
+		newSignature([]types.Type{types.Typ[types.Bool]}, nil), llssa.GoDecl,
 	)
 	for _, export := range exports {
-		implementation := pkg.NewFunc(export.goName, export.sig, llssa.InGo)
-		wrapperBackground := llssa.InGo
+		implementation := pkg.NewFunc(export.goName, export.sig, llssa.GoDecl)
+		wrapperBackground := llssa.GoDecl
 		if target := pkg.Prog.Target(); target != nil && target.GOARCH == "wasm" && target.WasmProfile != "" {
 			// Go's wasm32 uintptr is 64-bit, while C size_t and uintptr_t at
 			// a Memory32 entry are 32-bit. Keep the implementation on the Go
 			// ABI and adapt widths at the externally visible wrapper.
-			wrapperBackground = llssa.InC
+			wrapperBackground = llssa.CDecl
 		}
 		wrapper := pkg.NewFunc(export.cName, export.sig, wrapperBackground)
 		b := wrapper.MakeBody(1)
@@ -493,7 +493,7 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 		entryName = "__main_argc_argv"
 	}
 	sig := newEntrySignature(argvType.RawType())
-	fn := pkg.NewFunc(entryName, sig, llssa.InC)
+	fn := pkg.NewFunc(entryName, sig, llssa.CDecl)
 	fnVal := pkg.Module().NamedFunction(entryName)
 	if entryName != processEntrySymbol {
 		fnVal.SetVisibility(llvm.HiddenVisibility)
@@ -531,7 +531,7 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 // gc: user code is called by runtime.main, while the C entry below it is named
 // runtime.goexit in funcinfo metadata. The wrapper is a startup-only call.
 func defineRuntimeMainFunction(pkg llssa.Package, fns entryFunctions) llssa.Function {
-	fn := pkg.NewFunc(runtimeMainSymbol, llssa.NoArgsNoRet, llssa.InGo)
+	fn := pkg.NewFunc(runtimeMainSymbol, llssa.NoArgsNoRet, llssa.GoDecl)
 	fn.Inline(llssa.NoInline)
 	fn.DisableTailCalls()
 	b := fn.MakeBody(1)
@@ -589,7 +589,7 @@ func defineDefaultGODEBUGInit(pkg llssa.Package, defaults string) llssa.Function
 	// The entry bypasses source-module optimization, which normally names
 	// anonymous literals before ThinLTO summary emission. Give these bytes
 	// an explicit local name so ThinLTO can rename and import them safely.
-	array := prog.Type(types.NewArray(types.Typ[types.Byte], int64(len(defaults))), llssa.InGo)
+	array := prog.Type(types.NewArray(types.Typ[types.Byte], int64(len(defaults))), llssa.GoDecl)
 	data := pkg.NewVarEx("__llgo_godebug_data", prog.Pointer(array))
 	data.Init(prog.ConstByteArray(array, []byte(defaults)))
 	dataValue := pkg.Module().NamedGlobal("__llgo_godebug_data")
@@ -597,7 +597,7 @@ func defineDefaultGODEBUGInit(pkg llssa.Package, defaults string) llssa.Function
 	dataValue.SetGlobalConstant(true)
 	dataValue.SetUnnamedAddr(true)
 	value := prog.ConstStruct(prog.String(), []llssa.Expr{data.Expr, prog.IntVal(uint64(len(defaults)), prog.Uintptr())})
-	fn := pkg.NewFunc("__llgo_godebug_init", llssa.NoArgsNoRet, llssa.InGo)
+	fn := pkg.NewFunc("__llgo_godebug_init", llssa.NoArgsNoRet, llssa.GoDecl)
 	fnValue := pkg.Module().NamedFunction("__llgo_godebug_init")
 	fnValue.SetLinkage(llvm.InternalLinkage)
 	b := fn.MakeBody(1)
@@ -612,7 +612,7 @@ func defineWasmMainTask(pkg llssa.Package, packageInits []llssa.Function, mainIn
 		[]types.Type{types.Typ[types.UnsafePointer]},
 		[]types.Type{types.Typ[types.UnsafePointer]},
 	)
-	fn := pkg.NewFunc("__llgo_wasm_main", sig, llssa.InC)
+	fn := pkg.NewFunc("__llgo_wasm_main", sig, llssa.CDecl)
 	fnVal := pkg.Module().NamedFunction("__llgo_wasm_main")
 	fnVal.SetVisibility(llvm.HiddenVisibility)
 	b := fn.MakeBody(1)
@@ -625,7 +625,7 @@ func defineWasmMainTask(pkg llssa.Package, packageInits []llssa.Function, mainIn
 }
 
 func defineStart(pkg llssa.Package, entry llssa.Function, argvType llssa.Type) {
-	fn := pkg.NewFunc("_start", llssa.NoArgsNoRet, llssa.InC)
+	fn := pkg.NewFunc("_start", llssa.NoArgsNoRet, llssa.CDecl)
 	pkg.Module().NamedFunction("_start").SetLinkage(llvm.WeakAnyLinkage)
 	b := fn.MakeBody(1)
 	prog := pkg.Prog
@@ -634,12 +634,12 @@ func defineStart(pkg llssa.Package, entry llssa.Function, argvType llssa.Type) {
 }
 
 func declareNoArgFunc(pkg llssa.Package, name string) llssa.Function {
-	return pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.InC)
+	return pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.CDecl)
 }
 
 func declareRuntimeExit(pkg llssa.Package, name string) llssa.Function {
 	sig := newSignature([]types.Type{types.Typ[types.Int32]}, nil)
-	return pkg.NewFunc(name, sig, llssa.InGo)
+	return pkg.NewFunc(name, sig, llssa.GoDecl)
 }
 
 // defineRootInitTask exposes the header of the compiler-generated Go init task.
@@ -652,7 +652,7 @@ func defineRootInitTask(pkg llssa.Package, pkgPath string) {
 }
 
 func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {
-	fn := pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.InC)
+	fn := pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.CDecl)
 	pkg.Module().NamedFunction(name).SetLinkage(llvm.WeakAnyLinkage)
 	b := fn.MakeBody(1)
 	b.Return()
@@ -714,7 +714,7 @@ func declareAcrtIobFunc(pkg llssa.Package, streamPtrType, indexType llssa.Type) 
 		[]types.Type{indexType.RawType()},
 		[]types.Type{streamPtrType.RawType()},
 	)
-	return pkg.NewFunc("__acrt_iob_func", sig, llssa.InC)
+	return pkg.NewFunc("__acrt_iob_func", sig, llssa.CDecl)
 }
 
 func declareExternalPtrGlobal(pkg llssa.Package, name string, valueType llssa.Type) llssa.Expr {
@@ -733,7 +733,7 @@ func declareSetvbuf(pkg llssa.Package, streamPtrType, bufPtrType, intType, sizeT
 		},
 		[]types.Type{intType.RawType()},
 	)
-	return pkg.NewFunc("setvbuf", sig, llssa.InC)
+	return pkg.NewFunc("setvbuf", sig, llssa.CDecl)
 }
 
 func tupleOf(tys ...types.Type) *types.Tuple {

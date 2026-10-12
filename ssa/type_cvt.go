@@ -55,46 +55,46 @@ const (
 	conversionNeeded
 )
 
-type Background int
+type CallConv int
 
 const (
-	inUnknown Background = iota
-	InGo
-	InC
-	InPython
-	InStdcall
+	ccUnknown CallConv = iota
+	GoDecl
+	CDecl
+	PyDecl
+	Stdcall
 )
 
 // Type convert a Go/C type into raw type.
 // C type = raw type
 // Go type: convert to raw type (because of closure)
-func (p Program) Type(typ types.Type, bg Background) Type {
-	if bg == InStdcall {
+func (p Program) Type(typ types.Type, cc CallConv) Type {
+	if cc == Stdcall {
 		p.validateStdcallType(typ)
 	}
-	if bg == InGo {
+	if cc == GoDecl {
 		typ, _ = p.gocvt.cvtType(typ)
 	}
 	ret := p.rawType(typ)
-	if isNativeFuncBackground(bg) {
+	if isNativeCallConv(cc) {
 		return p.withNativeStorage(ret)
 	}
 	return ret
 }
 
 // FuncDecl converts a Go/C function declaration into raw type.
-func (p Program) FuncDecl(sig *types.Signature, bg Background) Type {
-	if bg == InStdcall {
+func (p Program) FuncDecl(sig *types.Signature, cc CallConv) Type {
+	if cc == Stdcall {
 		p.validateStdcallSignature(sig)
 	}
 	recv := sig.Recv()
-	if bg == InGo {
+	if cc == GoDecl {
 		sig = p.gocvt.cvtFunc(sig, recv)
 	} else if recv != nil { // even in C, we need to add ctx for method
 		sig = FuncAddCtx(recv, sig)
 	}
-	ret := &aType{p.toLLVMFuncBackground(sig, bg), rawType{sig}, vkFuncDecl}
-	if isNativeFuncBackground(bg) {
+	ret := &aType{p.toLLVMFuncBackground(sig, cc), rawType{sig}, vkFuncDecl}
+	if isNativeCallConv(cc) {
 		return p.withNativeStorage(ret)
 	}
 	return ret
@@ -177,13 +177,13 @@ func typeNameLinkname(obj *types.TypeName) string {
 }
 
 func (p goTypes) shouldConvertAlias(t *types.Alias) bool {
-	background, ok := p.packageSyntax.typeBackground(typeNameLinkname(t.Obj()))
-	return !ok || !isNativeFuncBackground(background)
+	background, ok := p.packageSyntax.typeCallConv(typeNameLinkname(t.Obj()))
+	return !ok || !isNativeCallConv(background)
 }
 
 func (p goTypes) shouldConvertNamed(t *types.Named) bool {
-	background, ok := p.packageSyntax.typeBackground(namedLinkname(t))
-	return !ok || !isNativeFuncBackground(background)
+	background, ok := p.packageSyntax.typeCallConv(namedLinkname(t))
+	return !ok || !isNativeCallConv(background)
 }
 
 func (p goTypes) cvtNamed(t *types.Named) (raw *types.Named, cvt bool) {

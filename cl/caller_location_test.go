@@ -31,7 +31,7 @@ func f() { runtime.Caller(0) }
 				prog.TypeSizes(types.SizesFor("gc", "amd64"))
 			}
 			pkg := prog.NewPackage("foo", "example.com/foo")
-			fn := pkg.NewFunc("example.com/foo.f", llssa.NoArgsNoRet, llssa.InGo)
+			fn := pkg.NewFunc("example.com/foo.f", llssa.NoArgsNoRet, llssa.GoDecl)
 			b := fn.MakeBody(1)
 			ctx := &context{
 				prog: prog, pkg: pkg, fn: fn, goFn: ssapkg.Func("f"), fset: ssapkg.Prog.Fset,
@@ -45,7 +45,7 @@ func f() { runtime.Caller(0) }
 			ctx.recordCallerLocation(b, pos)
 			// A lowering-generated call must break reuse even though it did not
 			// pass through the frontend's ordinary Go-call instrumentation.
-			b.Call(pkg.NewFunc("helper", llssa.NoArgsNoRet, llssa.InGo).Expr)
+			b.Call(pkg.NewFunc("helper", llssa.NoArgsNoRet, llssa.GoDecl).Expr)
 			ctx.recordCallerLocation(b, pos)
 			b.Return()
 			b.EndBuild()

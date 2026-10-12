@@ -153,7 +153,7 @@ func (b Builder) needsNativeIntegerFuncval(fn Expr) bool {
 	case vkFuncPtr:
 		sig := fn.raw.Type.Underlying().(*types.Signature)
 		needed := false
-		b.Prog.nativeIntegerAttrs(sig, b.Prog.FuncDecl(sig, InC).ll, func(int, llvm.Attribute) {
+		b.Prog.nativeIntegerAttrs(sig, b.Prog.FuncDecl(sig, CDecl).ll, func(int, llvm.Attribute) {
 			needed = true
 		})
 		return needed
@@ -193,7 +193,7 @@ func (b Builder) nativeFuncval(dst Type, fn Expr, callConv llvm.CallConv, abi st
 	wrapper := b.Pkg.FuncOf(wrapperName)
 	if wrapper == nil {
 		env := types.NewVar(token.NoPos, nil, "$env", types.Typ[types.UnsafePointer])
-		wrapper = b.Pkg.NewEnvFunc(wrapperName, goSig, InGo, env, false)
+		wrapper = b.Pkg.NewEnvFunc(wrapperName, goSig, GoDecl, env, false)
 		wrapper.impl.SetLinkage(llvm.InternalLinkage)
 		body := wrapper.MakeBody(1)
 		args := make([]Expr, goSig.Params().Len())

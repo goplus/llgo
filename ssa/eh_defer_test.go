@@ -12,12 +12,12 @@ func TestExplicitDeferStackIR(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 
@@ -47,12 +47,12 @@ func TestDeferCapturesGCRootChain(t *testing.T) {
 	prog.EnableGCRoots(true)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 	b.Defer(ssa.DeferAlways, callee.Expr, ssa.Builder.Call)
@@ -80,12 +80,12 @@ func TestExplicitDeferStackFallbackAndNilBuiltin(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	stack := b.BuiltinCall("ssa:deferstack")
 	if stack.Type != prog.VoidPtr() {
@@ -105,7 +105,7 @@ func TestExplicitDeferStackDrainWithoutLoopCases(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 
@@ -128,7 +128,7 @@ func TestExplicitDeferStackDrainWithoutRecoverNoop(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	b.DeferStackDrain()
 	b.Return()
@@ -144,12 +144,12 @@ func TestPlainDeferWithoutSavedArgsIR(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 	b.Defer(ssa.DeferAlways, callee.Expr, ssa.Builder.Call)
@@ -170,12 +170,12 @@ func TestConditionalDeferIR(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 	b.Return()
@@ -212,12 +212,12 @@ func TestDeferContinuationDispatch(t *testing.T) {
 			}
 			pkg := prog.NewPackage("foo", "foo")
 
-			callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+			callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 			cb := callee.MakeBody(1)
 			cb.Return()
 			cb.EndBuild()
 
-			fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+			fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 			b := fn.MakeBody(1)
 			fn.SetRecover(fn.MakeBlock())
 			b.Defer(ssa.DeferAlways, callee.Expr, ssa.Builder.Call)
@@ -252,7 +252,7 @@ func TestDeferContinuationDispatch(t *testing.T) {
 
 			// RunDefers can establish defer state before any defer statement has
 			// been registered. Its Reth selector still has to dispatch to procBlk.
-			empty := pkg.NewFunc("empty", ssa.NoArgsNoRet, ssa.InGo)
+			empty := pkg.NewFunc("empty", ssa.NoArgsNoRet, ssa.GoDecl)
 			eb := empty.MakeBody(1)
 			empty.SetRecover(empty.MakeBlock())
 			eb.Return()

@@ -13,10 +13,10 @@ func TestLocationRecordInsertionPoint(t *testing.T) {
 	prog := NewProgram(nil)
 	defer prog.Dispose()
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("foo.f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("foo.f", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(2)
 	defer b.Dispose()
-	callee := pkg.NewFunc("record", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("record", NoArgsNoRet, GoDecl)
 	emitted := 0
 	record := func() {
 		b.EmitLocationRecord("panic", "foo.f", "foo.go", 1, func() Expr {
@@ -59,12 +59,12 @@ func TestLocationRecordAfterClosureContext(t *testing.T) {
 			pkg := prog.NewPackage("foo", "foo")
 			fields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
 			env := types.NewParam(0, nil, "$env", types.NewPointer(types.NewStruct(fields, nil)))
-			fn := pkg.NewEnvFunc("foo.f", NoArgsNoRet, InGo, env, false)
+			fn := pkg.NewEnvFunc("foo.f", NoArgsNoRet, GoDecl, env, false)
 			b := fn.MakeBody(2)
 			defer b.Dispose()
 			b.Jump(fn.Block(1))
 			b.SetBlock(fn.Block(1))
-			callee := pkg.NewFunc("record", NoArgsNoRet, InGo)
+			callee := pkg.NewFunc("record", NoArgsNoRet, GoDecl)
 			check := func() {
 				block := b.impl.GetInsertBlock()
 				fn.FreeVar(b, 0) // Hoists the first environment load to the entry block.
@@ -102,12 +102,12 @@ func TestLocationRecordDebugPositions(t *testing.T) {
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
 	pkg := prog.NewPackage("foo", "foo")
 	pkg.InitDebug("foo", "foo", token.NewFileSet())
-	fn := pkg.NewFunc("foo.f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("foo.f", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	defer b.Dispose()
 	pos := token.Position{Filename: "foo.go", Line: 10, Column: 2}
 	b.DebugFunction(fn, nil, pos, pos)
-	callee := pkg.NewFunc("record", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("record", NoArgsNoRet, GoDecl)
 	emitted := 0
 	record := func() {
 		b.EmitLocationRecord("panic", "foo.f", pos.Filename, pos.Line, func() Expr {
@@ -138,11 +138,11 @@ func TestLocationRecordCallbackBarrier(t *testing.T) {
 			prog := NewProgram(nil)
 			defer prog.Dispose()
 			pkg := prog.NewPackage("foo", "foo")
-			fn := pkg.NewFunc("foo.f", NoArgsNoRet, InGo)
+			fn := pkg.NewFunc("foo.f", NoArgsNoRet, GoDecl)
 			b := fn.MakeBody(1)
 			defer b.Dispose()
-			record := pkg.NewFunc("record", NoArgsNoRet, InGo)
-			helper := pkg.NewFunc("helper", NoArgsNoRet, InGo)
+			record := pkg.NewFunc("record", NoArgsNoRet, GoDecl)
+			helper := pkg.NewFunc("helper", NoArgsNoRet, GoDecl)
 			split := func() {
 				next := fn.MakeBlock()
 				b.Jump(next)

@@ -9,8 +9,8 @@ import (
 func TestRecoverDeferClassificationFallbacks(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("p", "example.com/p")
-	callee := pkg.NewFunc("callee", NoArgsNoRet, InGo)
-	caller := pkg.NewFunc("caller", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("callee", NoArgsNoRet, GoDecl)
+	caller := pkg.NewFunc("caller", NoArgsNoRet, GoDecl)
 	b := caller.MakeBody(1)
 
 	fnPtr := b.ChangeType(prog.rawType(NoArgsNoRet), callee.Expr)
@@ -67,14 +67,14 @@ func TestDefaultDeferConservativelyScopesRecoveringClosure(t *testing.T) {
 	setTestRuntime(t, prog)
 	pkg := prog.NewPackage("p", "example.com/p")
 
-	callee := pkg.NewFunc("recovering", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("recovering", NoArgsNoRet, GoDecl)
 	cb := callee.MakeBody(1)
 	cb.BindRecoverFrame()
 	_ = cb.Recover()
 	cb.Return()
 	cb.EndBuild()
 
-	caller := pkg.NewFunc("caller", NoArgsNoRet, InGo)
+	caller := pkg.NewFunc("caller", NoArgsNoRet, GoDecl)
 	b := caller.MakeBody(1)
 	caller.SetRecover(caller.MakeBlock())
 	closure := b.MakeClosure(callee.Expr, nil)

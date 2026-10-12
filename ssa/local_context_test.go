@@ -27,14 +27,14 @@ func TestBuildLocalPackageAccessor(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.SetRuntime(localContextTestRuntime())
 	pkg := prog.NewPackage("accessor", "example.com/accessor")
-	cache := pkg.NewThreadLocalVar("example.com/accessor.cache", types.NewPointer(types.Typ[types.Uintptr]), InGo)
+	cache := pkg.NewThreadLocalVar("example.com/accessor.cache", types.NewPointer(types.Typ[types.Uintptr]), GoDecl)
 	cache.InitNil()
 	field := types.NewField(token.NoPos, nil, "pointer", types.NewPointer(types.Typ[types.Int]), false)
 	block := types.NewStruct([]*types.Var{field}, nil)
-	blockType := prog.Type(block, InGo)
+	blockType := prog.Type(block, GoDecl)
 	result := types.NewPointer(block)
 	results := types.NewTuple(types.NewVar(token.NoPos, nil, "", result))
-	accessor := pkg.NewFunc("example.com/accessor.block", types.NewSignatureType(nil, nil, nil, nil, results, false), InGo)
+	accessor := pkg.NewFunc("example.com/accessor.block", types.NewSignatureType(nil, nil, nil, nil, results, false), GoDecl)
 	accessor.BuildLocalPackageAccessor(
 		cache.Expr,
 		prog.IntVal(prog.SizeOf(blockType), prog.Uintptr()),
@@ -57,14 +57,14 @@ func TestBuildGoroutineLocalPackageAccessor(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.SetRuntime(localContextTestRuntime())
 	pkg := prog.NewPackage("accessor", "example.com/accessor")
-	key := pkg.NewVar("example.com/accessor.key", types.NewPointer(types.Typ[types.Uintptr]), InGo)
+	key := pkg.NewVar("example.com/accessor.key", types.NewPointer(types.Typ[types.Uintptr]), GoDecl)
 	key.InitNil()
 	field := types.NewField(token.NoPos, nil, "value", types.Typ[types.Int], false)
 	block := types.NewStruct([]*types.Var{field}, nil)
-	blockType := prog.Type(block, InGo)
+	blockType := prog.Type(block, GoDecl)
 	result := types.NewPointer(block)
 	results := types.NewTuple(types.NewVar(token.NoPos, nil, "", result))
-	accessor := pkg.NewFunc("example.com/accessor.gls", types.NewSignatureType(nil, nil, nil, nil, results, false), InGo)
+	accessor := pkg.NewFunc("example.com/accessor.gls", types.NewSignatureType(nil, nil, nil, nil, results, false), GoDecl)
 	accessor.BuildGoroutineLocalPackageAccessor(
 		key.Expr,
 		prog.IntVal(prog.SizeOf(blockType), prog.Uintptr()),

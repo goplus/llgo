@@ -35,24 +35,24 @@ func TestNativeIntegerFuncvalAdapters(t *testing.T) {
 				results := types.NewTuple(types.NewVar(token.NoPos, nil, "", resultType))
 				sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 				pointer := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, "Native", nil), sig, nil)
-				prog.SetTypeBackground(pkg.Path()+".Native", InC)
+				prog.SetTypeCallConv(pkg.Path()+".Native", CDecl)
 				ownerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 					types.NewVar(token.NoPos, nil, "fn", pointer),
 				), nil, false)
-				owner := pkg.NewFunc(pkg.Path()+".owner", ownerSig, InGo)
+				owner := pkg.NewFunc(pkg.Path()+".owner", ownerSig, GoDecl)
 				body := owner.MakeBody(1)
-				dst := prog.Type(sig, InGo)
+				dst := prog.Type(sig, GoDecl)
 				value := owner.Param(0)
 				switch source {
 				case "declaration":
-					value = pkg.NewFunc("native", sig, InC).Expr
+					value = pkg.NewFunc("native", sig, CDecl).Expr
 				case "named-Go-function":
 					named := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, "GoFunction", nil), sig, nil)
-					dst = prog.Type(named, InGo)
+					dst = prog.Type(named, GoDecl)
 				case "nil":
-					value = prog.Nil(prog.Type(pointer, InGo))
+					value = prog.Nil(prog.Type(pointer, GoDecl))
 				case "Go-declaration":
-					value = pkg.NewFunc(pkg.Path()+".goFunction", sig, InGo).Expr
+					value = pkg.NewFunc(pkg.Path()+".goFunction", sig, GoDecl).Expr
 				}
 				var converted Expr
 				if source == "declaration" || source == "pointer" {
@@ -117,13 +117,13 @@ func TestNativeIntegerFuncvalRejectsVariadicForwarding(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
 		types.NewVar(token.NoPos, nil, "fixed", types.Typ[types.Int8]), VArg(),
 	), nil, true)
-	native := pkg.NewFunc("native", sig, InC)
-	body := pkg.NewFunc(pkg.Path()+".owner", NoArgsNoRet, InGo).MakeBody(1)
+	native := pkg.NewFunc("native", sig, CDecl)
+	body := pkg.NewFunc(pkg.Path()+".owner", NoArgsNoRet, GoDecl).MakeBody(1)
 	defer func() {
 		got := recover()
 		if got == nil || !strings.Contains(fmt.Sprint(got), "C variadic functions require a native function pointer") {
 			t.Fatalf("variadic conversion panic = %v, want native function pointer diagnostic", got)
 		}
 	}()
-	body.ChangeType(prog.Type(sig, InGo), native.Expr)
+	body.ChangeType(prog.Type(sig, GoDecl), native.Expr)
 }

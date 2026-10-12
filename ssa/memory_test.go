@@ -37,14 +37,14 @@ func TestPhiIncomingControlFlowTracksPredecessor(t *testing.T) {
 	results := types.NewTuple(types.NewVar(token.NoPos, nil, "", empty))
 	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 	pkg := prog.NewPackage("p", "example.com/phi")
-	fn := pkg.NewFunc("selectValue", sig, InGo)
+	fn := pkg.NewFunc("selectValue", sig, GoDecl)
 	b := fn.MakeBody(4)
 	predWithCheck, predWithoutCheck, merge := fn.Block(1), fn.Block(2), fn.Block(3)
 	b.If(fn.Param(0), predWithCheck, predWithoutCheck)
 	b.SetBlock(predWithCheck).Jump(merge)
 	b.SetBlock(predWithoutCheck).Jump(merge)
 	b.SetBlock(merge)
-	phi := b.Phi(prog.Type(empty, InGo))
+	phi := b.Phi(prog.Type(empty, GoDecl))
 	b.Return(phi.Expr)
 	phi.AddIncoming(b, []BasicBlock{predWithCheck, predWithoutCheck}, func(i int, blk BasicBlock) Expr {
 		b.SetBlockEx(blk, BeforeLast, false)
@@ -53,7 +53,7 @@ func TestPhiIncomingControlFlowTracksPredecessor(t *testing.T) {
 			// incoming edge, so the phi must use the resulting success block.
 			return b.Load(fn.Param(1))
 		}
-		return prog.Zero(prog.Type(empty, InGo))
+		return prog.Zero(prog.Type(empty, GoDecl))
 	})
 	b.EndBuild()
 
@@ -93,7 +93,7 @@ func TestAssertNilDerefColdCall(t *testing.T) {
 					results := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]))
 					fnSig = types.NewSignatureType(nil, nil, nil, params, results, false)
 				}
-				fn := pkg.NewFunc(name, fnSig, InGo)
+				fn := pkg.NewFunc(name, fnSig, GoDecl)
 				b := fn.MakeBody(1)
 				var panicBlock llvm.BasicBlock
 				b.PanicSite = func(b Builder) { panicBlock = b.impl.GetInsertBlock() }
@@ -102,7 +102,7 @@ func TestAssertNilDerefColdCall(t *testing.T) {
 				case "nil":
 					ptr = prog.Nil(prog.VoidPtr())
 				case "allocated":
-					allocator := pkg.NewFunc(PkgRuntime+".AllocU", prog.tyMalloc(), InGo)
+					allocator := pkg.NewFunc(PkgRuntime+".AllocU", prog.tyMalloc(), GoDecl)
 					ptr = b.Call(allocator.Expr, prog.IntVal(8, prog.Uintptr()))
 				case "constant":
 					ptr = b.Convert(prog.VoidPtr(), prog.IntVal(1, prog.Uintptr()))

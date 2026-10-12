@@ -26,10 +26,10 @@ func TestDebugReplacedGlobalDoesNotLeaveCOFFReference(t *testing.T) {
 			pkg := prog.NewPackage("p", "example.com/p")
 			pkg.InitDebug("p", "example.com/p", token.NewFileSet())
 			const placeholder = "example.com/p.__cgo_callback"
-			global := pkg.NewVar(placeholder, types.NewPointer(types.Typ[types.UnsafePointer]), InGo)
-			keep := pkg.NewVar("example.com/p.callback_address", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), InGo)
+			global := pkg.NewVar(placeholder, types.NewPointer(types.Typ[types.UnsafePointer]), GoDecl)
+			keep := pkg.NewVar("example.com/p.callback_address", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), GoDecl)
 			keep.Init(global.Expr)
-			callback := pkg.NewFunc("c_callback", NoArgsNoRet, InC)
+			callback := pkg.NewFunc("c_callback", NoArgsNoRet, CDecl)
 			builder := callback.MakeBody(1)
 			defer builder.Dispose()
 			builder.DIGlobal(global.Expr, placeholder, token.Position{Filename: "generated.cgo.go", Line: 1})

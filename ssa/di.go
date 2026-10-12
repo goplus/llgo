@@ -900,11 +900,11 @@ func (b Builder) doConstructDebugAddrWithStore(v Expr, t types.Type) (dbgPtr, st
 	case *types.Struct:
 		ty = v.Type
 	case *types.Slice:
-		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
+		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), GoDecl)
 	case *types.Signature:
 		ty = b.Prog.Closure(t)
 	case *types.Named:
-		ty = b.Prog.Type(t.Underlying(), InGo)
+		ty = b.Prog.Type(t.Underlying(), GoDecl)
 	default:
 		ty = v.Type
 	}
@@ -1125,7 +1125,7 @@ func (b Builder) DebugFunction(f Function, funcScope *types.Scope, pos token.Pos
 	p := f
 	if p.diFunc == nil {
 		sig := p.Type.raw.Type.(*types.Signature)
-		rt := p.Prog.Type(sig.Results(), InGo)
+		rt := p.Prog.Type(sig.Results(), GoDecl)
 		paramTypes := make([]llvm.Metadata, len(p.params)+1)
 		paramTypes[0] = b.di().diType(rt, pos).ll
 		for i, t := range p.params {
