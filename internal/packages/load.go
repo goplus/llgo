@@ -178,8 +178,8 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 
 	// When type information or custom syntax parsing is requested, we do not let
 	// packages.Load typecheck or parse directly. We request files, imports, embed patterns,
-	// and module metadata via LoadMetadata, and perform custom parsing
-	// and typechecking ourselves.
+	// and module metadata via LoadMetadata (which pins GOROOT/bin on PATH),
+	// and perform custom parsing and typechecking ourselves.
 	driverCfg.Mode = (origMode &^ (NeedTypes | NeedTypesSizes | NeedTypesInfo | NeedSyntax)) | NeedCompiledGoFiles | NeedImports | NeedName | NeedFiles
 	if origMode&(NeedEmbedPatterns|NeedEmbedFiles|NeedTypes|NeedTypesInfo|NeedSyntax) != 0 {
 		driverCfg.Mode |= NeedEmbedPatterns | NeedEmbedFiles | NeedExportFile
@@ -191,8 +191,8 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 		driverCfg.Mode |= NeedModule
 	}
 
-	// TODO(golang/go#68495): Restore packages.Load here and in coverage reloads
-	// once per-load Go executable selection makes the adapter unnecessary.
+	// TODO(golang/go#68495): Call packages.Load directly once x/tools can
+	// select the Go executable per load without a process PATH pin.
 	initial, err := LoadMetadata(&driverCfg, patterns...)
 	if err != nil {
 		return nil, err
