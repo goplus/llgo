@@ -176,13 +176,13 @@ func TestSymbolCollision(t *testing.T) {
 
 func TestUnsupportedSignaturesUnchanged(t *testing.T) {
 	for name, function := range map[string]string{
-		"aggregate_parameter": `define i32 @unsupported({i32} %x) {
+		"nested_wide_parameter": `define i32 @unsupported({[2 x <8 x float>]} %x) {
   %q = call i1 @avx2()
   ret i32 0
 }`,
-		"aggregate_result": `define {i32} @unsupported() {
+		"nested_wide_result": `define {[2 x <8 x float>]} @unsupported() {
   %q = call i1 @avx2()
-  ret {i32} zeroinitializer
+  ret {[2 x <8 x float>]} zeroinitializer
 }`,
 		"wide_parameter": `define void @unsupported(<8 x float> %x) {
   %q = call i1 @avx2()
@@ -208,7 +208,12 @@ declare i1 @avx2() "llgo.cpu.query"="x86.avx2"
 }
 
 func TestZeroSizedReceiverAndVoidDispatch(t *testing.T) {
-	mod := parseModule(t, `
+	for _, tc := range []struct{ name, triple, receiver string }{
+		{"sysv", "x86_64-unknown-linux-gnu", "{}"},
+		{"win64", "x86_64-w64-windows-gnu", "i32"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := `
 target triple = "x86_64-unknown-linux-gnu"
 declare fastcc i1 @avx2({}) "llgo.cpu.query"="x86.avx2"
 define fastcc void @root(ptr nonnull %p) {
@@ -221,24 +226,27 @@ fallback:
   store i32 0, ptr %p
   ret void
 }
-`)
-	if err := Run(mod, "v1"); err != nil {
-		t.Fatal(err)
-	}
-	if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
-		t.Fatal(err)
-	}
-	root := mod.NamedFunction("root").String()
-	variant := mod.NamedFunction("root.__llgo_fmv_avx2").String()
-	for _, want := range []string{
-		"load atomic ptr, ptr @root.__llgo_fmv_slot monotonic",
-		"musttail call fastcc void %target(ptr nonnull %p)",
-	} {
-		if !strings.Contains(root, want) {
-			t.Fatalf("dispatch lost receiver or call ABI %q:\n%s", want, root)
-		}
-	}
-	if strings.Contains(variant, "@avx2(") || strings.Contains(variant, "store i32 0") || !strings.Contains(variant, "store i32 1") {
-		t.Fatalf("zero-sized receiver query did not specialize:\n%s", variant)
+`
+			mod := parseModule(t, strings.ReplaceAll(strings.ReplaceAll(source, "x86_64-unknown-linux-gnu", tc.triple), "{}", tc.receiver))
+			if err := Run(mod, "v1"); err != nil {
+				t.Fatal(err)
+			}
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			root := mod.NamedFunction("root").String()
+			variant := mod.NamedFunction("root.__llgo_fmv_avx2").String()
+			for _, want := range []string{
+				"load atomic ptr, ptr @root.__llgo_fmv_slot monotonic",
+				"musttail call fastcc void %target(ptr nonnull %p)",
+			} {
+				if !strings.Contains(root, want) {
+					t.Fatalf("dispatch lost receiver or call ABI %q:\n%s", want, root)
+				}
+			}
+			if strings.Contains(variant, "@avx2(") || strings.Contains(variant, "store i32 0") || !strings.Contains(variant, "store i32 1") {
+				t.Fatalf("zero-sized receiver query did not specialize:\n%s", variant)
+			}
+		})
 	}
 }

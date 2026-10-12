@@ -42,22 +42,22 @@ outside this implemented stage.
 ## CPU-guarded SIMD128 specialization
 
 On amd64, functions calling the official `archsimd.X86.AVX2` query get an
-AVX2 version when their LLVM signature contains only scalars, pointers, and
-vectors up to 128 bits. The original entry loads a cached implementation and
-tail-forwards to it. A separate resolver selects the baseline or AVX2 body from
+AVX2 version for signatures containing scalars, pointers, slices, strings,
+arrays, structs, and multiple results, including nested SIMD128 values. The
+original entry loads a cached implementation and tail-forwards to it. A separate resolver selects the baseline or AVX2 body from
 the immutable, post-`GODEBUG` CPU snapshot on first use. Before CPU initialization
 it tail-forwards to the baseline without caching. Function addresses retain the
 original entry. Both bodies fold the selected AVX2 query and remove dead branches
-even at O0, before aggregate ABI lowering and target optimization. GOAMD64=v3/v4
-already require AVX2, so they fold the query without generating extra versions,
+even at O0, after call-boundary ABI lowering and before target optimization.
+GOAMD64=v3/v4 already require AVX2, so they fold the query without generating extra versions,
 a resolver, or a cache slot.
 
 Direct calls from specialized code to eligible SIMD128 functions use matching
 AVX2 versions, including across packages without LTO. Only functions with Go
 bodies or compiler-generated SIMD intrinsic bodies promise those entries;
 bodyless assembly declarations retain their original calls. Ordinary calls
-and indirect calls retain the baseline entry. Aggregate signatures and
-arbitrary feature combinations are not yet specialized.
+and indirect calls retain the original entry. Arbitrary feature
+combinations are not yet specialized.
 
 The transform is implemented in Go using the LLVM Go API. It discovers CPU
 queries, clones eligible functions, rewrites direct calls and creates dispatch
@@ -87,6 +87,8 @@ GoObj inline-tree format.
 On Windows/amd64, the compiler exposes the native indirect SIMD128 parameter
 ABI before creating dispatchers. Tail transfers forward the caller's parameter
 storage, avoiding vector temporaries in a resolver frame that the jump releases.
+Aggregate ABI lowering also runs before specialization on every target, so
+forwarding preserves byval/sret attributes and caller-owned result storage.
 Vector results keep their native register ABI.
 
 `GOAMD64` still controls the compilation baseline. The dispatcher observes
@@ -105,7 +107,8 @@ On amd64 it runs O0 without LTO and O2 without LTO, with ThinLTO, and with
 Full LTO. Each binary runs the complete SIMD suite, then the FMV tests with
 AVX2, AVX, FMA, and all optional CPU features disabled in separate processes.
 The FMV tests cover initialization, direct and indirect entry calls,
-cross-package calls, independent CPU queries, and source-level stack traces.
+cross-package calls, aggregate value copies and multiple results, closures,
+independent CPU queries, and source-level stack traces.
 On other native SIMD targets the script retains the O0/O2 suite.
 
 ## Running

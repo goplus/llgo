@@ -36,9 +36,27 @@ func (p *context) markSIMDFMV(fn llssa.Function, source *ssa.Function) {
 	available := len(source.Blocks) != 0 || intrinsic
 	hasVector := false
 	sig := source.Signature
-	check := func(t types.Type) {
+	seen := make(map[types.Type]bool)
+	var check func(types.Type)
+	check = func(t types.Type) {
+		t = types.Unalias(t)
+		if hasVector || seen[t] {
+			return
+		}
+		seen[t] = true
 		if _, ok := llssa.SIMDVectorShape(t); ok {
 			hasVector = true
+			return
+		}
+		// Only by-value containment changes the vector call boundary; do not
+		// walk through pointers, slices, or recursive reference graphs.
+		switch t := t.Underlying().(type) {
+		case *types.Struct:
+			for i := 0; i < t.NumFields(); i++ {
+				check(t.Field(i).Type())
+			}
+		case *types.Array:
+			check(t.Elem())
 		}
 	}
 	if sig.Recv() != nil {

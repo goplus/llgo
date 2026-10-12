@@ -7,7 +7,7 @@ import "github.com/xgo-dev/llvm"
 // ABI lowering copies a vector into the forwarding function's own stack frame,
 // then passes a dangling pointer when the tail jump releases that frame.
 // Vector results still use XMM0. This does not lower aggregate parameters or
-// zero-sized CPU-query receivers, which FMV must inspect in their source form.
+// zero-sized CPU-query receivers; the subsequent aggregate ABI pass handles those.
 func (p *Transformer) LowerWindowsVectorParams(m llvm.Module) {
 	if _, ok := p.sys.(*TypeInfoWindowsAmd64); !ok {
 		return
