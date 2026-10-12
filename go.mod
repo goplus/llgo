@@ -8,7 +8,7 @@ require (
 	github.com/goplus/lib v0.5.3
 	github.com/goplus/mod v0.22.0
 	github.com/mattn/go-tty v0.0.8
-	github.com/qiniu/x v1.18.3
+	github.com/qiniu/x v1.19.2
 	github.com/xgo-dev/llgo/runtime v0.0.0-00010101000000-000000000000
 	github.com/xgo-dev/llvm v0.10.0
 	github.com/xgo-dev/plan9asm v0.6.2
