@@ -24,7 +24,82 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/build"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 )
+
+func TestNativeGCFlagsOverrideUnsupportedDefaults(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		args      []string
+		wantError bool
+	}{
+		{name: "same command packages", args: []string{"-gcflags=-m", "-gcflags=-N"}},
+		{name: "same all packages", args: []string{"-gcflags=all=-m", "-gcflags=all=-N"}},
+		{name: "all replaces command packages", args: []string{"-gcflags=-m", "-gcflags=all=-N"}},
+		{name: "dependencies still unsupported", args: []string{"-gcflags=all=-m", "-gcflags=-N"}, wantError: true},
+		{name: "final unsupported value", args: []string{"-gcflags=-N", "-gcflags=-m"}, wantError: true},
+		{name: "overridden malformed list", args: []string{"-gcflags=-N '", "-gcflags=-N"}, wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := &build.Config{GoVersion: "go1.24", OptLevel: optlevel.O2, GoBuildFlags: []string{"-tags=existing"}}
+			before := *conf
+			err := ApplyBuildFlags(conf, tc.args)
+			if tc.wantError {
+				if err == nil || !reflect.DeepEqual(*conf, before) {
+					t.Fatalf("expected atomic rejection: config=%+v err=%v", conf, err)
+				}
+				return
+			}
+			if err != nil || conf.OptLevel != optlevel.O0 {
+				t.Fatalf("overridden compiler flags: config=%+v err=%v", conf, err)
+			}
+		})
+	}
+}
+
+func TestNativeOverlayDuplicatePathsAreAtomic(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	for _, tc := range []struct {
+		name         string
+		replacements map[string]string
+	}{
+		{name: "relative and absolute", replacements: map[string]string{"foo.go": "", filepath.Join(dir, "foo.go"): ""}},
+		{name: "cleaned paths", replacements: map[string]string{"./foo.go": "", "foo.go": ""}},
+		{name: "different backing files", replacements: map[string]string{"foo.go": "first.go", filepath.Join(dir, "foo.go"): "second.go"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, backing := range []string{"first.go", "second.go"} {
+				if err := os.WriteFile(backing, []byte("package overlay\n"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			data, err := json.Marshal(map[string]any{"Replace": tc.replacements})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile("overlay.json", data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			conf := &build.Config{SourceOverlay: map[string]build.SourceOverlayFile{"existing.go": {}}, GoBuildFlags: []string{"-tags=existing"}}
+			before := *conf
+			var diagnostic string
+			for range 10 {
+				err := ApplyBuildFlags(conf, []string{"-overlay=overlay.json"})
+				if err == nil || !strings.Contains(err.Error(), "duplicate paths") {
+					t.Fatalf("duplicate overlay was not rejected: %v", err)
+				}
+				if !reflect.DeepEqual(*conf, before) {
+					t.Fatal("duplicate overlay changed configuration")
+				}
+				if diagnostic != "" && err.Error() != diagnostic {
+					t.Fatalf("unstable duplicate-path diagnostic: %q != %q", err.Error(), diagnostic)
+				}
+				diagnostic = err.Error()
+			}
+		})
+	}
+}
 
 func TestUnsupportedNativeFlagsAreAtomic(t *testing.T) {
 	args := []string{

@@ -145,6 +145,36 @@ func TestSourceOverlayViewsAndClone(t *testing.T) {
 	}
 }
 
+func TestSourceOverlayEmptyRelativePathBuild(t *testing.T) {
+	dir := t.TempDir()
+	for _, variable := range []string{"TMPDIR", "TMP", "TEMP"} {
+		t.Setenv(variable, dir)
+	}
+	file, err := os.CreateTemp(".", "llgo-empty-overlay-*.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Remove(file.Name()) })
+	if _, err := file.WriteString(`{"Replace":{}}`); err != nil {
+		file.Close()
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	conf := NewDefaultConf(ModeBuild)
+	conf.OutFile = filepath.Join(dir, "program"+defaultAppExt(conf))
+	conf.GoBuildFlags = []string{"-overlay=" + file.Name()}
+	conf.SourceOverlay = map[string]SourceOverlayFile{}
+	if _, err := Do([]string{"../../benchmark/binary_size/println"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	assertBuiltProgram(t, conf.OutFile, "Hello, world")
+	if leftovers, err := filepath.Glob(filepath.Join(dir, "llgo-overlay-*.json")); err != nil || len(leftovers) != 0 {
+		t.Fatalf("temporary overlays survived Build: %v %v", leftovers, err)
+	}
+}
+
 func TestSourceOverlaySurvivesInitialGroupsAndIsRemoved(t *testing.T) {
 	for _, valid := range []bool{true, false} {
 		t.Run(map[bool]string{true: "success", false: "error"}[valid], func(t *testing.T) {

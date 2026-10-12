@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"go/version"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -30,28 +32,38 @@ import (
 // validateNativeFlags guards the typed configuration boundary. The package
 // loader accepting a gc control does not make that control an LLGo feature.
 func validateNativeFlags(args []string) error {
-	for _, arg := range args {
+	// Go selects the last matching compiler argument list for each package.
+	// An all= list supersedes both supported scopes; an unpatterned list does
+	// not supersede an earlier all= list for dependencies. Syntax and unsupported
+	// package patterns remain errors even when a later list would replace them.
+	seenGCScopes := make(map[string]bool)
+	for i := len(args) - 1; i >= 0; i-- {
+		arg := args[i]
 		name, value, _ := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		switch name {
 		case "n", "work", "trimpath", "buildvcs", "race", "msan", "asan", "linkshared", "compiler", "asmflags", "gccgoflags", "installsuffix", "pkgdir", "toolexec", "pgo":
 			return fmt.Errorf("-%s is unsupported by the LLGo backend", name)
 		case "gcflags":
-			if err := validateGCFlags(value); err != nil {
+			pattern, fields, err := splitPerPackageArgumentList(value)
+			if err != nil {
 				return fmt.Errorf("invalid -gcflags: %w", err)
 			}
+			if pattern != "" && pattern != "all" {
+				return fmt.Errorf("invalid -gcflags: package pattern %q is unsupported; use an unpatterned value or all=", pattern)
+			}
+			if seenGCScopes["all"] || seenGCScopes[pattern] {
+				continue
+			}
+			if err := validateGCFlags(fields); err != nil {
+				return fmt.Errorf("invalid -gcflags: %w", err)
+			}
+			seenGCScopes[pattern] = true
 		}
 	}
 	return nil
 }
 
-func validateGCFlags(value string) error {
-	pattern, fields, err := splitPerPackageArgumentList(value)
-	if err != nil {
-		return err
-	}
-	if pattern != "" && pattern != "all" {
-		return fmt.Errorf("package pattern %q is unsupported; use an unpatterned value or all=", pattern)
-	}
+func validateGCFlags(fields []string) error {
 	fs := flag.NewFlagSet("gcflags", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Func("lang", "Go language version", func(v string) error {
@@ -128,7 +140,9 @@ func applyOverlay(conf *build.Config, args []string) error {
 		return fmt.Errorf("decode -overlay: %w", err)
 	}
 	contents := make(map[string]build.SourceOverlayFile, len(overlay.Replace))
-	for name, backing := range overlay.Replace {
+	logicalPaths := make(map[string]string, len(overlay.Replace))
+	for _, logical := range slices.Sorted(maps.Keys(overlay.Replace)) {
+		name, backing := logical, overlay.Replace[logical]
 		if filepath.Ext(name) != ".go" {
 			return fmt.Errorf("-overlay: non-Go replacement %q is unsupported by LLGo", name)
 		}
@@ -136,6 +150,10 @@ func applyOverlay(conf *build.Config, args []string) error {
 		if err != nil {
 			return err
 		}
+		if previous, ok := logicalPaths[name]; ok {
+			return fmt.Errorf("-overlay: duplicate paths %q and %q in overlay map", previous, logical)
+		}
+		logicalPaths[name] = logical
 		var source []byte
 		if backing != "" {
 			backing, err = filepath.Abs(backing)

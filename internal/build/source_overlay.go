@@ -39,7 +39,9 @@ func prepareSourceOverlayWithIO(conf *Config, createTemp func(string, string) (*
 	if conf.sourceOverlayFile != "" {
 		return conf.sourceOverlayFile, nil
 	}
-	if len(conf.SourceOverlay) == 0 {
+	// A non-nil empty map still represents an explicit overlay. Materialize it
+	// so runtime package loads do not inherit the caller's relative JSON path.
+	if conf.SourceOverlay == nil {
 		return "", nil
 	}
 	replacements := make(map[string]string, len(conf.SourceOverlay))

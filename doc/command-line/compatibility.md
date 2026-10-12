@@ -32,6 +32,8 @@ backing paths are resolved after `-C`; runtime loads and the LLGo parser share
 that source view. Non-Go replacements (including embedded data and C headers)
 are rejected until all native consumers support them. Runtime file operations
 see the ordinary filesystem, as with Go's build overlay.
+Empty replacement maps are valid. Logical paths that resolve to the same
+absolute path are rejected, as in Go.
 
 The portable `-gcflags` subset is `-lang`, `-N`, `-l` (0/1 or boolean), and global
 `-d=converthash` settings. Unpatterned and `all=` lists configure the global LLGo
@@ -39,6 +41,15 @@ frontend; gc diagnostics, selective hash patterns and other package patterns
 are rejected. The `-ldflags` subset is `-s`, `-w`, `-extld` and `-extldflags` with
 unpatterned or `all=` lists. These configure LLGo's native linker. Other linker
 options are rejected rather than discarded.
+
+Repeated `-gcflags` lists use Go's last-matching-list rule within these supported
+scopes. For example, command-line `-gcflags=-N` replaces `GOFLAGS=-gcflags=-m`;
+the superseded compiler option is not validated. A later `all=` list replaces
+both scopes, while an unpatterned list does not replace an earlier `all=` list
+for dependencies. Any unsupported compiler options that remain applicable are
+rejected. Malformed argument lists and unsupported package patterns are always
+rejected, including in superseded lists. For `-ldflags`, malformed syntax and
+invalid values of recognized options are still rejected in superseded lists.
 
 `-race`, `-msan`, `-asan`, `-pgo`, `-linkshared`, compiler selection and gc object
 archive controls have no implemented LLGo backend contract. `-n`, `-work`,

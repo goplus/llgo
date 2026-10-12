@@ -23,7 +23,44 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/cmd/internal/base"
+	"github.com/xgo-dev/llgo/internal/build"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 )
+
+func TestGOFLAGSCompilerListOverride(t *testing.T) {
+	t.Setenv("GOENV", "off")
+	for _, tc := range []struct {
+		defaults  string
+		explicit  string
+		wantError bool
+	}{
+		{defaults: "-gcflags=-m", explicit: "-gcflags=-N"},
+		{defaults: "-gcflags=all=-m", explicit: "-gcflags=all=-N"},
+		{defaults: "-gcflags=all=-m", explicit: "-gcflags=-N", wantError: true},
+	} {
+		t.Run(tc.defaults+"/"+tc.explicit, func(t *testing.T) {
+			t.Setenv("GOFLAGS", tc.defaults)
+			cmd := &base.Command{}
+			cmd.Flag.Init("build", flag.ContinueOnError)
+			captured := CaptureGoBuildFlags(cmd)
+			if err := Parse(&cmd.Flag, []string{tc.explicit, "."}); err != nil {
+				t.Fatal(err)
+			}
+			conf := &build.Config{OptLevel: optlevel.O2}
+			err := ApplyGoBuildFlags(conf, captured.Args)
+			if tc.wantError {
+				if err == nil {
+					t.Fatal("accepted compiler options still active for dependencies")
+				}
+			} else if err != nil || conf.OptLevel != optlevel.O0 {
+				t.Fatalf("explicit compiler list did not replace defaults: level=%v err=%v", conf.OptLevel, err)
+			}
+			if os.Getenv("GOFLAGS") != tc.defaults {
+				t.Fatal("changed the caller's GOFLAGS")
+			}
+		})
+	}
+}
 
 func TestDirectoryAndGOFLAGSPrecedence(t *testing.T) {
 	old, err := os.Getwd()
