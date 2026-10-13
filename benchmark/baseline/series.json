@@ -2108,10 +2108,10 @@
       "label": "Branch cpunion/llgo:codex/wasm-js-cross-worker-20261006",
       "path": "series/branch/c20cb9f36f914cb1/summary.json",
       "configPath": "series/branch/c20cb9f36f914cb1/config.json",
-      "commitPath": "commits/ab4626f466084b20d04956c7b5ba8dc92c18f46a.json",
-      "sha": "ab4626f466084b20d04956c7b5ba8dc92c18f46a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/ab4626f466084b20d04956c7b5ba8dc92c18f46a",
-      "updatedAt": "2026-10-06T11:48:52.264Z"
+      "commitPath": "commits/68f763954cb534cd55456da2d8b127ee460a4083.json",
+      "sha": "68f763954cb534cd55456da2d8b127ee460a4083",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/68f763954cb534cd55456da2d8b127ee460a4083",
+      "updatedAt": "2026-10-13T17:35:00.603Z"
     },
     {
       "kind": "branch",
@@ -8213,10 +8213,10 @@
       "label": "PR #2738",
       "path": "series/pull/2738/summary.json",
       "configPath": "series/pull/2738/config.json",
-      "commitPath": "commits/ab4626f466084b20d04956c7b5ba8dc92c18f46a.json",
-      "sha": "ab4626f466084b20d04956c7b5ba8dc92c18f46a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/ab4626f466084b20d04956c7b5ba8dc92c18f46a",
-      "updatedAt": "2026-10-06T11:48:50.629Z"
+      "commitPath": "commits/68f763954cb534cd55456da2d8b127ee460a4083.json",
+      "sha": "68f763954cb534cd55456da2d8b127ee460a4083",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/68f763954cb534cd55456da2d8b127ee460a4083",
+      "updatedAt": "2026-10-13T17:34:58.507Z"
     },
     {
       "kind": "pull",
