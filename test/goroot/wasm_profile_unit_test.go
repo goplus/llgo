@@ -59,6 +59,32 @@ func TestGOROOTWasmBuildAndRunCommands(t *testing.T) {
 	}
 }
 
+func TestGOROOTBuildArgsKeepGCInlinerTuningOnBaseline(t *testing.T) {
+	withGOROOTWasmProfile(t, "")
+	for _, flags := range [][]string{{"-gcflags", "-l=4"}, {"-gcflags=-l=4"}} {
+		baseline := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+		if got := gorootBuildArgs(false, flags, "out", "source.go"); !reflect.DeepEqual(got, baseline) {
+			t.Fatalf("Go baseline flags changed: %v", got)
+		}
+		want := []string{"build", "-o", "out", "source.go"}
+		if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+			t.Fatalf("LLVM build retained gc-only inliner tuning: %v", got)
+		}
+	}
+	for _, flags := range [][]string{
+		{"-gcflags=-N -l=4"},
+		{"-gcflags", "-l=2"},
+		{"-gcflags=-d=checkptr"},
+		{"-ldflags", "-gcflags=-l=4"},
+		{"-tags", "-gcflags=-l=4"},
+	} {
+		want := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+		if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+			t.Fatalf("unrelated payload changed: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestGOROOTGoJSRunCommandModelsBrowser(t *testing.T) {
 	withGOROOTWasmProfile(t, "J32-GoJS")
 	env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo"}

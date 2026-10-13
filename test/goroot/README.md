@@ -27,6 +27,11 @@ are also skipped. Each not-applicable entry documents both the
 toolchain-specific mechanism under test and why the corresponding behavior is
 not an LLGo compatibility goal.
 
+The standalone `-gcflags=-l=4` directive tunes gc's inlining heuristics. The
+runner retains it for the official Go baseline and uses LLVM's default inliner
+for the LLGo build. Both programs must still satisfy the unmodified case and
+output comparison. Other compiler payloads retain their normal validation.
+
 The external [LLGo compatibility workflows](https://github.com/llgo-compat/ci)
 build LLGo and this runner from a selected repository revision, then run the
 `ci` directive set from the two most recent Go releases. Each platform/shard

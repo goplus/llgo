@@ -91,7 +91,22 @@ func gorootBuildArgs(llgo bool, flags []string, output, target string) []string 
 			args = append(args, "-target", p.target)
 		}
 	}
-	args = append(args, flags...)
+	for i := 0; i < len(flags); i++ {
+		// gc's -l=4 tunes its inlining heuristics. LLGo uses LLVM's
+		// inliner, so retain the gc setting only for the Go baseline.
+		// Keep other payloads intact so unsupported options still fail.
+		if llgo && flags[i] == "-gcflags=-l=4" {
+			continue
+		}
+		if (flags[i] == "-gcflags" || flags[i] == "-tags" || flags[i] == "-ldflags") && i+1 < len(flags) {
+			if !llgo || flags[i] != "-gcflags" || flags[i+1] != "-l=4" {
+				args = append(args, flags[i], flags[i+1])
+			}
+			i++
+			continue
+		}
+		args = append(args, flags[i])
+	}
 	return append(args, "-o", output, target)
 }
 
