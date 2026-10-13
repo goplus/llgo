@@ -15,7 +15,7 @@ func cSqrt(x CDouble) CDouble
 // llgo:link cAbs C.abs
 func cAbs(x CInt) CInt { return 0 }
 
-// llgo:type C
+// llgo:cdecl
 type CCallback func(CInt) CInt
 
 type Fn func(int) int

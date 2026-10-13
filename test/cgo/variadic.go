@@ -27,7 +27,7 @@ import "C"
 
 import "unsafe"
 
-//llgo:type C
+//llgo:cdecl
 type nativeVariadic func(mode int32, __llgo_va_list ...any) int32
 
 func fixedVariadicControl() int32 { return int32(C.variadic_fixed(7, 20, 22)) }

@@ -106,7 +106,7 @@ func TestArchitectureFeatureTargetMachines(t *testing.T) {
 	} {
 		prog := NewProgram(target)
 		pkg := prog.NewPackage("p", "example.com/p")
-		pkg.NewFunc("example.com/p.f", NoArgsNoRet, InGo).MakeBody(1).Return()
+		pkg.NewFunc("example.com/p.f", NoArgsNoRet, GoDecl).MakeBody(1).Return()
 		buf, err := prog.TargetMachine().EmitToMemoryBuffer(pkg.Module(), llvm.ObjectFile)
 		if err != nil {
 			prog.Dispose()

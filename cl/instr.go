@@ -255,7 +255,7 @@ func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 		}
 		directSig := types.NewSignatureType(nil, nil, nil, sig.Params(),
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", sig.Results().At(0).Type())), false)
-		fnTy = p.type_(directSig, llssa.InC)
+		fnTy = p.type_(directSig, llssa.CDecl)
 	}
 	pfn.Type = p.prog.Pointer(fnTy)
 	fn := b.Load(pfn)
@@ -264,11 +264,11 @@ func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	if isC2 {
 		errnoSig := types.NewSignatureType(nil, nil, nil, nil,
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
-		errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+		errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.CDecl)
 		p.cgoErrno = b.Call(errnoFn.Expr)
 		return p.cgoErrno
 	}
-	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	i32 := p.type_(types.Typ[types.Int32], llssa.GoDecl)
 	p.cgoErrno = p.prog.Zero(i32)
 	return p.cgoErrno
 }
@@ -289,7 +289,7 @@ func (p *context) advance(b llssa.Builder, args []ssa.Value, native ...bool) (re
 			// their pointer elements occupy four bytes even though Go pointer
 			// slots occupy eight. Preserve that distinction on the expression so
 			// Builder.Advance can select the physical element layout.
-			ptr.Type = p.type_(args[0].Type(), llssa.InC)
+			ptr.Type = p.type_(args[0].Type(), llssa.CDecl)
 		}
 		offset := p.compileValue(b, args[1])
 		return b.Advance(ptr, offset)
@@ -412,11 +412,11 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if cname := extractTrampolineCName(v.Name()); cname != "" {
 			cname = p.remapTrampolineCName(cname)
 			fnSig := p.syscallFnSig(len(v.Params))
-			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
-			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.CDecl)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), cfn.Expr)
 		}
 		if aFn, _, _ := p.compileFunction(v); aFn != nil {
-			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), aFn.Expr)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), aFn.Expr)
 		}
 	case *ssa.MakeClosure:
 		return p.funcPCABI0Value(b, v.Fn)
@@ -424,7 +424,7 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if t := v.Type(); t != nil {
 			if _, ok := t.Underlying().(*types.Interface); ok {
 				data := b.InterfaceData(p.compileValue(b, v))
-				uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+				uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 				uptrPtr := p.prog.Pointer(uptr)
 				codePtr := b.Convert(uptrPtr, data)
 				return b.Load(codePtr)
@@ -439,9 +439,9 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 // materialize a typed zero value of the tuple type.
 func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
 	if results.Len() == 1 {
-		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.InGo))
+		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.GoDecl))
 	}
-	return p.prog.Zero(p.type_(results, llssa.InGo))
+	return p.prog.Zero(p.type_(results, llssa.GoDecl))
 }
 
 // syscallFnSig returns a variadic C signature with argc uintptr parameters
@@ -474,10 +474,10 @@ var errnoSig = types.NewSignatureType(nil, nil, nil, nil,
 // This matches the common libc syscall convention used by our llgo.syscall
 // intrinsic lowering.
 func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
-	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 	minus1 := p.prog.IntVal(^uint64(0), uptr)
 	cond := b.BinOp(token.EQL, r1, minus1)
-	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.CDecl)
 	errno := b.Call(errnoFn.Expr)
 	errno = b.Convert(uptr, errno)
 	zero := p.prog.Zero(uptr)
@@ -502,13 +502,13 @@ func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *t
 	}
 	fnSig := p.syscallFnSigFixed(callArgTypes)
 	fnArg := p.compileValue(b, args[0])
-	fnType := p.type_(fnSig, llssa.InC)
-	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.InGo), fnArg))
+	fnType := p.type_(fnSig, llssa.CDecl)
+	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.GoDecl), fnArg))
 	r1 := b.Call(fnPtr, callArgs...)
-	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 	r2 := p.prog.Zero(uptr)
 	err := p.syscallErrno(b, r1)
-	tuple := p.type_(results, llssa.InGo)
+	tuple := p.type_(results, llssa.GoDecl)
 	return b.Aggregate(tuple, r1, r2, err)
 }
 
@@ -620,7 +620,7 @@ func (p *context) atomicCmpXchgOK(b llssa.Builder, args []llssa.Expr) llssa.Expr
 
 func (p *context) boolToUint8(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	if len(args) == 1 {
-		retType := p.type_(types.Typ[types.Uint8], llssa.InGo)
+		retType := p.type_(types.Typ[types.Uint8], llssa.GoDecl)
 		one := p.prog.IntVal(1, retType)
 		zero := p.prog.Zero(retType)
 		return b.SelectValue(args[0], one, zero)
@@ -632,7 +632,7 @@ func (p *context) bitCastIntrinsic(b llssa.Builder, args []llssa.Expr, result ty
 	if len(args) != 1 {
 		panic(name + ": invalid arguments")
 	}
-	return b.BitCast(p.type_(result, llssa.InGo), args[0])
+	return b.BitCast(p.type_(result, llssa.GoDecl), args[0])
 }
 
 // -----------------------------------------------------------------------------
@@ -730,10 +730,13 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			sig := p.patchType(fn.Signature).(*types.Signature)
 			// Source env-bearing bodies are created by compileFuncDecl before
 			// lowering. Imported declarations cannot reconstruct //llgo:env.
-			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, p.needsLinkOnce(fn))
+			aFn = pkg.NewFuncEx(name, sig, llssa.CallConv(ftype), false, p.needsLinkOnce(fn))
 			if disableInline {
 				aFn.Inline(llssa.NoInline)
 			}
+		}
+		if ftype == goFunc {
+			p.markSIMDFMV(aFn, fn)
 		}
 	}
 	return
@@ -782,7 +785,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 		if !ok || field.Field < 0 || field.Field >= st.NumFields() {
 			return llssa.Expr{}, false
 		}
-		typ := p.type_(field.X.Type(), llssa.InGo)
+		typ := p.type_(field.X.Type(), llssa.GoDecl)
 		return p.prog.Val(int(p.prog.OffsetOf(typ, field.Field))), true
 	}
 	load, ok := arg.(*ssa.UnOp)
@@ -821,7 +824,7 @@ func (p *context) offsetOfFieldAddr(field *ssa.FieldAddr) (int, bool) {
 	if !ok {
 		return 0, false
 	}
-	typ := p.type_(ptr.Elem(), llssa.InGo)
+	typ := p.type_(ptr.Elem(), llssa.GoDecl)
 	return int(p.prog.OffsetOf(typ, field.Field)), true
 }
 
@@ -2248,7 +2251,7 @@ func (p *context) runtimeFunc(name string, sig *types.Signature) llssa.Expr {
 	if fn := p.pkg.FuncOf(fullName); fn != nil {
 		return fn.Expr
 	}
-	return p.pkg.NewFuncEx(fullName, sig, llssa.InGo, false, false).Expr
+	return p.pkg.NewFuncEx(fullName, sig, llssa.GoDecl, false, false).Expr
 }
 
 func pushCallerLocationFrameSig() *types.Signature {
@@ -2416,7 +2419,7 @@ func (p *context) staticArrayLenBuiltinArg(b llssa.Builder, arg ssa.Value) (llss
 		return llssa.Expr{}, false
 	}
 	p.compileValue(b, sideEffect)
-	return b.Const(constant.MakeInt64(arr.Len()), p.type_(types.Typ[types.Int], llssa.InGo)), true
+	return b.Const(constant.MakeInt64(arr.Len()), p.type_(types.Typ[types.Int], llssa.GoDecl)), true
 }
 
 func isPointerGoType(t types.Type) bool {
@@ -2824,7 +2827,7 @@ func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon
 	for i, arg := range call.Args[:n] {
 		want := params.At(i).Type()
 		if needsNamedClosureChange(arg.Type(), want) {
-			args[i] = b.ChangeType(p.type_(want, llssa.InGo), args[i])
+			args[i] = b.ChangeType(p.type_(want, llssa.GoDecl), args[i])
 		}
 	}
 	return args

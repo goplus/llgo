@@ -12,7 +12,7 @@ func TestFloatMinMaxBits(t *testing.T) {
 	prog := NewProgram(nil)
 	defer prog.Dispose()
 	pkg := prog.NewPackage("minmaxbits", "minmaxbits")
-	fn := pkg.NewFunc("test", NoArgsNoRet, InC)
+	fn := pkg.NewFunc("test", NoArgsNoRet, CDecl)
 	b := fn.MakeBody(1)
 	for _, width := range []int{32, 64} {
 		intType, floatType := prog.tyInt64(), prog.Float64().ll

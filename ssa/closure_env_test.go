@@ -117,7 +117,7 @@ func TestEnvFunctionKeepsSemanticSignatureAndZeroEnvNonNil(t *testing.T) {
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	empty := types.NewStruct(nil, nil)
 	env := types.NewParam(token.NoPos, nil, "$env", types.NewPointer(empty))
-	entry := pkg.NewEnvFunc("example.com/p.entry", sig, InGo, env, false)
+	entry := pkg.NewEnvFunc("example.com/p.entry", sig, GoDecl, env, false)
 	if !entry.NeedsEnv() || entry.EnvType() == nil {
 		t.Fatal("environment-bearing entry lost its separate env metadata")
 	}
@@ -129,7 +129,7 @@ func TestEnvFunctionKeepsSemanticSignatureAndZeroEnvNonNil(t *testing.T) {
 
 	out := types.NewTuple(types.NewVar(token.NoPos, nil, "", sig))
 	makerSig := types.NewSignatureType(nil, nil, nil, nil, out, false)
-	maker := pkg.NewFunc("example.com/p.make", makerSig, InGo)
+	maker := pkg.NewFunc("example.com/p.make", makerSig, GoDecl)
 	mb := maker.MakeBody(1)
 	mb.Return(mb.MakeClosure(entry.Expr, nil))
 
@@ -151,9 +151,9 @@ func TestClosureEnvMetadataRejectsInvalidUses(t *testing.T) {
 	pkg := prog.NewPackage("p", "example.com/p")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	env := types.NewParam(token.NoPos, nil, "$env", types.NewPointer(types.NewStruct(nil, nil)))
-	envEntry := pkg.NewEnvFunc("binding-mismatch", sig, InGo, env, false)
-	plainEntry := pkg.NewFunc("plain-binding", sig, InGo)
-	caller := pkg.NewFunc("binding-validation", sig, InGo)
+	envEntry := pkg.NewEnvFunc("binding-mismatch", sig, GoDecl, env, false)
+	plainEntry := pkg.NewFunc("plain-binding", sig, GoDecl)
+	caller := pkg.NewFunc("binding-validation", sig, GoDecl)
 	b := caller.MakeBody(1)
 
 	tests := []struct {
@@ -163,26 +163,26 @@ func TestClosureEnvMetadataRejectsInvalidUses(t *testing.T) {
 		{
 			name: "legacy hasFreeVars flag",
 			fn: func() {
-				pkg.NewFuncEx("legacy", sig, InGo, true, false)
+				pkg.NewFuncEx("legacy", sig, GoDecl, true, false)
 			},
 		},
 		{
 			name: "nil environment metadata",
 			fn: func() {
-				pkg.NewEnvFunc("nil-env", sig, InGo, nil, false)
+				pkg.NewEnvFunc("nil-env", sig, GoDecl, nil, false)
 			},
 		},
 		{
 			name: "conflicting entry metadata",
 			fn: func() {
-				pkg.NewFunc("conflict", sig, InGo)
-				pkg.NewEnvFunc("conflict", sig, InGo, env, false)
+				pkg.NewFunc("conflict", sig, GoDecl)
+				pkg.NewEnvFunc("conflict", sig, GoDecl, env, false)
 			},
 		},
 		{
 			name: "environment from plain entry",
 			fn: func() {
-				pkg.NewFunc("plain-env", sig, InGo).Env()
+				pkg.NewFunc("plain-env", sig, GoDecl).Env()
 			},
 		},
 		{
@@ -227,7 +227,7 @@ func TestWasmDynamicClosureUsesTwoExplicitTypedEdges(t *testing.T) {
 	caller := pkg.NewFunc(
 		"example.com/p.call",
 		types.NewSignatureType(nil, nil, nil, callerParams, results, false),
-		InGo,
+		GoDecl,
 	)
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
@@ -279,7 +279,7 @@ func TestWasm64DynamicClosureCodeGenAfterOptimization(t *testing.T) {
 				sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 				var value func(Builder) Expr
 				if kind == "plain" {
-					entry := pkg.NewFunc("plain", sig, InGo)
+					entry := pkg.NewFunc("plain", sig, GoDecl)
 					entry.impl.SetLinkage(llvm.InternalLinkage)
 					body := entry.MakeBody(1)
 					body.Return(entry.Param(0))
@@ -336,7 +336,7 @@ func testNativeDynamicClosureIdentityBarrier(t *testing.T, pipeline string) {
 	params := types.NewTuple(types.NewVar(token.NoPos, nil, "x", types.Typ[types.Int]))
 	results := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]))
 	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
-	plain := pkg.NewFunc("plain", sig, InGo)
+	plain := pkg.NewFunc("plain", sig, GoDecl)
 	pb := plain.MakeBody(1)
 	pb.Return(plain.Param(0))
 	caller := newMatrixCaller(pkg, "callPlain", sig, func(b Builder) Expr {
@@ -444,11 +444,11 @@ func TestClosureObjectCallMatrixAcrossTransports(t *testing.T) {
 			results := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]))
 			sig := types.NewSignatureType(nil, nil, nil, params, results, false)
 
-			plain := pkg.NewFunc("plainGo", sig, InGo)
+			plain := pkg.NewFunc("plainGo", sig, GoDecl)
 			pb := plain.MakeBody(1)
 			pb.Return(plain.Param(0))
 
-			cfn := pkg.NewFunc("plainC", sig, InC)
+			cfn := pkg.NewFunc("plainC", sig, CDecl)
 			cb := cfn.MakeBody(1)
 			cb.Return(cfn.Param(0))
 
@@ -486,13 +486,13 @@ func TestClosureObjectCallMatrixAcrossTransports(t *testing.T) {
 			callers := map[string]callCase{}
 			callers["plain-go"] = callCase{
 				caller: newMatrixCaller(pkg, "callPlainGo", sig, func(b Builder) Expr {
-					return checkExpr(plain.Expr, prog.Type(sig, InGo).RawType(), b)
+					return checkExpr(plain.Expr, prog.Type(sig, GoDecl).RawType(), b)
 				}),
 				entry: plain,
 			}
 			callers["plain-c"] = callCase{
 				caller: newMatrixCaller(pkg, "callPlainC", sig, func(b Builder) Expr {
-					return checkExpr(cfn.Expr, prog.Type(sig, InGo).RawType(), b)
+					return checkExpr(cfn.Expr, prog.Type(sig, GoDecl).RawType(), b)
 				}),
 				entry: cfn,
 			}
@@ -516,7 +516,7 @@ func TestClosureObjectCallMatrixAcrossTransports(t *testing.T) {
 			}
 			callers["interface-method-value"] = callCase{
 				caller: newMatrixCaller(pkg, "callInterfaceMethodValue", sig, func(b Builder) Expr {
-					return b.MakeClosure(ifaceMethodValue.Expr, []Expr{prog.Zero(prog.Type(rawIface, InGo))})
+					return b.MakeClosure(ifaceMethodValue.Expr, []Expr{prog.Zero(prog.Type(rawIface, GoDecl))})
 				}),
 				entry: ifaceMethodValue,
 			}
@@ -567,14 +567,14 @@ func setTestRuntime(t *testing.T, prog Program) {
 
 func newMatrixEnvEntry(pkg Package, name string, sig *types.Signature, envStruct *types.Struct) Function {
 	env := types.NewParam(token.NoPos, nil, "$env", types.NewPointer(envStruct))
-	entry := pkg.NewEnvFunc(name, sig, InGo, env, false)
+	entry := pkg.NewEnvFunc(name, sig, GoDecl, env, false)
 	b := entry.MakeBody(1)
 	b.Return(entry.Param(0))
 	return entry
 }
 
 func newMatrixCaller(pkg Package, name string, sig *types.Signature, value func(Builder) Expr) Function {
-	caller := pkg.NewFunc(name, sig, InGo)
+	caller := pkg.NewFunc(name, sig, GoDecl)
 	b := caller.MakeBody(1)
 	funcval := value(b)
 	slot := b.AllocaT(funcval.Type)
@@ -674,7 +674,7 @@ func newMatrixInterfaceCaller(t *testing.T, prog Program, pkg Package, rawIface 
 	)
 	results := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]))
 	caller := pkg.NewFunc("callInterfaceDirect",
-		types.NewSignatureType(nil, nil, nil, params, results, false), InGo,
+		types.NewSignatureType(nil, nil, nil, params, results, false), GoDecl,
 	)
 	b := caller.MakeBody(1)
 	b.Return(b.Call(b.Imethod(caller.Param(0), recvMethod), caller.Param(1)))
@@ -698,7 +698,7 @@ func newMatrixInterfaceRoutine(t *testing.T, prog Program, pkg Package, rawIface
 		types.NewVar(token.NoPos, nil, "x", types.Typ[types.Int]),
 	)
 	owner := pkg.NewFunc("startInterfaceRoutine",
-		types.NewSignatureType(nil, nil, nil, params, nil, false), InGo,
+		types.NewSignatureType(nil, nil, nil, params, nil, false), GoDecl,
 	)
 	b := owner.MakeBody(1)
 	invoke := b.Imethod(owner.Param(0), recvMethod)

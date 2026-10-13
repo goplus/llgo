@@ -381,8 +381,8 @@ func TestGenExternDeclsSkipsMissingAddressPlaceholders(t *testing.T) {
 	lpkg := prog.NewPackage("p", "example.com/p")
 	pkg := &aPackage{LPkg: lpkg}
 	const existing = "example.com/p.__cgo_callback"
-	placeholder := lpkg.NewVar(existing, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.InGo)
-	keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.InGo)
+	placeholder := lpkg.NewVar(existing, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.GoDecl)
+	keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.GoDecl)
 	keep.Init(placeholder.Expr)
 	compiler := llclang.NewCompiler(llclang.Config{})
 	for pass := range 2 {
@@ -428,16 +428,16 @@ func TestGenExternDeclsUsesPublicExportAddress(t *testing.T) {
 			prog := llssa.NewProgram(nil)
 			defer prog.Dispose()
 			lpkg := prog.NewPackage("p", "example.com/p")
-			lpkg.NewFunc("example.com/p.callback", llssa.NoArgsNoRet, llssa.InGo)
+			lpkg.NewFunc("example.com/p.callback", llssa.NoArgsNoRet, llssa.GoDecl)
 			if test.exportGoName != "" {
 				if test.exportGoName != "example.com/p.callback" {
-					lpkg.NewFunc(test.exportGoName, llssa.NoArgsNoRet, llssa.InGo)
+					lpkg.NewFunc(test.exportGoName, llssa.NoArgsNoRet, llssa.GoDecl)
 				}
 				lpkg.SetExport(test.exportGoName, "callback")
 			}
 			const name = "example.com/p.__cgo_callback"
-			placeholder := lpkg.NewVar(name, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.InGo)
-			keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.InGo)
+			placeholder := lpkg.NewVar(name, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.GoDecl)
+			keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.GoDecl)
 			keep.Init(placeholder.Expr)
 			compiler := llclang.NewCompiler(llclang.Config{})
 			if _, err := genExternDeclsByClang(compiler, &aPackage{LPkg: lpkg}, "void callback(void);", nil,

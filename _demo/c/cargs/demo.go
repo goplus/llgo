@@ -30,7 +30,7 @@ type OptionContext struct {
 	Value       *c.Char
 }
 
-// llgo:type C
+// llgo:cdecl
 type Printer func(__llgo_arg_0 c.Pointer, __llgo_arg_1 *c.Char, __llgo_va_list ...interface{}) c.Int
 
 // llgo:link (*OptionContext).OptionInit C.cag_option_init

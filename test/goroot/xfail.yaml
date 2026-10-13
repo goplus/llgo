@@ -186,98 +186,10 @@ timeouts:
     timeout: 2m
     reason: nosplit run runs past the default timeout on linux/amd64
 flakes:
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue79186.go
-    reason: the RWMutex stress test passes when the host is idle but can exceed its timeout under sustained CPU contention
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue13160.go
-    reason: go1.26 goroot run can either pass or panic in GC_call_with_stack_base on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue48898.go
-    reason: go1.26 goroot run can either pass or fail on linux/amd64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: runoutput
-    case: rotate0.go
-    reason: rotate0 runoutput can either pass or time out on darwin/arm64
-  - platform: linux/amd64
-    directive: run
-    case: goprint.go
-    reason: linux/amd64 goroot run can either pass or mismatch stderr
-  - platform: darwin/arm64
-    directive: run
-    case: goprint.go
-    reason: darwin/arm64 goroot run can either pass or fail
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the 1m run timeout on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue27695.go
-    reason: concurrent GC can either preserve reflect-call results or expose incomplete result scanning on linux/amd64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue27695.go
-    reason: concurrent GC can either preserve reflect-call results or expose incomplete result scanning on darwin/arm64
-  - directive: run
-    case: typeparam/chans.go
-    reason: select over the unbuffered channel can either complete or miss the final receive and time out
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the 1m run timeout on darwin/arm64
-  - platform: windows/amd64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows amd64
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows 386
-  - platform: windows/arm64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: reflect-generated goroutines under a single-P continuous-GC loop can complete or exceed the run timeout on Windows ARM64
-  - platform: windows/386
-    directive: run
-    case: abi/uglyfib.go
-    reason: uglyfib can complete or exceed its run timeout on a loaded Windows 386 runner
-  - platform: windows/386
-    directive: runoutput
-    case: index0.go
-    reason: the generated index stress program can pass, time out, or fail during LLVM target object emission on Windows 386
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue30041.go
-    reason: the continuous-GC and reflect.MakeFunc stress loop can complete or exceed its run timeout on loaded Windows 386 runners
-  - platform: windows/386
-    directive: run
-    case: fixedbugs/issue39541.go
-    reason: the one-million reflect.MakeFunc concurrent call loop can complete or exceed its run timeout on loaded Windows 386 runners
 xfails:
   - directive: run
     case: genmeth1.go
     reason: the current go/types and x/tools SSA path panics while instantiating the new generic-method test
-  - platform: windows/amd64
-    directive: run
-    case: inline_literal.go
-    reason: LLGo returns the wrong result for an inlined closure literal on Windows amd64
   - platform: windows/amd64
     directive: run
     case: fixedbugs/issue58300.go
@@ -454,11 +366,11 @@ xfails:
   - directive: run
     case: heapsampling.go
     reason: LLGo does not currently report the heap-profile samples required by this runtime test
-  - platform: js/wasm
-    directive: rundir
-    case: typeparam/chansimp.go
-    reason: the Ranger subtest requires its receiver finalizer to run at an exact liveness boundary, while LLGo's conservative WebAssembly roots can retain the receiver
-  - platform: js/wasm
+  - platform: J32-GoJS
+    directive: run
+    case: init1.go
+    reason: the conservative linear collector retains enough loop-temporary pointers to grow memory past this Go allocator threshold
+  - platform: J32-Emscripten
     directive: run
     case: init1.go
     reason: the conservative linear collector retains enough loop-temporary pointers to grow memory past this Go allocator threshold
@@ -466,7 +378,3 @@ xfails:
     directive: errorcheck
     case: fixedbugs/issue5089.go
     reason: LLGo does not yet diagnose a method declaration on a non-local type
-  - platform: js/wasm
-    directive: run
-    case: fixedbugs/issue59680.go
-    reason: the fixed WebAssembly goroutine stack cannot grow through the test's 10,101 recursive frames

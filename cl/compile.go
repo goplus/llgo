@@ -417,7 +417,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		return
 	}
 	dbgInstrln("==> NewVar", name, typ)
-	g, skip := p.localityGlobalStorage(pkg, gbl, name, typ, llssa.Background(vtype))
+	g, skip := p.localityGlobalStorage(pkg, gbl, name, typ, llssa.CallConv(vtype))
 	if skip {
 		return
 	}
@@ -487,13 +487,13 @@ func (p *context) canElideZeroSizedClosureEnv(f *ssa.Function) bool {
 
 func (p *context) isElidableZeroSizedFreeVar(freeVar *ssa.FreeVar) bool {
 	ptr, ok := types.Unalias(p.patchType(freeVar.Type())).Underlying().(*types.Pointer)
-	return ok && p.prog.SizeOf(p.type_(ptr.Elem(), llssa.InGo)) == 0
+	return ok && p.prog.SizeOf(p.type_(ptr.Elem(), llssa.GoDecl)) == 0
 }
 
 func (p *context) elidedZeroSizedFreeVar(b llssa.Builder, freeVar *ssa.FreeVar) llssa.Expr {
-	typ := p.type_(freeVar.Type(), llssa.InGo)
+	typ := p.type_(freeVar.Type(), llssa.GoDecl)
 	ptr := types.Unalias(p.patchType(freeVar.Type())).Underlying().(*types.Pointer)
-	addr := b.Alloc(p.type_(ptr.Elem(), llssa.InGo), true)
+	addr := b.Alloc(p.type_(ptr.Elem(), llssa.GoDecl), true)
 	return b.Convert(typ, addr)
 }
 
@@ -654,7 +654,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if fn == nil {
-		background := llssa.Background(ftype)
+		cc := llssa.CallConv(ftype)
 		if target := p.prog.Target(); target != nil && target.GOARCH == "wasm" && target.WasmProfile != "" {
 			// Executable-mode //export functions keep their final C symbol in
 			// the defining package instead of going through the library wrapper
@@ -663,17 +663,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			// body continues to use the Go 64-bit word model.
 			for _, exportName := range p.pkg.ExportFuncs() {
 				if exportName == name {
-					background = llssa.InC
+					cc = llssa.CDecl
 					break
 				}
 			}
 		}
 		if hasCtx {
-			fn = pkg.NewEnvFunc(name, sig, background, ctx, p.needsLinkOnce(f))
+			fn = pkg.NewEnvFunc(name, sig, cc, ctx, p.needsLinkOnce(f))
 		} else {
-			fn = pkg.NewFuncEx(name, sig, background, false, p.needsLinkOnce(f))
+			fn = pkg.NewFuncEx(name, sig, cc, false, p.needsLinkOnce(f))
 		}
 	}
+	p.markSIMDFMV(fn, f)
 	if p.prog.Target().GOARCH == "wasm" {
 		if decl, ok := f.Syntax().(*ast.FuncDecl); ok {
 			fullName := declarationFuncName(llssa.PathOf(pkgTypes), decl, f.Object(), f.Signature.Recv())
@@ -691,6 +692,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	if noInlineDirective || runtimeStackNoInline || pcLineNoInline || usesRecover {
 		fn.DisableTailCalls()
+	}
+	if !disableInline && !noInlineDirective && (runtimeStackNoInline || pcLineNoInline || usesRecover) {
+		fn.AllowSIMDDispatcherInlining()
 	}
 	p.funcs[f] = fn
 	isCgo := isCgoExternSymbol(f)
@@ -1108,7 +1112,7 @@ func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
 		v := p.compileValue(b, param)
 		ty := param.Type()
 		argNo := i + 1
-		div := b.DIVarParam(p.fn, pos, param.Name(), p.type_(ty, llssa.InGo), argNo)
+		div := b.DIVarParam(p.fn, pos, param.Name(), p.type_(ty, llssa.GoDecl), argNo)
 		if p.debugDIVars != nil {
 			p.debugDIVars[variable] = div
 		}
@@ -1187,7 +1191,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
-			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
+			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.CDecl)
 			b.Call(fnOld.Expr)
 		}
 		if isCgoCfunc || isCgoC2 || isCgoCmacro {
@@ -1214,7 +1218,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			case *ssa.Return:
 				// return cgo function result
 				if isCgoCmacro {
-					ty := p.type_(instr.Results[0].Type(), llssa.InGo)
+					ty := p.type_(instr.Results[0].Type(), llssa.GoDecl)
 					p.cgoRet.Type = p.prog.Pointer(ty)
 					p.cgoRet = b.Load(p.cgoRet)
 				} else {
@@ -1380,7 +1384,7 @@ func (p *context) cgoReturn(b llssa.Builder, isCgoC2 bool) {
 }
 
 func (p *context) cgoC2Return(b llssa.Builder, ret llssa.Expr, errType types.Type) {
-	errTy := p.type_(errType, llssa.InGo)
+	errTy := p.type_(errType, llssa.GoDecl)
 	nilSlot := b.AllocU(errTy)
 	b.Store(nilSlot, p.prog.Zero(errTy))
 	nilErr := b.Load(nilSlot)
@@ -1388,14 +1392,14 @@ func (p *context) cgoC2Return(b llssa.Builder, ret llssa.Expr, errType types.Typ
 		b.Return(ret, nilErr)
 		return
 	}
-	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	i32 := p.type_(types.Typ[types.Int32], llssa.GoDecl)
 	errno := p.cgoErrno
 	if !types.Identical(errno.RawType(), i32.RawType()) {
 		errno = b.Convert(i32, errno)
 	}
 	zero := p.prog.Zero(i32)
 	cond := b.BinOp(token.NEQ, errno, zero)
-	errnoVal := b.Convert(p.type_(p.cgoErrnoType(), llssa.InGo), errno)
+	errnoVal := b.Convert(p.type_(p.cgoErrnoType(), llssa.GoDecl), errno)
 	errIface := b.MakeInterface(errTy, errnoVal)
 	fn := b.Func
 	errBlk := fn.MakeBlock()
@@ -1445,7 +1449,7 @@ func (p *context) compileSyntheticMakeSlice(b llssa.Builder, v *ssa.Slice) (llss
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	t := p.type_(v.Type(), llssa.InGo)
+	t := p.type_(v.Type(), llssa.GoDecl)
 	length := p.compileValue(b, v.High)
 	return b.MakeSlice(t, length, capacity), true
 }
@@ -1555,7 +1559,7 @@ func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 }
 
 func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
-	phi := b.Phi(p.type_(v.Type(), llssa.InGo))
+	phi := b.Phi(p.type_(v.Type(), llssa.GoDecl))
 	ret = phi.Expr
 	p.phis = append(p.phis, func() {
 		preds := v.Block().Preds
@@ -1635,8 +1639,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				// The runtime helper consumes the proven-stable addresses. Keep
 				// typed placeholders for ArrayBinOp without materializing the
 				// otherwise unused aggregate loads.
-				x = p.prog.Zero(p.type_(v.X.Type(), llssa.InGo))
-				y = p.prog.Zero(p.type_(v.Y.Type(), llssa.InGo))
+				x = p.prog.Zero(p.type_(v.X.Type(), llssa.GoDecl))
+				y = p.prog.Zero(p.type_(v.Y.Type(), llssa.GoDecl))
 			} else {
 				x = p.compileValueAs(b, v.X, v.Y.Type())
 				y = p.compileValueAs(b, v.Y, v.X.Type())
@@ -1644,16 +1648,16 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			ret = b.ArrayBinOp(v.Op, x, y, xaddr, yaddr)
 		} else if typ, ok := v.X.Type().Underlying().(*types.Struct); ok && (v.Op == token.EQL || v.Op == token.NEQ) {
 			xaddr, yaddr := llssa.Nil, llssa.Nil
-			size := p.prog.SizeOf(p.type_(v.X.Type(), llssa.InGo))
+			size := p.prog.SizeOf(p.type_(v.X.Type(), llssa.GoDecl))
 			if p.prog.IsRegularMemory(v.X.Type()) && !llssa.CanInlineStructEqual(typ, size, p.prog.GoWordSize()) {
 				xaddr = p.structZeroCompareAddr(b, v.X, v.Y, v)
 				yaddr = p.structZeroCompareAddr(b, v.Y, v.X, v)
 			}
-			x := p.prog.Zero(p.type_(v.X.Type(), llssa.InGo))
+			x := p.prog.Zero(p.type_(v.X.Type(), llssa.GoDecl))
 			if xaddr.IsNil() {
 				x = p.compileValueAs(b, v.X, v.Y.Type())
 			}
-			y := p.prog.Zero(p.type_(v.Y.Type(), llssa.InGo))
+			y := p.prog.Zero(p.type_(v.Y.Type(), llssa.GoDecl))
 			if yaddr.IsNil() {
 				y = p.compileValueAs(b, v.Y, v.X.Type())
 			}
@@ -1700,7 +1704,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 			if refs, ok := nonDebugReferrers(v); ok && len(refs) == 1 {
 				if _, ok := refs[0].(*ssa.MakeInterface); ok {
-					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+					if t := p.type_(v.Type(), llssa.GoDecl); t.RawType() != nil {
 						if p.isLargeNonPointerValue(t) {
 							// Skip the load: the MakeInterface handler below copies
 							// from the original pointer and preserves the nil check.
@@ -1715,8 +1719,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				if cname := strings.TrimPrefix(name[:len(name)-16], "libc_"); cname != "" {
 					cname = p.remapTrampolineCName(cname)
 					fnSig := p.syscallFnSig(0)
-					cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
-					ret = b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+					cfn := b.Pkg.NewFunc(cname, fnSig, llssa.CDecl)
+					ret = b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), cfn.Expr)
 					p.bvals[iv] = ret
 					return ret
 				}
@@ -1736,7 +1740,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			ret = b.Recv(x, v.CommaOk)
 		} else {
 			if v.Op == token.MUL {
-				if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil && p.prog.SizeOf(t) == 0 {
+				if t := p.type_(v.Type(), llssa.GoDecl); t.RawType() != nil && p.prog.SizeOf(t) == 0 {
 					p.assertNilDerefBase(b, v.X)
 				}
 				if isInterfaceCompareDeref(v) {
@@ -1756,7 +1760,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			break
 		}
 		x := p.compileValue(b, v.X)
-		ret = b.ChangeType(p.type_(t, llssa.InGo), x)
+		ret = b.ChangeType(p.type_(t, llssa.GoDecl), x)
 	case *ssa.Convert:
 		t := v.Type()
 		if isUntypedNilConst(v.X) {
@@ -1764,7 +1768,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			break
 		}
 		x := p.compileValue(b, v.X)
-		ret = b.Convert(p.type_(t, llssa.InGo), x)
+		ret = b.Convert(p.type_(t, llssa.GoDecl), x)
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		p.recordPanicSite(b, v.Pos())
@@ -1785,7 +1789,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if p.skipSyntheticMakeSliceAlloc(v) {
 			return
 		}
-		elem := p.type_(t.Elem(), llssa.InGo)
+		elem := p.type_(t.Elem(), llssa.GoDecl)
 		hoistToEntry := true
 		if p.goFn != nil && (p.goFn.Synthetic == "package initializer" || p.goFn.Name() == "init") {
 			inLoop := false
@@ -1848,7 +1852,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		p.recordPanicSite(b, v.Pos())
 		ret = b.Slice(x, low, high, max)
-		ret.Type = p.type_(v.Type(), llssa.InGo)
+		ret.Type = p.type_(v.Type(), llssa.GoDecl)
 	case *ssa.MakeInterface:
 		if refs, _ := nonDebugReferrers(v); len(refs) == 1 {
 			switch ref := refs[0].(type) {
@@ -1866,13 +1870,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				}
 			}
 		}
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		if isUntypedNilConst(v.X) {
 			ret = p.prog.Nil(t)
 			break
 		}
 		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
-			if vt := p.type_(unop.Type(), llssa.InGo); vt.RawType() != nil {
+			if vt := p.type_(unop.Type(), llssa.GoDecl); vt.RawType() != nil {
 				if p.isLargeNonPointerValue(vt) || p.isZeroSizedValue(vt) {
 					if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
 						p.assertNilDerefBase(b, unop.X)
@@ -1885,13 +1889,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		nLen := p.compileValue(b, v.Len)
 		nCap := p.compileValue(b, v.Cap)
 		ret = b.MakeSlice(t, nLen, nCap)
 	case *ssa.MakeMap:
 		var nReserve llssa.Expr
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		if v.Reserve != nil {
 			nReserve = p.compileValue(b, v.Reserve)
 		}
@@ -1907,7 +1911,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
-		t := p.type_(v.AssertedType, llssa.InGo)
+		t := p.type_(v.AssertedType, llssa.GoDecl)
 		p.recordPanicSite(b, v.Pos())
 		ret = b.TypeAssert(x, t, v.CommaOk)
 	case *ssa.Extract:
@@ -1919,21 +1923,21 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Next:
 		var typ llssa.Type
 		if !v.IsString {
-			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.GoDecl)
 		}
 		iter := p.compileValue(b, v.Iter)
 		ret = b.Next(typ, iter, v.IsString)
 	case *ssa.ChangeInterface:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
-		ret = b.ChangeInterface(p.type_(t, llssa.InGo), x)
+		ret = b.ChangeInterface(p.type_(t, llssa.GoDecl), x)
 	case *ssa.Field:
 		x := p.compileValue(b, v.X)
 		ret = b.Field(x, v.Field)
 	case *ssa.MakeChan:
 		t := v.Type()
 		size := p.compileValue(b, v.Size)
-		ret = b.MakeChan(p.type_(t, llssa.InGo), size)
+		ret = b.MakeChan(p.type_(t, llssa.GoDecl), size)
 	case *ssa.Select:
 		states := make([]*llssa.SelectState, len(v.States))
 		for i, s := range v.States {
@@ -1947,7 +1951,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		ret = b.Select(states, v.Blocking)
 	case *ssa.SliceToArrayPointer:
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		x := p.compileValue(b, v.X)
 		p.recordPanicSite(b, v.Pos())
 		ret = b.SliceToArrayPointer(x, t)
@@ -2062,7 +2066,7 @@ func foldConstComparison(v *ssa.BinOp) (bool, bool) {
 }
 
 func (p *context) nilOf(typ types.Type) llssa.Expr {
-	return p.prog.Nil(p.type_(typ, llssa.InGo))
+	return p.prog.Nil(p.type_(typ, llssa.GoDecl))
 }
 
 func (p *context) compileValueAs(b llssa.Builder, v ssa.Value, typ types.Type) llssa.Expr {
@@ -2115,7 +2119,7 @@ func (p *context) canElideStructZeroCompareLoad(load *ssa.UnOp) bool {
 	if !p.prog.IsRegularMemory(load.Type()) {
 		return false
 	}
-	size := p.prog.SizeOf(p.type_(load.Type(), llssa.InGo))
+	size := p.prog.SizeOf(p.type_(load.Type(), llssa.GoDecl))
 	if llssa.CanInlineStructEqual(typ, size, p.prog.GoWordSize()) {
 		return false
 	}
@@ -2483,7 +2487,7 @@ func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.V
 		}
 	}
 	pos := p.fset.Position(v.Pos())
-	t := p.type_(v.Type(), llssa.InGo)
+	t := p.type_(v.Type(), llssa.GoDecl)
 	scope := b.DIScope(p.fn, v.Parent())
 	div := b.DIVarAuto(scope, pos, v.Name(), t)
 	if p.debugDIVars != nil {
@@ -2538,9 +2542,9 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return val
 	case *ssa.Const:
 		t := types.Default(v.Type())
-		bg := llssa.InGo
+		bg := llssa.GoDecl
 		if p.inCFunc {
-			bg = llssa.InC
+			bg = llssa.CDecl
 		}
 		return b.Const(v.Value, p.type_(t, bg))
 	case *ssa.FreeVar:
@@ -2679,7 +2683,7 @@ func (p *context) prepareImplicitDeferResults(b llssa.Builder, fn *ssa.Function)
 	p.implicitDeferResults = make([]llssa.Expr, results.Len())
 	for i := 0; i < results.Len(); i++ {
 		if p.namedResultSlot(i) == nil {
-			p.implicitDeferResults[i] = b.Alloc(p.type_(results.At(i).Type(), llssa.InGo), false)
+			p.implicitDeferResults[i] = b.Alloc(p.type_(results.At(i).Type(), llssa.GoDecl), false)
 		}
 	}
 }
@@ -3057,8 +3061,8 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 	}
 }
 
-func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
-	return p.prog.Type(p.patchType(typ), bg)
+func (p *context) type_(typ types.Type, cc llssa.CallConv) llssa.Type {
+	return p.prog.Type(p.patchType(typ), cc)
 }
 
 func (p *context) patchType(typ types.Type) (r types.Type) {
@@ -3124,7 +3128,7 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					raw := p.prog.Type(instantiate(obj.Type(), typ), llssa.InGo).RawType()
+					raw := p.prog.Type(instantiate(obj.Type(), typ), llssa.GoDecl).RawType()
 					return raw, typ != raw
 				}
 			}

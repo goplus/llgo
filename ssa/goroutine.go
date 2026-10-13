@@ -95,7 +95,7 @@ func (p Package) routineName() string {
 
 func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, n int) Expr {
 	prog := p.Prog
-	routine := p.NewFunc(p.routineName(), prog.tyRoutine(), InC)
+	routine := p.NewFunc(p.routineName(), prog.tyRoutine(), CDecl)
 	b := routine.MakeBody(1)
 	var localCtx, previousLocalCtx Expr
 	hasLocalContext := prog.NeedsLocalContext()

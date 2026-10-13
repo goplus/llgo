@@ -149,6 +149,16 @@ func TestLinknameNarrowCVariadicArguments(t *testing.T) {
 	if got := linkedNarrowVariadic(-8, -300, true, 17, int32(-128), float64(1.5)); got != 42 {
 		t.Errorf("direct: got %d, want 42", got)
 	}
+	// Keep native pointers as local debug variables as well as record fields.
+	// Taking a debug snapshot must not convert a C ellipsis entry into a Go closure.
+	converted := narrowVariadicFunction(linkedNarrowVariadic)
+	if got := converted(-8, -300, true, 17, int32(-128), float64(1.5)); got != 42 {
+		t.Errorf("local converted-linkname: got %d, want 42", got)
+	}
+	returned := linkedNarrowVariadicAddress()
+	if got := returned(-8, -300, true, 17, int32(-128), float64(1.5)); got != 42 {
+		t.Errorf("local returned-C-pointer: got %d, want 42", got)
+	}
 	for _, call := range []struct {
 		name string
 		fn   narrowVariadicFunction

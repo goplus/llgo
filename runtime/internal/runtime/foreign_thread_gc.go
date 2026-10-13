@@ -25,14 +25,19 @@ func gLifecycleDestructor(_ thread.KeyDestructor) thread.KeyDestructor {
 }
 
 func destroyForeignG(ptr c.Pointer) {
+	registered := bdwgc.RegisterDestructorThread()
 	gp := (*g)(ptr)
 	// Capture collector ownership before destroyG releases context.root and
 	// invalidates gp.context.
 	attached := gp != nil && gp.context != nil && gp.context.platform.foreignThreadAttached
+	if currentG == uintptr(ptr) {
+		currentG = 0
+		currentGHasLifecycle = false
+	}
 	destroyG(ptr)
 	// This is the last Go operation in the TLS destructor. A foreign thread
 	// that entered through a C boundary can now leave the collector safely.
-	if attached {
+	if attached || registered {
 		bdwgc.UnregisterMyThread()
 	}
 }

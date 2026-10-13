@@ -162,7 +162,7 @@ type T19 T18
 	prog := NewProgram(nil)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
 	t18 := pkg.Scope().Lookup("T18").Type()
-	if got, want := prog.Type(t18, InGo).ll.String(), prog.tyVoidPtr().String(); got != want {
+	if got, want := prog.Type(t18, GoDecl).ll.String(), prog.tyVoidPtr().String(); got != want {
 		t.Fatalf("recursive named pointer LLVM type = %q, want %q", got, want)
 	}
 }
@@ -280,14 +280,14 @@ func f(m map[string]int) {
 			if raw, converted := prog.gocvt.cvtType(typ); converted || raw != typ {
 				t.Fatalf("cvtType = (%v, %v), want unchanged named handle", raw, converted)
 			}
-			got := prog.Type(typ, InGo)
+			got := prog.Type(typ, GoDecl)
 			if got.RawType() != typ {
 				t.Fatalf("raw type = %v, want %v", got.RawType(), typ)
 			}
 			if got.ll != prog.tyVoidPtr() {
 				t.Fatalf("LLVM type = %v, want pointer", got.ll)
 			}
-			if got := prog.SizeOf(got); got != prog.SizeOf(prog.Type(types.Typ[types.UnsafePointer], InGo)) {
+			if got := prog.SizeOf(got); got != prog.SizeOf(prog.Type(types.Typ[types.UnsafePointer], GoDecl)) {
 				t.Fatalf("handle size = %d, want pointer size", got)
 			}
 		})

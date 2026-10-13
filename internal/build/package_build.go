@@ -215,12 +215,13 @@ func buildPackage(ctx *context, task *packageBuildTask, verbose, isolated bool) 
 	if err := finalizePackageBuild(ctx, task, verbose); err != nil {
 		return err
 	}
-	// Ordinary executable links consume package snapshots and archives. Let
-	// later packages reuse each isolated backend's memory instead of retaining
+	// Ordinary builds and single-test executable links consume package snapshots
+	// and archives. Let later packages reuse each isolated backend's memory instead of retaining
 	// every LLVM context until the final link. Isolated backends are restricted
 	// to executables; library header and C export wrapper generation cannot
 	// reach this path. Deadcode overrides still inspect live modules.
-	if isolated && ctx.mode == ModeBuild && !ctx.buildConf.deadcodeDropEnabled() {
+	if isolated && !ctx.buildConf.deadcodeDropEnabled() &&
+		(ctx.mode == ModeBuild || ctx.mode == ModeTest && len(ctx.initial) == 1) {
 		ctx.snapshotBackendPackage(task.pkg)
 		ctx.disposeBackendPackage(task.pkg)
 	}

@@ -3,18 +3,19 @@
 package ssa
 
 import (
-	"github.com/xgo-dev/llvm"
 	"go/token"
 	"go/types"
 	"strings"
 	"testing"
+
+	"github.com/xgo-dev/llvm"
 )
 
 func TestSIMDFeaturesPreserveExistingRequirements(t *testing.T) {
 	prog := NewProgram(&Target{GOOS: "wasip1", GOARCH: "wasm"})
 	defer prog.Dispose()
 	pkg := prog.NewPackage("p", "p")
-	fn := pkg.NewFunc("p.f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("p.f", NoArgsNoRet, GoDecl)
 	fn.impl.AddFunctionAttr(prog.ctx.CreateStringAttribute("target-features", "+bulk-memory"))
 	b := fn.MakeBody(1)
 	b.requireSIMDFeatures()
@@ -58,7 +59,7 @@ func TestSIMDValueAndStorageLayout(t *testing.T) {
 			setTestRuntime(t, prog)
 			pkg := prog.NewPackage("p", "p")
 			sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(types.NewParam(token.NoPos, nil, "x", raw)), types.NewTuple(types.NewParam(token.NoPos, nil, "", raw)), false)
-			fn := pkg.NewFunc("p.roundtrip", sig, InGo)
+			fn := pkg.NewFunc("p.roundtrip", sig, GoDecl)
 			b := fn.MakeBody(1)
 			defer b.Dispose()
 			ptr := b.AllocaT(typ)
@@ -77,7 +78,7 @@ func TestSIMDValueAndStorageLayout(t *testing.T) {
 				t.Fatalf("memory access scalarizes vectors:\n%s", ir)
 			}
 			clearSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(types.NewParam(token.NoPos, nil, "p", types.NewPointer(raw))), nil, false)
-			clear := pkg.NewFunc("p.clear", clearSig, InGo)
+			clear := pkg.NewFunc("p.clear", clearSig, GoDecl)
 			cb := clear.MakeBody(1)
 			cb.Store(clear.Param(0), prog.Zero(typ))
 			cb.Return()

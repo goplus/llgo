@@ -27,10 +27,10 @@ import (
 
 const LLGoPackage = "link"
 
-//llgo:type C
+//llgo:cdecl
 type RoutineFunc func(c.Pointer) c.Pointer
 
-//llgo:type C
+//llgo:cdecl
 type KeyDestructor func(c.Pointer)
 
 type nativeThread *struct {
@@ -88,8 +88,6 @@ func CreateDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int
 func Exit() {
 	pthreadExit(nil)
 }
-
-type Key c.Uint
 
 // llgo:link (*Key).Create C.pthread_key_create
 func (key *Key) Create(destructor KeyDestructor) c.Int { return 0 }

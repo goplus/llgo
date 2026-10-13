@@ -20,9 +20,9 @@ func TestAllocLargeLocalOnHeap(t *testing.T) {
 	prog.SetRuntime(runtimePkg)
 
 	pkg := prog.NewPackage("main", "main")
-	b := pkg.NewFunc("main", NoArgsNoRet, InGo).MakeBody(1)
-	small := prog.Type(types.NewArray(types.Typ[types.Byte], int64(llabi.MaxStackVarSize)), InGo)
-	large := prog.Type(types.NewArray(types.Typ[types.Byte], int64(llabi.MaxStackVarSize+1)), InGo)
+	b := pkg.NewFunc("main", NoArgsNoRet, GoDecl).MakeBody(1)
+	small := prog.Type(types.NewArray(types.Typ[types.Byte], int64(llabi.MaxStackVarSize)), GoDecl)
+	large := prog.Type(types.NewArray(types.Typ[types.Byte], int64(llabi.MaxStackVarSize+1)), GoDecl)
 	b.Alloc(small, false)
 	b.Alloc(large, false)
 	b.Return()

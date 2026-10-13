@@ -212,9 +212,10 @@ jobs:
 
           python .github/scripts/check_llgo_coverage.py coverage-llgo.txt
 
-          if [[ "$RUNNER_OS" == Windows ]]; then
-            # The TLS regression lives in the runtime submodule, outside test/.
-            (cd runtime && "$LLGO" test -v -run '^TestSlotGCAllocation$' -count=20 -timeout=2m ./internal/clite/tls)
+          # TLS regressions live in the runtime submodule, outside test/.
+          (cd runtime && "$LLGO" test -v -run '^TestSlot(GCAllocation|DestructorGCRegistration)$' -count=20 -timeout=2m ./internal/clite/tls)
+          if [[ "$RUNNER_OS" != Windows ]]; then
+            (cd runtime && "$LLGO" test -v -run '^TestKeyNativeLayout$' -timeout=2m ./internal/thread)
           fi
 
       - name: Install Codecov CLI with Windows host Python
@@ -314,14 +315,23 @@ jobs:
           (cd ./_demo/c/cargs && llgo run .)
 
       - name: Test SIMD behavior with Go and LLGo
+        id: native_simd
         if: matrix.windows_arch != '386'
         shell: bash
         env:
           GOEXPERIMENT: simd
+          LLGO_SIMD_ARTIFACT_DIR: ${{ runner.temp }}/llgo-simd-matrix
         run: |
           go test -count=1 -timeout=2m ./test/simd/...
-          llgo test -O0 -count=1 -timeout=2m ./test/simd/...
-          llgo test -O2 -count=1 -timeout=2m ./test/simd/...
+          bash dev/test_native_simd.sh
+
+      - name: Upload failed native SIMD executables
+        if: failure() && steps.native_simd.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-simd-${{ matrix.os }}-${{ matrix.windows_abi || 'native' }}-${{ matrix.windows_arch || 'host' }}
+          path: ${{ runner.temp }}/llgo-simd-matrix
+          retention-days: 3
 
       - name: Test demos
         run: bash .github/workflows/test_demo.sh

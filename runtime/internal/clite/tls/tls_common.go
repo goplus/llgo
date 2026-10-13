@@ -115,8 +115,10 @@ func (h Handle[T]) ensureSlot() *slot[T] {
 }
 
 func slotDestructor[T any](ptr c.Pointer) {
+	registered := enterSlotDestructor()
 	s := (*slot[T])(ptr)
 	if s == nil {
+		leaveSlotDestructor(registered)
 		return
 	}
 	if s.destructor != nil {
@@ -126,4 +128,5 @@ func slotDestructor[T any](ptr c.Pointer) {
 	s.value = zero
 	s.destructor = nil
 	freeSlot(ptr)
+	leaveSlotDestructor(registered)
 }

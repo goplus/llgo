@@ -25,10 +25,10 @@ import (
 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 )
 
-//llgo:type C
+//llgo:cdecl
 type RoutineFunc func(c.Pointer) c.Pointer
 
-//llgo:type C
+//llgo:cdecl
 type KeyDestructor func(c.Pointer)
 
 type Key struct {
@@ -43,6 +43,11 @@ func createDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int
 
 //go:linkname exit C.llgo_win_thread_exit
 func exit()
+
+// Yield lets another runnable host thread execute.
+//
+//go:linkname Yield C.llgo_win_thread_yield
+func Yield()
 
 //go:linkname exitProcess C.llgo_win_thread_exit_process
 func exitProcess(code c.Uint)

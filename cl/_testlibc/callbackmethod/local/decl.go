@@ -7,13 +7,13 @@ const (
 	LLGoPackage = "link"
 )
 
-// llgo:type C
+// llgo:cdecl
 type Node struct {
 	Kind int32
 	Data int32
 }
 
-// llgo:type C
+// llgo:cdecl
 type Visitor = func(Node, unsafe.Pointer) int32
 type VisitorAlias = Visitor
 

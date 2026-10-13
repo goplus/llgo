@@ -276,7 +276,7 @@ func _C2func_withparams(a int) (int, error) {
 
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("_C2func_withparams", goFn.Signature, llssa.InGo)
+	fn := pkg.NewFunc("_C2func_withparams", goFn.Signature, llssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	ctx := &context{prog: prog, pkg: pkg, fn: fn}
@@ -309,7 +309,7 @@ func _C2func_void(a int) {
 
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("_C2func_void", goFn.Signature, llssa.InGo)
+	fn := pkg.NewFunc("_C2func_void", goFn.Signature, llssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	ctx := &context{prog: prog, pkg: pkg, fn: fn}
@@ -359,7 +359,7 @@ func TestCgoReturn_PanicWrongResultsLen(t *testing.T) {
 		types.NewTuple(types.NewVar(0, nil, "a", types.Typ[types.Int])),
 		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
 		false)
-	fn := pkg.NewFunc("_C2func_bad", sig, llssa.InGo)
+	fn := pkg.NewFunc("_C2func_bad", sig, llssa.GoDecl)
 	var b llssa.Builder // nil is fine for panic path
 	ctx := &context{prog: prog, pkg: pkg, fn: fn}
 
@@ -381,12 +381,12 @@ func TestCgoC2Return_ErrnoNil(t *testing.T) {
 			types.NewVar(0, nil, "", errType),
 		),
 		false)
-	fn := pkg.NewFunc("main", sig, llssa.InGo)
+	fn := pkg.NewFunc("main", sig, llssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	ctx := &context{prog: prog, pkg: pkg, fn: fn}
 	ctx.cgoErrno = llssa.Nil
-	ret := b.Const(constant.MakeInt64(123), ctx.type_(types.Typ[types.Int], llssa.InGo))
+	ret := b.Const(constant.MakeInt64(123), ctx.type_(types.Typ[types.Int], llssa.GoDecl))
 
 	ctx.cgoC2Return(b, ret, errType)
 }
@@ -402,7 +402,7 @@ func TestCgoC2Return_ErrnoNeedsConvert(t *testing.T) {
 			types.NewVar(0, nil, "", errType),
 		),
 		false)
-	fn := pkg.NewFunc("main", sig, llssa.InGo)
+	fn := pkg.NewFunc("main", sig, llssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	errnoPkg := types.NewPackage("syscall", "syscall")
@@ -414,7 +414,7 @@ func TestCgoC2Return_ErrnoNeedsConvert(t *testing.T) {
 	ctx := &context{prog: prog, pkg: pkg, fn: fn}
 	ctx.cgoErrnoTy = errnoType
 	ctx.cgoErrno = fn.Param(0)
-	ret := b.Const(constant.MakeInt64(7), ctx.type_(types.Typ[types.Int], llssa.InGo))
+	ret := b.Const(constant.MakeInt64(7), ctx.type_(types.Typ[types.Int], llssa.GoDecl))
 
 	ctx.cgoC2Return(b, ret, errType)
 	ir := pkg.Module().String()

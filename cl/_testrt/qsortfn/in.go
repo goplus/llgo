@@ -8,7 +8,7 @@ import (
 	q "github.com/xgo-dev/llgo/cl/_testrt/qsortfn/qsort"
 )
 
-//llgo:type C
+//llgo:cdecl
 type Comp func(a, b unsafe.Pointer) int32
 
 //go:linkname cstr llgo.cstr

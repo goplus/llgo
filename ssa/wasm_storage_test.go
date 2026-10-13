@@ -118,7 +118,7 @@ func TestWasm32StorageIntegerConversions(t *testing.T) {
 	result := types.NewParam(token.NoPos, nil, "", word)
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), types.NewTuple(result), false)
 
-	fn := pkg.NewFunc("example.com/p.narrowInt", sig, InGo)
+	fn := pkg.NewFunc("example.com/p.narrowInt", sig, GoDecl)
 	b := fn.MakeBody(1)
 	b.fitLLVMValue(b.Param(0).impl, prog.Int(), prog.Int32().ll)
 	b.Return(b.Param(0))
@@ -153,7 +153,7 @@ func TestWasm32StorageIntegerConversions(t *testing.T) {
 func TestWasm32PhysicalPointerIndexBounds(t *testing.T) {
 	prog := newJ32Program(t)
 	pkg := prog.NewPackage("p", "example.com/p")
-	fn := pkg.NewFunc("example.com/p.index", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("example.com/p.index", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 
 	i32 := prog.Int32()
@@ -161,7 +161,7 @@ func TestWasm32PhysicalPointerIndexBounds(t *testing.T) {
 	if got := b.physicalPointerIndex(alreadyPhysical); got.impl != alreadyPhysical.impl {
 		t.Fatal("physical i32 pointer index was unnecessarily converted")
 	}
-	i16 := prog.Type(types.Typ[types.Int16], InGo)
+	i16 := prog.Type(types.Typ[types.Int16], GoDecl)
 	narrow := Expr{llvm.ConstInt(i16.ll, 0, false), i16}
 	if got := b.physicalPointerIndex(narrow); got.impl != narrow.impl {
 		t.Fatal("narrow pointer index was unnecessarily converted")
@@ -181,7 +181,7 @@ func TestWasm32PhysicalPointerIndexBounds(t *testing.T) {
 func TestWasm32PointerSlotsConvertAtMemoryBoundary(t *testing.T) {
 	prog := newJ32Program(t)
 	pkg := prog.NewPackage("p", "example.com/p")
-	fn := pkg.NewFunc("example.com/p.storeLoad", NoArgsNoRet, InC)
+	fn := pkg.NewFunc("example.com/p.storeLoad", NoArgsNoRet, CDecl)
 	b := fn.MakeBody(1)
 	ptr := prog.Pointer(prog.Byte())
 	value := pkg.NewVarEx("example.com/p.target", ptr)
@@ -223,7 +223,7 @@ func TestWasm32GEPIndexesUsePhysicalAddressWidth(t *testing.T) {
 	str := types.NewParam(token.NoPos, nil, "value", types.Typ[types.String])
 	byteResult := types.NewParam(token.NoPos, nil, "", types.Typ[types.Byte])
 	indexSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(str, index), types.NewTuple(byteResult), false)
-	indexFn := pkg.NewFunc("example.com/p.index", indexSig, InGo)
+	indexFn := pkg.NewFunc("example.com/p.index", indexSig, GoDecl)
 	ib := indexFn.MakeBody(1)
 	ib.Return(ib.Index(ib.Param(0), ib.Param(1), func() (Expr, bool) { return Nil, false }))
 	ib.EndBuild()
@@ -232,7 +232,7 @@ func TestWasm32GEPIndexesUsePhysicalAddressWidth(t *testing.T) {
 	ptr := types.NewParam(token.NoPos, nil, "ptr", ptrType)
 	ptrResult := types.NewParam(token.NoPos, nil, "", ptrType)
 	advanceSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(ptr, index), types.NewTuple(ptrResult), false)
-	advanceFn := pkg.NewFunc("example.com/p.advance", advanceSig, InGo)
+	advanceFn := pkg.NewFunc("example.com/p.advance", advanceSig, GoDecl)
 	ab := advanceFn.MakeBody(1)
 	ab.Return(ab.Advance(ab.Param(0), ab.Param(1)))
 	ab.EndBuild()
@@ -241,7 +241,7 @@ func TestWasm32GEPIndexesUsePhysicalAddressWidth(t *testing.T) {
 	array := types.NewParam(token.NoPos, nil, "array", types.NewPointer(arrayType))
 	addrResult := types.NewParam(token.NoPos, nil, "", types.NewPointer(types.Typ[types.Byte]))
 	addrSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(array, index), types.NewTuple(addrResult), false)
-	addrFn := pkg.NewFunc("example.com/p.addr", addrSig, InGo)
+	addrFn := pkg.NewFunc("example.com/p.addr", addrSig, GoDecl)
 	adb := addrFn.MakeBody(1)
 	adb.Return(adb.IndexAddr(adb.Param(0), adb.Param(1)))
 	adb.EndBuild()
@@ -279,16 +279,16 @@ func TestWasm32AdvanceRespectsGoAndNativePointerSlots(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		bg   Background
+		cc   CallConv
 	}{
-		{name: "goAdvance", bg: InGo},
-		{name: "cAdvance", bg: InC},
+		{name: "goAdvance", cc: GoDecl},
+		{name: "cAdvance", cc: CDecl},
 	} {
-		fn := pkg.NewFunc("example.com/p."+tc.name, sig, tc.bg)
+		fn := pkg.NewFunc("example.com/p."+tc.name, sig, tc.cc)
 		b := fn.MakeBody(1)
 		base := b.Param(0)
-		if tc.bg == InC {
-			base.Type = prog.Type(param.Type(), InC)
+		if tc.cc == CDecl {
+			base.Type = prog.Type(param.Type(), CDecl)
 		}
 		b.Advance(base, prog.IntVal(1, prog.Int()))
 		b.Return()
@@ -316,28 +316,28 @@ func TestWasm32NativeBoundaryKeepsPhysicalWordWidth(t *testing.T) {
 	result := types.NewParam(token.NoPos, nil, "", word)
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), types.NewTuple(result), false)
 
-	goFn := pkg.NewFunc("example.com/p.goWord", sig, InGo)
+	goFn := pkg.NewFunc("example.com/p.goWord", sig, GoDecl)
 	gb := goFn.MakeBody(1)
 	gb.Return(gb.Param(0))
 	gb.EndBuild()
 
-	cFn := pkg.NewFunc("example.com/p.cWord", sig, InC)
+	cFn := pkg.NewFunc("example.com/p.cWord", sig, CDecl)
 	cb := cFn.MakeBody(1)
 	cb.Return(cb.Param(0))
 	cb.EndBuild()
 
-	caller := pkg.NewFunc("example.com/p.callCWord", sig, InGo)
+	caller := pkg.NewFunc("example.com/p.callCWord", sig, GoDecl)
 	callb := caller.MakeBody(1)
 	callb.Return(callb.Call(cFn.Expr, callb.Param(0)))
 	callb.EndBuild()
 
 	results := types.NewTuple(result, result)
 	multiSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), results, false)
-	multiCallee := pkg.NewFunc("example.com/p.cWords", multiSig, InC)
+	multiCallee := pkg.NewFunc("example.com/p.cWords", multiSig, CDecl)
 	mcb := multiCallee.MakeBody(1)
 	mcb.Return(mcb.Param(0), mcb.Param(0))
 	mcb.EndBuild()
-	multiCaller := pkg.NewFunc("example.com/p.callCWords", multiSig, InGo)
+	multiCaller := pkg.NewFunc("example.com/p.callCWords", multiSig, GoDecl)
 	mb := multiCaller.MakeBody(1)
 	multiResult := mb.Call(multiCallee.Expr, mb.Param(0))
 	mb.Return(mb.Extract(multiResult, 0), mb.Extract(multiResult, 1))
@@ -375,7 +375,7 @@ func TestWasm32UnsafeBoundsUsePhysicalAddressWidth(t *testing.T) {
 	data := types.NewParam(token.NoPos, nil, "data", types.NewPointer(types.Typ[types.Byte]))
 	size := types.NewParam(token.NoPos, nil, "size", types.Typ[types.Int])
 	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(data, size), nil, false)
-	fn := pkg.NewFunc("example.com/p.unsafeBounds", sig, InGo)
+	fn := pkg.NewFunc("example.com/p.unsafeBounds", sig, GoDecl)
 	b := fn.MakeBody(1)
 	b.checkedUnsafeString(b.Param(0), b.Param(1))
 	b.checkedUnsafeSlice(b.Param(0), b.Param(1))
@@ -404,15 +404,15 @@ func TestWasm32NativeStructAndGCRootStorage(t *testing.T) {
 		types.NewField(token.NoPos, typesPkg, "size", types.Typ[types.Uintptr], false),
 	}
 	cIovec := types.NewNamed(name, types.NewStruct(fields, nil), nil)
-	prog.SetTypeBackground("example.com/p.CIovec", InC)
-	typ := prog.Type(cIovec, InC)
+	prog.SetTypeCallConv("example.com/p.CIovec", CDecl)
+	typ := prog.Type(cIovec, CDecl)
 	if got := prog.SizeOf(typ); got != 8 {
 		t.Fatalf("native wasm32 iovec size = %d, want 8", got)
 	}
 	if got := prog.OffsetOf(typ, 1); got != 4 {
 		t.Fatalf("native wasm32 iovec size field offset = %d, want 4", got)
 	}
-	nativeWord := prog.Type(types.Typ[types.Uintptr], InC)
+	nativeWord := prog.Type(types.Typ[types.Uintptr], CDecl)
 	if got := prog.Zero(nativeWord).impl.Type(); got != nativeWord.ll {
 		t.Fatalf("native wasm32 zero word type = %s, want %s", got, nativeWord.ll)
 	}
@@ -429,7 +429,7 @@ func TestWasm32NativeStructAndGCRootStorage(t *testing.T) {
 	}
 
 	pkg := prog.NewPackage("p", "example.com/p")
-	fn := pkg.NewFunc("example.com/p.root", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("example.com/p.root", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	iovec := b.Alloc(typ, false)
 	size := b.FieldAddr(iovec, 1)
@@ -479,9 +479,9 @@ func TestWasm32DirectInterfaceUnwrapsPointerStorage(t *testing.T) {
 		param := types.NewParam(token.NoPos, nil, "value", wrapper)
 		result := types.NewParam(token.NoPos, nil, "", empty)
 		sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(param), types.NewTuple(result), false)
-		fn := pkg.NewFunc("example.com/p."+name, sig, InGo)
+		fn := pkg.NewFunc("example.com/p."+name, sig, GoDecl)
 		b := fn.MakeBody(1)
-		b.Return(b.MakeInterface(prog.Type(empty, InGo), b.Param(0)))
+		b.Return(b.MakeInterface(prog.Type(empty, GoDecl), b.Param(0)))
 		b.EndBuild()
 	}
 

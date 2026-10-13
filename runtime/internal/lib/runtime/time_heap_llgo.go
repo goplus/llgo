@@ -132,7 +132,7 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64, update func()) bool 
 }
 
 func timerSchedulerLoop() {
-	markTimerSystemG()
+	markSystemGoroutine()
 	timerSchedulerMu.Lock()
 	for {
 		if len(timerSchedulerHeap) == 0 {

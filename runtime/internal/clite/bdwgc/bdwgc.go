@@ -83,7 +83,7 @@ func RemoveRoots(start, end c.Pointer)
 
 // -----------------------------------------------------------------------------
 
-//llgo:type C
+//llgo:cdecl
 type FinalizerFunc func(c.Pointer, c.Pointer)
 
 //go:linkname RegisterFinalizer C.GC_register_finalizer

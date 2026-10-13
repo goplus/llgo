@@ -11,7 +11,7 @@ type initOnce struct {
 	value unsafe.Pointer
 }
 
-//llgo:type stdcall
+//llgo:stdcall
 type initOnceCallback func(*initOnce, unsafe.Pointer, *unsafe.Pointer) int32
 
 //go:linkname initOnceExecuteOnce stdcall.InitOnceExecuteOnce

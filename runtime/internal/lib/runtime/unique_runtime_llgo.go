@@ -20,6 +20,7 @@ func unique_runtime_registerUniqueMapCleanup(f func()) {
 	})
 	// Start the goroutine in the runtime so it's counted as a system goroutine.
 	go func(cleanup func()) {
+		markSystemGoroutine()
 		for {
 			<-uniqueMapCleanup
 			cleanup()

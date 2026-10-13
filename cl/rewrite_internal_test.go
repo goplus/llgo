@@ -244,6 +244,16 @@ func use() Value { return value }
 			want: "stdcall requires a function type",
 		},
 		{
+			name: "non-function type via //llgo:stdcall", goos: "windows", goarch: "386",
+			src: `package p
+//llgo:stdcall
+type Value int
+var value Value
+func use() Value { return value }
+`,
+			want: "stdcall requires a function type",
+		},
+		{
 			name: "variable linkname", goos: "windows", goarch: "386",
 			src: `package p
 import _ "unsafe"
@@ -1628,7 +1638,7 @@ func TestStaticConstExprRejectsUnsupportedConstants(t *testing.T) {
 	}
 	if _, ok := ctx.staticConstExpr(
 		ssa.NewConst(constant.MakeInt64(0), types.Typ[types.Int]),
-		ctx.type_(types.Typ[types.UnsafePointer], llssa.InGo),
+		ctx.type_(types.Typ[types.UnsafePointer], llssa.GoDecl),
 	); ok {
 		t.Fatal("unsupported unsafe.Pointer constants should be rejected")
 	}
@@ -1883,12 +1893,12 @@ func TestEmitDoWithExplicitDeferStack(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", llssa.NoArgsNoRet, llssa.InGo)
+	callee := pkg.NewFunc("callee", llssa.NoArgsNoRet, llssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	owner := pkg.NewFunc("owner", llssa.NoArgsNoRet, llssa.InGo)
+	owner := pkg.NewFunc("owner", llssa.NoArgsNoRet, llssa.GoDecl)
 	b := owner.MakeBody(1)
 	owner.SetRecover(owner.MakeBlock())
 	stack := b.BuiltinCall("ssa:deferstack")
@@ -2066,7 +2076,7 @@ func f() {
 
 	prog := llssa.NewProgram(nil)
 	pkg := prog.NewPackage("foo", "foo")
-	owner := pkg.NewFunc("f", llssa.NoArgsNoRet, llssa.InGo)
+	owner := pkg.NewFunc("f", llssa.NoArgsNoRet, llssa.GoDecl)
 
 	ctx := &context{funcs: map[*ssa.Function]llssa.Function{root: owner}}
 	if got := ctx.deferStackOwner(root); got != owner {
@@ -2132,12 +2142,12 @@ func TestEmitDoWithoutExplicitDeferStack(t *testing.T) {
 		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
 		false)
 
-	callee := pkg.NewFunc("callee", sig, llssa.InGo)
+	callee := pkg.NewFunc("callee", sig, llssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return(prog.IntVal(7, prog.Int()))
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", llssa.NoArgsNoRet, llssa.InGo)
+	fn := pkg.NewFunc("main", llssa.NoArgsNoRet, llssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	ctx := &context{}

@@ -205,7 +205,7 @@ func TestWasmReflectTypeDescriptorsCarryBridges(t *testing.T) {
 	named.AddMethod(types.NewFunc(token.NoPos, goPkg, "M", types.NewSignatureType(receiver, nil, nil, callback.Params(), callback.Results(), false)))
 
 	pkg := prog.NewPackageEx("p", goPkg.Path(), true)
-	fn := pkg.NewFunc("use", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("use", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	b.abiType(callback)
 	b.abiType(named)
@@ -232,7 +232,7 @@ func TestWasmReflectRootShape(t *testing.T) {
 
 	shape := func(typ types.Type) string {
 		var value strings.Builder
-		prog.appendWasmRootShape(&value, prog.Type(typ, InC))
+		prog.appendWasmRootShape(&value, prog.Type(typ, CDecl))
 		return value.String()
 	}
 	ptr := types.NewPointer(types.Typ[types.Int])
@@ -284,7 +284,7 @@ func TestExtractConstStringFromWideWasmStorage(t *testing.T) {
 	defer prog.Dispose()
 	setTestRuntime(t, prog)
 	pkg := prog.NewPackage("p", "example.com/p")
-	fn := pkg.NewFunc("f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("f", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	defer b.Dispose()
 	value := b.Str("Add")

@@ -31,7 +31,7 @@ func TestGo386AtomicCmpXchgUsesNativeLLVMResult(t *testing.T) {
 	defer prog.Dispose()
 	prog.TypeSizes(types.SizesFor("gc", "386"))
 	pkg := prog.NewPackage("example.com/p", "p")
-	b := pkg.NewFunc("example.com/p.f", NoArgsNoRet, InGo).MakeBody(1)
+	b := pkg.NewFunc("example.com/p.f", NoArgsNoRet, GoDecl).MakeBody(1)
 	valueType := prog.Uint64()
 	ptr := b.Alloc(valueType, false)
 	result := b.AtomicCmpXchg(ptr, prog.IntVal(0, valueType), prog.IntVal(1, valueType))
@@ -53,7 +53,7 @@ func TestGo386StructPhysicalLayoutDiffersFromC(t *testing.T) {
 		types.NewField(token.NoPos, nil, "F", types.Typ[types.Float64], false),
 	}
 	st := types.NewStruct(fields, nil)
-	goType := prog.Type(st, InGo)
+	goType := prog.Type(st, GoDecl)
 	if got, want := prog.SizeOf(goType), uint64(12); got != want {
 		t.Fatalf("Go Windows/386 struct size = %d, want %d", got, want)
 	}
@@ -73,8 +73,8 @@ func TestGo386StructPhysicalLayoutDiffersFromC(t *testing.T) {
 
 	pkg := types.NewPackage("example.com/c", "c")
 	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Pair", nil), st, nil)
-	prog.SetTypeBackground("example.com/c.Pair", InC)
-	cType := prog.Type(named, InC)
+	prog.SetTypeCallConv("example.com/c.Pair", CDecl)
+	cType := prog.Type(named, CDecl)
 	if got, want := prog.SizeOf(cType), uint64(16); got != want {
 		t.Fatalf("C Windows/386 struct size = %d, want %d", got, want)
 	}
@@ -91,7 +91,7 @@ func TestGo386StructLayoutEdgeCases(t *testing.T) {
 		st := types.NewStruct([]*types.Var{
 			types.NewField(token.NoPos, nil, "F", types.Typ[types.Float64], false),
 		}, nil)
-		typ := prog.Type(st, InGo)
+		typ := prog.Type(st, GoDecl)
 		if got, want := prog.SizeOf(typ), uint64(8); got != want {
 			t.Fatalf("Go Windows/386 struct size = %d, want %d", got, want)
 		}
@@ -109,7 +109,7 @@ func TestGo386StructLayoutEdgeCases(t *testing.T) {
 			types.NewField(token.NoPos, nil, "I", types.Typ[types.Int32], false),
 			types.NewField(token.NoPos, nil, "Z", empty, false),
 		}, nil)
-		typ := prog.Type(st, InGo)
+		typ := prog.Type(st, GoDecl)
 		if got, want := prog.SizeOf(typ), uint64(8); got != want {
 			t.Fatalf("Go Windows/386 struct size = %d, want %d", got, want)
 		}
@@ -124,7 +124,7 @@ func TestGo386StructLayoutEdgeCases(t *testing.T) {
 		}, nil)
 		pkg := types.NewPackage("example.com/p", "p")
 		named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Value", nil), st, nil)
-		typ := prog.Type(named, InGo)
+		typ := prog.Type(named, GoDecl)
 		if zero := prog.Zero(typ); zero.impl.Type() != typ.ll {
 			t.Fatalf("named Go Windows/386 struct zero has type %s, want %s", zero.impl.Type(), typ.ll)
 		}
@@ -175,7 +175,7 @@ func TestConstStructValueAsUsesDestinationLLVMType(t *testing.T) {
 	st := types.NewStruct(fields, nil)
 	pkg := types.NewPackage("example.com/p", "p")
 	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Value", nil), st, nil)
-	typ := prog.Type(named, InGo)
+	typ := prog.Type(named, GoDecl)
 	destination := prog.ctx.StructCreateNamed("example.com/p.destination")
 	destination.StructSetBody(typ.ll.StructElementTypes(), typ.ll.IsStructPacked())
 

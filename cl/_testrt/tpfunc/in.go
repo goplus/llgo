@@ -7,10 +7,10 @@ import (
 
 type Func func(*int)
 
-//llgo:type C
+//llgo:cdecl
 type CFunc func(*int)
 
-//llgo:type C
+//llgo:cdecl
 type Callback[T any] func(*T)
 
 // The Go function value is two words, while both llgo:type C forms are one word.

@@ -65,11 +65,11 @@ func TestNativeNarrowIntegerAttributes(t *testing.T) {
 			for _, resultIndex := range []int{0, 3, 4, 6} {
 				sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(params[resultIndex]), false)
 				name := types.TypeString(paramTypes[resultIndex], nil)
-				native := pkg.NewFunc("native."+name, sig, InC)
+				native := pkg.NewFunc("native."+name, sig, CDecl)
 				native.MakeBody(1).Return(native.Param(resultIndex))
 				checkNarrowAttrs(t, native.impl, false, want)
 
-				caller := pkg.NewFunc("direct."+name, sig, InGo)
+				caller := pkg.NewFunc("direct."+name, sig, GoDecl)
 				body := caller.MakeBody(1)
 				args := make([]Expr, len(params))
 				for i := range args {
@@ -79,7 +79,7 @@ func TestNativeNarrowIntegerAttributes(t *testing.T) {
 				checkNarrowAttrs(t, call.impl, true, want)
 				checkNarrowAttrs(t, caller.impl, false, make([]string, len(want)))
 				if target.GOOS == "windows" {
-					stdcall := pkg.NewFunc("stdcall."+name, sig, InStdcall)
+					stdcall := pkg.NewFunc("stdcall."+name, sig, Stdcall)
 					stdcall.MakeBody(1).Return(stdcall.Param(resultIndex))
 					checkNarrowAttrs(t, stdcall.impl, false, want)
 					checkNarrowAttrs(t, body.Call(stdcall.Expr, args...).impl, true, want)
@@ -88,10 +88,10 @@ func TestNativeNarrowIntegerAttributes(t *testing.T) {
 
 				pointerName := "Pointer" + name
 				pointer := types.NewNamed(types.NewTypeName(token.NoPos, rawPkg, pointerName, nil), sig, nil)
-				prog.SetTypeBackground(pkg.Path()+"."+pointerName, InC)
+				prog.SetTypeCallConv(pkg.Path()+"."+pointerName, CDecl)
 				pointerParam := types.NewVar(token.NoPos, nil, "fn", pointer)
 				indirectSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(append([]*types.Var{pointerParam}, params...)...), sig.Results(), false)
-				indirect := pkg.NewFunc("indirect."+name, indirectSig, InGo)
+				indirect := pkg.NewFunc("indirect."+name, indirectSig, GoDecl)
 				body = indirect.MakeBody(1)
 				for i := range args {
 					args[i] = indirect.Param(i + 1)
@@ -121,17 +121,17 @@ func TestNativeNarrowVariadicAttributes(t *testing.T) {
 			pkg := prog.NewPackage("p", "example.com/p")
 			params := types.NewTuple(types.NewVar(token.NoPos, nil, "fixed", types.Typ[types.Int8]), VArg())
 			sig := types.NewSignatureType(nil, nil, nil, params, nil, true)
-			fn := pkg.NewFunc("native.variadic", sig, InC)
+			fn := pkg.NewFunc("native.variadic", sig, CDecl)
 			checkNarrowAttrs(t, fn.impl, false, []string{"", "signext"})
 			pointer := types.NewNamed(types.NewTypeName(token.NoPos, types.NewPackage(pkg.Path(), "p"), "Native", nil), sig, nil)
-			prog.SetTypeBackground(pkg.Path()+".Native", InC)
+			prog.SetTypeCallConv(pkg.Path()+".Native", CDecl)
 			callerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(types.NewVar(token.NoPos, nil, "fn", pointer)), nil, false)
-			caller := pkg.NewFunc("caller", callerSig, InGo)
+			caller := pkg.NewFunc("caller", callerSig, GoDecl)
 			body := caller.MakeBody(1)
 			args := []Expr{
-				prog.IntVal(248, prog.Type(types.Typ[types.Int8], InGo)),
+				prog.IntVal(248, prog.Type(types.Typ[types.Int8], GoDecl)),
 				prog.IntVal(42, prog.Int32()),
-				prog.IntVal(0xffffffff, prog.Type(types.Typ[types.Uint32], InGo)),
+				prog.IntVal(0xffffffff, prog.Type(types.Typ[types.Uint32], GoDecl)),
 				prog.IntVal(42, prog.Int64()),
 			}
 			checkNarrowAttrs(t, body.Call(fn.Expr, args...).impl, true, test.attrs)
