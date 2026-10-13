@@ -243,10 +243,10 @@ func assertSIMDBaselineAssembly(t *testing.T, asm string) {
 	if len(bodies) == 0 {
 		t.Fatal("no assembly functions found")
 	}
-	avx := regexp.MustCompile(`(?m)^\s+v[a-z][a-z0-9]*\s`)
+	avx := regexp.MustCompile(`(?m)^\s+(?:v[a-z][a-z0-9]*|pclmul[a-z0-9]*)\s`)
 	for _, body := range bodies {
 		if !strings.Contains(body[1], ".__llgo_fmv_avx2") && avx.MatchString(body[2]) {
-			t.Fatalf("GOAMD64=v1 baseline %s emitted AVX:\n%s", body[1], body[2])
+			t.Fatalf("GOAMD64=v1 baseline %s emitted optional vector instructions:\n%s", body[1], body[2])
 		}
 	}
 }
@@ -275,7 +275,7 @@ func TestSIMDIntrinsicDefinitions(t *testing.T) {
 				if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
 					t.Fatal(err)
 				}
-				if fn := mod.NamedFunction("simd/archsimd.Uint8x16.Average"); fn.IsNil() || !strings.Contains(fn.String(), "PanicSIMDUnimplemented") {
+				if fn := mod.NamedFunction("simd/archsimd.Uint8x16.ExtendLo8ToUint16"); fn.IsNil() || !strings.Contains(fn.String(), "PanicSIMDUnimplemented") {
 					t.Fatal("missing explicit unsupported implementation")
 				}
 				if fn := mod.NamedFunction("simd/archsimd.Float32x4.Add"); fn.IsNil() || !strings.Contains(fn.String(), "fadd <4 x float>") {

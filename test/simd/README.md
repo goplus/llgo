@@ -14,10 +14,12 @@ combinations exist; the families below do not imply identical APIs on every
 architecture.
 
 - Array/slice loads and stores, broadcast, and lane extraction/insertion.
+  AMD64 masked stores preserve disabled lanes without accessing their memory.
 - Add/subtract/multiply, floating divide, negation, absolute value, square root,
-  rounding, and target-specific floating min/max semantics.
+  rounding, fused native multiply-add, and target-specific floating min/max semantics.
 - Integer bitwise operations, saturated add/subtract, min/max, uniform shifts,
-  and the applicable variable shifts.
+  the applicable variable shifts, rounded averages, uniform rotates, widening
+  low-half multiplication, and carryless multiplication.
 - Numeric bitcasts, signedness conversions, and SIMD128 numeric conversions,
   with defined results for NaN and out-of-range floating inputs.
 - Four mask shapes, comparisons, mask bitmaps where provided, and the official
@@ -38,6 +40,42 @@ implementations panic with their symbol name; `unimplemented_llgo_test.go`
 checks direct, indirect, deferred, and linkname calls. SIMD reflection,
 portable `simd` specialization, general FMV, and 256/512-bit vectors remain
 outside this implemented stage.
+
+## Portable SIMD128 bridge prerequisites
+
+The compiler checks the static call closure of the official Go toolchain's
+128-bit `simd/internal/bridge` entries on amd64, arm64, and wasm. Their bodyless
+`archsimd` dependencies now have implementations. This is a prerequisite for
+portable `simd` specialization; it does not implement `Midway` or width dispatch.
+Go helper bodies retain the toolchain's semantics, including separate multiply
+and add for wasm and fused rounding for native `MulAdd`. Windows/amd64 uses
+software FMA helpers because MinGW's `fma`/`fmaf` can overflow before cancellation.
+The float64 helper follows Go's integer-significand implementation; float32
+retains a residual before conversion to prevent double rounding. Other native
+targets use LLVM's FMA intrinsic.
+
+Bridge-operation regressions cover exhaustive byte averages, signed and
+unsigned overflow boundaries, modulo rotate counts, widening multiplication,
+full-width polynomial products, fused cancellation, and partial-store tails.
+AMD64 tests cover every 32-bit lane mask, sign-bit mask semantics, all six
+masked-store element types, inactive nil pointers, active nil recovery under
+LLGo, and stores at a Linux guard-page boundary. Compiler tests verify LLVM IR
+and O0/O2 code generation for Linux/Windows amd64, ARM64, and WASM.
+
+Go 1.27's wasm `CarrylessMultiplyOdd` helper reads the second operand from
+`x` instead of `y`. Both official Go and LLGo reproduce the incorrect result;
+the compiler does not replace this Go body. The failing reproducer is retained
+separately from the intrinsic tests:
+
+```sh
+GOEXPERIMENT=simd GOOS=wasip1 GOARCH=wasm go run -exec=wasmtime ./test/simd/testdata/upstream-carrylessodd
+GOEXPERIMENT=simd llgo run -target wasi -emulator ./test/simd/testdata/upstream-carrylessodd
+```
+
+The shared suite checks even-lane carryless multiplication on all three
+architectures; native tests also check odd-lane and AMD64 mixed-lane selection.
+The closure check establishes implementation coverage, not correctness of every
+upstream Go helper.
 
 ## CPU-guarded SIMD128 specialization
 
@@ -102,7 +140,7 @@ LLGO=/path/to/llgo bash dev/test_native_simd.sh
 ```
 
 On amd64 it runs O0 without LTO and O2 without LTO, with ThinLTO, and with
-Full LTO. Each binary runs the complete SIMD suite, then the FMV tests with
+Full LTO. Each binary runs the complete SIMD suite, then the FMV and bridge-operation tests with
 AVX2, AVX, FMA, and all optional CPU features disabled in separate processes.
 The FMV tests cover initialization, direct and indirect entry calls,
 cross-package calls, independent CPU queries, and source-level stack traces.
@@ -110,7 +148,9 @@ On other native SIMD targets the script retains the O0/O2 suite.
 
 ## Running
 
-From the repository root, using the built LLGo binary on `PATH`:
+From the repository root, using the built LLGo binary on `PATH`. The official
+Go amd64 comparison excludes helpers that require AVX512; LLGo tests their
+baseline legalization against scalar references at GOAMD64=v1:
 
 ```sh
 GOEXPERIMENT=simd go test -count=1 ./test/simd/...

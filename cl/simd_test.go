@@ -111,6 +111,63 @@ func TestSIMDOperationIdentity(t *testing.T) {
 	}
 }
 
+func TestSIMDBridgeOperationSignatures(t *testing.T) {
+	const declarations = `package archsimd
+type v128 struct { _ [0]func() }
+type Float32x4 struct { tag v128; vals [4]float32 }
+type Float64x2 struct { tag v128; vals [2]float64 }
+type Uint32x4 struct { tag v128; vals [4]uint32 }
+type Uint64x2 struct { tag v128; vals [2]uint64 }
+type Int64x2 struct { tag v128; vals [2]int64 }
+type Mask32x4 struct { tag v128; vals [4]int32 }
+type Mask64x2 struct { tag v128; vals [2]int64 }
+`
+	for _, tc := range []struct {
+		name, receiver, method string
+		want                   llssa.SIMDOp
+	}{
+		{"masked store", "Float32x4", "StoreArrayMasked(*[4]float32, Mask32x4)", llssa.SIMDStoreMasked},
+		{"missing mask", "Float32x4", "StoreArrayMasked(*[4]float32)", llssa.SIMDUnimplemented},
+		{"numeric mask", "Float32x4", "StoreArrayMasked(*[4]float32, Float32x4)", llssa.SIMDUnimplemented},
+		{"different mask lanes", "Float32x4", "StoreArrayMasked(*[4]float32, Mask64x2)", llssa.SIMDUnimplemented},
+		{"different memory shape", "Float32x4", "StoreArrayMasked(*[8]float32, Mask32x4)", llssa.SIMDUnimplemented},
+		{"widen", "Uint32x4", "MulWidenLo(Uint32x4) Uint64x2", llssa.SIMDMulWidenLo},
+		{"missing widened result", "Uint32x4", "MulWidenLo(Uint32x4)", llssa.SIMDUnimplemented},
+		{"nonvector widened result", "Uint32x4", "MulWidenLo(Uint32x4) uint64", llssa.SIMDUnimplemented},
+		{"unchanged lane width", "Uint32x4", "MulWidenLo(Uint32x4) Uint32x4", llssa.SIMDUnimplemented},
+		{"floating widened result", "Uint32x4", "MulWidenLo(Uint32x4) Float64x2", llssa.SIMDUnimplemented},
+		{"changed signedness", "Uint32x4", "MulWidenLo(Uint32x4) Int64x2", llssa.SIMDUnimplemented},
+		{"carryless selection", "Uint64x2", "carrylessMultiply(uint8, Uint64x2) Uint64x2", llssa.SIMDCarrylessMultiply},
+		{"wrong selection type", "Uint64x2", "carrylessMultiply(uint64, Uint64x2) Uint64x2", llssa.SIMDUnimplemented},
+		{"wrong polynomial width", "Uint32x4", "carrylessMultiply(uint8, Uint32x4) Uint32x4", llssa.SIMDUnimplemented},
+		{"carryless low", "Uint64x2", "carrylessMultiplyWidenLo(Uint64x2) Uint64x2", llssa.SIMDCarrylessMultiplyLo},
+		{"integer FMA", "Uint32x4", "MulAdd(Uint32x4, Uint32x4) Uint32x4", llssa.SIMDUnimplemented},
+		{"floating average", "Float32x4", "Average(Float32x4) Float32x4", llssa.SIMDUnimplemented},
+		{"rotate count", "Uint32x4", "RotateAllLeft(uint64) Uint32x4", llssa.SIMDRotateAllLeft},
+		{"wrong rotate count", "Uint32x4", "RotateAllLeft(uint32) Uint32x4", llssa.SIMDUnimplemented},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := token.NewFileSet()
+			file, err := parser.ParseFile(fs, "simd.go", declarations+"func (x "+tc.receiver+") "+tc.method, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pkg, err := new(types.Config).Check("simd/archsimd", fs, []*ast.File{file}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			prog := ssa.NewProgram(fs, 0)
+			prog.CreatePackage(pkg, nil, nil, true)
+			method := pkg.Scope().Lookup(tc.receiver).Type().(*types.Named).Method(0)
+			op, ok := lookupSIMD(prog.FuncValue(method), "amd64")
+			wantOK := tc.want != llssa.SIMDUnimplemented
+			if ok != wantOK || ok && op.op != tc.want {
+				t.Fatalf("operation = %v (%v), want %v", op.op, ok, tc.want)
+			}
+		})
+	}
+}
+
 func TestSIMDFallbackDeclarations(t *testing.T) {
 	const source = `package archsimd
  type Mask struct{ bits uint16 }

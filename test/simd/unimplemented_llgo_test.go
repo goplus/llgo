@@ -9,22 +9,22 @@ import (
 	_ "unsafe"
 )
 
-//go:linkname simdAverage simd/archsimd.Uint8x16.Average
-func simdAverage(x, y archsimd.Uint8x16) archsimd.Uint8x16
+//go:linkname simdExtendLo simd/archsimd.Uint8x16.ExtendLo8ToUint16
+func simdExtendLo(x archsimd.Uint8x16) archsimd.Uint16x8
 
 func TestUnimplementedSIMD(t *testing.T) {
 	var x archsimd.Uint8x16
-	method := x.Average
+	method := x.ExtendLo8ToUint16
 	for _, tc := range []struct {
 		name   string
 		call   func()
 		symbol string
 	}{
-		{"direct", func() { x.Average(x) }, "simd/archsimd.Uint8x16.Average"},
-		{"method value", func() { method(x) }, "simd/archsimd.Uint8x16.Average"},
-		{"method expression", func() { indirectAverage(archsimd.Uint8x16.Average, x, x) }, "simd/archsimd.Uint8x16.Average"},
-		{"deferred", func() { defer x.Average(x) }, "simd/archsimd.Uint8x16.Average"},
-		{"linkname", func() { simdAverage(x, x) }, "simd/archsimd.Uint8x16.Average"},
+		{"direct", func() { x.ExtendLo8ToUint16() }, "simd/archsimd.Uint8x16.ExtendLo8ToUint16"},
+		{"method value", func() { method() }, "simd/archsimd.Uint8x16.ExtendLo8ToUint16"},
+		{"method expression", func() { indirectExtendLo(archsimd.Uint8x16.ExtendLo8ToUint16, x) }, "simd/archsimd.Uint8x16.ExtendLo8ToUint16"},
+		{"deferred", func() { defer x.ExtendLo8ToUint16() }, "simd/archsimd.Uint8x16.ExtendLo8ToUint16"},
+		{"linkname", func() { simdExtendLo(x) }, "simd/archsimd.Uint8x16.ExtendLo8ToUint16"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
@@ -44,6 +44,6 @@ func TestUnimplementedSIMD(t *testing.T) {
 }
 
 //go:noinline
-func indirectAverage(f func(archsimd.Uint8x16, archsimd.Uint8x16) archsimd.Uint8x16, x, y archsimd.Uint8x16) archsimd.Uint8x16 {
-	return f(x, y)
+func indirectExtendLo(f func(archsimd.Uint8x16) archsimd.Uint16x8, x archsimd.Uint8x16) archsimd.Uint16x8 {
+	return f(x)
 }
