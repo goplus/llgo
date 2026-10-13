@@ -4066,10 +4066,10 @@
       "label": "Branch zhouguangyuan0718/llgo:codex/simd-fmv-aggregates-20261012",
       "path": "series/branch/30b348a668805c54/summary.json",
       "configPath": "series/branch/30b348a668805c54/config.json",
-      "commitPath": "commits/ecfa13fd1c119d905ee1b96c0765b56e27bd851e.json",
-      "sha": "ecfa13fd1c119d905ee1b96c0765b56e27bd851e",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/ecfa13fd1c119d905ee1b96c0765b56e27bd851e",
-      "updatedAt": "2026-10-13T02:43:07.381Z"
+      "commitPath": "commits/8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853.json",
+      "sha": "8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853",
+      "updatedAt": "2026-10-13T17:27:48.920Z"
     },
     {
       "kind": "branch",
@@ -8620,10 +8620,10 @@
       "label": "PR #2799",
       "path": "series/pull/2799/summary.json",
       "configPath": "series/pull/2799/config.json",
-      "commitPath": "commits/ecfa13fd1c119d905ee1b96c0765b56e27bd851e.json",
-      "sha": "ecfa13fd1c119d905ee1b96c0765b56e27bd851e",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/ecfa13fd1c119d905ee1b96c0765b56e27bd851e",
-      "updatedAt": "2026-10-13T02:43:05.446Z"
+      "commitPath": "commits/8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853.json",
+      "sha": "8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/8fbd3c2e1fa6fe621cf0f610c9337fbe1e2bb853",
+      "updatedAt": "2026-10-13T17:27:47.543Z"
     },
     {
       "kind": "pull",
