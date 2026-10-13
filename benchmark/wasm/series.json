@@ -2225,6 +2225,17 @@
     },
     {
       "kind": "branch",
+      "id": "5c5b6e7005ffd3d3",
+      "label": "Branch zhouguangyuan0718/llgo:codex/simd-portable-bridge-20261013",
+      "path": "series/branch/5c5b6e7005ffd3d3/summary.json",
+      "configPath": "series/branch/5c5b6e7005ffd3d3/config.json",
+      "commitPath": "commits/d9474049c63b09c30876bfd147b34f819e529586.json",
+      "sha": "d9474049c63b09c30876bfd147b34f819e529586",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d9474049c63b09c30876bfd147b34f819e529586",
+      "updatedAt": "2026-10-13T06:07:04.112Z"
+    },
+    {
+      "kind": "branch",
       "id": "99f3af40b08e32e3",
       "label": "Branch zhouguangyuan0718/llgo:codex/source-contracts-20260912",
       "path": "series/branch/99f3af40b08e32e3/summary.json",
@@ -4730,6 +4741,17 @@
       "sha": "4786a7667ca9d79b4a1ab1bdf67bc1e29564a325",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/4786a7667ca9d79b4a1ab1bdf67bc1e29564a325",
       "updatedAt": "2026-10-12T14:59:19.503Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2802",
+      "label": "PR #2802",
+      "path": "series/pull/2802/summary.json",
+      "configPath": "series/pull/2802/config.json",
+      "commitPath": "commits/d9474049c63b09c30876bfd147b34f819e529586.json",
+      "sha": "d9474049c63b09c30876bfd147b34f819e529586",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d9474049c63b09c30876bfd147b34f819e529586",
+      "updatedAt": "2026-10-13T06:07:04.020Z"
     }
   ]
 }
