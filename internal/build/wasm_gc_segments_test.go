@@ -80,6 +80,7 @@ const (
  wordsPerBlock = 4
  bytesPerBlock = wordsPerBlock * unsafe.Sizeof(uintptr(0))
 )
+var segmentedHeap = true
 var endBlock uintptr
 var gcFrees, gcFreedBlocks uint64
 var c = struct {
@@ -90,6 +91,7 @@ var c = struct {
 }}
 func gcPanic(s string) { panic(s) }
 func resetHeap() {
+ segmentedHeap = true
  heapSegmentCount = 0
  heapSegments = [maxHeapSegments]heapSegment{}
  heapSegmentsByAddress = [maxHeapSegments]*heapSegment{}
@@ -180,6 +182,7 @@ func TestSweepMetadataBatches(t *testing.T) {
 }
 func TestSingleArenaLookup(t *testing.T) {
  resetHeap()
+ segmentedHeap = false
  data := make([]byte, 4096)
  base := uintptr(unsafe.Pointer(&data[0]))
  if !addHeapSegment(base, base+4096) { t.Fatal("segment rejected") }
