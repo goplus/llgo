@@ -27,10 +27,12 @@ are also skipped. Each not-applicable entry documents both the
 toolchain-specific mechanism under test and why the corresponding behavior is
 not an LLGo compatibility goal.
 
-The standalone `-gcflags=-l=4` directive tunes gc's inlining heuristics. The
-runner retains it for the official Go baseline and uses LLVM's default inliner
-for the LLGo build. Both programs must still satisfy the unmodified case and
-output comparison. Other compiler payloads retain their normal validation.
+The runner keeps a small, explicit set of gc backend controls on the official
+Go baseline: `-l=4`, `-d=ssa/check/on`, `-d=softfloat`, and `-d=checkptr`
+(including `all=-d=checkptr`). LLGo executes the same source
+assertions using LLVM's backend; this does not test gc's instrumentation or
+lowering in LLGo. Both programs must satisfy the unmodified case and output
+comparison. Other compiler payloads retain their normal validation.
 
 The external [LLGo compatibility workflows](https://github.com/llgo-compat/ci)
 build LLGo and this runner from a selected repository revision, then run the
