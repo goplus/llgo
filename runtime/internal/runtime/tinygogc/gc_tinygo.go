@@ -176,6 +176,15 @@ func gcFindHead(blockAddr uintptr) uintptr {
 
 func gcFindHeadIn(segment *heapSegment, blockAddr uintptr) uintptr {
 	for {
+		// Walk a complete, aligned metadata word backwards when all 16
+		// represented blocks are tails. Keep the read inside this segment.
+		offset := blockAddr - segment.first
+		metadata := segment.metadata + offset/blocksPerStateByte
+		if offset >= blocksPerStateWord && metadata&3 == 3 &&
+			*(*uint32)(unsafe.Pointer(metadata - 3)) == blockStateWordAllTails {
+			blockAddr -= offset%blocksPerStateByte + blocksPerStateWord - blocksPerStateByte + 1
+			continue
+		}
 		// Optimization: check whether the current block state byte (which
 		// contains the state of multiple blocks) is composed entirely of tail
 		// blocks. If so, we can skip back to the last block in the previous

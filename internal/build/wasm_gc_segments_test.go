@@ -20,7 +20,7 @@ func TestWasmGCSegmentBoundariesAndSweep(t *testing.T) {
 	source.WriteString(gcSegmentWorkloadSource)
 	functions := map[string]bool{"gcAddressOfIn": true, "gcStateByteOfIn": true,
 		"gcStateFromByteIn": true, "gcStateOfIn": true, "gcSetStateIn": true,
-		"gcMarkFreeIn": true, "gcUnmarkIn": true, "gcFindNextIn": true, "sweep": true}
+		"gcMarkFreeIn": true, "gcUnmarkIn": true, "gcFindHeadIn": true, "gcFindNextIn": true, "sweep": true}
 	for _, name := range []string{"segments.go", "segment_lookup.go", "gc_tinygo.go"} {
 		file, err := parser.ParseFile(fset, filepath.Join("..", "..", "runtime", "internal", "runtime", "tinygogc", name), nil, 0)
 		if err != nil {
@@ -175,6 +175,30 @@ func TestSweepMetadataBatches(t *testing.T) {
    }
    if keep && (gcFrees != 0 || gcFreedBlocks != 0) || !keep && (gcFrees != 1 || gcFreedBlocks != 40) {
     t.Fatalf("incorrect freed counts: %d objects, %d blocks", gcFrees, gcFreedBlocks)
+   }
+   runtime.KeepAlive(data)
+  }
+ }
+}
+func TestMarkHeadMetadataBatches(t *testing.T) {
+ for _, prefix := range []bool{false, true} {
+  for offset := uintptr(0); offset < 8; offset++ {
+   resetHeap()
+   data := make([]byte, 8192)
+   base := uintptr(unsafe.Pointer(&data[0]))
+   if prefix && !addHeapSegment(base, base+4096) { t.Fatal("prefix segment rejected") }
+   if !addHeapSegment(base+4096, base+8192-offset) { t.Fatal("segment rejected") }
+   segment := &heapSegments[heapSegmentCount-1]
+   for _, span := range [][2]uintptr{{segment.first+5, segment.first+85}, {segment.last-40, segment.last}} {
+    state := blockStateHead
+    if offset&1 != 0 { state = blockStateMark }
+    gcSetStateIn(segment, span[0], state)
+    for block := span[0]+1; block < span[1]; block++ { gcSetStateIn(segment, block, blockStateTail) }
+    for block := span[0]; block < span[1]; block++ {
+     if head := gcFindHeadIn(segment, block); head != span[0] {
+      t.Fatalf("prefix %v offset %d block %d: head %d != %d", prefix, offset, block, head, span[0])
+     }
+    }
    }
    runtime.KeepAlive(data)
   }
