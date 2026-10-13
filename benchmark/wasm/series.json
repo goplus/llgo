@@ -861,6 +861,17 @@
     },
     {
       "kind": "branch",
+      "id": "c5f4fca58258eb2f",
+      "label": "Branch cpunion/llgo:codex/goroot-diagnostic-output-20261013",
+      "path": "series/branch/c5f4fca58258eb2f/summary.json",
+      "configPath": "series/branch/c5f4fca58258eb2f/config.json",
+      "commitPath": "commits/db30b7fc0ea8465d43830c762c9d056a1971d0af.json",
+      "sha": "db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "updatedAt": "2026-10-13T18:36:19.407Z"
+    },
+    {
+      "kind": "branch",
       "id": "2ede0f530c52ad58",
       "label": "Branch cpunion/llgo:codex/goroot-issue16037-windows386-timeout-20260924",
       "path": "series/branch/2ede0f530c52ad58/summary.json",
@@ -4763,6 +4774,17 @@
       "sha": "02e754641bb2617251ab880e1ef0dfb8a6e189c9",
       "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/02e754641bb2617251ab880e1ef0dfb8a6e189c9",
       "updatedAt": "2026-10-13T17:46:14.722Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2803",
+      "label": "PR #2803",
+      "path": "series/pull/2803/summary.json",
+      "configPath": "series/pull/2803/config.json",
+      "commitPath": "commits/db30b7fc0ea8465d43830c762c9d056a1971d0af.json",
+      "sha": "db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "updatedAt": "2026-10-13T18:36:19.292Z"
     },
     {
       "kind": "pull",
