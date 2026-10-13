@@ -30,27 +30,35 @@ func (p *context) markSIMDFMV(fn llssa.Function, source *ssa.Function) {
 	if fn == nil || p.prog.Target().GOARCH != "amd64" {
 		return
 	}
-	// Bodyless assembly/linkname declarations do not promise a compiler-emitted
-	// entry. Official SIMD intrinsic declarations have LLGo-generated bodies.
-	_, intrinsic := lookupSIMD(source, "amd64")
-	available := len(source.Blocks) != 0 || intrinsic
 	hasVector := false
 	sig := source.Signature
-	seen := make(map[types.Type]bool)
+	var seen map[types.Type]bool
 	var check func(types.Type)
 	check = func(t types.Type) {
-		t = types.Unalias(t)
-		if hasVector || seen[t] {
+		if hasVector {
 			return
 		}
-		seen[t] = true
+		t = types.Unalias(t)
 		if _, ok := llssa.SIMDVectorShape(t); ok {
 			hasVector = true
 			return
 		}
 		// Only by-value containment changes the vector call boundary; do not
-		// walk through pointers, slices, or recursive reference graphs.
-		switch t := t.Underlying().(type) {
+		// walk through references or track scalar types in the visited set.
+		underlying := t.Underlying()
+		switch underlying.(type) {
+		case *types.Struct, *types.Array:
+		default:
+			return
+		}
+		if seen[t] {
+			return
+		}
+		if seen == nil {
+			seen = make(map[types.Type]bool)
+		}
+		seen[t] = true
+		switch t := underlying.(type) {
 		case *types.Struct:
 			for i := 0; i < t.NumFields(); i++ {
 				check(t.Field(i).Type())
@@ -68,5 +76,12 @@ func (p *context) markSIMDFMV(fn llssa.Function, source *ssa.Function) {
 	for i := 0; i < sig.Results().Len(); i++ {
 		check(sig.Results().At(i).Type())
 	}
+	// Bodyless assembly/linkname declarations do not promise a compiler-emitted
+	// entry. Only check for generated intrinsic bodies when a vector needs one.
+	available := len(source.Blocks) != 0
+	if hasVector && !available {
+		_, available = lookupSIMD(source, "amd64")
+	}
+	// CPU queries are marked independently of vector signatures.
 	fn.MarkSIMDFMV(available && hasVector, simdCPUQuery(source))
 }

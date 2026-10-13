@@ -72,10 +72,12 @@ func main() {}
 				if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
 					t.Fatal(err)
 				}
+				// These are FMV roots because they call the CPU query; pair and
+				// large have no SIMD values in their signatures.
 				for _, name := range []string{"main.guarded", "main.array", "main.pair", "main.one", "main.large"} {
 					fast := mod.NamedFunction(name + ".__llgo_fmv_avx2")
 					if fast.IsNil() {
-						t.Fatalf("aggregate function %s has no AVX2 implementation", name)
+						t.Fatalf("function %s has no AVX2 implementation", name)
 					}
 					if strings.Contains(fast.String(), "X86Features.AVX2") {
 						t.Fatalf("unfolded query:\n%s", fast.String())
@@ -128,12 +130,12 @@ func main() {}
 
 func assertAggregateTailForwarding(t *testing.T, fn llvm.Value) {
 	t.Helper()
-	if strings.Contains(fn.String(), "alloca") {
-		t.Fatalf("dispatcher owns forwarding storage:\n%s", fn.String())
-	}
 	calls := 0
 	for bb := fn.FirstBasicBlock(); !bb.IsNil(); bb = llvm.NextBasicBlock(bb) {
 		for inst := bb.FirstInstruction(); !inst.IsNil(); inst = llvm.NextInstruction(inst) {
+			if !inst.IsAAllocaInst().IsNil() {
+				t.Fatalf("dispatcher owns forwarding storage:\n%s", fn.String())
+			}
 			if inst.IsACallInst().IsNil() {
 				continue
 			}
