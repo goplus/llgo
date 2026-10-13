@@ -1290,6 +1290,17 @@
     },
     {
       "kind": "branch",
+      "id": "c5f4fca58258eb2f",
+      "label": "Branch cpunion/llgo:codex/goroot-diagnostic-output-20261013",
+      "path": "series/branch/c5f4fca58258eb2f/summary.json",
+      "configPath": "series/branch/c5f4fca58258eb2f/config.json",
+      "commitPath": "commits/db30b7fc0ea8465d43830c762c9d056a1971d0af.json",
+      "sha": "db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "updatedAt": "2026-10-13T18:34:01.711Z"
+    },
+    {
+      "kind": "branch",
       "id": "57b10e87921b6fad",
       "label": "Branch cpunion/llgo:codex/goroot-float-uint32-20260801",
       "path": "series/branch/57b10e87921b6fad/summary.json",
@@ -8646,6 +8657,17 @@
       "sha": "02e754641bb2617251ab880e1ef0dfb8a6e189c9",
       "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/02e754641bb2617251ab880e1ef0dfb8a6e189c9",
       "updatedAt": "2026-10-13T17:48:59.004Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2803",
+      "label": "PR #2803",
+      "path": "series/pull/2803/summary.json",
+      "configPath": "series/pull/2803/config.json",
+      "commitPath": "commits/db30b7fc0ea8465d43830c762c9d056a1971d0af.json",
+      "sha": "db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/db30b7fc0ea8465d43830c762c9d056a1971d0af",
+      "updatedAt": "2026-10-13T18:33:59.858Z"
     },
     {
       "kind": "pull",
