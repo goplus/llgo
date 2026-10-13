@@ -559,16 +559,22 @@ func TestBoundedCaseEnv(t *testing.T) {
 	}
 }
 
-func TestWindows386Index0RequiresSuccessWithTimeout(t *testing.T) {
+func TestWindows386StressRequiresSuccessWithTimeout(t *testing.T) {
 	repo := repoRoot(t)
 	cfg := loadXFailConfig(t, repo, filepath.Join("test", "goroot", "xfail.yaml"))
-	tc := testCase{RelPath: "index0.go", Directive: "runoutput"}
-	for _, platform := range []string{"windows-msvc/386", "windows-mingw/386"} {
-		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); match {
-			t.Errorf("%s still permits flaky failure for %s", tc.RelPath, platform)
-		}
-		if timeout, _, match := cfg.MatchTimeout("go1.27.0", platform, tc); !match || timeout != 120*time.Second {
-			t.Errorf("timeout for %s/%s = %s, %v; want 2m0s, true", tc.RelPath, platform, timeout, match)
+	for _, tc := range []testCase{{RelPath: "index0.go", Directive: "runoutput"}, {RelPath: "fixedbugs/issue39541.go", Directive: "run"}} {
+		for _, version := range []string{"go1.26.7", "go1.27.0"} {
+			for _, platform := range []string{"windows-msvc/386", "windows-mingw/386"} {
+				if match, _ := cfg.MatchFlaky(version, platform, tc); match {
+					t.Errorf("%s still permits flaky failure for %s/%s", tc.RelPath, version, platform)
+				}
+				if match, _ := cfg.Match(version, platform, tc); match {
+					t.Errorf("%s still permits expected failure for %s/%s", tc.RelPath, version, platform)
+				}
+				if timeout, _, match := cfg.MatchTimeout(version, platform, tc); !match || timeout != 2*time.Minute {
+					t.Errorf("timeout for %s/%s/%s = %s, %v; want 2m0s, true", tc.RelPath, version, platform, timeout, match)
+				}
+			}
 		}
 	}
 }

@@ -137,8 +137,8 @@ timeouts:
   - platform: windows/386
     directive: run
     case: fixedbugs/issue39541.go
-    timeout: 90s
-    reason: the one-million reflect.MakeFunc concurrent call loop needs load-dependent runtime slack on Windows 386
+    timeout: 2m
+    reason: the one-million reflect.MakeFunc loop passes isolated replays but exceeded 90s beside the paired Go-version compiler on Windows MSVC 386; retain a bounded run with all output and exit checks
   - platform: windows/amd64
     directive: run
     case: fixedbugs/issue39541.go
