@@ -118,10 +118,16 @@ func TestApplyBuildFlagsFrontendGCFlagSemantics(t *testing.T) {
 		wantError      bool
 	}{
 		{name: "unpatterned", flags: []string{"-gcflags=-lang=go1.25 -N"}, wantLevel: optlevel.O0, wantGo: "go1.25"},
+		{name: "space-separated language", flags: []string{"-gcflags=-lang go1.21"}, wantGo: "go1.21"},
+		{name: "double-dash language", flags: []string{"-gcflags=--lang go1.21"}, wantGo: "go1.21"},
+		{name: "last language spelling wins", flags: []string{"-gcflags=-lang=go1.25 -lang go1.21"}, wantGo: "go1.21"},
 		{name: "all pattern", flags: []string{"-gcflags=all='-lang=go1.24' '-l'"}, wantLevel: optlevel.O0, wantGo: "go1.24"},
 		{name: "unrelated pattern", flags: []string{"-gcflags=example.com/other=-N"}, wantError: true},
 		{name: "last applicable list wins", flags: []string{"-gcflags=-N -lang=go1.23", "-gcflags="}},
 		{name: "converthash enabled", flags: []string{"-gcflags=-d=converthash=qy"}, wantSaturating: true},
+		{name: "space-separated converthash", flags: []string{"-gcflags=-d converthash=qy"}, wantSaturating: true},
+		{name: "double-dash converthash", flags: []string{"-gcflags=--d converthash=qy"}, wantSaturating: true},
+		{name: "last converthash spelling wins", flags: []string{"-gcflags=-d=converthash=qy -d converthash=qn"}},
 		{name: "converthash enabled in debug list", flags: []string{"-gcflags=-d=other=1,converthash=y"}, wantSaturating: true, wantError: true},
 		{name: "unrelated debug flag preserves converthash", flags: []string{"-gcflags=-d=converthash=qy -d=other=1"}, wantSaturating: true, wantError: true},
 		{name: "converthash verbose all", flags: []string{"-gcflags=-d=converthash=vy"}, wantSaturating: true},
@@ -140,7 +146,18 @@ func TestApplyBuildFlagsFrontendGCFlagSemantics(t *testing.T) {
 		{name: "l debug count", flags: []string{"-gcflags=-l=4"}, wantError: true},
 		{name: "N true", flags: []string{"-gcflags=-N=true"}, wantLevel: optlevel.O0},
 		{name: "N nonzero count", flags: []string{"-gcflags=-N=2"}, wantLevel: optlevel.O0},
+		{name: "double-dash N", flags: []string{"-gcflags=--N"}, wantLevel: optlevel.O0},
+		{name: "N increments count", flags: []string{"-gcflags=-N=-1 -N"}},
+		{name: "N true increments count", flags: []string{"-gcflags=-N=-1 -N=true"}},
+		{name: "N false resets count", flags: []string{"-gcflags=-N -N=false"}},
+		{name: "N boolean alias rejected", flags: []string{"-gcflags=-N=TRUE"}, wantError: true},
 		{name: "l true", flags: []string{"-gcflags=-l=true"}, wantLevel: optlevel.O0},
+		{name: "double-dash l", flags: []string{"-gcflags=--l"}, wantLevel: optlevel.O0},
+		{name: "l repeated count rejected", flags: []string{"-gcflags=-l -l"}, wantError: true},
+		{name: "l true increments count", flags: []string{"-gcflags=-l -l=true"}, wantError: true},
+		{name: "l overridden diagnostic count", flags: []string{"-gcflags=-l=4 -l=0"}},
+		{name: "l false resets count", flags: []string{"-gcflags=-l -l=false"}},
+		{name: "l boolean alias rejected", flags: []string{"-gcflags=-l=T"}, wantError: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

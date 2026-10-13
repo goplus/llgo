@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -26,6 +27,61 @@ import (
 	"github.com/xgo-dev/llgo/internal/build"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
+
+func TestCompilerOptionSpellingsFromCLIAndGOFLAGS(t *testing.T) {
+	t.Setenv("GOENV", "off")
+	for _, tc := range []struct {
+		value          string
+		wantGo         string
+		wantNoOpt      bool
+		wantSaturating bool
+	}{
+		{value: "-lang=go1.21", wantGo: "go1.21"},
+		{value: "-lang go1.21", wantGo: "go1.21"},
+		{value: "--lang go1.21", wantGo: "go1.21"},
+		{value: "-d converthash=qy", wantSaturating: true},
+		{value: "--d=converthash=qy", wantSaturating: true},
+		{value: "--N", wantNoOpt: true},
+		{value: "--l", wantNoOpt: true},
+		{value: "-N=-1 -N"},
+	} {
+		for _, defaults := range []bool{false, true} {
+			source := "CLI"
+			if defaults {
+				source = "GOFLAGS"
+			}
+			t.Run(source+"/"+tc.value, func(t *testing.T) {
+				args := []string{"-gcflags=" + tc.value, "."}
+				value := ""
+				if defaults {
+					value = strconv.Quote(args[0])
+					args = args[1:]
+				}
+				t.Setenv("GOFLAGS", value)
+				cmd := &base.Command{}
+				cmd.Flag.Init("build", flag.ContinueOnError)
+				captured := CaptureGoBuildFlags(cmd)
+				if err := Parse(&cmd.Flag, args); err != nil {
+					t.Fatal(err)
+				}
+				conf := &build.Config{OptLevel: optlevel.O2}
+				if err := ApplyGoBuildFlags(conf, captured.Args); err != nil {
+					t.Fatal(err)
+				}
+				wantLevel := optlevel.O2
+				if tc.wantNoOpt {
+					wantLevel = optlevel.O0
+				}
+				if conf.GoVersion != tc.wantGo || conf.OptLevel != wantLevel || conf.SaturatingFloatToInt != tc.wantSaturating {
+					t.Fatalf("compiler options were not applied: version=%q level=%v saturating=%v", conf.GoVersion, conf.OptLevel, conf.SaturatingFloatToInt)
+				}
+				if os.Getenv("GOFLAGS") != value {
+					t.Fatal("changed the caller's GOFLAGS")
+				}
+			})
+		}
+	}
+}
 
 func TestGOFLAGSCompilerListOverride(t *testing.T) {
 	t.Setenv("GOENV", "off")

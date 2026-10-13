@@ -33,7 +33,8 @@ func ApplyBuildFlags(conf *build.Config, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := validateNativeFlags(all); err != nil {
+	compilerFlags, err := parseNativeFlags(all)
+	if err != nil {
 		return err
 	}
 
@@ -53,7 +54,7 @@ func ApplyBuildFlags(conf *build.Config, args []string) error {
 	if err := applyOverlay(&next, all); err != nil {
 		return err
 	}
-	applyFrontendGCFlags(&next)
+	compilerFlags.apply(&next)
 	if parallelismPresent {
 		next.BuildParallelism = parallelism
 	}

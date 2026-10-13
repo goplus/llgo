@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -76,6 +77,46 @@ func nativeFile(t *testing.T, path, data string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(data), 0600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNativeCompilerLanguageFlagSpellings(t *testing.T) {
+	dir := t.TempDir()
+	nativeFile(t, filepath.Join(dir, "go.mod"), "module example.com/gcflaglang\ngo 1.27.0\n")
+	nativeFile(t, filepath.Join(dir, "main.go"), `package main
+func main() {
+    var fs []func() int
+    for i := 0; i < 3; i++ {
+        fs = append(fs, func() int { return i })
+    }
+    for _, f := range fs {
+        println(f())
+    }
+}
+`)
+	out, code := nativeCommand(t, dir, nil, "run", ".")
+	if code != 0 || strings.Join(strings.Fields(out), " ") != "0 1 2" {
+		t.Fatalf("module language semantics: exit=%d output=%s", code, out)
+	}
+	for _, value := range []string{"-lang=go1.21", "-lang go1.21"} {
+		for _, defaults := range []bool{false, true} {
+			source := "CLI"
+			if defaults {
+				source = "GOFLAGS"
+			}
+			t.Run(source+"/"+value, func(t *testing.T) {
+				args := []string{"run", "-gcflags=" + value, "."}
+				var env []string
+				if defaults {
+					env = []string{"GOFLAGS=" + strconv.Quote(args[1])}
+					args = []string{"run", "."}
+				}
+				out, code := nativeCommand(t, dir, env, args...)
+				if code != 0 || strings.Join(strings.Fields(out), " ") != "3 3 3" {
+					t.Fatalf("compiler language semantics: exit=%d output=%s", code, out)
+				}
+			})
+		}
 	}
 }
 

@@ -104,7 +104,7 @@ func TestNativeOverlayDuplicatePathsAreAtomic(t *testing.T) {
 func TestUnsupportedNativeFlagsAreAtomic(t *testing.T) {
 	args := []string{
 		"-race", "--asan=false", "-msan", "-pgo=off", "-linkshared", "-compiler=gc", "-asmflags=-S", "-gccgoflags=-O2", "-installsuffix=test", "-pkgdir=tmp", "-toolexec=wrapper", "-trimpath", "-buildvcs=false", "-n", "-work",
-		"-gcflags=-m", "-gcflags=-live", "-gcflags=-S", "-gcflags=-wb=false", "-gcflags=-smallframes", "-gcflags=-d=maymorestack=hook", "-gcflags=fmt=-N", "-gcflags=-lang=bad", "-gcflags=-N=bad", "-gcflags=-l=4", "-gcflags=-lang", "-gcflags=-lang=go1.22 operand", "-gcflags=broken", "-gcflags=-d=converthash=01", "-ldflags=-X main.version=v1",
+		"-gcflags=-m", "-gcflags=-live", "-gcflags=-S", "-gcflags=-wb=false", "-gcflags=-smallframes", "-gcflags=-d=maymorestack=hook", "-gcflags=fmt=-N", "-gcflags=-lang=bad", "-gcflags=-N=bad", "-gcflags=-l=4", "-gcflags=-N=TRUE", "-gcflags=-l=T", "-gcflags=-l -l", "-gcflags=-lang", "-gcflags=-lang=go1.22 operand", "-gcflags=broken", "-gcflags=-d=converthash=01", "-ldflags=-X main.version=v1",
 	}
 	for _, arg := range args {
 		t.Run(arg, func(t *testing.T) {

@@ -42,6 +42,15 @@ are rejected. The `-ldflags` subset is `-s`, `-w`, `-extld` and `-extldflags` wi
 unpatterned or `all=` lists. These configure LLGo's native linker. Other linker
 options are rejected rather than discarded.
 
+Compiler options accept Go's single- and double-dash spellings and
+space-separated or `=value` arguments where applicable. For example,
+`-gcflags='-lang go1.21'` and `-gcflags=-lang=go1.21` both select Go 1.21 language
+semantics, including through quoted `GOFLAGS` values. As in `cmd/compile`, each
+bare `-N` or `-l` (or `=true`) increments its count, `=false` resets the count,
+and an integer replaces it. Only the literal `true` and `false` boolean values
+are accepted. The effective `-l` count must remain 0 or 1; gc inliner diagnostic
+levels are unsupported.
+
 Repeated `-gcflags` lists use Go's last-matching-list rule within these supported
 scopes. For example, command-line `-gcflags=-N` replaces `GOFLAGS=-gcflags=-m`;
 the superseded compiler option is not validated. A later `all=` list replaces

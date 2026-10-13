@@ -15,101 +15,54 @@ package goflags
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"go/version"
-	"io"
 	"maps"
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/xgo-dev/llgo/internal/build"
 )
 
-// validateNativeFlags guards the typed configuration boundary. The package
-// loader accepting a gc control does not make that control an LLGo feature.
-func validateNativeFlags(args []string) error {
+// parseNativeFlags guards the typed configuration boundary and returns the
+// validated compiler options for the frontend. The package loader accepting a
+// gc control does not make that control an LLGo feature.
+func parseNativeFlags(args []string) (*frontendGCFlags, error) {
 	// Go selects the last matching compiler argument list for each package.
 	// An all= list supersedes both supported scopes; an unpatterned list does
 	// not supersede an earlier all= list for dependencies. Syntax and unsupported
 	// package patterns remain errors even when a later list would replace them.
 	seenGCScopes := make(map[string]bool)
+	var frontend *frontendGCFlags
 	for i := len(args) - 1; i >= 0; i-- {
 		arg := args[i]
 		name, value, _ := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		switch name {
 		case "n", "work", "trimpath", "buildvcs", "race", "msan", "asan", "linkshared", "compiler", "asmflags", "gccgoflags", "installsuffix", "pkgdir", "toolexec", "pgo":
-			return fmt.Errorf("-%s is unsupported by the LLGo backend", name)
+			return nil, fmt.Errorf("-%s is unsupported by the LLGo backend", name)
 		case "gcflags":
 			pattern, fields, err := splitPerPackageArgumentList(value)
 			if err != nil {
-				return fmt.Errorf("invalid -gcflags: %w", err)
+				return nil, fmt.Errorf("invalid -gcflags: %w", err)
 			}
 			if pattern != "" && pattern != "all" {
-				return fmt.Errorf("invalid -gcflags: package pattern %q is unsupported; use an unpatterned value or all=", pattern)
+				return nil, fmt.Errorf("invalid -gcflags: package pattern %q is unsupported; use an unpatterned value or all=", pattern)
 			}
 			if seenGCScopes["all"] || seenGCScopes[pattern] {
 				continue
 			}
-			if err := validateGCFlags(fields); err != nil {
-				return fmt.Errorf("invalid -gcflags: %w", err)
+			parsed, err := parseFrontendGCFlags(fields)
+			if err != nil {
+				return nil, fmt.Errorf("invalid -gcflags: %w", err)
+			}
+			if frontend == nil {
+				frontend = parsed
 			}
 			seenGCScopes[pattern] = true
 		}
 	}
-	return nil
-}
-
-func validateGCFlags(fields []string) error {
-	fs := flag.NewFlagSet("gcflags", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
-	fs.Func("lang", "Go language version", func(v string) error {
-		if !version.IsValid(v) {
-			return fmt.Errorf("invalid Go language version %q", v)
-		}
-		return nil
-	})
-	for _, name := range []string{"N", "l"} {
-		fs.BoolFunc(name, "Disable optimization", func(v string) error {
-			if _, err := strconv.ParseBool(v); err == nil {
-				return nil
-			}
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				return err
-			}
-			if name == "l" && n != 0 && n != 1 {
-				return fmt.Errorf("gc inliner diagnostic levels are unsupported")
-			}
-			return nil
-		})
-	}
-	fs.Func("d", "Global float-to-integer conversion behavior", func(v string) error {
-		for _, setting := range strings.Split(v, ",") {
-			name, pattern, ok := strings.Cut(setting, "=")
-			if name != "converthash" || !ok || !globalBisectPattern(pattern) {
-				return fmt.Errorf("gc debug setting %q is unsupported", setting)
-			}
-		}
-		return nil
-	})
-	if err := fs.Parse(fields); err != nil {
-		return fmt.Errorf("unsupported LLGo compiler option: %w", err)
-	}
-	if fs.NArg() != 0 {
-		return fmt.Errorf("unexpected compiler operands %q", fs.Args())
-	}
-	return nil
-}
-
-func globalBisectPattern(pattern string) bool {
-	pattern = strings.TrimPrefix(pattern, "q")
-	pattern = strings.TrimLeft(pattern, "v")
-	pattern = strings.TrimLeft(pattern, "!")
-	return pattern == "y" || pattern == "n"
+	return frontend, nil
 }
 
 // applyOverlay reads the same JSON view used by the Go loader into LLGo's
