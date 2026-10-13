@@ -36,9 +36,22 @@ func init() {
 	flags.AddTestBinaryFlags(&Cmd.Flag)
 	flags.AddEmulatorFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
+	flags.FinalizeNativeFlags("test", &Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
+	var err error
+	args, err = flags.ChangeDirectory(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+		return
+	}
+	if err := rejectUnsupportedTestArgs(&cmd.Flag, args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+		return
+	}
 	// Split args at -args to separate llgo flags from test binary args
 	llgoArgs, testBinaryArgs := splitArgsAt(args, "-args")
 
@@ -48,7 +61,7 @@ func runCmd(cmd *base.Command, args []string) {
 		mockable.Exit(1)
 		return
 	}
-	if err := cmd.Flag.Parse(flagArgs); err != nil {
+	if err := flags.ParseAfterDirectory(&cmd.Flag, flagArgs); err != nil {
 		if err == flag.ErrHelp {
 			return
 		}
@@ -165,9 +178,6 @@ func testRunsMustBeSequential() bool {
 	// fuzzing, require one active test binary. Keep their execution sequential.
 	return flags.TestCPUProfile != "" ||
 		flags.TestMemProfile != "" ||
-		flags.TestBlockProfile != "" ||
-		flags.TestMutexProfile != "" ||
-		flags.TestTrace != "" ||
 		flags.TestTestLogFile != "" ||
 		flags.TestFuzz != ""
 }
@@ -228,15 +238,10 @@ func buildTestArgs(customArgs []string) []string {
 
 	appendBool(flags.TestBenchmem, "-test.benchmem")
 	appendString(flags.TestBenchtime, "-test.benchtime=")
-	appendInt(flags.TestBlockProfileRate, "-test.blockprofilerate=", 0)
 
 	appendString(flags.TestCPUProfile, "-test.cpuprofile=")
 	appendString(flags.TestMemProfile, "-test.memprofile=")
 	appendInt(flags.TestMemProfileRate, "-test.memprofilerate=", 0)
-	appendString(flags.TestBlockProfile, "-test.blockprofile=")
-	appendString(flags.TestMutexProfile, "-test.mutexprofile=")
-	appendInt(flags.TestMutexProfileFrac, "-test.mutexprofilefraction=", 0)
-	appendString(flags.TestTrace, "-test.trace=")
 	appendString(flags.TestOutputDir, "-test.outputdir=")
 	appendBool(flags.TestPaniconexit0, "-test.paniconexit0")
 	appendString(flags.TestTestLogFile, "-test.testlogfile=")
@@ -249,4 +254,38 @@ func buildTestArgs(customArgs []string) []string {
 	appendString(flags.TestFuzzMinimizeTime, "-test.fuzzminimizetime=")
 
 	return append(args, customArgs...)
+}
+
+// The -args boundary must not bypass rejection of placeholder runtime data.
+func rejectUnsupportedTestArgs(fs *flag.FlagSet, args []string) error {
+	custom := false
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			break
+		}
+		if arg == "-args" {
+			custom = true
+			continue
+		}
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+		name, _, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
+		if custom && !strings.HasPrefix(name, "test.") {
+			continue
+		}
+		name = strings.TrimPrefix(name, "test.")
+		switch name {
+		case "trace", "blockprofile", "blockprofilerate", "mutexprofile", "mutexprofilefraction":
+			return fmt.Errorf("-%s is recognized but unsupported: LLGo does not implement these runtime samples or Go execution traces", name)
+		}
+		if f := fs.Lookup(name); f != nil && !hasValue {
+			isBool, ok := f.Value.(interface{ IsBoolFlag() bool })
+			if !ok || !isBool.IsBoolFlag() {
+				i++
+			}
+		}
+	}
+	return nil
 }

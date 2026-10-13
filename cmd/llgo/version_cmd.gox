@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-import (
-	"runtime"
-
-	"github.com/xgo-dev/llgo/internal/env"
-)
+import self "github.com/xgo-dev/llgo/cmd/internal/version"
 
 use "version"
 
 short "Print LLGo version"
 
-run => {
-	echo "llgo ${env.version} ${runtime.GOOS}/${runtime.GOARCH}"
+flagOff
+run args => {
+	self.Cmd.Run self.Cmd, args
 }

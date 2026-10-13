@@ -42,11 +42,12 @@ func init() {
 	flags.AddCommonFlags(&Cmd.Flag)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
+	flags.FinalizeNativeFlags("install", &Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
 
-	if err := cmd.Flag.Parse(args); err != nil {
+	if err := flags.Parse(&cmd.Flag, args); err != nil {
 		if err != flag.ErrHelp {
 			mockable.Exit(1)
 		}

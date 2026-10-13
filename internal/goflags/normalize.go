@@ -41,6 +41,10 @@ func normalizeBuildFlags(args []string) ([]string, error) {
 		}
 		name, value, hasValue, ok := argumentListBuildFlag(arg)
 		if !ok {
+			name, value, hasValue = strings.Cut(strings.TrimLeft(arg, "-"), "=")
+			ok = strings.HasPrefix(arg, "-") && (name == "overlay" || name == "mod" || name == "modfile")
+		}
+		if !ok {
 			ret = append(ret, arg)
 			continue
 		}

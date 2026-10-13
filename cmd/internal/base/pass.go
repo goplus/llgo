@@ -3,6 +3,7 @@ package base
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -30,6 +31,9 @@ func (p *boolValue) String() string {
 }
 
 func (p *boolValue) Set(v string) error {
+	if _, err := strconv.ParseBool(v); err != nil {
+		return err
+	}
 	p.p.Args = append(p.p.Args, fmt.Sprintf("-%v=%v", p.name, v))
 	return nil
 }
@@ -41,6 +45,7 @@ func (p *boolValue) IsBoolFlag() bool {
 type PassArgs struct {
 	Args []string
 	Flag *flag.FlagSet
+	Help func(string) string
 }
 
 func (p *PassArgs) Tags() string {
@@ -54,14 +59,21 @@ func (p *PassArgs) Tags() string {
 
 func (p *PassArgs) Var(names ...string) {
 	for _, name := range names {
-		p.Flag.Var(&stringValue{p: p, name: name}, name, "")
+		p.Flag.Var(&stringValue{p: p, name: name}, name, p.description(name))
 	}
 }
 
 func (p *PassArgs) Bool(names ...string) {
 	for _, name := range names {
-		p.Flag.Var(&boolValue{p: p, name: name}, name, "")
+		p.Flag.Var(&boolValue{p: p, name: name}, name, p.description(name))
 	}
+}
+
+func (p *PassArgs) description(name string) string {
+	if p.Help != nil {
+		return p.Help(name)
+	}
+	return "Pass -" + name + " to the Go package loader"
 }
 
 func NewPassArgs(flag *flag.FlagSet) *PassArgs {

@@ -187,6 +187,9 @@ type Config struct {
 	// go/packages. Callers use internal/goflags to parse supported compiler and
 	// linker semantics into typed Config fields before calling Do.
 	GoBuildFlags []string
+	// GoFlagsParsed means the command layer has consumed GOFLAGS into native
+	// configuration. Package probes must not parse those command defaults again.
+	GoFlagsParsed bool
 	// BuildParallelism is the package-build, test-link, and test-run concurrency
 	// requested by Go's -p build flag. Zero uses the Go default, GOMAXPROCS.
 	BuildParallelism int
@@ -242,6 +245,12 @@ type Config struct {
 	GlobalRewrites map[string]Rewrites
 	ModuleHook     ModuleHook
 	Overlay        map[string][]byte
+	// SourceOverlay contains absolute paths from the public -overlay JSON.
+	// The Go loader and LLGo parser share this view, including file deletions.
+	SourceOverlay map[string]SourceOverlayFile
+	// sourceOverlayFile is borrowed by isolated child groups and fallback
+	// builds. The parent Build owns its lifetime through all child work.
+	sourceOverlayFile string
 	// TestPythonPackage supplies the synthetic Python ABI root used by compiler
 	// fixtures that intentionally avoid importing github.com/goplus/lib/py.
 	// Production callers leave this nil; the provider is evaluated once per Do.
@@ -279,6 +288,7 @@ func (c *Config) clone() *Config {
 	cloned.GoBuildFlags = slices.Clone(c.GoBuildFlags)
 	cloned.toolTags = slices.Clone(c.toolTags)
 	cloned.Overlay = cloneOverlay(c.Overlay)
+	cloned.SourceOverlay = cloneSourceOverlay(c.SourceOverlay)
 	if c.coverage != nil && c.coverage.inputOverlaySet {
 		// Coverage-generated files belong to the current loaded graph. Carrying
 		// them into an isolated initial group can make a test main appear beside
@@ -504,6 +514,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 // Build executes one build invocation.
 func Build(inv Invocation) ([]Package, error) {
 	var plan initialBuildPlan
+	defer func() {
+		if plan.sourceOverlayFile != "" {
+			os.Remove(plan.sourceOverlayFile)
+		}
+	}()
 	result, err := buildInvocation(inv, &plan)
 	if len(plan.invocations) == 0 {
 		return result, err
@@ -651,6 +666,17 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 	goBuildFlags := []string{"-tags=" + tags}
 	goBuildFlags = append(goBuildFlags, conf.GoBuildFlags...)
+	ownsOverlay := conf.sourceOverlayFile == ""
+	overlayFile, err := prepareSourceOverlay(conf)
+	if err != nil {
+		return nil, err
+	}
+	if overlayFile != "" {
+		if ownsOverlay {
+			plan.sourceOverlayFile = overlayFile
+		}
+		goBuildFlags = append(goBuildFlags, "-overlay="+overlayFile)
+	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
 		BuildFlags: goBuildFlags,
@@ -745,6 +771,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	if patterns == nil {
 		patterns = []string{"."}
 	}
+	if conf.GoFlagsParsed {
+		cfg.Env = withEnv(cfg.Env, "GOFLAGS= ")
+	}
 	sourceGo, err := resolveSourceGoConfig(commandEnv{dir: cfg.Dir, environ: cfg.Env}, conf.GOEXPERIMENT, cfg.BuildFlags...)
 	if err != nil {
 		return nil, err
@@ -788,7 +817,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	loadSpan := buildTrace.startCoordinator("load packages", map[string]any{
 		"patterns": slices.Clone(patterns),
 	})
-	initial, err := packages.LoadExWithGoVersion(dedup, sizes, cfg, conf.GoVersion, patterns...)
+	initial, err := packages.LoadExWithSourceOverlay(dedup, sizes, cfg, conf.GoVersion, conf.Overlay, patterns...)
 	loadSpan.done()
 	if err != nil {
 		return nil, err
@@ -852,7 +881,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	loadAltSpan := buildTrace.startCoordinator("load runtime packages", map[string]any{
 		"packages": slices.Clone(altPkgPaths),
 	})
-	altPkgs, err := packages.LoadEx(dedup, sizes, &altCfg, altPkgPaths...)
+	altPkgs, err := packages.LoadExWithSourceOverlay(dedup, sizes, &altCfg, "", conf.Overlay, altPkgPaths...)
 	loadAltSpan.done()
 	if err != nil {
 		return nil, err

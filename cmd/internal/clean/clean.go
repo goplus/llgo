@@ -18,9 +18,14 @@
 package clean
 
 import (
+	"flag"
+	"fmt"
+	"os"
+
 	"github.com/xgo-dev/llgo/cmd/internal/base"
 	"github.com/xgo-dev/llgo/cmd/internal/flags"
 	"github.com/xgo-dev/llgo/internal/build"
+	"github.com/xgo-dev/llgo/internal/mockable"
 )
 
 // llgo build
@@ -32,19 +37,27 @@ var Cmd = &base.Command{
 func init() {
 	Cmd.Run = runCmd
 	flags.AddCommonFlags(&Cmd.Flag)
-	flags.AddBuildFlags(&Cmd.Flag)
+	Cmd.Flag.StringVar(&flags.Tags, "tags", "", "Build tags for packages to clean")
+	flags.FinalizeNativeFlags("clean", &Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
 
-	if err := cmd.Flag.Parse(args); err != nil {
+	if err := flags.Parse(&cmd.Flag, args); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(1)
+		}
 		return
 	}
 
 	conf := build.NewDefaultConf(0)
 	conf.Tags = flags.Tags
 	conf.Verbose = flags.Verbose
+	conf.GoFlagsParsed = true
 
 	args = cmd.Flag.Args()
-	build.Clean(args, conf)
+	if err := build.Clean(args, conf); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+	}
 }

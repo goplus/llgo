@@ -29,10 +29,10 @@ func TestDebugNativeFunctionSnapshots(t *testing.T) {
 					}
 					sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), nil, kind == "variadic")
 					native := types.NewNamed(types.NewTypeName(token.NoPos, types.NewPackage(pkg.Path(), "p"), "Native", nil), sig, nil)
-					prog.SetTypeBackground(pkg.Path()+".Native", InC)
+					prog.SetTypeCallConv(pkg.Path()+".Native", CDecl)
 					variable := types.NewVar(token.NoPos, nil, "entry", native)
 					ownerSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(variable), nil, false)
-					fn := pkg.NewFunc(pkg.Path()+".snapshot", ownerSig, InGo)
+					fn := pkg.NewFunc(pkg.Path()+".snapshot", ownerSig, GoDecl)
 					b := fn.MakeBody(2)
 					defer b.Dispose()
 					pos := token.Position{Filename: "snapshot.go", Line: 1, Column: 1}
@@ -42,7 +42,7 @@ func TestDebugNativeFunctionSnapshots(t *testing.T) {
 					value := fn.Param(0)
 					want := prog.storageType(value.Type)
 					if kind == "Go-declaration" {
-						value = pkg.NewFunc(pkg.Path()+".goFunction", sig, InGo).Expr
+						value = pkg.NewFunc(pkg.Path()+".goFunction", sig, GoDecl).Expr
 						variable = types.NewVar(token.NoPos, nil, "entry", sig)
 						want = prog.storageType(prog.Closure(sig))
 					}

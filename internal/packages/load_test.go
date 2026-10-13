@@ -392,3 +392,32 @@ func writeLoadTestFile(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestParserSourceOverlayAndMissingFiles(t *testing.T) {
+	dir := t.TempDir()
+	virtual := filepath.Join(dir, "virtual.go")
+	cfg := loadTestConfig(dir)
+	tc := &typecheckContext{cfg: cfg}
+	fset := token.NewFileSet()
+	if _, err := tc.parseFile(virtual, fset); !os.IsNotExist(err) {
+		t.Fatalf("missing file did not retain disk error: %v", err)
+	}
+	tc.sourceOverlay = map[string][]byte{virtual: []byte("package virtual\nconst Value=42\n")}
+	cfg.ParseFile = func(fset *token.FileSet, name string, src []byte) (*ast.File, error) {
+		return parser.ParseFile(fset, name, src, parser.ParseComments)
+	}
+	file, err := tc.parseFile(virtual, fset)
+	if err != nil || file.Name.Name != "virtual" {
+		t.Fatalf("virtual source: %#v %v", file, err)
+	}
+	cfg.Overlay = map[string][]byte{virtual: []byte("package instrumented\nconst Value=43\n")}
+	file, err = tc.parseFile(virtual, fset)
+	if err != nil || file.Name.Name != "instrumented" {
+		t.Fatalf("driver overlay lost precedence: %#v %v", file, err)
+	}
+	tc.sourceOverlay = nil
+	cfg.Overlay = nil
+	if _, err := tc.parseFile(virtual, fset); !os.IsNotExist(err) {
+		t.Fatalf("source hook changed missing-file diagnostic: %v", err)
+	}
+}

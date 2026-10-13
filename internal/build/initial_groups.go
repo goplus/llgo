@@ -26,8 +26,9 @@ type initialBuildGroup struct {
 // A plan crosses the analysis lifetime boundary without retaining its graph.
 // Trace ownership moves to Build so its parent span still encloses the children.
 type initialBuildPlan struct {
-	invocations []Invocation
-	finishTrace func()
+	invocations       []Invocation
+	finishTrace       func()
+	sourceOverlayFile string
 }
 
 func groupInitialBuilds(ctx *context, alts []*packages.Package) []initialBuildGroup {

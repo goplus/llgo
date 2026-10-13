@@ -68,6 +68,8 @@ func init() {
 	flags.AddEmulatorFlags(&CmpTestCmd.Flag)
 	flags.AddEmbeddedFlags(&CmpTestCmd.Flag) // for -target support
 	flags.AddCmpTestFlags(&CmpTestCmd.Flag)
+	flags.FinalizeNativeFlags("run", &Cmd.Flag)
+	flags.FinalizeNativeFlags("run", &CmpTestCmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
@@ -80,7 +82,7 @@ func runCmpTest(cmd *base.Command, args []string) {
 
 func runCmdEx(cmd *base.Command, args []string, mode build.Mode, goBuildFlags *base.PassArgs) {
 
-	if err := cmd.Flag.Parse(args); err != nil {
+	if err := flags.Parse(&cmd.Flag, args); err != nil {
 		if err != flag.ErrHelp {
 			mockable.Exit(1)
 		}

@@ -46,8 +46,10 @@ func Identity[T any](v T) T { return v }
 		writeToolCompileSource(t, dir, "importcfg", "")
 		args := []string{
 			"-c=1", "-C", "-e", "-N", "-l=4", "-lang=go1.22", "-complete",
-			"-d=panic,ssa/check/on", "-p=compat", "-importcfg=importcfg",
-			"-D=.", "-I=.", "-o=compat.o", "valid.go",
+			"-d=panic,ssa/check/on", "valid.go",
+		}
+		if toolCompilerName == "go" {
+			args = append([]string{"-p=compat", "-D=.", "-I=."}, args...)
 		}
 		checkToolCompileResult(t, dir, args, true, "")
 	})
@@ -64,7 +66,7 @@ func Identity[T any](v T) T { return v }
 			t.Run(tt.name, func(t *testing.T) {
 				dir := t.TempDir()
 				writeToolCompileSource(t, dir, "valid.go", "package compat\n\nfunc F() {}\n")
-				checkToolCompileResult(t, dir, []string{tt.flag, "-o=compat.o", "valid.go"}, true, "")
+				checkToolCompileResult(t, dir, []string{tt.flag, "valid.go"}, true, "")
 			})
 		}
 	})
@@ -76,7 +78,7 @@ func Identity[T any](v T) T { return v }
 func Identity[T any](v T) T { return v }
 `)
 		checkToolCompileResult(t, dir, []string{
-			"-lang=go1.17", "-o=generic.o", "generic.go",
+			"-lang=go1.17", "generic.go",
 		}, false, "requires go1.18 or later")
 	})
 
@@ -87,10 +89,10 @@ func Identity[T any](v T) T { return v }
 func External()
 `)
 		checkToolCompileResult(t, dir, []string{
-			"-lang=go1.22", "-complete", "-o=nobody.o", "nobody.go",
+			"-lang=go1.22", "-complete", "nobody.go",
 		}, false, "missing function body")
 		checkToolCompileResult(t, dir, []string{
-			"-lang=go1.22", "-o=nobody.o", "nobody.go",
+			"-lang=go1.22", "nobody.go",
 		}, true, "")
 	})
 
@@ -101,7 +103,7 @@ func External()
 var _ = missing
 `)
 		output := checkToolCompileResult(t, dir, []string{
-			"-C", "-e", "-o=invalid.o", "invalid.go",
+			"-C", "-e", "invalid.go",
 		}, false, "undefined: missing")
 		column := regexp.MustCompile(`invalid\.go:3:[0-9]+:`)
 		if column.MatchString(output) {
@@ -119,7 +121,7 @@ func TestToolCompileFrontendDiagnosticNormalization(t *testing.T) {
 		writeToolCompileSource(t, dir, "invalid.go", "package compat\nimport _ \"/foo\"\n")
 		writeToolCompileSource(t, dir, "importcfg", "")
 		checkToolCompileResult(t, dir, []string{
-			"-C", "-e", "-importcfg=importcfg", "-o=invalid.o", "invalid.go",
+			"-C", "-e", "invalid.go",
 		}, false, "import path cannot be absolute path")
 	})
 
@@ -135,7 +137,7 @@ func f() {
 	_ = x
 }`)
 		checkToolCompileResult(t, dir, []string{
-			"-C", "-e", "-importcfg=importcfg", "-o=invalid.o", "invalid.go",
+			"-C", "-e", "invalid.go",
 		}, false, "go:embed cannot apply to var inside func")
 	})
 
@@ -148,7 +150,7 @@ import _ "embed"
 //go:embed x.txt // ERROR
 var x string`)
 		checkToolCompileResult(t, dir, []string{
-			"-C", "-e", "-lang=go1.15", "-importcfg=importcfg", "-o=invalid.o", "invalid.go",
+			"-C", "-e", "-lang=go1.15", "invalid.go",
 		}, false, "go:embed requires go1.16 or later")
 	})
 
@@ -156,6 +158,16 @@ var x string`)
 
 func checkToolCompileResult(t *testing.T, dir string, args []string, wantSuccess bool, wantText string) string {
 	t.Helper()
+	// gc's object output and archive importer are separate from the portable
+	// frontend behavior under test. LLGo generates IR in memory and explicitly
+	// rejects those controls; do not pass them to its diagnostic fixtures.
+	if toolCompilerName == "go" {
+		artifactArgs := []string{"-o=compat.o"}
+		if _, err := os.Stat(filepath.Join(dir, "importcfg")); err == nil {
+			artifactArgs = append(artifactArgs, "-importcfg=importcfg")
+		}
+		args = append(artifactArgs, args...)
+	}
 	output, err := runToolCompile(t, dir, args...)
 	if (err == nil) != wantSuccess {
 		t.Fatalf("%s tool compile success = %v, want %v; error=%T %v; output:\n%s", toolCompilerName, err == nil, wantSuccess, err, err, output)
@@ -163,6 +175,11 @@ func checkToolCompileResult(t *testing.T, dir string, args []string, wantSuccess
 	if wantText != "" {
 		if !strings.Contains(output, wantText) {
 			t.Fatalf("%s tool compile output does not contain %q; error=%T %v:\n%s", toolCompilerName, wantText, err, err, output)
+		}
+	}
+	if wantSuccess && toolCompilerName == "go" {
+		if info, err := os.Stat(filepath.Join(dir, "compat.o")); err != nil || info.Size() == 0 {
+			t.Fatalf("gc did not emit its requested object: %v", err)
 		}
 	}
 	return output
@@ -177,6 +194,9 @@ func writeToolCompileSource(t *testing.T, dir, name, content string) {
 
 func writeToolCompileStdlibImportCfg(t *testing.T, dir string) {
 	t.Helper()
+	if toolCompilerName != "go" {
+		return
+	}
 	stdlibImportCfgOnce.Do(func() {
 		cmd := exec.Command("go", "list", "-export", "-f", "{{if .Export}}packagefile {{.ImportPath}}={{.Export}}{{end}}", "std")
 		cmd.Dir = dir

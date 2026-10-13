@@ -17,6 +17,10 @@
 package goflags
 
 import (
+	"flag"
+	"fmt"
+	"go/version"
+	"io"
 	"strconv"
 	"strings"
 
@@ -24,58 +28,67 @@ import (
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
 
-// applyFrontendGCFlags maps the supported Go compiler flag subset to typed
-// frontend configuration. Raw flags remain in GoBuildFlags for go/packages.
-func applyFrontendGCFlags(conf *build.Config) {
-	type frontendFlags struct {
-		goVersion            string
-		nNoOpt               bool
-		lNoOpt               bool
-		saturatingFloatToInt bool
-		debug                compilerDebugFlags
-	}
-	var applicable *frontendFlags
-	for _, buildFlag := range conf.GoBuildFlags {
-		value, ok := strings.CutPrefix(buildFlag, "-gcflags=")
-		if !ok {
-			continue
+type frontendGCFlags struct {
+	goVersion string
+	nCount    int
+	lCount    int
+	debug     compilerDebugFlags
+}
+
+// parseFrontendGCFlags validates and captures the supported compiler options
+// in one pass, including space-separated values and double-dash spellings.
+func parseFrontendGCFlags(fields []string) (*frontendGCFlags, error) {
+	parsed := &frontendGCFlags{debug: make(compilerDebugFlags)}
+	fs := flag.NewFlagSet("gcflags", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.Func("lang", "Go language version", func(v string) error {
+		if !version.IsValid(v) {
+			return fmt.Errorf("invalid Go language version %q", v)
 		}
-		pattern, fields, err := splitPerPackageArgumentList(value)
-		if err != nil || pattern != "" && pattern != "all" {
-			// Raw package-specific values remain available to go/packages. LLGo
-			// cannot map them to one global frontend configuration safely.
-			continue
-		}
-		current := &frontendFlags{debug: make(compilerDebugFlags)}
-		for _, compilerFlag := range fields {
-			switch {
-			case strings.HasPrefix(compilerFlag, "-lang="):
-				current.goVersion = strings.TrimPrefix(compilerFlag, "-lang=")
-			case compilerFlag == "-N":
-				current.nNoOpt = true
-			case strings.HasPrefix(compilerFlag, "-N="):
-				current.nNoOpt = countFlagEnabled(strings.TrimPrefix(compilerFlag, "-N="))
-			case compilerFlag == "-l":
-				current.lNoOpt = true
-			case strings.HasPrefix(compilerFlag, "-l="):
-				current.lNoOpt = countFlagIsOne(strings.TrimPrefix(compilerFlag, "-l="))
-			case strings.HasPrefix(compilerFlag, "-d="):
-				current.debug.apply(strings.TrimPrefix(compilerFlag, "-d="))
+		parsed.goVersion = v
+		return nil
+	})
+	fs.BoolFunc("N", "Disable optimization", func(v string) error {
+		return applyCompilerCount(v, &parsed.nCount)
+	})
+	fs.BoolFunc("l", "Disable inlining", func(v string) error {
+		return applyCompilerCount(v, &parsed.lCount)
+	})
+	fs.Func("d", "Global float-to-integer conversion behavior", func(v string) error {
+		for _, setting := range strings.Split(v, ",") {
+			name, pattern, ok := strings.Cut(setting, "=")
+			if name != "converthash" || !ok || !globalBisectPattern(pattern) {
+				return fmt.Errorf("gc debug setting %q is unsupported", setting)
 			}
 		}
-		current.saturatingFloatToInt = bisectPatternAlwaysEnabled(current.debug["converthash"])
-		applicable = current
+		parsed.debug.apply(v)
+		return nil
+	})
+	if err := fs.Parse(fields); err != nil {
+		return nil, fmt.Errorf("unsupported LLGo compiler option: %w", err)
 	}
-	if applicable == nil {
+	if fs.NArg() != 0 {
+		return nil, fmt.Errorf("unexpected compiler operands %q", fs.Args())
+	}
+	if parsed.lCount != 0 && parsed.lCount != 1 {
+		return nil, fmt.Errorf("gc inliner diagnostic levels are unsupported")
+	}
+	return parsed, nil
+}
+
+// apply maps exactly the compiler options accepted by the parser to typed
+// frontend configuration. Raw flags remain in GoBuildFlags for go/packages.
+func (f *frontendGCFlags) apply(conf *build.Config) {
+	if f == nil {
 		return
 	}
-	if applicable.goVersion != "" {
-		conf.GoVersion = applicable.goVersion
+	if f.goVersion != "" {
+		conf.GoVersion = f.goVersion
 	}
-	if applicable.nNoOpt || applicable.lNoOpt {
+	if f.nCount != 0 || f.lCount == 1 {
 		conf.OptLevel = optlevel.O0
 	}
-	conf.SaturatingFloatToInt = applicable.saturatingFloatToInt
+	conf.SaturatingFloatToInt = bisectPatternAlwaysEnabled(f.debug["converthash"])
 }
 
 // compilerDebugFlags stores the last value of each comma-separated -d setting.
@@ -122,24 +135,27 @@ func bisectPatternAlwaysEnabled(pattern string) bool {
 	return enable && pattern == "y"
 }
 
-func countFlagEnabled(value string) bool {
-	if value == "true" {
-		return true
-	}
-	if value == "false" {
-		return false
-	}
-	v, err := strconv.Atoi(value)
-	return err == nil && v != 0
+func globalBisectPattern(pattern string) bool {
+	pattern = strings.TrimPrefix(pattern, "q")
+	pattern = strings.TrimLeft(pattern, "v")
+	pattern = strings.TrimLeft(pattern, "!")
+	return pattern == "y" || pattern == "n"
 }
 
-func countFlagIsOne(value string) bool {
-	if value == "true" {
-		return true
+// applyCompilerCount follows cmd/compile's count flags: a bare flag or true
+// increments the count, false resets it, and an integer replaces it.
+func applyCompilerCount(value string, count *int) error {
+	switch value {
+	case "true":
+		*count++
+	case "false":
+		*count = 0
+	default:
+		n, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("invalid count %q", value)
+		}
+		*count = n
 	}
-	if value == "false" {
-		return false
-	}
-	v, err := strconv.Atoi(value)
-	return err == nil && v == 1
+	return nil
 }

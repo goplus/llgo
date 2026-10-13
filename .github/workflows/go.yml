@@ -84,6 +84,10 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
 
+      - name: Check the public Go CLI compatibility surface
+        if: runner.os == 'Linux'
+        run: python3 dev/check_cli_surface.py
+
       - name: Set up LLGo cache
         uses: ./.github/actions/setup-llgo-cache
         with:
