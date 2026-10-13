@@ -567,8 +567,8 @@ func TestWindows386Index0RequiresSuccessWithTimeout(t *testing.T) {
 		if match, _ := cfg.MatchFlaky("go1.27.0", platform, tc); match {
 			t.Errorf("%s still permits flaky failure for %s", tc.RelPath, platform)
 		}
-		if timeout, _, match := cfg.MatchTimeout("go1.27.0", platform, tc); !match || timeout != 90*time.Second {
-			t.Errorf("timeout for %s/%s = %s, %v; want 1m30s, true", tc.RelPath, platform, timeout, match)
+		if timeout, _, match := cfg.MatchTimeout("go1.27.0", platform, tc); !match || timeout != 120*time.Second {
+			t.Errorf("timeout for %s/%s = %s, %v; want 2m0s, true", tc.RelPath, platform, timeout, match)
 		}
 	}
 }

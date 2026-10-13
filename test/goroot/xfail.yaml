@@ -106,8 +106,8 @@ timeouts:
   - platform: windows/386
     directive: runoutput
     case: index0.go
-    timeout: 90s
-    reason: the generated index stress program can exceed the default timeout on loaded Windows 386 runners
+    timeout: 120s
+    reason: the generated index stress program passed in 93-95s on a hosted Windows 386 runner, exceeding the previous 90s budget
   - version: go1.26
     platform: windows/386
     directive: run
