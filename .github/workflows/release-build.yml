@@ -57,7 +57,7 @@ jobs:
         uses: docker/setup-qemu-action@v4
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         with:
-          image: tonistiigi/binfmt:qemu-v7.0.0-28
+          image: tonistiigi/binfmt:qemu-v10.2.3-68
       - name: Populate Linux sysroot
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_linux_sysroot.sh
