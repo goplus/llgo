@@ -20,7 +20,8 @@ try {
     const record = line => {
       output.push(String(line));
       console.log(line);
-      if (name.startsWith("fs-single-") && line === "wasm filesystem ok") resolve(0);
+      if (name.startsWith("fs-single-") && line === "wasm filesystem ok" ||
+          name.startsWith("libffi-reflect-") && line === "42 42") resolve(0);
     };
     module.default({
       arguments: name.startsWith("fs-workers-") ? [name, "--gc-stress"] : [name],
@@ -42,7 +43,9 @@ try {
   if (status !== 0) {
     throw new Error(`module exited with status ${status}: ${output.join("\n")}`);
   }
-  if (!output.some(line => /wasm (workers|hardening|filesystem|js workers) ok/.test(line))) {
+  const passed = name.startsWith("libffi-reflect-") ? output.includes("42 42") :
+    output.some(line => /wasm (workers|hardening|filesystem|js workers|reflect workers) ok/.test(line));
+  if (!passed) {
     throw new Error(`module produced no success marker: ${output.join("\n")}`);
   }
   body.dataset.result = "pass";

@@ -120,12 +120,8 @@ const (
 	emscriptenAllowTableGrowth   = "-sALLOW_TABLE_GROWTH=1"
 	// libffi calls the target through the JS import ffi_call_js. If that
 	// import is not listed, Asyncify cannot unwind a sleeping Go function
-	// invoked by reflect.Value.Call / MakeFunc.
+	// invoked through libffi. Go reflection uses static typed entries by default.
 	emscriptenAsyncifyImports = "-sASYNCIFY_IMPORTS=llgo_wasm_host_wait_async,ffi_call_js"
-	// libffi's JavaScript closure trampoline recreates its temporary return and
-	// argument buffers during rewind. Keep the three thin entry functions out
-	// of Asyncify so each replay observes the current trampoline buffers; their
-	// separately instrumented callees retain the suspended Go invocation.
 	// Caller-location updates also cannot suspend: allocations only enqueue
 	// finalizers, and runtime code has no automatic scheduling safepoints.
 	// Excluding them avoids an Asyncify branch at every recorded call site,
@@ -133,7 +129,7 @@ const (
 	// TinyGC allocation also stays on its caller: allocator waits only
 	// acknowledge STW and finalizers are queued for a separate G. Keep their
 	// callback runner instrumented, since user finalizers may suspend.
-	emscriptenAsyncifyRemove = `-sASYNCIFY_REMOVE=["*llgo_reflect_bind0_js*","*llgo_reflect_bind1_js*","*llgo_reflect_bindn_js*","*PushCallerLocationFrameWasm*","*RecordCallerLocationWasm*","*RecordPanicLocationWasm*","*tinygogc*Alloc*"]`
+	emscriptenAsyncifyRemove = `-sASYNCIFY_REMOVE=["*PushCallerLocationFrameWasm*","*RecordCallerLocationWasm*","*RecordPanicLocationWasm*","*tinygogc*Alloc*"]`
 	wasm32LibffiRelDir       = "runtime/internal/clite/ffi/wasm32"
 	wasm64LibffiRelDir       = "runtime/internal/clite/ffi/wasm64"
 )
@@ -913,6 +909,19 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 		return
 	}
 	return
+}
+
+// EnableWasmReflectLibffi keeps the JS closure replay entries outside Asyncify.
+// The separately instrumented Go invocation resumes with the current buffers.
+func EnableWasmReflectLibffi(export *Export) error {
+	for i, flag := range export.LDFLAGS {
+		if flag == emscriptenAsyncifyRemove {
+			export.LDFLAGS[i] = strings.TrimSuffix(flag, "]") +
+				`,"llgo_reflect_bind0_js","llgo_reflect_bind1_js","llgo_reflect_bindn_js"]`
+			return nil
+		}
+	}
+	return errors.New("JavaScript libffi reflection requires Emscripten Asyncify")
 }
 
 func appendEmscriptenLibffiSearchPath(export *Export, llgoRoot string, wasmProfile WasmProfile) {
