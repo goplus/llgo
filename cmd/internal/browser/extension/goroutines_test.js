@@ -63,6 +63,19 @@ function fixture(pointerSize) {
 }
 
 for (const width of [4, 8]) {
+  test(`Memory${width * 8} empty caller strings skip memory transport`, async () => {
+    const f = fixture(width);
+    f.ptr(552, 0); f.u64(560, 0);
+    f.u64(576, 0);
+    const read = f.plugin.languageServices.getWasmLinearMemory;
+    f.plugin.languageServices.getWasmLinearMemory = async (at, size) => {
+      assert.ok(size > 0, 'empty strings must not read linear memory');
+      return read(at, size);
+    };
+    const records = await globalThis.LLGoWasmGoroutines.read(f.plugin, f.module, f.context, 'stop');
+    assert.deepEqual(records[0].frames[0], {function: '', file: '', line: '20'});
+  });
+
   test(`Memory${width * 8} logical goroutine snapshot and object lifetime`, async () => {
     const {plugin, module, context} = fixture(width);
     const records = await globalThis.LLGoWasmGoroutines.read(plugin, module, context, 'stop');

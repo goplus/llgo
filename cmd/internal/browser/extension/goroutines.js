@@ -88,6 +88,10 @@
       const length = unsigned(bytes, stringFields[name][module.layout.string.length], offset);
       if (length > BigInt(LIMIT) || (length !== 0n && pointer === 0n)) throw new Error(`invalid caller frame ${name}`);
       const key = `${pointer}:${length}`;
+      if (length === 0n) {
+        strings.set(key, '');
+        return '';
+      }
       if (!strings.has(key)) strings.set(key, new TextDecoder().decode(await memory(pointer, Number(length))));
       return strings.get(key);
     };
