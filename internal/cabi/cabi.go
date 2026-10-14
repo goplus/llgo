@@ -334,6 +334,9 @@ func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInf
 	for i, t := range params {
 		info.Params[i] = p.GetTypeInfo(ctx, typ, t, i+1)
 	}
+	if _, ok := p.sys.(*TypeInfoAmd64); ok {
+		p.allocateSysVAggregateRegisters(&info)
+	}
 	return
 }
 
