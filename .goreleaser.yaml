@@ -236,7 +236,9 @@ snapcrafts:
       {{- if .Arm}}v{{.Arm}}{{end}}
 
 snapshot:
-  version_template: '{{trimprefix .Summary "v"}}'
+  # Tagged CI builds supply versioned Windows ZIPs to the release job.
+  # Untagged checkouts need a numeric version for DEB/RPM metadata.
+  version_template: '{{ if eq .Summary .Tag }}{{ .Version }}{{ else }}0.0.0-{{ .ShortCommit }}{{ end }}'
 
 release:
   prerelease: auto
