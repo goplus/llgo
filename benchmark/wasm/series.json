@@ -1708,6 +1708,17 @@
     },
     {
       "kind": "branch",
+      "id": "e41043533eaa3de7",
+      "label": "Branch dependabot/go_modules/golang.org/x/mod-0.42.0",
+      "path": "series/branch/e41043533eaa3de7/summary.json",
+      "configPath": "series/branch/e41043533eaa3de7/config.json",
+      "commitPath": "commits/34e2141ba012c074167f367a1ec9b1c9447c2fae.json",
+      "sha": "34e2141ba012c074167f367a1ec9b1c9447c2fae",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/34e2141ba012c074167f367a1ec9b1c9447c2fae",
+      "updatedAt": "2026-10-14T15:16:58.100Z"
+    },
+    {
+      "kind": "branch",
       "id": "55c79cf4809084f1",
       "label": "Branch dependabot/go_modules/golang.org/x/sys-0.48.0",
       "path": "series/branch/55c79cf4809084f1/summary.json",
@@ -4862,6 +4873,17 @@
       "sha": "b29220ceda4864dc2900b39d38c5a1bb8b8f22c1",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/b29220ceda4864dc2900b39d38c5a1bb8b8f22c1",
       "updatedAt": "2026-10-14T09:11:49.922Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2815",
+      "label": "PR #2815",
+      "path": "series/pull/2815/summary.json",
+      "configPath": "series/pull/2815/config.json",
+      "commitPath": "commits/34e2141ba012c074167f367a1ec9b1c9447c2fae.json",
+      "sha": "34e2141ba012c074167f367a1ec9b1c9447c2fae",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/34e2141ba012c074167f367a1ec9b1c9447c2fae",
+      "updatedAt": "2026-10-14T15:16:57.970Z"
     }
   ]
 }
