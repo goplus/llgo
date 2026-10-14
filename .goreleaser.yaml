@@ -202,7 +202,7 @@ dockers_v2:
       - '{{ if not .Prerelease }}latest{{ end }}'
     platforms: [linux/amd64, linux/arm64]
     labels:
-      org.opencontainers.image.source: https://github.com/xgo-dev/llgo
+      org.opencontainers.image.source: "{{.GitURL}}"
       org.opencontainers.image.licenses: Apache-2.0
       org.opencontainers.image.version: "{{.Version}}"
       org.opencontainers.image.revision: "{{.FullCommit}}"
