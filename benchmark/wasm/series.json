@@ -1338,10 +1338,10 @@
       "label": "Branch cpunion/llgo:codex/wasm-reflect-worker-tables-20261006",
       "path": "series/branch/803abf882e28794e/summary.json",
       "configPath": "series/branch/803abf882e28794e/config.json",
-      "commitPath": "commits/218907942ded28f08460cd6e0c9f270d863d2dfd.json",
-      "sha": "218907942ded28f08460cd6e0c9f270d863d2dfd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/218907942ded28f08460cd6e0c9f270d863d2dfd",
-      "updatedAt": "2026-10-06T11:59:16.220Z"
+      "commitPath": "commits/ad9784ffe313facacb0880927c805fa74776fd94.json",
+      "sha": "ad9784ffe313facacb0880927c805fa74776fd94",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ad9784ffe313facacb0880927c805fa74776fd94",
+      "updatedAt": "2026-10-14T07:03:53.071Z"
     },
     {
       "kind": "branch",
@@ -4440,10 +4440,10 @@
       "label": "PR #2743",
       "path": "series/pull/2743/summary.json",
       "configPath": "series/pull/2743/config.json",
-      "commitPath": "commits/218907942ded28f08460cd6e0c9f270d863d2dfd.json",
-      "sha": "218907942ded28f08460cd6e0c9f270d863d2dfd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/218907942ded28f08460cd6e0c9f270d863d2dfd",
-      "updatedAt": "2026-10-06T11:59:16.126Z"
+      "commitPath": "commits/ad9784ffe313facacb0880927c805fa74776fd94.json",
+      "sha": "ad9784ffe313facacb0880927c805fa74776fd94",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ad9784ffe313facacb0880927c805fa74776fd94",
+      "updatedAt": "2026-10-14T07:03:52.969Z"
     },
     {
       "kind": "pull",
