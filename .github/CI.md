@@ -82,6 +82,9 @@ set the repository variable `FURY_ACCOUNT` to use another account. Prerelease
 tags publish their GitHub assets and container version tags without uploading
 to Fury.
 
+GHCR publishing uses `GITHUB_TOKEN` with `packages: write`. After the first
+publish, set the container package visibility to public to allow anonymous pulls.
+
 ## Validation
 
 The independent **CI policy** workflow runs on every PR and main push. It tests

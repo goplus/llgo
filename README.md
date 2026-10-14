@@ -475,11 +475,15 @@ They include the compiler,
 LLGo runtime, target definitions, and the LLVM 22 toolchain. The package manager
 installs Go 1.20 or newer and the native C/C++ dependencies.
 
-```sh
-# Debian/Ubuntu
-sudo apt install ./llgo<VERSION>.linux-<ARCH>.deb
+On Debian/Ubuntu:
 
-# Fedora
+```sh
+sudo apt install ./llgo<VERSION>.linux-<ARCH>.deb
+```
+
+On Fedora:
+
+```sh
 sudo dnf install ./llgo<VERSION>.linux-<ARCH>.rpm
 ```
 
