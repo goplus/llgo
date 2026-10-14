@@ -1029,6 +1029,7 @@ jobs:
             "$RUNNER_TEMP/llgo-bin/llgo" test "-O${opt}" -target wasi -emulator \
               -v -count=1 -timeout=2m ./test/simd/...
           done
+          LLGO="$RUNNER_TEMP/llgo-bin/llgo" bash dev/test_portable_simd_wasi.sh
 
       - name: Test SIMD on JavaScript targets with off, Thin and Full LTO
         if: matrix.suite == 'test-command'

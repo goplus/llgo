@@ -38,15 +38,61 @@ It is a correctness workload, not a performance benchmark.
 Go helper bodies are compiled normally. Remaining bodyless intrinsic
 implementations panic with their symbol name; `unimplemented_llgo_test.go`
 checks direct, indirect, deferred, and linkname calls. SIMD reflection,
-portable `simd` specialization, general FMV, and 256/512-bit vectors remain
+general FMV, and 256/512-bit vectors remain
 outside this implemented stage.
+
+## Portable SIMD Midway
+
+With `GOEXPERIMENT=simd`, LLGo specializes portable `simd` source on amd64,
+arm64, and wasm. The first type check identifies dependent declarations;
+Midway generates emulated and 128-bit variants, rewrites their references to
+the official `simd/internal/bridge`, and type-checks the result before Go SSA.
+Importers see both the original declarations and the specialized exports.
+Ordinary scalar entry points select their variant through `simd.Emulated()`.
+The retained unspecialized vector signatures are metadata and trap if called.
+
+The implementation handles recursive aggregates, aliases, embedded fields,
+generic instantiations, methods, closures, interfaces, and cross-package calls.
+Layout-dependent constants and array types are rechecked per variant. Global
+initializers evaluate only the selected variant, retain their original Go
+dependency order, and execute side effects once; multiple `init` functions
+retain their order. The loader avoids requesting unused gc export data, which
+would otherwise run the official compiler's own Midway before LLGo's checks.
+
+This stage emits only emulation and SIMD128. On amd64 the official effective
+AVX eligibility rule remains in force, with the maximum compiled width capped
+at 128. `GODEBUG=simd=0` selects emulation; explicit unsupported widths fail
+instead of selecting an absent variant. ARM64 and wasm retain their official
+feature policy. CPU queries and LLVM's instruction-level FMV remain separate
+from this representation choice.
+
+`portable/` tests compare shared portable operations with the official Go
+toolchain and exercise LLGo's initialization and embedded-field contracts in
+LLGo-specific fixtures. Go 1.27.0's own Midway rejects keyed literals containing
+embedded portable fields and does not implement the same global-initializer
+handling; those fixtures are not included in the native Go control.
+The shared tests cover partial memory operations, all numeric lane families,
+masks, and architecture conversion as well as cross-package boundaries.
+Emulated `ToArch` retains the software representation; `FromArch` accepts
+architecture vector types and its hardware round trip is tested separately.
+
+Remaining limits include reflection-driven calls with portable signatures,
+bodyless user functions depending on portable types, and inferred global types
+requiring another package's unexported type, field, or method names.
+The latter two cases produce source diagnostics. Wider variants and general
+FMV are follow-up work.
+
+For the WASI portable matrix, including explicit guest emulation, run
+`LLGO=/path/to/llgo bash dev/test_portable_simd_wasi.sh`. It passes `GODEBUG`
+through Wasmer's `--env` option; setting the host variable alone does not
+exercise WASI emulation.
 
 ## Portable SIMD128 bridge prerequisites
 
 The compiler checks the static call closure of the official Go toolchain's
 128-bit `simd/internal/bridge` entries on amd64, arm64, and wasm. Their bodyless
-`archsimd` dependencies now have implementations. This is a prerequisite for
-portable `simd` specialization; it does not implement `Midway` or width dispatch.
+`archsimd` dependencies now have implementations. Midway reuses these entries
+for its hardware representation and the official software bridge for emulation.
 Go helper bodies retain the toolchain's semantics, including separate multiply
 and add for wasm and fused rounding for native `MulAdd`. Windows/amd64 uses
 software FMA helpers because MinGW's `fma`/`fmaf` can overflow before cancellation.
@@ -147,7 +193,9 @@ AVX2, AVX, FMA, and all optional CPU features disabled in separate processes.
 The FMV tests cover initialization, direct and indirect entry calls,
 cross-package calls, aggregate value copies and multiple results, closures,
 independent CPU queries, and source-level stack traces.
-On other native SIMD targets the script retains the O0/O2 suite.
+The portable suite also runs each amd64 profile with the same CPU overrides
+and explicit emulated/128-bit requests. On other native SIMD targets the script
+retains the O0/O2 suite and an additional portable emulation run.
 
 ## Running
 

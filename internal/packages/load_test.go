@@ -4,12 +4,76 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 )
+
+func TestTypedRewriteBeforeImporters(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/rewrite\ngo 1.24\n")
+	if err := os.Mkdir(filepath.Join(dir, "dep"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeLoadTestFile(t, filepath.Join(dir, "dep", "dep.go"), "package dep\nvar Value = 1\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nimport \"example.com/rewrite/dep\"\nvar Value = dep.Value\n")
+	dedup := NewDeduper()
+	var original *types.Package
+	var preloads int
+	dedup.SetPreload(func(pkg *Package) {
+		if pkg.Name == "dep" {
+			preloads++
+		}
+	})
+	dedup.SetRewrite(func(pkg *Package) (bool, error) {
+		if pkg.Name != "dep" {
+			return false, nil
+		}
+		original = pkg.Types
+		if pkg.TypesInfo == nil || pkg.Types.Scope().Lookup("Value") == nil {
+			t.Fatal("rewrite ran before initial check")
+		}
+		value := pkg.Syntax[0].Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Values[0].(*ast.BasicLit)
+		value.Kind, value.Value = token.STRING, `"rewritten"`
+		return true, nil
+	})
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := pkgs[0]
+	if pkg.IllTyped {
+		t.Fatal(pkg.Errors)
+	}
+	if got := pkg.Types.Scope().Lookup("Value").Type(); got != types.Typ[types.String] {
+		t.Fatalf("importer used stale type: %v", got)
+	}
+	dep := pkg.Imports["example.com/rewrite/dep"]
+	if dep.Types == original || preloads != 2 {
+		t.Fatalf("recheck package=%p original=%p preloads=%d", dep.Types, original, preloads)
+	}
+	if dep.ExportFile != "" {
+		t.Fatal("typed rewrite unnecessarily requested gc export data")
+	}
+}
+
+func TestTypedRewriteKeepsInitialErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/invalid\ngo 1.24\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nvar X int = \"bad\"\n")
+	dedup := NewDeduper()
+	dedup.SetRewrite(func(*Package) (bool, error) { t.Fatal("rewrite must not repair invalid input"); return false, nil })
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pkgs[0].IllTyped || !packageErrorsContain(pkgs[0], "cannot use") {
+		t.Fatalf("initial diagnostic lost: %v", pkgs[0].Errors)
+	}
+}
 
 func TestLoadExWithGoVersion(t *testing.T) {
 	dir := t.TempDir()

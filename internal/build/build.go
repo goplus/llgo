@@ -783,6 +783,10 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	conf.GOEXPERIMENT = sourceGo.GOEXPERIMENT
 	conf.sourceGoVersion = sourceGo.GOVERSION
 	conf.toolTags = slices.Clone(sourceGo.toolTags)
+	if slices.Contains(sourceGo.toolTags, "goexperiment.simd") && (conf.Goarch == "amd64" || conf.Goarch == "arm64" || conf.Goarch == "wasm") {
+		cfg.Mode &^= packages.NeedExportFile
+		dedup.SetRewrite(rewritePortableSIMD)
+	}
 	cfg.Env = sourceGo.apply(cfg.Env)
 	if err := applyPackageLoadFlags(cfg, sourceGo.GOFLAGS); err != nil {
 		return nil, fmt.Errorf("parse Go package flags: %w", err)
@@ -2098,6 +2102,15 @@ func prePackageBuild(ctx *context, task *packageBuildTask, verbose bool) error {
 	}
 	if err := ctx.collectFingerprint(aPkg); err != nil {
 		return err
+	}
+	if pkg.ExportFile == "" {
+		// Source transforms do not consume gc export data. Use the LLGo
+		// fingerprint as the backend output identity in those metadata loads.
+		paths := ctx.ensureCacheManager().PackagePaths(ctx.targetTriple(), pkg.PkgPath, aPkg.Fingerprint)
+		if err := os.MkdirAll(paths.Dir, 0o755); err != nil {
+			return err
+		}
+		pkg.ExportFile = paths.Archive + ".backend"
 	}
 	ctx.tryLoadFromCache(aPkg)
 	if verbose {
