@@ -938,6 +938,17 @@
     },
     {
       "kind": "branch",
+      "id": "4b8057c8e65b49e3",
+      "label": "Branch cpunion/llgo:codex/macos27-sdk-linker",
+      "path": "series/branch/4b8057c8e65b49e3/summary.json",
+      "configPath": "series/branch/4b8057c8e65b49e3/config.json",
+      "commitPath": "commits/a4317a76ca83f670f9bb6c6011f179d3e2dde54b.json",
+      "sha": "a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
+      "updatedAt": "2026-10-14T03:25:12.408Z"
+    },
+    {
+      "kind": "branch",
       "id": "d856e2c82a9be58b",
       "label": "Branch cpunion/llgo:codex/main-ci-cancel-stale-20260928",
       "path": "series/branch/d856e2c82a9be58b/summary.json",
@@ -4818,6 +4829,17 @@
       "sha": "943cee7ebb683c26e86b32a99b819acd51640507",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/943cee7ebb683c26e86b32a99b819acd51640507",
       "updatedAt": "2026-10-14T01:38:36.863Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2808",
+      "label": "PR #2808",
+      "path": "series/pull/2808/summary.json",
+      "configPath": "series/pull/2808/config.json",
+      "commitPath": "commits/a4317a76ca83f670f9bb6c6011f179d3e2dde54b.json",
+      "sha": "a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
+      "updatedAt": "2026-10-14T03:25:12.299Z"
     }
   ]
 }
