@@ -8,11 +8,11 @@
     {
       "source": {
         "repository": "xgo-dev/llgo",
-        "sha": "1bbfc1f75db405854cfc3c49ed8104c0741c2231",
+        "sha": "45bdf2db295a4b348a6a67d57104088acfbb7d18",
         "ref": "main",
-        "url": "https://github.com/xgo-dev/llgo/commit/1bbfc1f75db405854cfc3c49ed8104c0741c2231",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38529344316",
-        "timestamp": "2026-10-14T07:35:43Z"
+        "url": "https://github.com/xgo-dev/llgo/commit/45bdf2db295a4b348a6a67d57104088acfbb7d18",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38552042484",
+        "timestamp": "2026-10-14T12:02:45Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -21,11 +21,11 @@
           "shardId": "merged",
           "source": {
             "repository": "xgo-dev/llgo",
-            "sha": "1bbfc1f75db405854cfc3c49ed8104c0741c2231",
+            "sha": "45bdf2db295a4b348a6a67d57104088acfbb7d18",
             "ref": "main",
-            "url": "https://github.com/xgo-dev/llgo/commit/1bbfc1f75db405854cfc3c49ed8104c0741c2231",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38529344316",
-            "timestamp": "2026-10-14T07:35:43Z"
+            "url": "https://github.com/xgo-dev/llgo/commit/45bdf2db295a4b348a6a67d57104088acfbb7d18",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38552042484",
+            "timestamp": "2026-10-14T12:02:45Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7502629440
+                    "build-ns": 7505321704
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7502629440
+                "build-ns": 7505321704
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7155512727
+                    "build-ns": 7080471640
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7155512727
+                "build-ns": 7080471640
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6449719711
+                    "build-ns": 6279058496
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6449719711
+                "build-ns": 6279058496
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 23476708655
+                    "build-ns": 24447738920
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 23476708655
+                "build-ns": 24447738920
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4609106565
+                    "build-ns": 4416794362
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4609106565
+                "build-ns": 4416794362
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4203613256
+                    "build-ns": 4181743391
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4203613256
+                "build-ns": 4181743391
               }
             },
             {
@@ -158,14 +158,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 145520,
-                    "glue-bytes": 88157
+                    "module-bytes": 147057,
+                    "glue-bytes": 88541
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 88157,
-                "module-bytes": 145520
+                "glue-bytes": 88541,
+                "module-bytes": 147057
               }
             },
             {
@@ -177,14 +177,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 144748,
+                    "module-bytes": 145666,
                     "glue-bytes": 72985
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 72985,
-                "module-bytes": 144748
+                "module-bytes": 145666
               }
             },
             {
@@ -196,14 +196,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 133220,
-                    "glue-bytes": 91328
+                    "module-bytes": 134526,
+                    "glue-bytes": 91712
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 91328,
-                "module-bytes": 133220
+                "glue-bytes": 91712,
+                "module-bytes": 134526
               }
             },
             {
@@ -215,14 +215,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 155244,
+                    "module-bytes": 156385,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 155244
+                "module-bytes": 156385
               }
             },
             {
@@ -234,14 +234,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 155922,
+                    "module-bytes": 157083,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 155922
+                "module-bytes": 157083
               }
             },
             {
@@ -253,14 +253,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2996710,
-                    "glue-bytes": 130661
+                    "module-bytes": 3003665,
+                    "glue-bytes": 131047
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 130661,
-                "module-bytes": 2996710
+                "glue-bytes": 131047,
+                "module-bytes": 3003665
               }
             },
             {
@@ -291,14 +291,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 3091487,
+                    "module-bytes": 3094062,
                     "glue-bytes": 102110
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 102110,
-                "module-bytes": 3091487
+                "module-bytes": 3094062
               }
             },
             {
@@ -310,14 +310,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2759281,
-                    "glue-bytes": 136141
+                    "module-bytes": 2766011,
+                    "glue-bytes": 136527
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 136141,
-                "module-bytes": 2759281
+                "glue-bytes": 136527,
+                "module-bytes": 2766011
               }
             },
             {
@@ -348,14 +348,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2341166,
+                    "module-bytes": 2343602,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2341166
+                "module-bytes": 2343602
               }
             },
             {
@@ -367,14 +367,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2337842,
+                    "module-bytes": 2340298,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2337842
+                "module-bytes": 2340298
               }
             },
             {
@@ -386,14 +386,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 145033,
-                    "glue-bytes": 88157
+                    "module-bytes": 146574,
+                    "glue-bytes": 88541
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 88157,
-                "module-bytes": 145033
+                "glue-bytes": 88541,
+                "module-bytes": 146574
               }
             },
             {
@@ -424,14 +424,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 144496,
+                    "module-bytes": 145414,
                     "glue-bytes": 72985
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 72985,
-                "module-bytes": 144496
+                "module-bytes": 145414
               }
             },
             {
@@ -443,14 +443,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 132773,
-                    "glue-bytes": 91328
+                    "module-bytes": 134083,
+                    "glue-bytes": 91712
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 91328,
-                "module-bytes": 132773
+                "glue-bytes": 91712,
+                "module-bytes": 134083
               }
             },
             {
@@ -462,14 +462,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1443528,
-                    "glue-bytes": 104917
+                    "module-bytes": 1446585,
+                    "glue-bytes": 105303
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 104917,
-                "module-bytes": 1443528
+                "glue-bytes": 105303,
+                "module-bytes": 1446585
               }
             },
             {
@@ -500,14 +500,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1493265,
+                    "module-bytes": 1495430,
                     "glue-bytes": 89743
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 89743,
-                "module-bytes": 1493265
+                "module-bytes": 1495430
               }
             },
             {
@@ -519,14 +519,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1336084,
-                    "glue-bytes": 109492
+                    "module-bytes": 1338918,
+                    "glue-bytes": 109882
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 109492,
-                "module-bytes": 1336084
+                "glue-bytes": 109882,
+                "module-bytes": 1338918
               }
             },
             {
@@ -557,14 +557,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1271544,
+                    "module-bytes": 1273789,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1271544
+                "module-bytes": 1273789
               }
             },
             {
@@ -576,14 +576,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1269165,
+                    "module-bytes": 1271430,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1269165
+                "module-bytes": 1271430
               }
             },
             {
@@ -614,14 +614,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 154918,
+                    "module-bytes": 156059,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 154918
+                "module-bytes": 156059
               }
             },
             {
@@ -633,14 +633,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 155596,
+                    "module-bytes": 156757,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 155596
+                "module-bytes": 156757
               }
             }
           ]
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "cpunion/llgo",
-        "sha": "712afe7bf4d18eb34acd4e2e9ecffc36c5f1ce60",
+        "sha": "6fd8e060243e63148c5517e2d54c36e6866442cf",
         "ref": "codex/wasm-reflect-worker-tables-20261006",
-        "url": "https://github.com/cpunion/llgo/commit/712afe7bf4d18eb34acd4e2e9ecffc36c5f1ce60",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38529344316",
-        "timestamp": "2026-10-14T07:35:43Z"
+        "url": "https://github.com/cpunion/llgo/commit/6fd8e060243e63148c5517e2d54c36e6866442cf",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38552042484",
+        "timestamp": "2026-10-14T12:02:45Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "cpunion/llgo",
-            "sha": "712afe7bf4d18eb34acd4e2e9ecffc36c5f1ce60",
+            "sha": "6fd8e060243e63148c5517e2d54c36e6866442cf",
             "ref": "codex/wasm-reflect-worker-tables-20261006",
-            "url": "https://github.com/cpunion/llgo/commit/712afe7bf4d18eb34acd4e2e9ecffc36c5f1ce60",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38529344316",
-            "timestamp": "2026-10-14T07:35:43Z"
+            "url": "https://github.com/cpunion/llgo/commit/6fd8e060243e63148c5517e2d54c36e6866442cf",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38552042484",
+            "timestamp": "2026-10-14T12:02:45Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7208356429
+                    "build-ns": 7319187766
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7208356429
+                "build-ns": 7319187766
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7326810543
+                    "build-ns": 7281400079
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7326810543
+                "build-ns": 7281400079
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6568219713
+                    "build-ns": 6227395224
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6568219713
+                "build-ns": 6227395224
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 23225653270
+                    "build-ns": 24195433165
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 23225653270
+                "build-ns": 24195433165
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4669722015
+                    "build-ns": 4389790688
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4669722015
+                "build-ns": 4389790688
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4419160092
+                    "build-ns": 4202120062
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4419160092
+                "build-ns": 4202120062
               }
             },
             {
@@ -800,14 +800,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 146606,
+                    "module-bytes": 147058,
                     "glue-bytes": 88541
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 88541,
-                "module-bytes": 146606
+                "module-bytes": 147058
               }
             },
             {
@@ -819,14 +819,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 145216,
+                    "module-bytes": 145666,
                     "glue-bytes": 72985
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 72985,
-                "module-bytes": 145216
+                "module-bytes": 145666
               }
             },
             {
@@ -838,14 +838,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 134169,
+                    "module-bytes": 134527,
                     "glue-bytes": 91712
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 91712,
-                "module-bytes": 134169
+                "module-bytes": 134527
               }
             },
             {
@@ -857,14 +857,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 155969,
+                    "module-bytes": 156385,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 155969
+                "module-bytes": 156385
               }
             },
             {
@@ -876,14 +876,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 156667,
+                    "module-bytes": 157083,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 156667
+                "module-bytes": 157083
               }
             },
             {
@@ -895,14 +895,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2982300,
+                    "module-bytes": 2983755,
                     "glue-bytes": 120989
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 120989,
-                "module-bytes": 2982300
+                "module-bytes": 2983755
               }
             },
             {
@@ -933,14 +933,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 3073054,
+                    "module-bytes": 3074524,
                     "glue-bytes": 92052
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 92052,
-                "module-bytes": 3073054
+                "module-bytes": 3074524
               }
             },
             {
@@ -952,14 +952,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2747245,
+                    "module-bytes": 2748599,
                     "glue-bytes": 125530
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 125530,
-                "module-bytes": 2747245
+                "module-bytes": 2748599
               }
             },
             {
@@ -990,14 +990,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2342178,
+                    "module-bytes": 2343602,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2342178
+                "module-bytes": 2343602
               }
             },
             {
@@ -1009,14 +1009,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2338874,
+                    "module-bytes": 2340298,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2338874
+                "module-bytes": 2340298
               }
             },
             {
@@ -1028,14 +1028,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 146125,
+                    "module-bytes": 146575,
                     "glue-bytes": 88541
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 88541,
-                "module-bytes": 146125
+                "module-bytes": 146575
               }
             },
             {
@@ -1066,14 +1066,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 144966,
+                    "module-bytes": 145416,
                     "glue-bytes": 72985
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 72985,
-                "module-bytes": 144966
+                "module-bytes": 145416
               }
             },
             {
@@ -1085,14 +1085,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 133723,
+                    "module-bytes": 134082,
                     "glue-bytes": 91712
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 91712,
-                "module-bytes": 133723
+                "module-bytes": 134082
               }
             },
             {
@@ -1104,14 +1104,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1508436,
+                    "module-bytes": 1509910,
                     "glue-bytes": 95329
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 95329,
-                "module-bytes": 1508436
+                "module-bytes": 1509910
               }
             },
             {
@@ -1142,14 +1142,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1560611,
+                    "module-bytes": 1562077,
                     "glue-bytes": 79769
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 79769,
-                "module-bytes": 1560611
+                "module-bytes": 1562077
               }
             },
             {
@@ -1161,14 +1161,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1389656,
+                    "module-bytes": 1391021,
                     "glue-bytes": 99026
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 99026,
-                "module-bytes": 1389656
+                "module-bytes": 1391021
               }
             },
             {
@@ -1199,14 +1199,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1272365,
+                    "module-bytes": 1273789,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1272365
+                "module-bytes": 1273789
               }
             },
             {
@@ -1218,14 +1218,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1270006,
+                    "module-bytes": 1271430,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1270006
+                "module-bytes": 1271430
               }
             },
             {
@@ -1256,14 +1256,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 155643,
+                    "module-bytes": 156059,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 155643
+                "module-bytes": 156059
               }
             },
             {
@@ -1275,14 +1275,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 156341,
+                    "module-bytes": 156757,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 156341
+                "module-bytes": 156757
               }
             }
           ]
