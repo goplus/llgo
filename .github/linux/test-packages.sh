@@ -24,9 +24,9 @@ for format in deb rpm; do
             set -euo pipefail
             if [[ "$1" == deb ]]; then
                 apt-get update
-                apt-get install -y --no-install-recommends /packages/*.deb
+                apt-get install -y --no-install-recommends /packages/llgo.deb
             else
-                dnf install -y /packages/*.rpm
+                dnf install -y /packages/llgo.rpm
             fi
             bash /tests/test-installed.sh
         ' bash "$format"

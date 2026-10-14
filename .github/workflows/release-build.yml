@@ -102,6 +102,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{github.token}}
         run: |
+          # The docker skip also disables dockers_v2 snapshot image builds.
           docker run --rm --entrypoint go "${GORELEASER_CROSS_IMAGE}" version
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
           docker run \
@@ -540,12 +541,14 @@ jobs:
           echo "All artifact tests passed, proceeding with release..."
           docker run --rm --entrypoint go "${GORELEASER_CROSS_IMAGE}" version
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
+          # Keep credentials read-only while Buildx updates its builder state.
           docker run \
             --rm \
             -e "GITHUB_TOKEN=${GITHUB_TOKEN}" \
             -e "DOCKER_IMAGE_REPO=ghcr.io/${GITHUB_REPOSITORY,,}" \
             -e DOCKER_CONFIG=/root/.docker \
-            -v "$HOME/.docker:/root/.docker" \
+            -v "$HOME/.docker:/root/.docker:ro" \
+            -v "$HOME/.docker/buildx:/root/.docker/buildx" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD:/go/src/llgo" \
             -w /go/src/llgo \

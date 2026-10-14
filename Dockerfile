@@ -5,11 +5,13 @@ FROM ${BASE_IMAGE} AS unpack
 
 ARG TARGETPLATFORM
 
-# GoReleaser supplies the same complete package that is tested on Linux.
+# GoReleaser supplies exactly one complete DEB per target platform.
 COPY ${TARGETPLATFORM}/*.deb /tmp/llgo.deb
+# Extract the payload so Go comes from the pinned base image, not Debian.
 RUN dpkg-deb --extract /tmp/llgo.deb /install
 
 FROM ${BASE_IMAGE}
+# Keep native dependencies aligned with the DEB override in .goreleaser.yaml.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev \
     libcjson-dev libsqlite3-dev libuv1-dev \
