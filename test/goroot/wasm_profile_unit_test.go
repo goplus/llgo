@@ -59,6 +59,36 @@ func TestGOROOTWasmBuildAndRunCommands(t *testing.T) {
 	}
 }
 
+func TestGOROOTBuildArgsKeepGCBackendControlsOnBaseline(t *testing.T) {
+	withGOROOTWasmProfile(t, "")
+	for _, payload := range []string{"-l=4", "-d=ssa/check/on", "-d=softfloat", "-d=checkptr", "all=-d=checkptr"} {
+		for _, flags := range [][]string{{"-gcflags", payload}, {"-gcflags=" + payload}} {
+			baseline := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+			if got := gorootBuildArgs(false, flags, "out", "source.go"); !reflect.DeepEqual(got, baseline) {
+				t.Fatalf("Go baseline flags changed: %v", got)
+			}
+			want := []string{"build", "-o", "out", "source.go"}
+			if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+				t.Fatalf("LLVM build retained gc-only backend controls: %v", got)
+			}
+		}
+	}
+	for _, flags := range [][]string{
+		{"-gcflags=-N -l=4"},
+		{"-gcflags", "-l=2"},
+		{"-gcflags=-d=unknown"},
+		{"-gcflags=-d=converthash=qy"},
+		{"-gcflags=-d=checkptr -N"},
+		{"-ldflags", "-gcflags=-l=4"},
+		{"-tags", "-gcflags=-l=4"},
+	} {
+		want := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+		if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+			t.Fatalf("unrelated payload changed: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestGOROOTGoJSRunCommandModelsBrowser(t *testing.T) {
 	withGOROOTWasmProfile(t, "J32-GoJS")
 	env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo"}

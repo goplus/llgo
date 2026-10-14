@@ -91,8 +91,31 @@ func gorootBuildArgs(llgo bool, flags []string, output, target string) []string 
 			args = append(args, "-target", p.target)
 		}
 	}
-	args = append(args, flags...)
+	for i := 0; i < len(flags); i++ {
+		// These gc backend controls stay on the official Go baseline;
+		// LLVM runs the same source assertions with its own backend.
+		// Keep other payloads intact so unsupported options still fail.
+		if payload, ok := strings.CutPrefix(flags[i], "-gcflags="); llgo && ok && gorootGCBackendOnlyFlags(payload) {
+			continue
+		}
+		if (flags[i] == "-gcflags" || flags[i] == "-tags" || flags[i] == "-ldflags") && i+1 < len(flags) {
+			if !llgo || flags[i] != "-gcflags" || !gorootGCBackendOnlyFlags(flags[i+1]) {
+				args = append(args, flags[i], flags[i+1])
+			}
+			i++
+			continue
+		}
+		args = append(args, flags[i])
+	}
 	return append(args, "-o", output, target)
+}
+
+func gorootGCBackendOnlyFlags(payload string) bool {
+	switch payload {
+	case "-l=4", "-d=ssa/check/on", "-d=softfloat", "-d=checkptr", "all=-d=checkptr":
+		return true
+	}
+	return false
 }
 
 func envEntry(env []string, key string) string {

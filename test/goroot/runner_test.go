@@ -1255,9 +1255,11 @@ func logSlowCase(t *testing.T, casePath string, goBuildDur, llgoBuildDur, goRunD
 	if !slowBuild && !slowRun {
 		return
 	}
+	// setup-go's problem matcher treats "file.go: message" as a compiler
+	// error, even when the message only reports timing for a passing case.
 	fmt.Fprintf(
 		os.Stderr,
-		"slow goroot case %s: go build=%s llgo build=%s go run=%s llgo run=%s\n",
+		"slow goroot case %s (go build=%s, llgo build=%s, go run=%s, llgo run=%s)\n",
 		casePath,
 		goBuildDur.Round(time.Millisecond),
 		llgoBuildDur.Round(time.Millisecond),
