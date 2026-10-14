@@ -4,6 +4,9 @@ package simd
 
 // Validate at the query boundary, after the standard simd initialization.
 // Source-patch files need not run their init functions after upstream files.
+// Upstream midway_common.go maps both absent hardware (archMaxVectorSize == 0)
+// and GODEBUG=simd=0 to maxVectorSize=128, emulated=true. Width describes the
+// logical vector even in emulation; zero is only the hardware eligibility result.
 func checkMidwayWidth() {
 	if maxVectorSize != 128 {
 		panic("LLGo portable SIMD supports emulation and 128-bit vectors only")

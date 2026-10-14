@@ -21,6 +21,9 @@ import (
 // signatures remain available to the initial check of importing packages.
 // Imports reports additional dependencies that the loader must make available
 // to the second type check; their packages already occur below simd in the graph.
+// Rewriting mutates files in place. On error, callers must treat both syntax
+// and type information as invalid; the loader marks the package IllTyped and
+// excludes it from its cache before any downstream compilation.
 func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []*ast.File) (changed bool, imports []string, err error) {
 	if !importsSIMD(pkg, make(map[*types.Package]bool)) || pkg.Path() == bridgePath || pkg.Path() == "simd/archsimd" {
 		return false, nil, nil
@@ -58,7 +61,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 				}
 				if pkg.Path() == simdPath {
 					// Base methods are supplied by bridge. Only the public
-					// FromArch generic functions need specialized Go bodies.
+					// FromArch/ToArch generic functions need specialized Go bodies.
 					if d.Recv == nil && strings.HasPrefix(filepath.Base(fset.Position(d.Pos()).Filename), "tofrom_") {
 						for _, width := range widths {
 							decls = append(decls, fr.specialize(d, width).(*ast.FuncDecl))
@@ -131,13 +134,13 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 			default:
 				decls = append(decls, d)
 			}
+			if r.err != nil {
+				return false, nil, r.err
+			}
 		}
 		file.Decls = decls
 		if fileChanged {
 			fr.finish()
-		}
-		if r.err != nil {
-			return false, nil, r.err
 		}
 	}
 	for path := range r.imports {
@@ -181,9 +184,18 @@ type fileRewriter struct {
 
 func (r *rewriter) file(file *ast.File) *fileRewriter {
 	f := &fileRewriter{rewriter: r, file: file, aliases: make(map[string]string), used: make(map[string]bool)}
+	// Index definitions while visiting this file once, instead of scanning
+	// package-wide Defs again for every import. PkgNames are the imports
+	// themselves, not declarations that shadow them.
+	defined := make(map[string]bool)
 	ast.Inspect(file, func(n ast.Node) bool {
 		if id, ok := n.(*ast.Ident); ok {
 			f.used[id.Name] = true
+			if obj, ok := r.a.info.Defs[id]; ok {
+				if _, imported := obj.(*types.PkgName); !imported {
+					defined[id.Name] = true
+				}
+			}
 		}
 		return true
 	})
@@ -195,14 +207,7 @@ func (r *rewriter) file(file *ast.File) *fileRewriter {
 		if obj == nil || obj.Name() == "_" || obj.Name() == "." {
 			continue
 		}
-		shadowed := false
-		for id, def := range r.a.info.Defs {
-			if id.Name == obj.Name() && def != obj && id.Pos() >= file.Pos() && id.Pos() <= file.End() {
-				shadowed = true
-				break
-			}
-		}
-		if !shadowed {
+		if !defined[obj.Name()] {
 			f.aliases[obj.Imported().Path()] = obj.Name()
 		}
 	}

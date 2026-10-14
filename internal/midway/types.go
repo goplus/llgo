@@ -14,6 +14,11 @@ import (
 // typeExpr supplies explicit types for inferred global declarations and their
 // initializer result tuples. A negative width denotes the retained original.
 func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr {
+	// Keep the first diagnostic and stop descending after an unnameable type.
+	// Rewrite discards this partial result as soon as the declaration finishes.
+	if f.err != nil {
+		return &ast.BadExpr{From: pos, To: pos}
+	}
 	child := func(t types.Type) ast.Expr { return f.typeExpr(t, width, pos) }
 	name := func(obj *types.TypeName, args *types.TypeList) ast.Expr {
 		n := obj.Name()
@@ -22,6 +27,7 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 			path = obj.Pkg().Path()
 			if obj.Pkg() != f.a.pkg && !obj.Exported() {
 				f.err = fmt.Errorf("%s: cannot name foreign unexported type %s in SIMD initializer", f.fset.Position(pos), obj.Name())
+				return &ast.BadExpr{From: pos, To: pos}
 			}
 		}
 		if width >= 0 {
@@ -76,9 +82,13 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 	case *types.Struct:
 		fields := &ast.FieldList{Opening: pos, Closing: pos}
 		for i := 0; i < t.NumFields(); i++ {
+			if f.err != nil {
+				return &ast.BadExpr{From: pos, To: pos}
+			}
 			v := t.Field(i)
 			if !v.Exported() && v.Pkg() != nil && v.Pkg() != f.a.pkg {
 				f.err = fmt.Errorf("%s: cannot name foreign unexported field %s in SIMD initializer type", f.fset.Position(pos), v.Name())
+				return &ast.BadExpr{From: pos, To: pos}
 			}
 			field := &ast.Field{Type: child(v.Type())}
 			if !v.Embedded() {
@@ -107,9 +117,13 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 	case *types.Interface:
 		methods := &ast.FieldList{Opening: pos, Closing: pos}
 		for i := 0; i < t.NumExplicitMethods(); i++ {
+			if f.err != nil {
+				return &ast.BadExpr{From: pos, To: pos}
+			}
 			m := t.ExplicitMethod(i)
 			if !m.Exported() && m.Pkg() != nil && m.Pkg() != f.a.pkg {
 				f.err = fmt.Errorf("%s: cannot name foreign unexported method %s in SIMD initializer type", f.fset.Position(pos), m.Name())
+				return &ast.BadExpr{From: pos, To: pos}
 			}
 			methods.List = append(methods.List, &ast.Field{Names: []*ast.Ident{ident(m.Name(), pos)}, Type: child(m.Type())})
 		}
@@ -134,5 +148,5 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 		return expr
 	}
 	f.err = fmt.Errorf("%s: unsupported SIMD initializer type %v", f.fset.Position(pos), t)
-	return ident("invalid", pos)
+	return &ast.BadExpr{From: pos, To: pos}
 }

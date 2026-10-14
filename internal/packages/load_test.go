@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -72,6 +73,44 @@ func TestTypedRewriteKeepsInitialErrors(t *testing.T) {
 	}
 	if !pkgs[0].IllTyped || !packageErrorsContain(pkgs[0], "cannot use") {
 		t.Fatalf("initial diagnostic lost: %v", pkgs[0].Errors)
+	}
+}
+
+func TestTypedRewriteErrorDoesNotCachePartialSyntax(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/rewriteerror\ngo 1.24\n")
+	if err := os.Mkdir(filepath.Join(dir, "dep"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeLoadTestFile(t, filepath.Join(dir, "dep", "dep.go"), "package dep\nvar Value = 1\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nimport \"example.com/rewriteerror/dep\"\nvar Value = dep.Value\n")
+	dedup := NewDeduper()
+	dedup.SetRewrite(func(pkg *Package) (bool, error) {
+		if pkg.Name == "dep" {
+			value := pkg.Syntax[0].Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Values[0].(*ast.BasicLit)
+			value.Kind, value.Value = token.STRING, `"partially rewritten"`
+			return false, errors.New("rewrite failed after mutation")
+		}
+		return false, nil
+	})
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dep := pkgs[0].Imports["example.com/rewriteerror/dep"]
+	if !pkgs[0].IllTyped || !dep.IllTyped || !packageErrorsContain(dep, "rewrite failed after mutation") {
+		t.Fatalf("rewrite error did not propagate: root=%v dep=%v", pkgs[0].Errors, dep.Errors)
+	}
+	if dedup.Check(dep.ID) != nil || dedup.Check(pkgs[0].ID) != nil {
+		t.Fatal("cached a package containing partially rewritten syntax")
+	}
+	dedup.SetRewrite(nil)
+	pkgs, err = LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pkgs[0].IllTyped || pkgs[0].Types.Scope().Lookup("Value").Type() != types.Typ[types.Int] {
+		t.Fatalf("reload retained partial syntax: %v", pkgs[0].Errors)
 	}
 }
 

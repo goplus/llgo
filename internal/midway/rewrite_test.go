@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"strings"
 	"testing"
 )
 
@@ -17,6 +18,146 @@ func (i testImporter) Import(path string) (*types.Package, error) {
 		return p, nil
 	}
 	return importer.Default().Import(path)
+}
+
+func TestRewriteInferredAggregateTypes(t *testing.T) {
+	imports := testImporter{}
+	testCheck(t, imports, simdPath, `package simd
+type Uint32s struct{}
+func Emulated() bool { return false }
+func VectorBitSize() int { return 128 }
+`, false)
+	testCheck(t, imports, bridgePath, `package bridge
+type Uint32s [8]uint32
+type Uint32x4 [4]uint32
+func LLGoMidwayUnreachable() { panic("unspecialized") }
+`, false)
+	pkg, _ := testCheck(t, imports, "aggregate", `package aggregate
+import ("simd"; "unsafe")
+type Box[T any] struct { Value T }
+type Alias[T any] = Box[T]
+type Local interface { Value() simd.Uint32s }
+func makeAggregate() struct {
+ simd.Uint32s
+ Ptr *simd.Uint32s
+ Slice []simd.Uint32s
+ Array [2]simd.Uint32s
+ Map map[int]simd.Uint32s
+ Channel chan simd.Uint32s
+ Receive <-chan simd.Uint32s
+ Send chan<- simd.Uint32s
+ Function func(int, ...simd.Uint32s) (simd.Uint32s, error)
+ Interface interface { Local; More() simd.Uint32s }
+ Generic Box[simd.Uint32s]
+ Alias Alias[simd.Uint32s]
+ Pointer unsafe.Pointer
+ Tagged simd.Uint32s `+"`json:\"value\"`"+`
+} { panic("fixture") }
+var Value = makeAggregate()
+`, true)
+	for _, width := range widths {
+		value := pkg.Scope().Lookup("Value" + suffix(width))
+		if value == nil {
+			t.Fatalf("missing aggregate variant %d", width)
+		}
+		fields := value.Type().(*types.Struct)
+		if tag := fields.Tag(fields.NumFields() - 1); tag != `json:"value"` {
+			t.Errorf("lost struct tag: %q", tag)
+		}
+	}
+}
+
+func TestRewriteRetainsFirstTypeError(t *testing.T) {
+	for _, tc := range []struct{ name, declarations, result, want string }{
+		{"fields", "", "struct { first simd.Uint32s; last simd.Uint32s }", "field first"},
+		{"nested fields", "", "struct { Nested struct { first simd.Uint32s }; last simd.Uint32s }", "field first"},
+		{"methods", "", "interface { first() simd.Uint32s; last() simd.Uint32s }", "method first"},
+		{"named type", "type hidden struct { V simd.Uint32s }", "hidden", "type hidden"},
+		{"alias", "type hidden = struct { V simd.Uint32s }", "hidden", "type hidden"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			imports := testImporter{}
+			testCheck(t, imports, simdPath, "package simd\ntype Uint32s struct{}\n", false)
+			testCheck(t, imports, "foreign", "package foreign\nimport \"simd\"\n"+tc.declarations+"\nfunc Make() "+tc.result+" { panic(0) }", false)
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "client.go", `package client
+import "foreign"
+var Value = foreign.Make()
+func Later() { _ = foreign.Make() }
+`, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			info := testInfo()
+			cfg := types.Config{Importer: imports}
+			pkg, err := cfg.Check("client", fset, []*ast.File{file}, info)
+			if err != nil {
+				t.Fatal(err)
+			}
+			later := file.Decls[2].(*ast.FuncDecl)
+			body := later.Body
+			changed, _, err := Rewrite(fset, pkg, info, []*ast.File{file})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("got %v, want first unnameable %s", err, tc.want)
+			}
+			if changed || later.Body != body {
+				t.Fatal("rewrite continued past the failed declaration")
+			}
+		})
+	}
+}
+
+func TestRewriteImportShadowingAcrossFiles(t *testing.T) {
+	imports := testImporter{}
+	testCheck(t, imports, simdPath, `package simd
+type Uint32s struct{}
+func (Uint32s) Len() int { return 4 }
+func Emulated() bool { return false }
+func VectorBitSize() int { return 128 }
+`, false)
+	testCheck(t, imports, bridgePath, `package bridge
+type Uint32s [8]uint32
+type Uint32x4 [4]uint32
+func (Uint32s) Len() int { return 8 }
+func (Uint32x4) Len() int { return 4 }
+`, false)
+	fset := token.NewFileSet()
+	var files []*ast.File
+	for name, src := range map[string]string{
+		"shadow.go": `package client; import s "simd"; type V = s.Uint32s; func Shadow(s int) int { var v V; return s+v.Len() }`,
+		"plain.go":  `package client; import s "simd"; func Plain() int { var v s.Uint32s; return v.Len() }`,
+	} {
+		file, err := parser.ParseFile(fset, name, src, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		files = append(files, file)
+	}
+	info := testInfo()
+	cfg := types.Config{Importer: imports}
+	pkg, err := cfg.Check("client", fset, files, info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Rewrite(fset, pkg, info, files); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cfg.Check("client", fset, files, testInfo()); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Name.Name != "Plain" && fn.Name.Name != "Shadow" {
+				continue
+			}
+			call := fn.Body.List[0].(*ast.IfStmt).Cond.(*ast.CallExpr)
+			alias := call.Fun.(*ast.SelectorExpr).X.(*ast.Ident).Name
+			if (alias == "s") != (fn.Name.Name == "Plain") {
+				t.Errorf("%s uses import alias %s", fn.Name.Name, alias)
+			}
+		}
+	}
 }
 
 func testInfo() *types.Info {

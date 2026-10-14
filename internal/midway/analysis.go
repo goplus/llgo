@@ -67,6 +67,18 @@ type analysis struct {
 	parents map[types.Type][]types.Type
 	seen    map[types.Type]bool
 	queue   []types.Type
+
+	typeRules   map[types.Type][]*dependencyRule
+	objectRules map[types.Object][]*dependencyRule
+	rules       []*dependencyRule
+}
+
+// A declaration becomes dependent when any referenced type or non-function
+// object does. Each rule fires once, marking its objects and/or result type.
+type dependencyRule struct {
+	objects []types.Object
+	typ     types.Type
+	queued  bool
 }
 
 func analyze(pkg *types.Package, info *types.Info, files []*ast.File) *analysis {
@@ -74,6 +86,7 @@ func analyze(pkg *types.Package, info *types.Info, files []*ast.File) *analysis 
 		pkg: pkg, info: info, funcs: make(map[*types.Func]*ast.FuncDecl),
 		deps: make(map[types.Object]bool), types: make(map[types.Type]bool),
 		parents: make(map[types.Type][]types.Type), seen: make(map[types.Type]bool),
+		typeRules: make(map[types.Type][]*dependencyRule), objectRules: make(map[types.Object][]*dependencyRule),
 	}
 	for _, objects := range []map[*ast.Ident]types.Object{info.Defs, info.Uses} {
 		for _, obj := range objects {
@@ -100,55 +113,46 @@ func analyze(pkg *types.Package, info *types.Info, files []*ast.File) *analysis 
 			}
 		}
 	}
-	for {
-		a.propagate()
-		changed := false
-		// Layout constants and array lengths can depend on portable syntax
-		// even when their checked type is just int or an array of scalars.
-		for _, file := range files {
-			for _, decl := range file.Decls {
-				gd, ok := decl.(*ast.GenDecl)
-				if !ok {
-					continue
-				}
-				if gd.Tok == token.CONST && a.bodyDependent(gd) {
-					for _, spec := range gd.Specs {
-						for _, id := range spec.(*ast.ValueSpec).Names {
-							if obj := info.Defs[id]; obj != nil && !a.deps[obj] {
-								a.deps[obj] = true
-								changed = true
-							}
-						}
-					}
-				}
-				for _, spec := range gd.Specs {
-					if ts, ok := spec.(*ast.TypeSpec); ok && a.bodyDependent(ts.Type) {
-						if obj := info.Defs[ts.Name]; obj != nil && !a.types[obj.Type()] {
-							a.seed(obj.Type())
-							changed = true
-						}
-					}
-				}
-			}
-		}
-		for obj, decl := range a.funcs {
-			if a.deps[obj] || !a.types[obj.Type()] && !a.bodyDependent(decl.Body) {
+	// Record syntax dependencies once. Layout constants and array lengths can
+	// depend on portable syntax even when their checked types are scalar.
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok {
 				continue
 			}
-			a.deps[obj] = true
-			changed = true
-			if recv := obj.Signature().Recv(); recv != nil {
-				t := recv.Type()
-				if p, ok := t.(*types.Pointer); ok {
-					t = p.Elem()
+			if gd.Tok == token.CONST {
+				rule := new(dependencyRule)
+				for _, spec := range gd.Specs {
+					for _, id := range spec.(*ast.ValueSpec).Names {
+						if obj := info.Defs[id]; obj != nil {
+							rule.objects = append(rule.objects, obj)
+						}
+					}
 				}
-				a.seed(t)
+				a.watchBody(rule, gd)
+			}
+			for _, spec := range gd.Specs {
+				if ts, ok := spec.(*ast.TypeSpec); ok {
+					if obj := info.Defs[ts.Name]; obj != nil {
+						a.watchBody(&dependencyRule{typ: obj.Type()}, ts.Type)
+					}
+				}
 			}
 		}
-		if !changed {
-			break
-		}
 	}
+	for obj, decl := range a.funcs {
+		rule := &dependencyRule{objects: []types.Object{obj}}
+		if recv := obj.Signature().Recv(); recv != nil {
+			rule.typ = recv.Type()
+			if p, ok := rule.typ.(*types.Pointer); ok {
+				rule.typ = p.Elem()
+			}
+		}
+		a.watchType(rule, obj.Type())
+		a.watchBody(rule, decl.Body)
+	}
+	a.propagate()
 	for _, obj := range info.Defs {
 		if packageObject(obj) && a.types[obj.Type()] {
 			a.deps[obj] = true
@@ -165,13 +169,83 @@ func (a *analysis) seed(t types.Type) {
 }
 
 func (a *analysis) propagate() {
-	for len(a.queue) != 0 {
-		t := a.queue[0]
-		a.queue = a.queue[1:]
-		for _, parent := range a.parents[t] {
-			a.seed(parent)
+	for len(a.queue) != 0 || len(a.rules) != 0 {
+		for len(a.queue) != 0 {
+			t := a.queue[0]
+			a.queue = a.queue[1:]
+			for _, parent := range a.parents[t] {
+				a.seed(parent)
+			}
+			for _, rule := range a.typeRules[t] {
+				a.enqueue(rule)
+			}
+		}
+		if len(a.rules) == 0 {
+			break
+		}
+		rule := a.rules[0]
+		a.rules = a.rules[1:]
+		a.seed(rule.typ)
+		for _, obj := range rule.objects {
+			if !a.deps[obj] {
+				a.deps[obj] = true
+				for _, user := range a.objectRules[obj] {
+					a.enqueue(user)
+				}
+			}
 		}
 	}
+}
+
+func (a *analysis) enqueue(rule *dependencyRule) {
+	if !rule.queued {
+		rule.queued = true
+		a.rules = append(a.rules, rule)
+	}
+}
+
+func (a *analysis) watchType(rule *dependencyRule, t types.Type) {
+	if t == nil {
+		return
+	}
+	if a.types[t] {
+		a.enqueue(rule)
+	} else {
+		a.typeRules[t] = append(a.typeRules[t], rule)
+	}
+}
+
+func (a *analysis) watchBody(rule *dependencyRule, node ast.Node) {
+	if node == nil {
+		return
+	}
+	if body, ok := node.(*ast.BlockStmt); ok && body == nil {
+		return
+	}
+	seenTypes := make(map[types.Type]bool)
+	seenObjects := make(map[types.Object]bool)
+	ast.Inspect(node, func(n ast.Node) bool {
+		if expr, ok := n.(ast.Expr); ok {
+			if typ := a.info.TypeOf(expr); typ != nil && !seenTypes[typ] {
+				seenTypes[typ] = true
+				a.watchType(rule, typ)
+			}
+		}
+		if id, ok := n.(*ast.Ident); ok {
+			obj := a.info.ObjectOf(id)
+			// Scalar function calls stay at the dispatch boundary; they do
+			// not make their callers require specialized signatures/bodies.
+			if _, fn := obj.(*types.Func); obj != nil && !fn && !seenObjects[obj] {
+				seenObjects[obj] = true
+				if a.dependent(obj) {
+					a.enqueue(rule)
+				} else {
+					a.objectRules[obj] = append(a.objectRules[obj], rule)
+				}
+			}
+		}
+		return true
+	})
 }
 
 func (a *analysis) addType(t types.Type) {
