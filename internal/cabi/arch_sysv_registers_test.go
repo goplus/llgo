@@ -21,6 +21,7 @@ func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 			integer, floating := ctx.Int64Type(), ctx.DoubleType()
 			pair := ctx.StructType([]llvm.Type{ctx.FloatType(), ctx.FloatType()}, false)
 			ints := ctx.StructType([]llvm.Type{integer, integer}, false)
+			smallInts := ctx.StructType([]llvm.Type{ctx.Int32Type(), ctx.Int32Type()}, false)
 			mixed := ctx.StructType([]llvm.Type{floating, integer}, false)
 			large := ctx.StructType([]llvm.Type{integer, integer, integer}, false)
 			repeated := func(typ llvm.Type, count int) []llvm.Type {
@@ -44,7 +45,8 @@ func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 				{"integer_fits", integer, append(repeated(integer, 4), ints, integer), 4, false, 5},
 				{"mixed_rolls_back_sse", floating, append(repeated(integer, 6), mixed, floating), 6, true, 7},
 				{"mixed_rolls_back_integer", integer, append(repeated(floating, 8), mixed, integer), 8, true, 9},
-				{"hidden_sret", large, append(repeated(integer, 5), ints, integer), 5, true, 6},
+				{"hidden_sret_decides_last_register", large, append(repeated(integer, 5), smallInts, integer), 5, true, 6},
+				{"without_sret_last_register_fits", integer, append(repeated(integer, 5), smallInts, integer), 5, false, 6},
 				{"rollback_keeps_sse_for_next_pair", floating, append(append(repeated(floating, 7), repeated(integer, 6)...), mixed, pair), 13, true, 14},
 				{"rollback_keeps_integer_for_next_pair", integer, append(append(repeated(floating, 8), repeated(integer, 4)...), mixed, ints), 12, true, 13},
 				{"memory_does_not_consume_register", integer, []llvm.Type{large, integer, integer, integer, integer, ints}, 5, false, -1},

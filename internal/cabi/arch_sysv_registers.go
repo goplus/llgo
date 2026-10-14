@@ -4,8 +4,8 @@ import "github.com/xgo-dev/llvm"
 
 // SysV allocates an aggregate's integer/SSE classes atomically. When either
 // register bank lacks space, the whole value is passed in memory and neither
-// bank is consumed. Letting LLVM spill independent coercions is not equivalent:
-// for example, a spilled <2 x float> occupies 16 bytes instead of a C pair's 8.
+// bank is consumed. Letting LLVM spill independent coercions does not preserve
+// the C aggregate's stack layout or this register rollback rule.
 func (p *Transformer) allocateSysVAggregateRegisters(info *FuncInfo) {
 	integer, floating := 6, 8
 	if info.Return.Kind == AttrPointer {
@@ -13,7 +13,7 @@ func (p *Transformer) allocateSysVAggregateRegisters(info *FuncInfo) {
 	}
 	for _, param := range info.Params {
 		if param.Kind == AttrPointer || param.Kind == AttrVoid {
-			continue // byval arguments occupy stack memory, not a pointer register.
+			continue // Memory aggregates and elided empty values consume no registers.
 		}
 		gp, fp := sysVRegisterClasses(param.Type1)
 		if param.Kind == AttrWidthType2 {
@@ -34,6 +34,9 @@ func (p *Transformer) allocateSysVAggregateRegisters(info *FuncInfo) {
 }
 
 func sysVRegisterClasses(typ llvm.Type) (integer, floating int) {
+	// Count the existing classifier's lowered Go/C types: integer eightbytes,
+	// pointers, float/double and <2 x float>, including single-field wrappers.
+	// Extended floating-point ABIs are outside the current Go/C type mapping.
 	switch typ.TypeKind() {
 	case llvm.IntegerTypeKind:
 		return (typ.IntTypeWidth() + 63) / 64, 0
