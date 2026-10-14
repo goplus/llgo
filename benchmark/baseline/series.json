@@ -1580,10 +1580,10 @@
       "label": "Branch cpunion/llgo:codex/macos27-sdk-linker",
       "path": "series/branch/4b8057c8e65b49e3/summary.json",
       "configPath": "series/branch/4b8057c8e65b49e3/config.json",
-      "commitPath": "commits/a4317a76ca83f670f9bb6c6011f179d3e2dde54b.json",
-      "sha": "a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
-      "updatedAt": "2026-10-14T03:27:08.472Z"
+      "commitPath": "commits/21ec30b6b34a29a55479a5f46a08a21acde13b51.json",
+      "sha": "21ec30b6b34a29a55479a5f46a08a21acde13b51",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/21ec30b6b34a29a55479a5f46a08a21acde13b51",
+      "updatedAt": "2026-10-14T04:12:02.472Z"
     },
     {
       "kind": "branch",
@@ -8719,10 +8719,10 @@
       "label": "PR #2808",
       "path": "series/pull/2808/summary.json",
       "configPath": "series/pull/2808/config.json",
-      "commitPath": "commits/a4317a76ca83f670f9bb6c6011f179d3e2dde54b.json",
-      "sha": "a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/a4317a76ca83f670f9bb6c6011f179d3e2dde54b",
-      "updatedAt": "2026-10-14T03:27:06.619Z"
+      "commitPath": "commits/21ec30b6b34a29a55479a5f46a08a21acde13b51.json",
+      "sha": "21ec30b6b34a29a55479a5f46a08a21acde13b51",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/21ec30b6b34a29a55479a5f46a08a21acde13b51",
+      "updatedAt": "2026-10-14T04:12:00.275Z"
     }
   ]
 }
