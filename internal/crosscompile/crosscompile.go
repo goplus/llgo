@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -208,6 +207,7 @@ const (
 	LinkerFlavorUnknown  LinkerFlavor = ""
 	LinkerFlavorELFLLD   LinkerFlavor = "ld.lld"
 	LinkerFlavorMachO    LinkerFlavor = "ld64.lld"
+	LinkerFlavorApple    LinkerFlavor = "ld"
 	LinkerFlavorCOFFLLD  LinkerFlavor = "lld-link"
 	LinkerFlavorMinGWLLD LinkerFlavor = "mingw-lld"
 )
@@ -261,7 +261,7 @@ func nativeToolchain(goos string) NativeToolchain {
 			ABI:          PlatformABIDarwin,
 			ObjectFormat: ObjectFormatMachO,
 			Driver:       DriverFlavorClangGNU,
-			Linker:       LinkerFlavorMachO,
+			Linker:       LinkerFlavorApple,
 		}
 	case "linux":
 		return NativeToolchain{
@@ -295,7 +295,7 @@ func driverDebugInfoPolicy() DebugInfoPolicy {
 func nativeDebugInfoPolicy(toolchain NativeToolchain) DebugInfoPolicy {
 	policy := driverDebugInfoPolicy()
 	switch toolchain.Linker {
-	case LinkerFlavorMachO, LinkerFlavorELFLLD, LinkerFlavorMinGWLLD:
+	case LinkerFlavorApple, LinkerFlavorMachO, LinkerFlavorELFLLD, LinkerFlavorMinGWLLD:
 	case LinkerFlavorCOFFLLD:
 		policy.OmitLinkFlags = []string{"-Wl,/debug:none"}
 		policy.PreserveLinkFlags = []string{"-Wl,/debug:dwarf"}
@@ -383,16 +383,6 @@ func getCanonicalArchName(triple string) string {
 		return "mips"
 	}
 	return arch
-}
-
-// getMacOSSysroot returns the macOS SDK path using xcrun
-func getMacOSSysroot() (string, error) {
-	cmd := exec.Command("xcrun", "--sdk", "macosx", "--show-sdk-path")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
 }
 
 // getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
@@ -517,7 +507,17 @@ func ltoLinkerOptFlag(level optlevel.Level) string {
 	}
 }
 
-func nativeLLDFlags(toolchain NativeToolchain, level optlevel.Level, ltoMode lto.Mode) []string {
+func nativeLinkerFlags(toolchain NativeToolchain, level optlevel.Level, ltoMode lto.Mode) []string {
+	if toolchain.Linker == LinkerFlavorApple {
+		// Apple ld follows the installed SDK's TAPI format. LLVM 22's LLD
+		// cannot read the arm64e.x1 slices in the macOS 27 SDK.
+		flags := []string{"-fuse-ld=/usr/bin/ld", "-Wl,-no_deduplicate"}
+		if ltoMode.Enabled() {
+			// Clang also supplies the matching LLVM installation's libLTO.
+			flags = append(flags, ltoMode.ClangFlag(), "-Wl,-mllvm,-O"+ltoOptimizationLevel(level))
+		}
+		return flags
+	}
 	flags := []string{"-fuse-ld=lld"}
 	if toolchain.Linker == LinkerFlavorCOFFLLD {
 		flags = append(flags,
@@ -540,14 +540,14 @@ func nativeLLDFlags(toolchain NativeToolchain, level optlevel.Level, ltoMode lto
 
 	flags = append(flags, ltoMode.ClangFlag())
 	if toolchain.Linker == LinkerFlavorCOFFLLD {
-		flags = append(flags, "-Wl,/opt:lldlto="+coffLTOLevel(level))
+		flags = append(flags, "-Wl,/opt:lldlto="+ltoOptimizationLevel(level))
 	} else if optFlag := ltoLinkerOptFlag(level); optFlag != "" {
 		flags = append(flags, "-Wl,"+optFlag)
 	}
 	return flags
 }
 
-func coffLTOLevel(level optlevel.Level) string {
+func ltoOptimizationLevel(level optlevel.Level) string {
 	switch level {
 	case optlevel.O0:
 		return "0"
@@ -659,6 +659,12 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 			export.ClangRoot = ""
 		} else {
 			export.Toolchain = nativeToolchain(goos)
+			if goos == "darwin" {
+				if err = configureDarwinToolchain(&export, targetTriple, nativeInput); err != nil {
+					return
+				}
+				targetTriple = export.LLVMTarget
+			}
 		}
 		export.DebugInfo = nativeDebugInfoPolicy(export.Toolchain)
 		// not cross compile
@@ -669,7 +675,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
 		}
-		export.LDFLAGS = append(export.LDFLAGS, nativeLLDFlags(export.Toolchain, level, ltoMode)...)
+		export.LDFLAGS = append(export.LDFLAGS, nativeLinkerFlags(export.Toolchain, level, ltoMode)...)
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
 			clangInc := filepath.Join(clangRoot, "include")
@@ -708,13 +714,15 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 
 		// Add sysroot for macOS only
 		if goos == "darwin" {
-			sysrootPath, sysrootErr := getMacOSSysroot()
+			sysrootPath, sysrootErr := macOSSysroot(nativeInput)
 			if sysrootErr != nil {
 				err = fmt.Errorf("failed to get macOS SDK path: %w", sysrootErr)
 				return
 			}
-			export.CCFLAGS = append(export.CCFLAGS, []string{"--sysroot=" + sysrootPath}...)
-			export.LDFLAGS = append(export.LDFLAGS, []string{"--sysroot=" + sysrootPath}...)
+			// Darwin's -isysroot also overrides SDK paths in Clang config files;
+			// --sysroot alone loses to an existing -isysroot setting.
+			export.CCFLAGS = append(export.CCFLAGS, "-isysroot", sysrootPath)
+			export.LDFLAGS = append(export.LDFLAGS, "-isysroot", sysrootPath)
 		}
 
 		ccflags, ldflags := nativeSectionFlags(export.Toolchain)

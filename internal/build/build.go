@@ -594,11 +594,13 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	nativeInput := crosscompile.NativeToolchainInput{}
-	if usesWindowsToolchainProfile(runtime.GOOS, conf) {
-		nativeInput, err = parseNativeToolchainInput(commands, conf.LinkOptions, conf.Mode != ModeGen)
+	if usesWindowsToolchainProfile(runtime.GOOS, conf) ||
+		(conf.Target == "" && conf.Goos == "darwin" && runtime.GOOS == "darwin" && conf.Goarch == runtime.GOARCH) {
+		nativeInput, err = parseNativeToolchainInput(commands, conf.LinkOptions, conf.Goos == "windows" && conf.Mode != ModeGen)
 		if err != nil {
 			return nil, err
 		}
+		nativeInput.RequireLLD = conf.LTOPlugin.Enabled()
 	}
 	export, err := crosscompile.UseWithGOARMAndToolchain(conf.Goos, conf.Goarch, conf.GOARM, conf.Target, forceEspClang, conf.OptLevel, conf.ltoMode(), conf.goGlobalDCEEnabled(), nativeInput)
 	if err != nil {
@@ -2865,11 +2867,33 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 
 	buildArgs = append(buildArgs, objFiles...)
+	var darwinLTODir string
+	if ctx.crossCompile.Toolchain.Linker == crosscompile.LinkerFlavorApple &&
+		ctx.buildConf.ltoEnabled() && shouldEmitDebugInfo(ctx.buildConf, &ctx.crossCompile) {
+		// Clang deletes its temporary LTO objects before a later dsymutil
+		// invocation can read the debug map. Retain them with the package
+		// objects in LLGo's build cache.
+		if err := os.MkdirAll(buildCacheRootDir(), 0755); err != nil {
+			return err
+		}
+		darwinLTODir, err = os.MkdirTemp(buildCacheRootDir(), "darwin-lto-")
+		if err != nil {
+			return err
+		}
+		objectPath := darwinLTODir
+		if ctx.buildConf.ltoMode() == lto.Full {
+			objectPath = filepath.Join(darwinLTODir, "lto.o")
+		}
+		buildArgs = append(buildArgs, "-Xlinker", "-object_path_lto", "-Xlinker", objectPath)
+	}
 
 	cmd := ctx.linker()
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
 	if err := cmd.Link(buildArgs...); err != nil {
+		if darwinLTODir != "" {
+			_ = os.RemoveAll(darwinLTODir)
+		}
 		return err
 	}
 	if !moveExactWindowsOutput {

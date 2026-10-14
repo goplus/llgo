@@ -26,6 +26,9 @@ type NativeToolchainInput struct {
 	// Pure IR generation leaves it false so multi-target golden tests do not
 	// depend on an installed compiler's architecture or ABI profile.
 	ResolveWindows bool
+	// LLD pass plugins require ld64.lld on Darwin; ordinary Darwin links use
+	// Apple ld so they can consume the active Xcode SDK.
+	RequireLLD bool
 }
 
 type toolIdentity struct {

@@ -195,7 +195,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 					hasResourceDir := false
 
 					for _, flag := range export.CCFLAGS {
-						if len(flag) >= len(sysrootPrefix) && flag[:len(sysrootPrefix)] == sysrootPrefix {
+						if flag == "-isysroot" || (len(flag) >= len(sysrootPrefix) && flag[:len(sysrootPrefix)] == sysrootPrefix) {
 							hasSysroot = true
 						}
 						if len(flag) >= len(resourceDirPrefix) && flag[:len(resourceDirPrefix)] == resourceDirPrefix {
@@ -1035,7 +1035,7 @@ func TestNativeToolchain(t *testing.T) {
 		goos string
 		want NativeToolchain
 	}{
-		{"darwin", NativeToolchain{ABI: PlatformABIDarwin, ObjectFormat: ObjectFormatMachO, Driver: DriverFlavorClangGNU, Linker: LinkerFlavorMachO}},
+		{"darwin", NativeToolchain{ABI: PlatformABIDarwin, ObjectFormat: ObjectFormatMachO, Driver: DriverFlavorClangGNU, Linker: LinkerFlavorApple}},
 		{"linux", NativeToolchain{ABI: PlatformABIGNU, ObjectFormat: ObjectFormatELF, Driver: DriverFlavorClangGNU, Linker: LinkerFlavorELFLLD}},
 		{"windows", NativeToolchain{ABI: PlatformABIMsvc, ObjectFormat: ObjectFormatCOFF, Driver: DriverFlavorClangGNU, Linker: LinkerFlavorCOFFLLD}},
 		{"freebsd", NativeToolchain{}},
@@ -1149,7 +1149,7 @@ func TestLTOLinkerOptFlag(t *testing.T) {
 
 func TestNativeWindowsLLDFlags(t *testing.T) {
 	toolchain := nativeToolchain("windows")
-	flags := nativeLLDFlags(toolchain, optlevel.O2, lto.Off)
+	flags := nativeLinkerFlags(toolchain, optlevel.O2, lto.Off)
 	for _, want := range []string{
 		"-fuse-ld=lld",
 		"-Wl,/errorlimit:0",
@@ -1165,7 +1165,7 @@ func TestNativeWindowsLLDFlags(t *testing.T) {
 		}
 	}
 
-	thin := nativeLLDFlags(toolchain, optlevel.O3, lto.Thin)
+	thin := nativeLinkerFlags(toolchain, optlevel.O3, lto.Thin)
 	for _, want := range []string{"-flto=thin", "-Wl,/opt:lldlto=3"} {
 		if !slices.Contains(thin, want) {
 			t.Errorf("native Windows ThinLTO flags = %v, want %q", thin, want)
@@ -1188,8 +1188,8 @@ func TestCOFFLTOLevel(t *testing.T) {
 		{optlevel.Os, "2"},
 		{optlevel.Oz, "2"},
 	} {
-		if got := coffLTOLevel(tt.level); got != tt.want {
-			t.Errorf("coffLTOLevel(%s) = %q, want %q", tt.level, got, tt.want)
+		if got := ltoOptimizationLevel(tt.level); got != tt.want {
+			t.Errorf("ltoOptimizationLevel(%s) = %q, want %q", tt.level, got, tt.want)
 		}
 	}
 }
@@ -1385,8 +1385,11 @@ func TestDevLTOGlobalDCEUseLTOFlagsControlledByOption(t *testing.T) {
 }
 
 func nativeLTOOptFlag(toolchain NativeToolchain, level optlevel.Level) string {
+	if toolchain.Linker == LinkerFlavorApple {
+		return "-Wl,-mllvm,-O" + ltoOptimizationLevel(level)
+	}
 	if toolchain.Linker == LinkerFlavorCOFFLLD {
-		return "-Wl,/opt:lldlto=" + coffLTOLevel(level)
+		return "-Wl,/opt:lldlto=" + ltoOptimizationLevel(level)
 	}
 	return "-Wl," + ltoLinkerOptFlag(level)
 }
