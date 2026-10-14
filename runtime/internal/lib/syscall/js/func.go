@@ -45,12 +45,14 @@ type Func struct {
 // FuncOf returns a function to be used by JavaScript.
 //
 // The Go function fn is called with JavaScript's "this" and arguments, and
-// its result is returned synchronously. Nested calls run on the calling G;
-// external events resume the scheduler and run on a new G. A callback may
-// block on Go goroutines or timers, but must not wait for another asynchronous
-// JS event: its caller still owns the JS event loop, as in the Go runtime.
-// In bounded-worker builds, fn executes on Go's main JS worker even if the
-// Func is created or invoked by a G on another worker.
+// its result is returned synchronously. Nested calls run on the G that entered
+// JavaScript; external events resume the scheduler and run on a new G. A
+// callback may block on Go goroutines or timers, but must not wait for another
+// asynchronous JS event: its caller still owns the JS event loop, as in the Go
+// runtime.
+// In bounded-worker builds, fn executes on Go's main JS worker. A nested call
+// originating on another worker runs fn on the originating G's executor G,
+// not on the originating G.
 //
 // Func.Release must be called to free up resources when the function will not be invoked any more.
 func FuncOf(fn func(this Value, args []Value) any) Func {
