@@ -467,6 +467,41 @@ printf '%s\n' \
 The native MSVC CI profile uses LLVM's official 22.1.8 development archive for headers, libraries, Clang, LLD, and all code-generation backends. That archive does not contain LLDB, so the profile also extracts LLDB from the matching official `win64` or `woa64` installer. LLVM 22 has no official Win32 installer; the Windows 386 lane uses the LLVM 22.1.8-based llvm-mingw 20260616 builtins and qualifies the official x64 LLDB under WoW64. The complete pinned setup, checksums, and generated `llvm-22.pc` are in `.github/actions/setup-deps/action.yml`.
 
 
+### Linux release packages
+
+The release workflow builds DEB and RPM packages for Linux amd64 and arm64.
+Download them from the [release assets](https://github.com/xgo-dev/llgo/releases).
+They include the compiler,
+LLGo runtime, target definitions, and the LLVM 22 toolchain. The package manager
+installs Go 1.20 or newer and the native C/C++ dependencies.
+
+```sh
+# Debian/Ubuntu
+sudo apt install ./llgo<VERSION>.linux-<ARCH>.deb
+
+# Fedora
+sudo dnf install ./llgo<VERSION>.linux-<ARCH>.rpm
+```
+
+The packages install under `/usr/lib/llgo`, with `llgo` on `PATH` through
+`/usr/bin/llgo`. Check the installation with `llgo version` and
+`llgo env LLGO_ROOT`.
+
+### Container image
+
+Tagged releases publish an image containing Go, LLGo, LLVM 22, and the native
+C/C++ dependencies.
+It supports Linux amd64 and arm64. Stable releases update the version, major,
+major/minor, and `latest` tags; prereleases publish only their exact version.
+
+```sh
+docker run --rm ghcr.io/xgo-dev/llgo:latest llgo version
+docker run --rm -v "$PWD:/workspace" ghcr.io/xgo-dev/llgo:latest llgo run .
+```
+
+Use an exact version tag for reproducible builds. Optional Python and
+WebAssembly host tools must be installed separately.
+
 ### Install from source
 
 <!-- embedme doc/_readme/scripts/install_llgo.sh#L2-L1000 -->

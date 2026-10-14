@@ -106,12 +106,12 @@ jobs:
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
           docker run \
             --rm \
-            -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+            -e "GITHUB_TOKEN=${GITHUB_TOKEN}" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd):/go/src/llgo \
+            -v "$PWD:/go/src/llgo" \
             -w /go/src/llgo \
             "${GORELEASER_CROSS_IMAGE}" \
-            release --verbose --skip=publish,nfpm,snapcraft --snapshot --clean
+            release --verbose --skip=publish,snapcraft,docker --snapshot --clean
 
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v7
@@ -144,6 +144,30 @@ jobs:
           path: .dist/*linux-arm64.tar.gz
           retention-days: 3
           include-hidden-files: true
+
+      - name: Upload Linux AMD64 packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: llgo-linux-amd64-packages
+          path: |
+            .dist/*.linux-amd64.deb
+            .dist/*.linux-amd64.rpm
+          if-no-files-found: error
+          retention-days: 3
+          include-hidden-files: true
+          compression-level: 0
+
+      - name: Upload Linux ARM64 packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: llgo-linux-arm64-packages
+          path: |
+            .dist/*.linux-arm64.deb
+            .dist/*.linux-arm64.rpm
+          if-no-files-found: error
+          retention-days: 3
+          include-hidden-files: true
+          compression-level: 0
 
       - name: Upload Checksums
         uses: actions/upload-artifact@v7
@@ -415,10 +439,45 @@ jobs:
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
 
+  test-linux-distributions:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build]
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            goarch: amd64
+          - os: ubuntu-24.04-arm
+            goarch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: llgo-linux-${{ matrix.goarch }}-packages
+          path: .dist
+      - name: Test installed DEB and RPM
+        run: bash .github/linux/test-packages.sh .dist '${{ matrix.goarch }}'
+      - name: Build release container
+        run: |
+          context="$RUNNER_TEMP/llgo-container"
+          mkdir -p "$context/linux/${{ matrix.goarch }}"
+          cp Dockerfile "$context/"
+          cp .dist/*.linux-${{ matrix.goarch }}.deb "$context/linux/${{ matrix.goarch }}/"
+          docker build --tag llgo-release:test "$context"
+      - name: Test release container
+        run: |
+          docker run --rm llgo-release:test
+          docker run --rm -v "$PWD/.github/linux:/tests:ro" \
+            llgo-release:test bash /tests/test-installed.sh
+
   release:
     permissions:
       contents: write
-    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, populate-linux-sysroot]
+      packages: write
+    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, test-linux-distributions, populate-linux-sysroot]
     runs-on: ubuntu-latest
     if: needs.prepare.outputs.run_code_ci == 'true' && (startsWith(github.ref, 'refs/tags/'))
     steps:
@@ -454,6 +513,17 @@ jobs:
               sha256sum -c "$archive.sha256"
             done
           done
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
       - name: Run GoReleaser (Release)
         env:
           GITHUB_TOKEN: ${{github.token}}
@@ -464,9 +534,12 @@ jobs:
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
           docker run \
             --rm \
-            -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+            -e "GITHUB_TOKEN=${GITHUB_TOKEN}" \
+            -e "DOCKER_IMAGE_REPO=ghcr.io/${GITHUB_REPOSITORY,,}" \
+            -e DOCKER_CONFIG=/root/.docker \
+            -v "$HOME/.docker:/root/.docker" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd):/go/src/llgo \
+            -v "$PWD:/go/src/llgo" \
             -w /go/src/llgo \
             "${GORELEASER_CROSS_IMAGE}" \
-            release --clean --verbose --skip nfpm,snapcraft
+            release --clean --verbose --skip snapcraft
