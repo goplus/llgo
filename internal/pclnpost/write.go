@@ -202,8 +202,9 @@ func metaGlobalAddrs(info *binaryInfo) (idxPtr, cntPtr uint64, ok bool) {
 		pc := binary.LittleEndian.Uint64(sec[off:])
 		id := binary.LittleEndian.Uint64(sec[off+8:])
 		if pc == 0 && id == metaRecordMagic {
-			idxPtr = decodePtrVal(info, binary.LittleEndian.Uint64(sec[off+16:]))
-			cntPtr = decodePtrVal(info, binary.LittleEndian.Uint64(sec[off+32:]))
+			base := rebaseBaseAt(info, info.entryVMAddr+uint64(off))
+			idxPtr = decodePtrVal(info, binary.LittleEndian.Uint64(sec[off+16:]), base)
+			cntPtr = decodePtrVal(info, binary.LittleEndian.Uint64(sec[off+32:]), base)
 			return idxPtr, cntPtr, idxPtr != 0 && cntPtr != 0
 		}
 	}
@@ -226,7 +227,7 @@ func loadSymbolIndex(path string, info *binaryInfo) ([]symIndexEntry, error) {
 			return nil, err
 		}
 	}
-	dataAddr := decodePtr(info, readVM(info, ptrAddr, 8))
+	dataAddr := decodePtrVal(info, binary.LittleEndian.Uint64(readVM(info, ptrAddr, 8)), rebaseBaseAt(info, ptrAddr))
 	count := binary.LittleEndian.Uint64(readVM(info, cntAddr, 8))
 	if count == 0 || count > 1<<20 {
 		return nil, fmt.Errorf("bad symbol index count %d", count)
@@ -250,16 +251,27 @@ func lookupSymIndex(idx []symIndexEntry, id uint64) (uint32, bool) {
 	return 0, false
 }
 
-// decodePtr resolves an on-disk pointer slot (Mach-O chained fixup or plain).
-func decodePtr(info *binaryInfo, b []byte) uint64 {
-	return decodePtrVal(info, binary.LittleEndian.Uint64(b))
+func rebaseBaseAt(info *binaryInfo, slotVM uint64) uint64 {
+	for _, sec := range info.secs {
+		if slotVM >= sec.vmaddr && slotVM-sec.vmaddr < sec.size {
+			return sec.rebaseBase
+		}
+	}
+	return 0
 }
 
-func decodePtrVal(info *binaryInfo, v uint64) uint64 {
-	if info.format == "macho" {
-		if t := v & (1<<36 - 1); t != v && t >= info.imageBase {
-			return t
+// decodePtrVal resolves a plain pointer or either supported Mach-O chained
+// pointer format. The containing segment determines the rebase base.
+func decodePtrVal(info *binaryInfo, v, rebaseBase uint64) uint64 {
+	if info.format == "macho" && v != 0 {
+		if v>>63 != 0 {
+			ordinal, addend := v&(1<<24-1), (v>>24)&0xff
+			if ordinal >= uint64(len(info.bindTargets)) || info.bindTargets[ordinal] == 0 {
+				return 0
+			}
+			return info.bindTargets[ordinal] + addend
 		}
+		return (v & (1<<36 - 1)) + rebaseBase
 	}
 	return v
 }

@@ -205,6 +205,21 @@ func TestDetachExternalRequiresExactIdentitySection(t *testing.T) {
 }
 
 func TestAnalyzeAndDetachExternalMachO(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		format uint16
+	}{
+		{"absolute rebases", chainedPtr64},
+		{"image-relative rebases", chainedPtr64Offset},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			testAnalyzeAndDetachExternalMachO(t, tt.format)
+		})
+	}
+}
+
+func testAnalyzeAndDetachExternalMachO(t *testing.T, pointerFormat uint16) {
+	t.Helper()
 	const imageBase = uint64(0x100000000)
 	fns := []elfFn{
 		{name: "example.com/p.A", size: 0x10},
@@ -219,7 +234,7 @@ func TestAnalyzeAndDetachExternalMachO(t *testing.T) {
 	pcLine = append(pcLine, rec(addr(0x40)+8, 22)...)
 	pcLine = append(pcLine, rec(addr(0x40)+12, 11)...) // A's pcline copied into B
 	path := buildMachOExternal(t, entry, pcLine, make([]byte, sha256.Size), fns)
-	pageStartOff := chainMachOSitePointers(t, path)
+	pageStartOff := chainMachOSitePointers(t, path, pointerFormat)
 
 	analysis, err := AnalyzeExternal(path)
 	if err != nil {
@@ -448,11 +463,11 @@ func TestReplaceBinarySigningContract(t *testing.T) {
 	}
 }
 
-// chainMachOSitePointers makes the fixture resemble lld output: every live
-// site pointer is a DYLD_CHAINED_PTR_64 rebase node in one __DATA page. It
+// chainMachOSitePointers makes the fixture resemble lld or Apple ld output:
+// every live site pointer uses the selected rebase format in one data page. It
 // returns the page_start field so the detach test can verify that the now
 // empty chain was removed rather than merely zeroed in place.
-func chainMachOSitePointers(t *testing.T, path string) uint64 {
+func chainMachOSitePointers(t *testing.T, path string, pointerFormat uint16) uint64 {
 	t.Helper()
 	info, err := load(path)
 	if err != nil {
@@ -470,11 +485,28 @@ func chainMachOSitePointers(t *testing.T, path string) uint64 {
 		{info.pcLineFileOff, info.pcLineSec},
 	} {
 		for off := 0; off+16 <= len(section.data); off += 16 {
-			if id := binary.LittleEndian.Uint64(section.data[off+8:]); id != 0 {
+			target := binary.LittleEndian.Uint64(section.data[off:])
+			if id := binary.LittleEndian.Uint64(section.data[off+8:]); id != 0 && target >= info.imageBase && target < info.textEnd {
 				slots = append(slots, slot{
 					off:    section.off + uint64(off),
 					target: binary.LittleEndian.Uint64(section.data[off:]),
 				})
+			}
+		}
+	}
+	if ptrAddr, _, ok := metaGlobalAddrs(info); ok {
+		for off := 0; off+48 <= len(info.entrySec); off += 16 {
+			if binary.LittleEndian.Uint64(info.entrySec[off+8:]) == metaRecordMagic {
+				for _, delta := range []int{16, 32} {
+					slots = append(slots, slot{info.entryFileOff + uint64(off+delta), binary.LittleEndian.Uint64(info.entrySec[off+delta:])})
+				}
+				break
+			}
+		}
+		for _, sec := range info.secs {
+			if ptrAddr >= sec.vmaddr && ptrAddr-sec.vmaddr < sec.size {
+				slots = append(slots, slot{sec.fileOff + ptrAddr - sec.vmaddr, binary.LittleEndian.Uint64(readVM(info, ptrAddr, 8))})
+				break
 			}
 		}
 	}
@@ -495,8 +527,11 @@ func chainMachOSitePointers(t *testing.T, path string) uint64 {
 			}
 			next = delta / 4
 		}
-		binary.LittleEndian.PutUint64(raw[current.off:],
-			(current.target&(1<<36-1))|(next<<51))
+		target := current.target
+		if pointerFormat == chainedPtr64Offset {
+			target -= info.imageBase
+		}
+		binary.LittleEndian.PutUint64(raw[current.off:], (target&(1<<36-1))|(next<<51))
 	}
 
 	// Locate LC_DYLD_CHAINED_FIXUPS, then the __DATA (segment index 2)
@@ -518,6 +553,7 @@ func chainMachOSitePointers(t *testing.T, path string) uint64 {
 	}
 	startsOff := fixOff + uint64(binary.LittleEndian.Uint32(raw[fixOff+4:]))
 	dataStarts := uint64(binary.LittleEndian.Uint32(raw[startsOff+4+2*4:]))
+	binary.LittleEndian.PutUint16(raw[startsOff+dataStarts+6:], pointerFormat)
 	pageStartOff := startsOff + dataStarts + 22
 	pageStart := slots[0].off - info.entryFileOff
 	if pageStart > 0x7fff {

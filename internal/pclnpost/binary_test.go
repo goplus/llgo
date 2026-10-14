@@ -119,7 +119,7 @@ func TestLoadBindTargetsRejectsMalformedBounds(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			info := &binaryInfo{raw: raw}
-			loadBindTargets(info, mf)
+			loadMachOFixups(info, mf)
 			if len(info.bindTargets) != 0 {
 				t.Fatalf("malformed input produced targets %v", info.bindTargets)
 			}
@@ -150,7 +150,7 @@ func TestLoadBindTargetsFormatsAndInvalidImports(t *testing.T) {
 			copy(raw[64+40:], "_target\x00")
 			mf := &macho.File{Symtab: &macho.Symtab{Syms: []macho.Symbol{{Name: "target", Value: 0x1234}}}}
 			info := &binaryInfo{raw: raw}
-			loadBindTargets(info, mf)
+			loadMachOFixups(info, mf)
 			if len(info.bindTargets) != 1 || info.bindTargets[0] != 0x1234 {
 				t.Fatalf("format %d targets = %v", format, info.bindTargets)
 			}
@@ -171,9 +171,44 @@ func TestLoadBindTargetsFormatsAndInvalidImports(t *testing.T) {
 			raw := chainedFixupFixture(64, 64, 1)
 			mutate(raw)
 			info := &binaryInfo{raw: raw}
-			loadBindTargets(info, new(macho.File))
+			loadMachOFixups(info, new(macho.File))
 			if name != "truncated record" && name != "invalid name" && len(info.bindTargets) != 0 {
 				t.Fatalf("invalid import header produced targets %v", info.bindTargets)
+			}
+		})
+	}
+}
+
+func TestMachORebaseBases(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		mutate func([]byte)
+		want   uint64
+	}{
+		{"offset format", func([]byte) {}, 0x1000},
+		{"absolute format", func(b []byte) { binary.LittleEndian.PutUint16(b[26:], chainedPtr64) }, 0},
+		{"missing segment", func(b []byte) { binary.LittleEndian.PutUint32(b[16:], 0) }, 0},
+		{"truncated starts", func(b []byte) { binary.LittleEndian.PutUint32(b[4:], 64) }, 0},
+		{"truncated offsets", func(b []byte) { binary.LittleEndian.PutUint32(b[8:], 64) }, 0},
+		{"truncated segment", func(b []byte) { binary.LittleEndian.PutUint32(b[16:], 64) }, 0},
+		{"no segments", func(b []byte) { binary.LittleEndian.PutUint32(b[8:], 0) }, 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			fixups := make([]byte, 64)
+			binary.LittleEndian.PutUint32(fixups[4:], 8)
+			binary.LittleEndian.PutUint32(fixups[8:], 2)
+			binary.LittleEndian.PutUint32(fixups[16:], 12)
+			binary.LittleEndian.PutUint16(fixups[26:], chainedPtr64Offset)
+			tt.mutate(fixups)
+			mf := &macho.File{Loads: []macho.Load{
+				macho.LoadBytes{},
+				&macho.Segment{SegmentHeader: macho.SegmentHeader{Addr: 0x1000, Memsz: 0x1000}},
+				&macho.Segment{SegmentHeader: macho.SegmentHeader{Addr: 0x2000, Memsz: 0x1000}},
+			}}
+			info := &binaryInfo{imageBase: 0x1000, secs: []secInfo{{vmaddr: 0x1100}, {vmaddr: 0x2200}}}
+			loadMachORebaseBases(info, mf, fixups)
+			if info.secs[0].rebaseBase != 0 || info.secs[1].rebaseBase != tt.want {
+				t.Fatalf("section rebase bases = %+v, want data base %#x", info.secs, tt.want)
 			}
 		})
 	}

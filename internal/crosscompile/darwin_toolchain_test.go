@@ -34,6 +34,7 @@ func TestDarwinToolchain(t *testing.T) {
 		{name: "extld precedence", input: NativeToolchainInput{CXX: []string{"clang++", "-fuse-ld=lld"}, ExternalLinker: []string{"clang++", "-fuse-ld=/usr/bin/ld"}}, linker: LinkerFlavorApple, version: "27.0"},
 		{name: "flags precedence", input: NativeToolchainInput{Environ: []string{"LDFLAGS=-fuse-ld=lld"}, ExternalFlags: []string{"-fuse-ld=/usr/bin/ld"}}, linker: LinkerFlavorApple, version: "27.0"},
 		{name: "ld path", input: NativeToolchainInput{ExternalFlags: []string{"--ld-path=/llvm/bin/ld64.lld", "-fuse-ld=/usr/bin/ld"}}, linker: LinkerFlavorMachO, version: "27.0"},
+		{name: "separate ld path", input: NativeToolchainInput{ExternalFlags: []string{"--ld-path", "/llvm/bin/ld64.lld", "-fuse-ld=/usr/bin/ld"}}, linker: LinkerFlavorMachO, version: "27.0"},
 		{name: "plugin", input: NativeToolchainInput{RequireLLD: true}, linker: LinkerFlavorMachO, version: "27.0"},
 		{name: "plugin with Apple ld", input: NativeToolchainInput{RequireLLD: true, ExternalFlags: []string{"-fuse-ld=/usr/bin/ld"}}, wantErr: "pass plugins require ld64.lld"},
 		{name: "bad version", input: NativeToolchainInput{Environ: []string{"MACOSX_DEPLOYMENT_TARGET=bad"}}, wantErr: "invalid macOS deployment target"},

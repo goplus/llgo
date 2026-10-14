@@ -243,7 +243,7 @@ func TestLoadMachOFixture(t *testing.T) {
 	if len(info.bindTargets) != 2 || info.bindTargets[0] != 0 || info.bindTargets[1] != base+0x1000+fns[0].size {
 		t.Fatalf("bindTargets %#v", info.bindTargets)
 	}
-	recs := parseRecords(info, info.entrySec)
+	recs := parseRecords(info, info.entrySec, info.entryFileOff)
 	if len(recs) != 2 {
 		t.Fatalf("records %+v", recs)
 	}
@@ -336,6 +336,25 @@ func TestRewriteMachOInPlace(t *testing.T) {
 	}
 	if got := binary.LittleEndian.Uint64(info.entrySec[0:]); got != prebuiltMagic {
 		t.Fatalf("magic %#x", got)
+	}
+}
+
+func TestRewriteMachOOffsetPointers(t *testing.T) {
+	path := machoRewriteFixture(t, 65536)
+	chainMachOSitePointers(t, path, chainedPtr64Offset)
+	st, err := Rewrite(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.FtabEntries != 3 {
+		t.Fatalf("prebuilt table entries = %d, want 3", st.FtabEntries)
+	}
+	info, err := load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if binary.LittleEndian.Uint64(info.entrySec) != prebuiltMagic {
+		t.Fatal("image-relative rebases did not produce a prebuilt table")
 	}
 }
 

@@ -54,7 +54,7 @@ func Rewrite(path string) (Stats, error) {
 			return st, fmt.Errorf("already rewritten")
 		}
 	}
-	entries := parseRecords(info, info.entrySec)
+	entries := parseRecords(info, info.entrySec, info.entryFileOff)
 	st.EntryRecords = len(entries)
 	if len(entries) == 0 {
 		return st, fmt.Errorf("no entry records")

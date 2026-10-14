@@ -157,4 +157,22 @@ func TestDarwinLTOFailureCleansTemporaryObjects(t *testing.T) {
 			}
 		})
 	}
+	t.Run("unavailable temporary directory", func(t *testing.T) {
+		t.Setenv("TMPDIR", filepath.Join(dir, "missing"))
+		t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
+		ctx := &context{
+			buildConf: &Config{Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}},
+			crossCompile: crosscompile.Export{CC: os.Args[0], Toolchain: crosscompile.NativeToolchain{
+				Linker: crosscompile.LinkerFlavorApple, ObjectFormat: crosscompile.ObjectFormatMachO,
+			}},
+			commands: commandEnv{dir: dir, environ: os.Environ()},
+		}
+		app := filepath.Join(dir, "not-linked")
+		if err := linkObjFiles(ctx, app, nil, nil, false); err == nil {
+			t.Fatal("link succeeded without a directory for LTO objects")
+		}
+		if _, err := os.Stat(app); !os.IsNotExist(err) {
+			t.Fatalf("linker ran after temporary directory failure: %v", err)
+		}
+	})
 }

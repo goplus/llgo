@@ -33,7 +33,7 @@ func TestParseRecordsELF(t *testing.T) {
 	sec := append(rec(0, 0), rec(0x1100, 7)...) // zero keep-alive skipped
 	sec = append(sec, rec(0x1200, 0)...)        // id==0 skipped
 	sec = append(sec, rec(0x1300, 9)...)
-	got := parseRecords(info, sec)
+	got := parseRecords(info, sec, 0)
 	if len(got) != 2 || got[0].pc != 0x1100 || got[1].symbolID != 9 {
 		t.Fatalf("got %+v", got)
 	}
@@ -50,7 +50,7 @@ func TestParseRecordsMachO(t *testing.T) {
 	badBind := (uint64(1) << 63) | 0
 	sec := append(rec(rebase, 5), rec(bind, 6)...)
 	sec = append(sec, rec(badBind, 8)...)
-	got := parseRecords(info, sec)
+	got := parseRecords(info, sec, 0)
 	if len(got) != 2 {
 		t.Fatalf("got %+v", got)
 	}
@@ -133,15 +133,27 @@ func TestSymbolAddrBothFormats(t *testing.T) {
 
 func TestDecodePtrVal(t *testing.T) {
 	elf := &binaryInfo{format: "elf"}
-	if got := decodePtrVal(elf, 0x1234); got != 0x1234 {
+	if got := decodePtrVal(elf, 0x1234, 0); got != 0x1234 {
 		t.Fatalf("elf passthrough %#x", got)
 	}
 	macho := &binaryInfo{format: "macho", imageBase: 0x100000000}
 	chained := (uint64(5) << 51) | 0x100000abc
-	if got := decodePtrVal(macho, chained); got != 0x100000abc {
+	if got := decodePtrVal(macho, chained, 0); got != 0x100000abc {
 		t.Fatalf("chained decode %#x", got)
 	}
-	if got := decodePtrVal(macho, 0x100000abc); got != 0x100000abc {
+	if got := decodePtrVal(macho, 0x100000abc, 0); got != 0x100000abc {
 		t.Fatalf("plain macho %#x", got)
+	}
+}
+
+func TestRebaseBaseAt(t *testing.T) {
+	info := &binaryInfo{secs: []secInfo{
+		{vmaddr: 0x1000, size: 0x100},
+		{vmaddr: 0x2000, size: 0x100, rebaseBase: 0x1000},
+	}}
+	for addr, want := range map[uint64]uint64{0xfff: 0, 0x1000: 0, 0x2000: 0x1000, 0x20ff: 0x1000, 0x2100: 0} {
+		if got := rebaseBaseAt(info, addr); got != want {
+			t.Errorf("rebase base at %#x = %#x, want %#x", addr, got, want)
+		}
 	}
 }

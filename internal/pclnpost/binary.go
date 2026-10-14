@@ -49,6 +49,8 @@ type secInfo struct {
 	vmaddr  uint64
 	size    uint64
 	fileOff uint64
+	// DYLD_CHAINED_PTR_64_OFFSET stores rebases relative to the image base.
+	rebaseBase uint64
 }
 
 type binaryInfo struct {
@@ -149,7 +151,7 @@ func load(path string) (*binaryInfo, error) {
 			}
 		}
 		if pointerSize == 8 && info.littleEndian {
-			loadBindTargets(info, mf)
+			loadMachOFixups(info, mf)
 		}
 		finish(info)
 		return info, nil
@@ -264,7 +266,14 @@ func finish(info *binaryInfo) {
 	}
 }
 
-func parseRecords(info *binaryInfo, sec []byte) []siteRecord {
+func parseRecords(info *binaryInfo, sec []byte, fileOff uint64) []siteRecord {
+	var rebaseBase uint64
+	for _, s := range info.secs {
+		if s.fileOff == fileOff {
+			rebaseBase = s.rebaseBase
+			break
+		}
+	}
 	var out []siteRecord
 	for off := 0; off+16 <= len(sec); off += 16 {
 		pc := binary.LittleEndian.Uint64(sec[off:])
@@ -274,23 +283,16 @@ func parseRecords(info *binaryInfo, sec []byte) []siteRecord {
 		}
 		// Mach-O pointer slots in the on-disk file hold dyld chained-fixup
 		// encodings; dyld rewrites them at load. Rebase nodes
-		// (DYLD_CHAINED_PTR_64) carry the target in the low 36 bits. Anchors
+		// (DYLD_CHAINED_PTR_64 or _64_OFFSET) carry the target in the low 36
+		// bits; the segment's pointer format determines its rebase base. Anchors
 		// naming exported functions are emitted as BIND nodes instead (bit 63
 		// set, import ordinal in the low 24 bits, addend above), even though
 		// they bind back into this same image, so those resolve through the
 		// imports table. The P2 write-back avoids the problem entirely by
 		// storing anchor-relative offsets instead of pointers.
-		if info.format == "macho" && (pc < info.textStart || pc >= info.textEnd) {
-			if pc>>63 != 0 { // DYLD_CHAINED_PTR_64_BIND
-				ordinal := pc & (1<<24 - 1)
-				addend := (pc >> 24) & 0xFF
-				if ordinal >= uint64(len(info.bindTargets)) || info.bindTargets[ordinal] == 0 {
-					continue
-				}
-				pc = info.bindTargets[ordinal] + addend
-			} else if t := pc & (1<<36 - 1); t >= info.textStart && t < info.textEnd {
-				pc = t
-			}
+		pc = decodePtrVal(info, pc, rebaseBase)
+		if pc == 0 {
+			continue
 		}
 		out = append(out, siteRecord{pc: pc, symbolID: id})
 	}
@@ -400,10 +402,9 @@ func buildFtab(info *binaryInfo, kept []siteRecord) ([]pclntab.FuncTabEntry, uin
 	return ftab, base
 }
 
-// loadBindTargets parses the LC_DYLD_CHAINED_FIXUPS imports table and
-// resolves each import ordinal to the address of its local definition (this
-// is a main executable: every funcinfo bind target is defined in-image).
-func loadBindTargets(info *binaryInfo, mf *macho.File) {
+// loadMachOFixups reads each segment's rebase format and resolves import
+// ordinals to local definitions (funcinfo binds name in-image functions).
+func loadMachOFixups(info *binaryInfo, mf *macho.File) {
 	raw := info.raw
 	if len(raw) < 32 {
 		return
@@ -430,6 +431,7 @@ func loadBindTargets(info *binaryInfo, mf *macho.File) {
 		return
 	}
 	hdr := raw[fixOff : fixOff+fixSize]
+	loadMachORebaseBases(info, mf, hdr)
 	importsOff := binary.LittleEndian.Uint32(hdr[8:])
 	symbolsOff := binary.LittleEndian.Uint32(hdr[12:])
 	importsCount := binary.LittleEndian.Uint32(hdr[16:])
@@ -483,4 +485,40 @@ func loadBindTargets(info *binaryInfo, mf *macho.File) {
 		targets[i] = addr
 	}
 	info.bindTargets = targets
+}
+
+func loadMachORebaseBases(info *binaryInfo, mf *macho.File, fixups []byte) {
+	startsOff := uint64(binary.LittleEndian.Uint32(fixups[4:]))
+	if startsOff+4 > uint64(len(fixups)) {
+		return
+	}
+	starts := fixups[startsOff:]
+	segCount := uint64(binary.LittleEndian.Uint32(starts))
+	if segCount > uint64(len(starts)-4)/4 {
+		return
+	}
+	var segmentIndex uint64
+	for _, load := range mf.Loads {
+		seg, ok := load.(*macho.Segment)
+		if !ok {
+			continue
+		}
+		if segmentIndex >= segCount {
+			break
+		}
+		off := uint64(binary.LittleEndian.Uint32(starts[4+segmentIndex*4:]))
+		segmentIndex++
+		if off == 0 || off+8 > uint64(len(starts)) {
+			continue
+		}
+		if binary.LittleEndian.Uint16(starts[off+6:]) != chainedPtr64Offset {
+			continue
+		}
+		for i := range info.secs {
+			sec := &info.secs[i]
+			if sec.vmaddr >= seg.Addr && sec.vmaddr-seg.Addr < seg.Memsz {
+				sec.rebaseBase = info.imageBase
+			}
+		}
+	}
 }
