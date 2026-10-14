@@ -389,6 +389,11 @@ jobs:
             goos: darwin
             goarch: arm64
             go-mod-version: "1.27"
+          - os: xcode-27
+            goos: darwin
+            goarch: arm64
+            go-mod-version: "1.27"
+            require-sdk27: true
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
@@ -440,6 +445,23 @@ jobs:
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
 
+      - name: Test packaged Darwin LLD and FullLTO
+        if: matrix.goos == 'darwin'
+        env:
+          REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          root=$(cd "$RUNNER_TEMP/llgo-release-install/current" && pwd -P)
+          linker="$root/libexec/llgo/ld64.lld"
+          "$linker" --version
+          codesign --verify "$linker"
+          if [[ "$REQUIRE_SDK27" == 1 ]]; then
+            [[ "$(xcrun --sdk macosx --show-sdk-version)" == 27* ]]
+          fi
+          llgo build -x -lto=full -o "$RUNNER_TEMP/llgo-lld-probe" ./_demo/c/hello 2> "$RUNNER_TEMP/llgo-lld-probe.log"
+          grep -F -- "-fuse-ld=$linker" "$RUNNER_TEMP/llgo-lld-probe.log"
+          "$RUNNER_TEMP/llgo-lld-probe"
+
   test-linux-distributions:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build]
@@ -473,6 +495,7 @@ jobs:
           docker run --rm llgo-release:test
           docker run --rm -v "$PWD/.github/linux:/tests:ro" \
             llgo-release:test bash /tests/test-installed.sh
+
 
   release:
     permissions:

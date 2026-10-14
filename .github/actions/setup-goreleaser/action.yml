@@ -27,6 +27,21 @@ runs:
       if: steps.cache-esp-clang.outputs.cache-hit != 'true'
       run: bash .github/workflows/download_esp_clang.sh
       shell: bash
+    - name: Cache Darwin LLD
+      id: cache-darwin-lld
+      uses: actions/cache@v6
+      with:
+        path: |
+          .sysroot/darwin/amd64/libexec
+          .sysroot/darwin/arm64/libexec
+        key: darwin-lld-${{ hashFiles('.github/lld/*', '.github/workflows/download_darwin_lld.sh') }}
+    - name: Download pinned SDK-compatible Darwin LLD
+      if: steps.cache-darwin-lld.outputs.cache-hit != 'true'
+      run: bash .github/workflows/download_darwin_lld.sh
+      shell: bash
+    - name: Prepare the shared Unix archive layout
+      run: mkdir -p .sysroot/linux/{amd64,arm64}/libexec/llgo
+      shell: bash
     - name: Check file
       run: tree .sysroot
       shell: bash

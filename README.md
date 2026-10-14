@@ -337,6 +337,18 @@ llgo run .
 
 ## Dependencies
 
+macOS release archives include a patched LLVM 22 `ld64.lld` under
+`libexec/llgo` to read macOS 27 SDK stubs. Native Darwin links select it while
+keeping the existing compiler selection; embedded targets keep their own
+linker. The binaries and their source are published in
+[xgo-dev/llvm-project](https://github.com/xgo-dev/llvm-project), and release
+assembly verifies the Release's archive checksums and the source revision
+pinned in `.github/lld/source-commit.txt`.
+These linker binaries require macOS 11 or later. Source checkouts without the
+private linker retain the existing LLD lookup. An explicit Clang `--ld-path`
+still takes precedence. This temporary component can be removed when LLGo
+upgrades to an LLVM version containing the SDK compatibility fix.
+
 - [Go 1.27](https://go.dev) for building LLGo; CI validates user packages separately with Go 1.20 through Go 1.27
 - [LLVM 22](https://llvm.org)
 - [Clang 22](https://clang.llvm.org)
