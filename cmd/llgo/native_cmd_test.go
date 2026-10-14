@@ -50,6 +50,21 @@ func TestNativeCommandProcess(t *testing.T) {
 
 func nativeCommand(t *testing.T, dir string, env []string, args ...string) (string, int) {
 	t.Helper()
+	out, err := prepareNativeCommand(t, dir, env, args...).CombinedOutput()
+	return string(out), nativeCommandExitCode(t, err)
+}
+
+func nativeCommandStreams(t *testing.T, dir string, env []string, args ...string) (string, string, int) {
+	t.Helper()
+	cmd := prepareNativeCommand(t, dir, env, args...)
+	var diagnostics bytes.Buffer
+	cmd.Stderr = &diagnostics
+	out, err := cmd.Output()
+	return string(out), diagnostics.String(), nativeCommandExitCode(t, err)
+}
+
+func prepareNativeCommand(t *testing.T, dir string, env []string, args ...string) *exec.Cmd {
+	t.Helper()
 	self, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +76,11 @@ func nativeCommand(t *testing.T, dir string, env []string, args ...string) (stri
 	coverage := t.TempDir()
 	cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverage, "LLGO_ROOT="+root, "GOENV=off", "GOFLAGS= ", "GOWORK=off", "GOTOOLCHAIN=local", "LLGO_TEST_NATIVE_ARGS="+string(data))
 	cmd.Env = append(cmd.Env, env...)
-	out, err := cmd.CombinedOutput()
+	return cmd
+}
+
+func nativeCommandExitCode(t *testing.T, err error) int {
+	t.Helper()
 	code := 0
 	if err != nil {
 		if exit, ok := err.(*exec.ExitError); ok {
@@ -70,7 +89,7 @@ func nativeCommand(t *testing.T, dir string, env []string, args ...string) (stri
 			t.Fatal(err)
 		}
 	}
-	return string(out), code
+	return code
 }
 
 func nativeFile(t *testing.T, path, data string) {
@@ -238,9 +257,9 @@ func TestNativeDirectoryAndOverlaySourceSelection(t *testing.T) {
 		if command == "build" {
 			env = []string{"GOFLAGS=-run=Selected"}
 		}
-		out, code := nativeCommand(t, dir, env, args...)
+		out, diagnostics, code := nativeCommandStreams(t, dir, env, args...)
 		if code != 0 {
-			t.Fatalf("%s exit=%d output=%s", command, code, out)
+			t.Fatalf("%s exit=%d stdout=%s stderr=%s", command, code, out, diagnostics)
 		}
 		if command == "build" {
 			output, err := exec.Command(filepath.Join(project, artifact)).CombinedOutput()
@@ -250,12 +269,12 @@ func TestNativeDirectoryAndOverlaySourceSelection(t *testing.T) {
 			out = string(output)
 		}
 		if strings.TrimSpace(out) != "42" {
-			t.Fatalf("%s used original source: %s", command, out)
+			t.Fatalf("%s used original source: stdout=%s stderr=%s", command, out, diagnostics)
 		}
 	}
-	out, code := nativeCommand(t, dir, []string{"GOFLAGS=-overlay=overlay.json"}, "run", "-C="+project, ".")
+	out, diagnostics, code := nativeCommandStreams(t, dir, []string{"GOFLAGS=-overlay=overlay.json"}, "run", "-C="+project, ".")
 	if code != 0 || strings.TrimSpace(out) != "42" {
-		t.Fatalf("GOFLAGS overlay exit=%d output=%s", code, out)
+		t.Fatalf("GOFLAGS overlay exit=%d stdout=%s stderr=%s", code, out, diagnostics)
 	}
 	out, code = nativeCommand(t, dir, nil, "run", "-C", project, "-overlay=missing.json", ".")
 	if code == 0 || !strings.Contains(out, "read -overlay") {
