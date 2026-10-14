@@ -1565,6 +1565,17 @@
     },
     {
       "kind": "branch",
+      "id": "0cc478b35480df51",
+      "label": "Branch cpunion/llgo:codex/linux-container-release-20261014",
+      "path": "series/branch/0cc478b35480df51/summary.json",
+      "configPath": "series/branch/0cc478b35480df51/config.json",
+      "commitPath": "commits/374511bbe8eb5e11360954470d81696d84894582.json",
+      "sha": "374511bbe8eb5e11360954470d81696d84894582",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/374511bbe8eb5e11360954470d81696d84894582",
+      "updatedAt": "2026-10-14T20:46:04.880Z"
+    },
+    {
+      "kind": "branch",
       "id": "ca82aeebad7e2549",
       "label": "Branch cpunion/llgo:codex/litgen-preserve-directives-20260810",
       "path": "series/branch/ca82aeebad7e2549/summary.json",
@@ -8800,6 +8811,17 @@
       "sha": "b29220ceda4864dc2900b39d38c5a1bb8b8f22c1",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/b29220ceda4864dc2900b39d38c5a1bb8b8f22c1",
       "updatedAt": "2026-10-14T09:05:29.628Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2814",
+      "label": "PR #2814",
+      "path": "series/pull/2814/summary.json",
+      "configPath": "series/pull/2814/config.json",
+      "commitPath": "commits/374511bbe8eb5e11360954470d81696d84894582.json",
+      "sha": "374511bbe8eb5e11360954470d81696d84894582",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/374511bbe8eb5e11360954470d81696d84894582",
+      "updatedAt": "2026-10-14T20:46:02.971Z"
     },
     {
       "kind": "pull",
