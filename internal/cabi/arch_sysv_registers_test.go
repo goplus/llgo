@@ -83,3 +83,52 @@ func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 		})
 	}
 }
+
+func TestSysVHiddenContextDoesNotConsumeArgumentRegisters(t *testing.T) {
+	llvm.InitializeAllTargets()
+	llvm.InitializeAllTargetMCs()
+	llvm.InitializeAllTargetInfos()
+	for _, goos := range []string{"linux", "darwin"} {
+		t.Run(goos, func(t *testing.T) {
+			prog := ssa.NewProgram(&ssa.Target{GOOS: goos, GOARCH: "amd64"})
+			defer prog.Dispose()
+			ctx := llvm.NewContext()
+			defer ctx.Dispose()
+			mod := ctx.NewModule("context-registers")
+			defer mod.Dispose()
+			tr := NewTransformer(prog, "x86_64-unknown-"+goos, "", true)
+			word := ctx.Int64Type()
+			pair := ctx.StructType([]llvm.Type{word, word}, false)
+			params := []llvm.Type{llvm.PointerType(ctx.Int8Type(), 0), word, word, word, word, pair}
+			fn := llvm.AddFunction(mod, "with_context", llvm.FunctionType(word, params, false))
+			fn.AddAttributeAtIndex(1, ctx.CreateEnumAttribute(llvm.AttributeKindID("nest"), 0))
+			if info := tr.GetFuncInfo(ctx, fn.GlobalValueType()); info.Params[5].Kind != AttrPointer {
+				t.Fatal("ordinary leading pointer should consume the deciding register")
+			}
+			if info := tr.getFuncInfo(ctx, fn.GlobalValueType(), fn.GetEnumAttributeAtIndex); info.Params[5].Kind == AttrPointer {
+				t.Fatal("hidden context consumed an ordinary argument register")
+			}
+			caller := llvm.AddFunction(mod, "caller", llvm.FunctionType(word, nil, false))
+			builder := ctx.NewBuilder()
+			defer builder.Dispose()
+			builder.SetInsertPointAtEnd(ctx.AddBasicBlock(caller, "entry"))
+			args := make([]llvm.Value, len(params))
+			for index, typ := range params {
+				args[index] = llvm.ConstNull(typ)
+			}
+			call := builder.CreateCall(fn.GlobalValueType(), fn, args, "")
+			call.AddCallSiteAttribute(1, ctx.CreateEnumAttribute(llvm.AttributeKindID("nest"), 0))
+			builder.CreateRet(call)
+			if info := tr.getFuncInfo(ctx, call.CalledFunctionType(), call.GetCallSiteEnumAttribute); info.Params[5].Kind == AttrPointer {
+				t.Fatal("hidden call context consumed an ordinary argument register")
+			}
+			tr.TransformModule("context-registers", mod)
+			if got := mod.NamedFunction("with_context").GlobalValueType().ParamTypes(); len(got) != 7 || got[5] != word || got[6] != word {
+				t.Fatalf("hidden entry pair did not remain in two registers: %v", got)
+			}
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err, mod.String())
+			}
+		})
+	}
+}

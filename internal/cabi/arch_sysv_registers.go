@@ -6,12 +6,21 @@ import "github.com/xgo-dev/llvm"
 // register bank lacks space, the whole value is passed in memory and neither
 // bank is consumed. Letting LLVM spill independent coercions does not preserve
 // the C aggregate's stack layout or this register rollback rule.
-func (p *Transformer) allocateSysVAggregateRegisters(info *FuncInfo) {
+func (p *Transformer) allocateSysVAggregateRegisters(info *FuncInfo, getAttr func(int, uint) llvm.Attribute) {
 	integer, floating := 6, 8
 	if info.Return.Kind == AttrPointer {
 		integer-- // Hidden return storage is the first integer argument.
 	}
-	for _, param := range info.Params {
+	for index, param := range info.Params {
+		if getAttr != nil {
+			hidden := false
+			for _, kind := range closureEnvAttributeKinds {
+				hidden = hidden || !getAttr(index+1, kind).IsNil()
+			}
+			if hidden {
+				continue // Closure environments use a dedicated register, such as R10.
+			}
+		}
 		if param.Kind == AttrPointer || param.Kind == AttrVoid {
 			continue // Memory aggregates and elided empty values consume no registers.
 		}

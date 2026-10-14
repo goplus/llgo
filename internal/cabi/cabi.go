@@ -327,6 +327,10 @@ func (p *Transformer) Alignof(typ llvm.Type) int {
 }
 
 func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
+	return p.getFuncInfo(ctx, typ, nil)
+}
+
+func (p *Transformer) getFuncInfo(ctx llvm.Context, typ llvm.Type, getAttr func(int, uint) llvm.Attribute) (info FuncInfo) {
 	info.Type = typ
 	info.Return = p.GetTypeInfo(ctx, typ, typ.ReturnType(), 0)
 	params := typ.ParamTypes()
@@ -335,7 +339,7 @@ func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInf
 		info.Params[i] = p.GetTypeInfo(ctx, typ, t, i+1)
 	}
 	if _, ok := p.sys.(*TypeInfoAmd64); ok {
-		p.allocateSysVAggregateRegisters(&info)
+		p.allocateSysVAggregateRegisters(&info, getAttr)
 	}
 	return
 }
@@ -398,7 +402,7 @@ func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
 	if fn.IntrinsicID() != 0 {
 		return false
 	}
-	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
+	info := p.getFuncInfo(ctx, fn.GlobalValueType(), fn.GetEnumAttributeAtIndex)
 	if !info.HasWrap() {
 		return false
 	}
@@ -709,7 +713,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 	if nfn.IntrinsicID() != 0 {
 		return false
 	}
-	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
+	info := p.getFuncInfo(ctx, call.CalledFunctionType(), call.GetCallSiteEnumAttribute)
 	if !info.HasWrap() {
 		return false
 	}
