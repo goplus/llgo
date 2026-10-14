@@ -36,10 +36,17 @@ func TestWasmGCHeadCacheWorkloads(t *testing.T) {
 		for _, decl := range file.Decls {
 			if name == "gc_tinygo.go" {
 				fn, ok := decl.(*ast.FuncDecl)
-				if !ok || !functions[fn.Name.Name] {
-					continue
+				if ok {
+					if !functions[fn.Name.Name] {
+						continue
+					}
+					delete(functions, fn.Name.Name)
+				} else {
+					gen, ok := decl.(*ast.GenDecl)
+					if !ok || gen.Tok != token.CONST || gen.Specs[0].(*ast.ValueSpec).Names[0].Name != "blocksPerStateWord" {
+						continue
+					}
 				}
-				delete(functions, fn.Name.Name)
 			}
 			if err := format.Node(&source, fset, decl); err != nil {
 				t.Fatal(err)
