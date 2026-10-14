@@ -68,6 +68,19 @@ native and WASM results before invoking either publisher. A successful docs-only
 run has no benchmark artifacts and is a normal no-op. External benchmark
 notifications run for every upstream main push, including documentation changes.
 
+## Release publishing
+
+PR and main builds create Linux DEB/RPM packages and install them in clean
+Ubuntu/Fedora containers on amd64 and arm64. They also build and run the release
+container images. These checks gate tag publishing and require no Fury token.
+
+Stable `vX.Y.Z` tags upload DEB/RPM packages to Gemfury after the release succeeds.
+Set the repository Actions secret `FURY_TOKEN` to an upload-only Gemfury Push
+token. The target account defaults to the repository owner (`xgo-dev` upstream);
+set the repository variable `FURY_ACCOUNT` to use another account. Prerelease
+tags publish their GitHub assets and container version tags without uploading
+to Fury.
+
 ## Validation
 
 The independent **CI policy** workflow runs on every PR and main push. It tests

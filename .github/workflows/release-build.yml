@@ -485,6 +485,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - name: Check release type
+        id: release-type
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'stable=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'stable=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Download Linux sysroot artifact
         uses: actions/download-artifact@v8
         with:
@@ -543,3 +551,39 @@ jobs:
             -w /go/src/llgo \
             "${GORELEASER_CROSS_IMAGE}" \
             release --clean --verbose --skip snapcraft
+
+      - name: Upload Linux packages to Fury
+        if: steps.release-type.outputs.stable == 'true'
+        env:
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          FURY_ACCOUNT: ${{ vars.FURY_ACCOUNT || github.repository_owner }}
+        run: |
+          set -euo pipefail
+          : "${FURY_TOKEN:?Set the FURY_TOKEN Actions secret to a Gemfury Push token}"
+          if [[ ! "$FURY_ACCOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo 'Invalid FURY_ACCOUNT' >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          packages=()
+          for arch in amd64 arm64; do
+            for format in deb rpm; do
+              package=".dist/llgo${version}.linux-${arch}.${format}"
+              if [[ ! -s "$package" ]]; then
+                echo "Missing release package: $package" >&2
+                exit 1
+              fi
+              packages+=("$package")
+            done
+          done
+          for package in "${packages[@]}"; do
+            echo "Uploading $package to Fury account $FURY_ACCOUNT"
+            status=$(curl --silent --show-error --connect-timeout 30 --max-time 600 \
+              --user "${FURY_TOKEN}:" --form "package=@${package}" \
+              --output /dev/null --write-out '%{http_code}' \
+              "https://push.fury.io/${FURY_ACCOUNT}/")
+            if [[ "$status" != 200 ]]; then
+              echo "Fury upload failed for $package (HTTP $status)" >&2
+              exit 1
+            fi
+          done
