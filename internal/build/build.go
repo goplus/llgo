@@ -699,7 +699,8 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		// named -target.
 		ExportRename: conf.Target != "" || export.WasmProfile != crosscompile.WasmProfileNone,
 		// Wasm has no inspectable native return addresses for runtime callers.
-		ShadowStack: conf.Goarch == "wasm",
+		ShadowStack:    conf.Goarch == "wasm",
+		DebuggerFrames: conf.Goarch == "wasm" && slices.Contains(splitSourcePatchBuildTags(conf.Tags), "llgo.wasm.debugger"),
 	}
 	preloadOptions := frontendOptions
 	llssaInitOnce.Do(func() {
