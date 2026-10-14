@@ -1268,6 +1268,17 @@
     },
     {
       "kind": "branch",
+      "id": "f7fede5f89c85472",
+      "label": "Branch cpunion/llgo:codex/gc-fixture-duplicate-20261014",
+      "path": "series/branch/f7fede5f89c85472/summary.json",
+      "configPath": "series/branch/f7fede5f89c85472/config.json",
+      "commitPath": "commits/ea2b65c90bc954a628f4638bfa66d2c3d496f48b.json",
+      "sha": "ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "updatedAt": "2026-10-14T15:38:30.730Z"
+    },
+    {
+      "kind": "branch",
       "id": "84ee412b1367f108",
       "label": "Branch cpunion/llgo:codex/generic-static-defer-dispatch",
       "path": "series/branch/84ee412b1367f108/summary.json",
@@ -8789,6 +8800,17 @@
       "sha": "2b53abf390f71ae3666313df7f914a3a4b993b2b",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/2b53abf390f71ae3666313df7f914a3a4b993b2b",
       "updatedAt": "2026-10-14T15:12:20.604Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2818",
+      "label": "PR #2818",
+      "path": "series/pull/2818/summary.json",
+      "configPath": "series/pull/2818/config.json",
+      "commitPath": "commits/ea2b65c90bc954a628f4638bfa66d2c3d496f48b.json",
+      "sha": "ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "updatedAt": "2026-10-14T15:38:28.378Z"
     }
   ]
 }
