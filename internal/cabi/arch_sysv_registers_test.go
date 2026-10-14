@@ -21,6 +21,8 @@ func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 			integer, floating := ctx.Int64Type(), ctx.DoubleType()
 			pair := ctx.StructType([]llvm.Type{ctx.FloatType(), ctx.FloatType()}, false)
 			ints := ctx.StructType([]llvm.Type{integer, integer}, false)
+			wrapper := ctx.StructType([]llvm.Type{integer}, false)
+			arrayWrapper := ctx.StructType([]llvm.Type{llvm.ArrayType(integer, 1)}, false)
 			smallInts := ctx.StructType([]llvm.Type{ctx.Int32Type(), ctx.Int32Type()}, false)
 			mixed := ctx.StructType([]llvm.Type{floating, integer}, false)
 			large := ctx.StructType([]llvm.Type{integer, integer, integer}, false)
@@ -43,6 +45,8 @@ func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 				{"floating_last", floating, append(repeated(floating, 7), pair, floating), 7, false, 8},
 				{"integer_partial", integer, append(repeated(integer, 5), ints, integer), 5, true, 6},
 				{"integer_fits", integer, append(repeated(integer, 4), ints, integer), 4, false, 5},
+				{"single_field_consumes_register", integer, append(repeated(integer, 4), wrapper, ints, integer), 5, true, 6},
+				{"single_array_field_consumes_register", integer, append(repeated(integer, 4), arrayWrapper, ints, integer), 5, true, 6},
 				{"mixed_rolls_back_sse", floating, append(repeated(integer, 6), mixed, floating), 6, true, 7},
 				{"mixed_rolls_back_integer", integer, append(repeated(floating, 8), mixed, integer), 8, true, 9},
 				{"hidden_sret_decides_last_register", large, append(repeated(integer, 5), smallInts, integer), 5, true, 6},
