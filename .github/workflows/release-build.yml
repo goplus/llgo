@@ -446,7 +446,7 @@ jobs:
         run: bash dev/test_native_asm.sh
 
       - name: Test packaged Darwin LLD and FullLTO
-        if: matrix.goos == 'darwin'
+        if: matrix.goos == 'darwin' && matrix.goarch == 'arm64'
         env:
           REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
         run: |
@@ -461,6 +461,10 @@ jobs:
           llgo build -x -lto=full -o "$RUNNER_TEMP/llgo-lld-probe" ./_demo/c/hello 2> "$RUNNER_TEMP/llgo-lld-probe.log"
           grep -F -- "-fuse-ld=$linker" "$RUNNER_TEMP/llgo-lld-probe.log"
           "$RUNNER_TEMP/llgo-lld-probe"
+
+      - name: Verify Intel archive retains the existing linker layout
+        if: matrix.goos == 'darwin' && matrix.goarch == 'amd64'
+        run: test ! -e "$RUNNER_TEMP/llgo-release-install/current/libexec/llgo/ld64.lld"
 
   test-linux-distributions:
     if: needs.prepare.outputs.run_code_ci == 'true'

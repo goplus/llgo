@@ -9,8 +9,9 @@ import (
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
 
-// nativeLinkerFlags uses the SDK-compatible LLVM 22 LLD shipped in macOS
-// releases. Compiler selection (including the packaged ESP Clang) is unchanged.
+// nativeLinkerFlags uses the SDK-compatible LLVM 22 LLD shipped in macOS arm64
+// releases. Intel releases omit it and retain the existing linker lookup.
+// Compiler selection (including the packaged ESP Clang) is unchanged.
 // Named embedded targets select their own linker and never call this helper.
 func nativeLinkerFlags(root string, toolchain NativeToolchain, level optlevel.Level, mode lto.Mode) ([]string, error) {
 	flags := nativeLLDFlags(toolchain, level, mode)
