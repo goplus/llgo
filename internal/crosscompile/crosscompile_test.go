@@ -370,6 +370,28 @@ func TestUseWASILTOEnablesSjLjAtLink(t *testing.T) {
 	}
 }
 
+func TestEnableWasmReflectLibffi(t *testing.T) {
+	export, err := Use("js", "wasm", "", false, optlevel.O2, lto.Off, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := EnableWasmReflectLibffi(&export); err != nil {
+		t.Fatal(err)
+	}
+	flags := strings.Join(export.LDFLAGS, " ")
+	for _, entry := range []string{"PushCallerLocationFrameWasm", "RecordCallerLocationWasm", "RecordPanicLocationWasm", "tinygogc", "llgo_reflect_bind0_js", "llgo_reflect_bind1_js", "llgo_reflect_bindn_js"} {
+		if !strings.Contains(flags, entry) {
+			t.Errorf("missing Asyncify exclusion %q: %s", entry, flags)
+		}
+	}
+	if !slices.Contains(export.LDFLAGS, emscriptenAsyncifyImports) || !slices.Contains(export.LDFLAGS, emscriptenAllowTableGrowth) {
+		t.Fatal("libffi reflection changed C libffi imports or table growth")
+	}
+	if err := EnableWasmReflectLibffi(&Export{}); err == nil {
+		t.Fatal("libffi reflection accepted a target without Asyncify")
+	}
+}
+
 func TestUseTarget(t *testing.T) {
 	// Test cases for target-based configuration
 	testCases := []struct {

@@ -18,6 +18,7 @@ package build
 
 import (
 	"go/types"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/callgraph/rta"
@@ -27,6 +28,7 @@ import (
 )
 
 const reflectPackagePath = "reflect"
+const wasmReflectLibffiTag = "llgo.wasm.reflect.libffi"
 
 // configureWasmReflectBridges enables typed Wasm entries for programs that
 // can use Go's dynamic reflection entry points. Emscripten workers have
@@ -40,8 +42,13 @@ func configureWasmReflectBridges(ctx *context) {
 		return
 	}
 	target := ctx.prog.Target()
-	wasmProvider := target.GOARCH == "wasm" && (target.WasmProvider == "wasi" || target.GOOS == "js")
-	target.WasmReflectBridges = wasmProvider && wasmProgramUseFor(ctx).usesWasmReflectBridges()
+	target.WasmReflectBridges = wasmReflectBridgeProvider(ctx) && wasmProgramUseFor(ctx).usesWasmReflectBridges()
+}
+
+func wasmReflectBridgeProvider(ctx *context) bool {
+	target := ctx.prog.Target()
+	libffi := ctx.buildConf != nil && slices.Contains(splitSourcePatchBuildTags(ctx.buildConf.Tags), wasmReflectLibffiTag)
+	return target.GOARCH == "wasm" && (target.WasmProvider == "wasi" || target.GOOS == "js" && !libffi)
 }
 
 // configureWasmFuncInfoEntries keeps table-index metadata out of ordinary

@@ -120,7 +120,7 @@ const (
 	emscriptenAllowTableGrowth   = "-sALLOW_TABLE_GROWTH=1"
 	// libffi calls the target through the JS import ffi_call_js. If that
 	// import is not listed, Asyncify cannot unwind a sleeping Go function
-	// invoked through the C libffi API. Go reflection uses static typed entries.
+	// invoked through libffi. Go reflection uses static typed entries by default.
 	emscriptenAsyncifyImports = "-sASYNCIFY_IMPORTS=llgo_wasm_host_wait_async,ffi_call_js"
 	// Caller-location updates also cannot suspend: allocations only enqueue
 	// finalizers, and runtime code has no automatic scheduling safepoints.
@@ -909,6 +909,19 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 		return
 	}
 	return
+}
+
+// EnableWasmReflectLibffi keeps the JS closure replay entries outside Asyncify.
+// The separately instrumented Go invocation resumes with the current buffers.
+func EnableWasmReflectLibffi(export *Export) error {
+	for i, flag := range export.LDFLAGS {
+		if flag == emscriptenAsyncifyRemove {
+			export.LDFLAGS[i] = strings.TrimSuffix(flag, "]") +
+				`,"llgo_reflect_bind0_js","llgo_reflect_bind1_js","llgo_reflect_bindn_js"]`
+			return nil
+		}
+	}
+	return errors.New("JavaScript libffi reflection requires Emscripten Asyncify")
 }
 
 func appendEmscriptenLibffiSearchPath(export *Export, llgoRoot string, wasmProfile WasmProfile) {

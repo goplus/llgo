@@ -619,6 +619,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	if err != nil {
 		return nil, err
 	}
+	if err := configureWasmReflectLibffi(conf, &export, wasmWorkers); err != nil {
+		return nil, err
+	}
 	wasmGC, err := configureWasmGC(conf, &export)
 	if err != nil {
 		return nil, err
@@ -1552,6 +1555,20 @@ func configureWasmWorkers(conf *Config, export *crosscompile.Export) (wasmworker
 	)
 	export.WasmRuntime.RunMainTask = true
 	return config, nil
+}
+
+func configureWasmReflectLibffi(conf *Config, export *crosscompile.Export, workers wasmworkers.Config) error {
+	tags := splitSourcePatchBuildTags(conf.Tags)
+	if !slices.Contains(tags, wasmReflectLibffiTag) {
+		return nil
+	}
+	if conf.Goos != "js" || conf.Goarch != "wasm" {
+		return fmt.Errorf("%s requires GOOS=js GOARCH=wasm", wasmReflectLibffiTag)
+	}
+	if workers.Enabled() || slices.Contains(tags, "llgo.wasm.workers") || slices.Contains(export.BuildTags, "llgo.wasm.workers") {
+		return fmt.Errorf("%s does not support WebAssembly workers", wasmReflectLibffiTag)
+	}
+	return crosscompile.EnableWasmReflectLibffi(export)
 }
 
 func configureWasmGC(conf *Config, export *crosscompile.Export) (bool, error) {

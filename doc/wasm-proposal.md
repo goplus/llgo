@@ -92,7 +92,9 @@ The opt-in bounded Emscripten worker mode (`LLGO_WASM_WORKERS=2` through `16`; `
 
 ## Reflection and foreign calls
 
-`reflect.Value.Call`, `CallSlice`, methods, and `reflect.MakeFunc` are required capabilities, not profile definitions. All hosted Wasm profiles use compiler-generated typed Go reflection bridges, deduplicated by lowered signature and emitted only when whole-program reachability finds dynamic reflection. The earlier JavaScript libffi selection cannot support a MakeFunc value crossing workers: its dynamically installed table entry exists only in the creating worker, whereas compiled entries exist in every instance. libffi remains available for C integration. Go reflection must preserve GC roots, suspension, panic/recover, closures, aggregate ABI lowering, and deterministic errors. Measure the bridge code/metadata and compile-time cost against the prior libffi output; further size optimization must retain cross-worker correctness.
+`reflect.Value.Call`, `CallSlice`, methods, and `reflect.MakeFunc` are required capabilities, not profile definitions. By default, all hosted Wasm profiles use compiler-generated typed Go reflection bridges, deduplicated by lowered signature and emitted only when whole-program reachability finds dynamic reflection. The earlier JavaScript libffi selection cannot support a MakeFunc value crossing workers: its dynamically installed table entry exists only in the creating worker, whereas compiled entries exist in every instance. libffi remains available for C integration. Go reflection must preserve GC roots, suspension, panic/recover, closures, aggregate ABI lowering, and deterministic errors. Measure the bridge code/metadata and compile-time cost against the prior libffi output; further size optimization must retain cross-worker correctness.
+
+Single-worker JavaScript builds may select the earlier libffi backend with `-tags=llgo.wasm.reflect.libffi` to omit typed reflection metadata. This applies to GoJS and Emscripten, including Memory64. The tag restores libffi's `FuncType` layout and JS replay trampolines; it is rejected with `LLGO_WASM_WORKERS>1` or the `llgo.wasm.workers` tag. WASI and native builds reject it.
 
 LLGo's Core Wasm C ABI is unrelated to the WIT Canonical ABI. Future WASI Preview 2 support will add generated WIT lift/lower adapters outside the ordinary Go and C calling conventions; it is not part of the current scope.
 
@@ -211,7 +213,9 @@ Hosted profile 是 Memory ABI 与 Host ABI 的组合。源码兼容、C 互操�
 
 ## 反射与外部调用
 
-`reflect.Value.Call`、`CallSlice`、方法和 `reflect.MakeFunc` 是必须能力，不是 profile 定义。所有 hosted Wasm profile 使用编译器生成的 typed Go reflection bridge，按 lowering 后签名去重，并且只在 whole-program 可达性分析发现动态反射时生成。原先选择的 JavaScript libffi 无法支持 MakeFunc 值跨 worker：动态添加的 table entry 只存在于创建它的 worker，编译后的 entry 才能在所有实例中使用。C 集成继续使用 libffi。Go 反射必须正确处理 GC root、挂起、panic/recover、闭包、聚合 ABI lowering 和确定性错误；应对比原 libffi 产物测量 bridge 代码、metadata 和编译时间开销，后续体积优化必须保持跨 worker 正确性。
+`reflect.Value.Call`、`CallSlice`、方法和 `reflect.MakeFunc` 是必须能力，不是 profile 定义。所有 hosted Wasm profile 默认使用编译器生成的 typed Go reflection bridge，按 lowering 后签名去重，并且只在 whole-program 可达性分析发现动态反射时生成。原先选择的 JavaScript libffi 无法支持 MakeFunc 值跨 worker：动态添加的 table entry 只存在于创建它的 worker，编译后的 entry 才能在所有实例中使用。C 集成继续使用 libffi。Go 反射必须正确处理 GC root、挂起、panic/recover、闭包、聚合 ABI lowering 和确定性错误；应对比原 libffi 产物测量 bridge 代码、metadata 和编译时间开销，后续体积优化必须保持跨 worker 正确性。
+
+单 Worker 的 JavaScript 构建可通过 `-tags=llgo.wasm.reflect.libffi` 选择原来的 libffi 后端，省去 typed reflection metadata；GoJS 与 Emscripten（含 Memory64）均支持。该 tag 恢复 libffi 的 `FuncType` 布局和 JS replay trampoline，不能与 `LLGO_WASM_WORKERS>1` 或 `llgo.wasm.workers` tag 同用；WASI 和原生构建也会拒绝它。
 
 LLGo Core Wasm C ABI 与 WIT Canonical ABI 无关。未来 WASI Preview 2 将在普通 Go/C 调用约定之外生成 WIT lift/lower adapter，不属于当前范围。
 
