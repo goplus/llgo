@@ -322,6 +322,7 @@ jobs:
           GOEXPERIMENT: simd
           LLGO_SIMD_ARTIFACT_DIR: ${{ runner.temp }}/llgo-simd-matrix
         run: |
+          (cd runtime && go test -count=1 -timeout=2m ./internal/runtime/math)
           go test -count=1 -timeout=2m ./test/simd/...
           bash dev/test_native_simd.sh
 

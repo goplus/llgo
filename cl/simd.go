@@ -33,6 +33,9 @@ const (
 	simdUnsignedVector
 	simdSignedVector
 	simdConvert
+	simdWidenBinary
+	simdCarrylessSelector
+	simdStoreMasked
 )
 
 type simdOperation struct {
@@ -95,6 +98,15 @@ var simdOperations = map[simdKey]simdOperation{
 	{"numeric", "PermuteOrZero"}: {llssa.SIMDPermuteOrZero, simdSignedVector, types.IsInteger},
 	{"numeric", "Permute"}:       {llssa.SIMDPermute, simdUnsignedVector, types.IsInteger},
 	{"numeric", "Max"}:           {llssa.SIMDMax, simdBinary, 0},
+
+	{"numeric", "Average"}:                  {llssa.SIMDAverage, simdBinary, types.IsInteger},
+	{"numeric", "MulAdd"}:                   {llssa.SIMDFMA, simdTernary, types.IsFloat},
+	{"numeric", "MulWidenLo"}:               {llssa.SIMDMulWidenLo, simdWidenBinary, types.IsInteger},
+	{"numeric", "RotateAllLeft"}:            {llssa.SIMDRotateAllLeft, simdScalarShift, types.IsInteger},
+	{"numeric", "RotateAllRight"}:           {llssa.SIMDRotateAllRight, simdScalarShift, types.IsInteger},
+	{"numeric", "StoreArrayMasked"}:         {llssa.SIMDStoreMasked, simdStoreMasked, 0},
+	{"numeric", "carrylessMultiply"}:        {llssa.SIMDCarrylessMultiply, simdCarrylessSelector, types.IsUnsigned},
+	{"numeric", "carrylessMultiplyWidenLo"}: {llssa.SIMDCarrylessMultiplyLo, simdBinary, types.IsUnsigned},
 }
 
 // These registrations share lowering but retain exact declaration names and
@@ -188,11 +200,42 @@ func (d simdOperation) matches(sig *types.Signature, vector types.Type) bool {
 	if (d.op == llssa.SIMDLookupOrZero || d.op == llssa.SIMDPermuteOrZero) && lanes.Len() != 16 {
 		return false
 	}
+	if (d.op == llssa.SIMDCarrylessMultiply || d.op == llssa.SIMDCarrylessMultiplyLo) &&
+		!types.Identical(lanes.Elem(), types.Typ[types.Uint64]) {
+		return false
+	}
 	var params []types.Type
 	result := vector
 	switch d.signature {
 	case simdScalarShift:
 		params = []types.Type{types.Typ[types.Uint64]}
+	case simdCarrylessSelector:
+		params = []types.Type{types.Typ[types.Uint8], vector}
+	case simdWidenBinary:
+		if sig.Results().Len() != 1 {
+			return false
+		}
+		result = sig.Results().At(0).Type()
+		widened, ok := llssa.SIMDNumericShape(result)
+		if !ok || widened.Len()*2 != lanes.Len() {
+			return false
+		}
+		from := lanes.Elem().Underlying().(*types.Basic).Info()
+		to := widened.Elem().Underlying().(*types.Basic).Info()
+		if to&types.IsInteger == 0 || from&types.IsUnsigned != to&types.IsUnsigned {
+			return false
+		}
+		params = []types.Type{vector}
+	case simdStoreMasked:
+		if sig.Params().Len() != 2 {
+			return false
+		}
+		maskType := sig.Params().At(1).Type()
+		mask, ok := llssa.SIMDMaskShape(maskType)
+		if !ok || mask.Len() != lanes.Len() {
+			return false
+		}
+		params, result = []types.Type{types.NewPointer(lanes), maskType}, nil
 	case simdUnsignedVector, simdSignedVector:
 		if sig.Params().Len() != 1 {
 			return false

@@ -62,6 +62,14 @@ const (
 	SIMDLookupOrZero
 	SIMDPermuteOrZero
 	SIMDPermute
+	SIMDAverage
+	SIMDFMA
+	SIMDMulWidenLo
+	SIMDRotateAllLeft
+	SIMDRotateAllRight
+	SIMDCarrylessMultiply
+	SIMDCarrylessMultiplyLo
+	SIMDStoreMasked
 )
 
 // SIMDNumericShape validates the official numeric aggregate representation.
@@ -154,6 +162,23 @@ func (b Builder) SIMD(op SIMDOp, result Type, args ...Expr) Expr {
 		return Expr{v, result}
 	}
 	switch op {
+	case SIMDAverage:
+		return b.simdAverage(args[0], args[1])
+	case SIMDFMA:
+		return b.simdFMA(result, args[0], args[1], args[2])
+	case SIMDMulWidenLo:
+		return b.simdMulWidenLo(result, args[0], args[1])
+	case SIMDRotateAllLeft, SIMDRotateAllRight:
+		return b.simdRotate(op, args[0], args[1])
+	case SIMDCarrylessMultiply, SIMDCarrylessMultiplyLo:
+		x, y := args[0], args[len(args)-1]
+		selector := llvm.ConstInt(b.Prog.ctx.Int8Type(), 0, false)
+		if op == SIMDCarrylessMultiply {
+			selector = args[1].impl
+		}
+		return b.simdCarrylessMultiply(x, y, selector)
+	case SIMDStoreMasked:
+		return b.simdStoreMasked(args[0], args[1], args[2])
 	case SIMDLookupOrZero, SIMDPermuteOrZero, SIMDPermute:
 		return b.simdPermute(op, args[0], args[1])
 	case SIMDConvert:

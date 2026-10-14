@@ -4,7 +4,15 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 : "${LLGO:=llgo}"
+# Preserve paths relative to the repository when entering the runtime module.
+if [[ "$LLGO" == */* && "$LLGO" != /* ]]; then
+  LLGO="$PWD/$LLGO"
+fi
 export GOEXPERIMENT=simd
+
+# The runtime is a separate module. Exercise the software FMA implementation
+# against the host Go and high-precision references through LLGo as well.
+(cd runtime && "$LLGO" test -O2 -count=1 -timeout=2m ./internal/runtime/math)
 
 if [[ "$(go env GOARCH)" != amd64 ]]; then
   "$LLGO" test -O0 -count=1 -timeout=2m ./test/simd/...
@@ -33,7 +41,7 @@ for profile in O0-off O2-off O2-thin O2-full; do
   "$LLGO" test "${flags[@]}" -c -o "$binary" ./test/simd
   "$binary" -test.v -test.count=1 -test.timeout=2m
   for debug in cpu.avx2=off cpu.avx=off cpu.fma=off cpu.all=off; do
-    echo "SIMD FMV: $profile GODEBUG=$debug"
-    GODEBUG="$debug" "$binary" -test.v -test.count=1 -test.timeout=2m -test.run='^TestSIMDFMV'
+    echo "SIMD FMV/bridge: $profile GODEBUG=$debug"
+    GODEBUG="$debug" "$binary" -test.v -test.count=1 -test.timeout=2m -test.run='^TestSIMD(FMV|Bridge)'
   done
 done

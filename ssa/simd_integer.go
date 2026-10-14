@@ -17,6 +17,20 @@ func simdIntegerConstant(typ llvm.Type, value uint64) llvm.Value {
 	return llvm.ConstVector(values, false)
 }
 
+func (b Builder) simdRotate(op SIMDOp, x, count Expr) Expr {
+	// Funnel shifts reduce the count modulo the lane width, including zero.
+	// The initial truncation preserves that modulo for each power-of-two width.
+	distance := b.impl.CreateTrunc(count.impl, x.ll.ElementType(), "")
+	v := b.impl.CreateInsertElement(llvm.Undef(x.ll), distance, llvm.ConstInt(b.Prog.tyInt32(), 0, false), "")
+	distance = b.simdSplatLane0(Expr{v, x.Type}).impl
+	name := "llvm.fshl"
+	if op == SIMDRotateAllRight {
+		name = "llvm.fshr"
+	}
+	value := b.impl.CreateIntrinsic(x.ll, llvm.LookupIntrinsicID(name), []llvm.Value{x.impl, x.impl, distance}, "")
+	return Expr{value, x.Type}
+}
+
 func (b Builder) simdShift(op SIMDOp, x, count Expr) Expr {
 	distance := count.impl
 	if op == SIMDShift {
