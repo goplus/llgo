@@ -861,6 +861,17 @@
     },
     {
       "kind": "branch",
+      "id": "f7fede5f89c85472",
+      "label": "Branch cpunion/llgo:codex/gc-fixture-duplicate-20261014",
+      "path": "series/branch/f7fede5f89c85472/summary.json",
+      "configPath": "series/branch/f7fede5f89c85472/config.json",
+      "commitPath": "commits/ea2b65c90bc954a628f4638bfa66d2c3d496f48b.json",
+      "sha": "ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "updatedAt": "2026-10-14T15:31:41.162Z"
+    },
+    {
+      "kind": "branch",
       "id": "fda43f9faab6d989",
       "label": "Branch cpunion/llgo:codex/go-command-proxy",
       "path": "series/branch/fda43f9faab6d989/summary.json",
@@ -4884,6 +4895,17 @@
       "sha": "34e2141ba012c074167f367a1ec9b1c9447c2fae",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/34e2141ba012c074167f367a1ec9b1c9447c2fae",
       "updatedAt": "2026-10-14T15:16:57.970Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2818",
+      "label": "PR #2818",
+      "path": "series/pull/2818/summary.json",
+      "configPath": "series/pull/2818/config.json",
+      "commitPath": "commits/ea2b65c90bc954a628f4638bfa66d2c3d496f48b.json",
+      "sha": "ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
+      "updatedAt": "2026-10-14T15:31:41.029Z"
     }
   ]
 }
