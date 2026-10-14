@@ -579,10 +579,12 @@ jobs:
           for package in "${packages[@]}"; do
             echo "Uploading $package to Fury account $FURY_ACCOUNT"
             status=$(curl --silent --show-error --connect-timeout 30 --max-time 600 \
-              --user "${FURY_TOKEN}:" --form "package=@${package}" \
+              --header "Authorization: ${FURY_TOKEN}" \
+              --header 'Accept: application/vnd.fury.v1' \
+              --form "file=@${package}" --form 'public=true' \
               --output /dev/null --write-out '%{http_code}' \
-              "https://push.fury.io/${FURY_ACCOUNT}/")
-            if [[ "$status" != 200 ]]; then
+              "https://push.fury.io/uploads?as=${FURY_ACCOUNT}")
+            if [[ "$status" != 2[0-9][0-9] ]]; then
               echo "Fury upload failed for $package (HTTP $status)" >&2
               exit 1
             fi

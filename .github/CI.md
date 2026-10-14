@@ -74,7 +74,8 @@ PR and main builds create Linux DEB/RPM packages and install them in clean
 Ubuntu/Fedora containers on amd64 and arm64. They also build and run the release
 container images. These checks gate tag publishing and require no Fury token.
 
-Stable `vX.Y.Z` tags upload DEB/RPM packages to Gemfury after the release succeeds.
+Stable `vX.Y.Z` tags upload DEB/RPM packages to Gemfury as public packages after
+the release succeeds.
 Set the repository Actions secret `FURY_TOKEN` to an upload-only Gemfury Push
 token. The target account defaults to the repository owner (`xgo-dev` upstream);
 set the repository variable `FURY_ACCOUNT` to use another account. Prerelease
