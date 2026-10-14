@@ -18,7 +18,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 15, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 17, "doc.yml": 6, "fmt.yml": 1,
 }
 
 
@@ -193,11 +193,11 @@ else:
         for consumer, producer in {
             "build": "populate-linux-sysroot", "build-windows": "build",
             "test-windows-artifacts": "build-windows", "prepare-winget": "test-windows-artifacts",
-            "test-artifacts": "build",
+            "test-artifacts": "build", "test-linux-distributions": "build",
         }.items():
             self.assertIn(producer, needs(jobs[consumer]))
         self.assertEqual(set(needs(jobs["release"])), {
-            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "populate-linux-sysroot"})
+            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-linux-distributions", "populate-linux-sysroot"})
         self.assertIn("startsWith(github.ref, 'refs/tags/')", jobs["release"]["if"])
 
     def test_runner_policy_is_not_duplicated_in_workflows(self):

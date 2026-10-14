@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 
 # Run outside the checkout without LLGO_ROOT or a prepopulated build cache.
 unset LLGO_ROOT LLVM_CONFIG
@@ -15,7 +15,7 @@ test "$(readlink /usr/bin/llgo)" = /usr/lib/llgo/bin/llgo
 test -f "$root/runtime/go.mod"
 test -f "$root/targets/esp32.json"
 test -x "$root/crosscompile/clang/bin/clang"
-test -f /usr/share/doc/llgo/THIRD_PARTY_NOTICES.md
+test -f "$root/crosscompile/clang/LICENSE-LLVM.txt"
 llgo version
 
 cat > go.mod <<'MODULE'
