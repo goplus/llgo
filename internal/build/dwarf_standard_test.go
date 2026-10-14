@@ -105,9 +105,12 @@ func openNativeDWARF(t *testing.T, bin string) (*dwarf.Data, string) {
 		}
 		return data, bin
 	case "darwin":
-		dsym := filepath.Join(t.TempDir(), filepath.Base(bin)+".dSYM")
-		if out, err := exec.Command("dsymutil", bin, "-o", dsym).CombinedOutput(); err != nil {
-			t.Fatalf("dsymutil: %v\n%s", err, out)
+		dsym := bin + ".dSYM"
+		if _, err := os.Stat(dsym); os.IsNotExist(err) {
+			dsym = filepath.Join(t.TempDir(), filepath.Base(bin)+".dSYM")
+			if out, err := exec.Command("dsymutil", bin, "-o", dsym).CombinedOutput(); err != nil {
+				t.Fatalf("dsymutil: %v\n%s", err, out)
+			}
 		}
 		dwarfPath := filepath.Join(dsym, "Contents", "Resources", "DWARF", filepath.Base(bin))
 		file, err := macho.Open(dwarfPath)

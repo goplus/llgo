@@ -91,7 +91,11 @@ func cleanMainPkg(pkg *packages.Package, conf *Config, verbose bool) error {
 }
 
 func removeExecutableArtifacts(executable string, verbose bool) error {
-	return errors.Join(removeFile(executable, verbose), removeFile(pclnSidecarPath(executable), verbose), removeFile(dwarfSidecarPath(executable), verbose))
+	err := errors.Join(removeFile(executable, verbose), removeFile(pclnSidecarPath(executable), verbose), removeFile(dwarfSidecarPath(executable), verbose))
+	if verbose {
+		fmt.Fprintln(os.Stderr, "Remove", executable+".dSYM")
+	}
+	return errors.Join(err, os.RemoveAll(executable+".dSYM"))
 }
 
 func cleanPkgs(initial []*packages.Package, verbose bool) error {

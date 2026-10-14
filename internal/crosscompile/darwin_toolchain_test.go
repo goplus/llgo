@@ -58,6 +58,9 @@ func TestDarwinToolchain(t *testing.T) {
 			if export.Toolchain.Linker != tt.linker || export.LLVMTarget != "arm64-apple-macosx"+tt.version || export.Toolchain.TargetTriple != export.LLVMTarget || export.Toolchain.SDKVersion != "27.0" {
 				t.Fatalf("unexpected Darwin profile: %+v", export)
 			}
+			if len(input.CXX) == 0 && (export.CXX != export.CC || !slices.Equal(export.CXXArgs, append(slices.Clone(export.CCArgs), "--driver-mode=g++"))) {
+				t.Fatalf("default C++ driver = %q %q", export.CXX, export.CXXArgs)
+			}
 			for _, pair := range []struct {
 				input, got []string
 				command    string
@@ -106,5 +109,54 @@ func TestMacOSVersionValidation(t *testing.T) {
 		if validMacOSVersion(version) {
 			t.Errorf("accepted %q", version)
 		}
+	}
+}
+
+func TestDarwinSDKFailures(t *testing.T) {
+	for _, tt := range []struct{ name, settings, want string }{
+		{"missing SDK", "", "resolve macOS SDK"},
+		{"missing settings", "", "read macOS SDK settings"},
+		{"malformed settings", "{", "read macOS SDK settings"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			sdk := t.TempDir()
+			if tt.name == "missing SDK" {
+				sdk = filepath.Join(sdk, "missing")
+			}
+			if tt.settings != "" {
+				if err := os.WriteFile(filepath.Join(sdk, "SDKSettings.json"), []byte(tt.settings), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			err := configureDarwinToolchain(&Export{}, "arm64-apple-macosx", NativeToolchainInput{Environ: []string{"SDKROOT=" + sdk}})
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error = %v, want %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestDarwinSettingsIgnoredForCrossTargets(t *testing.T) {
+	t.Setenv("SDKROOT", filepath.Join(t.TempDir(), "missing-sdk"))
+	t.Setenv("MACOSX_DEPLOYMENT_TARGET", "invalid")
+	t.Setenv("CC", "'malformed-compiler")
+	input := NativeToolchainInput{CC: []string{"missing-compiler"}, Environ: os.Environ()}
+	for _, tt := range []struct{ goos, goarch, target string }{
+		{"js", "wasm", ""},
+		{"wasip1", "wasm", ""},
+		{"", "", "rp2040"},
+		{"", "", "esp32"},
+		{"", "", "esp32c3"},
+		{"", "", "arduino"},
+	} {
+		t.Run(tt.goos+tt.target, func(t *testing.T) {
+			export, err := UseWithGOARMAndToolchain(tt.goos, tt.goarch, "", tt.target, false, optlevel.O2, lto.Off, false, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if export.Toolchain.Linker == LinkerFlavorApple || export.CC == "missing-compiler" || slices.Contains(export.LDFLAGS, "-fuse-ld=/usr/bin/ld") {
+				t.Fatalf("cross target inherited Darwin toolchain: %+v", export)
+			}
+		})
 	}
 }

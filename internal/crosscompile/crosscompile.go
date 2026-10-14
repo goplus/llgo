@@ -556,9 +556,9 @@ func ltoOptimizationLevel(level optlevel.Level) string {
 	case optlevel.O3:
 		return "3"
 	default:
-		// lld-link accepts only 0 through 3. -Os and -Oz remain encoded in
-		// the input IR through optsize/minsize attributes; use its normal
-		// optimization pipeline for the link-wide setting.
+		// Both linker and libLTO options accept only 0 through 3. -Os and -Oz
+		// remain encoded in the IR through optsize/minsize attributes; use O2
+		// for their link-wide speed optimization level.
 		return "2"
 	}
 }

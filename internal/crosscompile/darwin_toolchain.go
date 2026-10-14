@@ -86,6 +86,11 @@ func configureDarwinToolchain(export *Export, triple string, input NativeToolcha
 	}
 	if len(input.CXX) != 0 {
 		export.CXX, export.CXXArgs = input.CXX[0], slices.Clone(input.CXX[1:])
+	} else {
+		// Keep the selected compiler and command prefix, but use Clang's C++
+		// driver for C++ sources and the default link (including libc++).
+		export.CXX = export.CC
+		export.CXXArgs = append(slices.Clone(export.CCArgs), "--driver-mode=g++")
 	}
 	if len(input.ExternalLinker) != 0 {
 		export.Linker, export.LinkerArgs = input.ExternalLinker[0], slices.Clone(input.ExternalLinker[1:])

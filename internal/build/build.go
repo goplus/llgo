@@ -2870,16 +2870,13 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	var darwinLTODir string
 	if ctx.crossCompile.Toolchain.Linker == crosscompile.LinkerFlavorApple &&
 		ctx.buildConf.ltoEnabled() && shouldEmitDebugInfo(ctx.buildConf, &ctx.crossCompile) {
-		// Clang deletes its temporary LTO objects before a later dsymutil
-		// invocation can read the debug map. Retain them with the package
-		// objects in LLGo's build cache.
-		if err := os.MkdirAll(buildCacheRootDir(), 0755); err != nil {
-			return err
-		}
-		darwinLTODir, err = os.MkdirTemp(buildCacheRootDir(), "darwin-lto-")
+		// Keep LTO objects alive until dsymutil has packaged their DWARF.
+		// They are temporary link artifacts, independent of the package cache.
+		darwinLTODir, err = os.MkdirTemp("", "llgo-darwin-lto-")
 		if err != nil {
 			return err
 		}
+		defer os.RemoveAll(darwinLTODir)
 		objectPath := darwinLTODir
 		if ctx.buildConf.ltoMode() == lto.Full {
 			objectPath = filepath.Join(darwinLTODir, "lto.o")
@@ -2891,10 +2888,24 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
 	if err := cmd.Link(buildArgs...); err != nil {
-		if darwinLTODir != "" {
-			_ = os.RemoveAll(darwinLTODir)
-		}
 		return err
+	}
+	if darwinLTODir != "" {
+		cmd := exec.Command("dsymutil", linkOutput, "-o", linkOutput+".dSYM")
+		ctx.commands.configure(cmd)
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		if printCmds {
+			fmt.Fprintln(os.Stderr, cmd)
+		}
+		if err := cmd.Run(); err != nil {
+			_ = os.RemoveAll(linkOutput + ".dSYM")
+			return fmt.Errorf("generate Darwin LTO debug symbols: %w", err)
+		}
+	} else if ctx.crossCompile.Toolchain.ObjectFormat == crosscompile.ObjectFormatMachO {
+		// A previous LTO build's dSYM does not describe the new executable.
+		if err := os.RemoveAll(linkOutput + ".dSYM"); err != nil {
+			return err
+		}
 	}
 	if !moveExactWindowsOutput {
 		return nil
