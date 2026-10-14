@@ -176,13 +176,13 @@ func TestSymbolCollision(t *testing.T) {
 
 func TestUnsupportedSignaturesUnchanged(t *testing.T) {
 	for name, function := range map[string]string{
-		"aggregate_parameter": `define i32 @unsupported({i32} %x) {
+		"nested_wide_parameter": `define i32 @unsupported({[2 x <8 x float>]} %x) {
   %q = call i1 @avx2()
   ret i32 0
 }`,
-		"aggregate_result": `define {i32} @unsupported() {
+		"nested_wide_result": `define {[2 x <8 x float>]} @unsupported() {
   %q = call i1 @avx2()
-  ret {i32} zeroinitializer
+  ret {[2 x <8 x float>]} zeroinitializer
 }`,
 		"wide_parameter": `define void @unsupported(<8 x float> %x) {
   %q = call i1 @avx2()
@@ -208,7 +208,12 @@ declare i1 @avx2() "llgo.cpu.query"="x86.avx2"
 }
 
 func TestZeroSizedReceiverAndVoidDispatch(t *testing.T) {
-	mod := parseModule(t, `
+	for _, tc := range []struct{ name, triple, receiver string }{
+		{"sysv", "x86_64-unknown-linux-gnu", "{}"},
+		{"win64", "x86_64-w64-windows-gnu", "i32"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := `
 target triple = "x86_64-unknown-linux-gnu"
 declare fastcc i1 @avx2({}) "llgo.cpu.query"="x86.avx2"
 define fastcc void @root(ptr nonnull %p) {
@@ -221,24 +226,73 @@ fallback:
   store i32 0, ptr %p
   ret void
 }
-`)
-	if err := Run(mod, "v1"); err != nil {
-		t.Fatal(err)
+`
+			mod := parseModule(t, strings.ReplaceAll(strings.ReplaceAll(source, "x86_64-unknown-linux-gnu", tc.triple), "{}", tc.receiver))
+			if err := Run(mod, "v1"); err != nil {
+				t.Fatal(err)
+			}
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			root := mod.NamedFunction("root").String()
+			variant := mod.NamedFunction("root.__llgo_fmv_avx2").String()
+			for _, want := range []string{
+				"load atomic ptr, ptr @root.__llgo_fmv_slot monotonic",
+				"musttail call fastcc void %target(ptr nonnull %p)",
+			} {
+				if !strings.Contains(root, want) {
+					t.Fatalf("dispatch lost receiver or call ABI %q:\n%s", want, root)
+				}
+			}
+			if strings.Contains(variant, "@avx2(") || strings.Contains(variant, "store i32 0") || !strings.Contains(variant, "store i32 1") {
+				t.Fatalf("zero-sized receiver query did not specialize:\n%s", variant)
+			}
+		})
 	}
-	if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
-		t.Fatal(err)
-	}
-	root := mod.NamedFunction("root").String()
-	variant := mod.NamedFunction("root.__llgo_fmv_avx2").String()
-	for _, want := range []string{
-		"load atomic ptr, ptr @root.__llgo_fmv_slot monotonic",
-		"musttail call fastcc void %target(ptr nonnull %p)",
+}
+
+func TestInvalidQuerySignaturesUnchanged(t *testing.T) {
+	for _, tc := range []struct {
+		name, triple, declaration, call string
+	}{
+		{"extra receiver", "x86_64-unknown-linux-gnu", "i1 @avx2({}, {})", "i1 @avx2({} zeroinitializer, {} zeroinitializer)"},
+		{"nonboolean result", "x86_64-unknown-linux-gnu", "i32 @avx2()", "i32 @avx2()"},
+		{"variadic query", "x86_64-unknown-linux-gnu", "i1 @avx2(...)", "i1 (...) @avx2()"},
+		{"integer receiver on SysV", "x86_64-unknown-linux-gnu", "i1 @avx2(i32)", "i1 @avx2(i32 0)"},
+		{"wrong Win64 receiver width", "x86_64-w64-windows-gnu", "i1 @avx2(i64)", "i1 @avx2(i64 0)"},
 	} {
-		if !strings.Contains(root, want) {
-			t.Fatalf("dispatch lost receiver or call ABI %q:\n%s", want, root)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			mod := parseModule(t, `target triple = "`+tc.triple+`"
+declare `+tc.declaration+` "llgo.cpu.query"="x86.avx2"
+define void @root() {
+  %q = call `+tc.call+`
+  ret void
+}
+`)
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			before := mod.String()
+			if err := Run(mod, "v1"); err != nil || mod.String() != before {
+				t.Fatalf("invalid CPU query established an AVX2 guard: %v\n%s", err, mod.String())
+			}
+		})
 	}
-	if strings.Contains(variant, "@avx2(") || strings.Contains(variant, "store i32 0") || !strings.Contains(variant, "store i32 1") {
-		t.Fatalf("zero-sized receiver query did not specialize:\n%s", variant)
+}
+
+func TestIncompleteAggregateABI(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+	// An opaque named type has no defined layout. It must not be mistaken
+	// for a defined empty struct just because both have zero fields.
+	typ := ctx.StructCreateNamed("Block")
+	if supportedType(typ) {
+		t.Fatal("incomplete aggregate accepted at the FMV boundary")
+	}
+	typ.StructSetBody([]llvm.Type{ctx.StructType([]llvm.Type{
+		llvm.ArrayType(llvm.VectorType(ctx.FloatType(), 4), 2), ctx.Int64Type(),
+	}, false)}, false)
+	if !supportedType(typ) {
+		t.Fatal("resolved nested SIMD128 aggregate rejected at the FMV boundary")
 	}
 }

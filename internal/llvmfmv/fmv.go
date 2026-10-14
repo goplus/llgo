@@ -50,19 +50,43 @@ func isQuery(fn llvm.Value) bool {
 	if ret.TypeKind() != llvm.IntegerTypeKind || ret.IntTypeWidth() != 1 || typ.IsFunctionVarArg() {
 		return false
 	}
-	// Before ABI lowering the Go method can still have its zero-sized receiver.
 	params := typ.ParamTypes()
-	return len(params) == 0 || len(params) == 1 && params[0].TypeKind() == llvm.StructTypeKind && params[0].StructElementTypesCount() == 0
+	if len(params) == 0 {
+		return true
+	}
+	if len(params) != 1 {
+		return false
+	}
+	// SysV may retain the empty receiver. Win64 lowers an empty aggregate
+	// to i32. The query attribute comes from the checked Go declaration.
+	param := params[0]
+	if param.TypeKind() == llvm.StructTypeKind && param.StructElementTypesCount() == 0 {
+		return true
+	}
+	return strings.Contains(fn.GlobalParent().Target(), "windows") &&
+		param.TypeKind() == llvm.IntegerTypeKind && param.IntTypeWidth() == 32
 }
 
-// The first implementation preserves the existing SIMD128 ABI. Wider vectors
-// and aggregates require their own target-independent boundary lowering.
+// ABI lowering leaves register tuples and single-leaf aggregate wrappers on
+// some targets. Their leaves must still satisfy the SIMD128 width boundary.
 func supportedType(typ llvm.Type) bool {
 	switch typ.TypeKind() {
 	case llvm.VoidTypeKind, llvm.IntegerTypeKind, llvm.PointerTypeKind,
 		llvm.FloatTypeKind, llvm.DoubleTypeKind, llvm.X86_FP80TypeKind,
 		llvm.FP128TypeKind, llvm.PPC_FP128TypeKind:
 		return true
+	case llvm.StructTypeKind:
+		if typ.IsStructOpaque() {
+			return false
+		}
+		for _, elem := range typ.StructElementTypes() {
+			if !supportedType(elem) {
+				return false
+			}
+		}
+		return true
+	case llvm.ArrayTypeKind:
+		return supportedType(typ.ElementType())
 	case llvm.VectorTypeKind:
 		elem := typ.ElementType()
 		var width int
@@ -100,10 +124,10 @@ func supported(fn llvm.Value) bool {
 }
 
 // Run preserves baseline entries and creates AVX2 implementations of supported
-// SIMD128 functions. It runs after Win64 vector-parameter lowering but before
-// aggregate ABI lowering and target optimization,
-// including in O0 and ModeGen builds. baseline is the resolved compile-time
-// GOAMD64 level, never a host environment read. Running it again is harmless.
+// SIMD128 functions. It runs after aggregate and target ABI lowering, before
+// target optimization, including in O0 and ModeGen builds. baseline is the
+// resolved compile-time GOAMD64 level, never a host environment read. Running
+// it again is harmless.
 func Run(mod llvm.Module, baseline string) error {
 	arch, _, _ := strings.Cut(mod.Target(), "-")
 	if arch != "x86_64" && arch != "amd64" && arch != "x86_64h" {

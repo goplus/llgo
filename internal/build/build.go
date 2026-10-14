@@ -3363,13 +3363,16 @@ func compilePackageModule(ctx *context, aPkg *aPackage, externs []string, verbos
 	ret := aPkg.LPkg
 
 	ctx.cTransformer.SetSkipFuncs(cabiSkipFuncsForPlan9Asm(ctx, pkgPath, ret.Module()))
+	// Finish call-boundary lowering before creating musttail dispatchers.
+	// They must forward the caller's ABI storage, not materialize aggregates
+	// in a forwarding frame that a tail transfer immediately releases.
+	lowerLargeAggregates(ctx.prog, ret.Module())
 	ctx.cTransformer.LowerWindowsVectorParams(ret.Module())
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+	ctx.cTransformer.SetSkipFuncs(nil)
 	if err := llvmfmv.Run(ret.Module(), ctx.buildConf.GOAMD64); err != nil {
 		return fmt.Errorf("%s: %w", pkgPath, err)
 	}
-	lowerLargeAggregates(ctx.prog, ret.Module())
-	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
-	ctx.cTransformer.SetSkipFuncs(nil)
 	if ctx.buildConf.Goos == "windows" {
 		pragmaSyntax := append([]*ast.File(nil), pkg.Syntax...)
 		if aPkg.AltPkg != nil {
