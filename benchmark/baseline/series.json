@@ -3105,6 +3105,17 @@
     },
     {
       "kind": "branch",
+      "id": "f2bdd01b6c1e30eb",
+      "label": "Branch dependabot/go_modules/golang.org/x/tools-0.52.0",
+      "path": "series/branch/f2bdd01b6c1e30eb/summary.json",
+      "configPath": "series/branch/f2bdd01b6c1e30eb/config.json",
+      "commitPath": "commits/2b53abf390f71ae3666313df7f914a3a4b993b2b.json",
+      "sha": "2b53abf390f71ae3666313df7f914a3a4b993b2b",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/2b53abf390f71ae3666313df7f914a3a4b993b2b",
+      "updatedAt": "2026-10-14T15:12:23.118Z"
+    },
+    {
+      "kind": "branch",
       "id": "9068249d6b5b5370",
       "label": "Branch fennoai/issue-2609-1789525622",
       "path": "series/branch/9068249d6b5b5370/summary.json",
@@ -8767,6 +8778,17 @@
       "sha": "1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
       "updatedAt": "2026-10-14T13:33:58.141Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2817",
+      "label": "PR #2817",
+      "path": "series/pull/2817/summary.json",
+      "configPath": "series/pull/2817/config.json",
+      "commitPath": "commits/2b53abf390f71ae3666313df7f914a3a4b993b2b.json",
+      "sha": "2b53abf390f71ae3666313df7f914a3a4b993b2b",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/2b53abf390f71ae3666313df7f914a3a4b993b2b",
+      "updatedAt": "2026-10-14T15:12:20.604Z"
     }
   ]
 }
