@@ -102,6 +102,17 @@
     },
     {
       "kind": "branch",
+      "id": "995173cf44366aa1",
+      "label": "Branch codex/native-toolchain-sdk27-20261014",
+      "path": "series/branch/995173cf44366aa1/summary.json",
+      "configPath": "series/branch/995173cf44366aa1/config.json",
+      "commitPath": "commits/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19.json",
+      "sha": "cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
+      "updatedAt": "2026-10-14T17:47:35.524Z"
+    },
+    {
+      "kind": "branch",
       "id": "578011f5e0ca5690",
       "label": "Branch codex/runtime-attributes-20261008",
       "path": "series/branch/578011f5e0ca5690/summary.json",
@@ -4906,6 +4917,17 @@
       "sha": "ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/ea2b65c90bc954a628f4638bfa66d2c3d496f48b",
       "updatedAt": "2026-10-14T15:31:41.029Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2820",
+      "label": "PR #2820",
+      "path": "series/pull/2820/summary.json",
+      "configPath": "series/pull/2820/config.json",
+      "commitPath": "commits/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19.json",
+      "sha": "cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
+      "updatedAt": "2026-10-14T17:47:35.406Z"
     }
   ]
 }
