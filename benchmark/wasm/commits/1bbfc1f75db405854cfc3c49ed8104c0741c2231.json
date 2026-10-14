@@ -6,8 +6,8 @@
     "sha": "1bbfc1f75db405854cfc3c49ed8104c0741c2231",
     "ref": "main",
     "url": "https://github.com/xgo-dev/llgo/commit/1bbfc1f75db405854cfc3c49ed8104c0741c2231",
-    "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38511981871",
-    "timestamp": "2026-10-14T04:33:14Z"
+    "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38512115645",
+    "timestamp": "2026-10-14T04:34:46Z"
   },
   "platforms": {
     "wasm-linux": {
@@ -19,8 +19,8 @@
         "sha": "1bbfc1f75db405854cfc3c49ed8104c0741c2231",
         "ref": "main",
         "url": "https://github.com/xgo-dev/llgo/commit/1bbfc1f75db405854cfc3c49ed8104c0741c2231",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38511981871",
-        "timestamp": "2026-10-14T04:33:14Z"
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/38512115645",
+        "timestamp": "2026-10-14T04:34:46Z"
       },
       "platform": {
         "id": "wasm-linux",
@@ -51,12 +51,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 8378789078
+                "build-ns": 8112816262
               }
             }
           ],
           "measurements": {
-            "build-ns": 8378789078
+            "build-ns": 8112816262
           }
         },
         {
@@ -68,12 +68,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 7241050646
+                "build-ns": 8258170898
               }
             }
           ],
           "measurements": {
-            "build-ns": 7241050646
+            "build-ns": 8258170898
           }
         },
         {
@@ -85,12 +85,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 7247019603
+                "build-ns": 6538322994
               }
             }
           ],
           "measurements": {
-            "build-ns": 7247019603
+            "build-ns": 6538322994
           }
         },
         {
@@ -102,12 +102,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 24981234388
+                "build-ns": 25517275062
               }
             }
           ],
           "measurements": {
-            "build-ns": 24981234388
+            "build-ns": 25517275062
           }
         },
         {
@@ -119,12 +119,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 5293221022
+                "build-ns": 4920681676
               }
             }
           ],
           "measurements": {
-            "build-ns": 5293221022
+            "build-ns": 4920681676
           }
         },
         {
@@ -136,12 +136,12 @@
             {
               "iterations": 1,
               "measurements": {
-                "build-ns": 5102385700
+                "build-ns": 4489254092
               }
             }
           ],
           "measurements": {
-            "build-ns": 5102385700
+            "build-ns": 4489254092
           }
         },
         {
