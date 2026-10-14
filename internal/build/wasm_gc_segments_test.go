@@ -69,7 +69,6 @@ func TestWasmGCSegmentBoundariesAndSweep(t *testing.T) {
 
 const gcSegmentWorkloadSource = `package segments
 import ("runtime"; "testing"; "unsafe")
-const segmentedHeap = true
 const (
  blockStateFree uint8 = iota
  blockStateHead
