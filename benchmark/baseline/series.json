@@ -2775,6 +2775,17 @@
     },
     {
       "kind": "branch",
+      "id": "6d721f9228af05f9",
+      "label": "Branch cpunion/llgo:fix/sysv-aggregate-register-exhaustion",
+      "path": "series/branch/6d721f9228af05f9/summary.json",
+      "configPath": "series/branch/6d721f9228af05f9/config.json",
+      "commitPath": "commits/8f428867ac6829c12c00fd42751de492c2172bd9.json",
+      "sha": "8f428867ac6829c12c00fd42751de492c2172bd9",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f428867ac6829c12c00fd42751de492c2172bd9",
+      "updatedAt": "2026-10-14T23:43:45.622Z"
+    },
+    {
+      "kind": "branch",
       "id": "c7df29f960e0884e",
       "label": "Branch cpunion/llgo:llgo-agy-windows-stdlib-os-20260817",
       "path": "series/branch/c7df29f960e0884e/summary.json",
@@ -8877,6 +8888,17 @@
       "sha": "cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
       "updatedAt": "2026-10-14T17:45:19.178Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2822",
+      "label": "PR #2822",
+      "path": "series/pull/2822/summary.json",
+      "configPath": "series/pull/2822/config.json",
+      "commitPath": "commits/8f428867ac6829c12c00fd42751de492c2172bd9.json",
+      "sha": "8f428867ac6829c12c00fd42751de492c2172bd9",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f428867ac6829c12c00fd42751de492c2172bd9",
+      "updatedAt": "2026-10-14T23:43:43.719Z"
     }
   ]
 }
