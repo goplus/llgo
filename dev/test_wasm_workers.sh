@@ -91,8 +91,10 @@ run_worker_go_test() {
 	local output="${work_dir}/test-go-${target}.out"
 	# Run the full Go-language package: the small reflection fixture alone
 	# does not exercise continuous collection after the larger live heap.
+	# Repeated full collections need headroom on CI; keep the test alarm
+	# below the outer 300s process limit, as for the other worker tests.
 	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
-		-target "${target}" -emulator -v -count=1 -timeout=60s \
+		-target "${target}" -emulator -v -count=1 -timeout=180s \
 		"${repo_root}/test/go" 2>&1 | tee "${output}"
 	grep -Fxq "PASS" "${output}"
 }
