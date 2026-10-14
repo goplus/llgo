@@ -630,6 +630,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 	// coherent profile below, including when the LLGo host is macOS or Linux.
 	// Do not inspect an unrelated embedded Clang before that profile resolves.
 	var clangRoot string
+	var darwinSDK string
 	if goarch != "wasm" && !(nativePlatformToolchain && goos == "windows") {
 		clangRoot, err = getESPClangRoot(forceEspClang)
 		if err != nil {
@@ -660,7 +661,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 		} else {
 			export.Toolchain = nativeToolchain(goos)
 			if goos == "darwin" {
-				if err = configureDarwinToolchain(&export, targetTriple, nativeInput); err != nil {
+				if darwinSDK, err = configureDarwinToolchain(&export, targetTriple, nativeInput); err != nil {
 					return
 				}
 				targetTriple = export.LLVMTarget
@@ -714,15 +715,10 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 
 		// Add sysroot for macOS only
 		if goos == "darwin" {
-			sysrootPath, sysrootErr := macOSSysroot(nativeInput)
-			if sysrootErr != nil {
-				err = fmt.Errorf("failed to get macOS SDK path: %w", sysrootErr)
-				return
-			}
 			// Darwin's -isysroot also overrides SDK paths in Clang config files;
 			// --sysroot alone loses to an existing -isysroot setting.
-			export.CCFLAGS = append(export.CCFLAGS, "-isysroot", sysrootPath)
-			export.LDFLAGS = append(export.LDFLAGS, "-isysroot", sysrootPath)
+			export.CCFLAGS = append(export.CCFLAGS, "-isysroot", darwinSDK)
+			export.LDFLAGS = append(export.LDFLAGS, "-isysroot", darwinSDK)
 		}
 
 		ccflags, ldflags := nativeSectionFlags(export.Toolchain)

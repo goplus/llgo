@@ -45,7 +45,7 @@ func TestDarwinToolchain(t *testing.T) {
 			input.Environ = append([]string{"MACOSX_DEPLOYMENT_TARGET=27.0"}, input.Environ...)
 			input.Environ = append(slices.Clone(input.Environ), "SDKROOT="+sdk)
 			export := Export{CC: "clang++", Toolchain: nativeToolchain("darwin")}
-			err := configureDarwinToolchain(&export, "arm64-apple-macosx", input)
+			resolvedSDK, err := configureDarwinToolchain(&export, "arm64-apple-macosx", input)
 			if tt.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 					t.Fatalf("error = %v, want %q", err, tt.wantErr)
@@ -54,6 +54,9 @@ func TestDarwinToolchain(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+			if resolvedSDK != sdk {
+				t.Fatalf("SDK = %q, want %q", resolvedSDK, sdk)
 			}
 			if export.Toolchain.Linker != tt.linker || export.LLVMTarget != "arm64-apple-macosx"+tt.version || export.Toolchain.TargetTriple != export.LLVMTarget || export.Toolchain.SDKVersion != "27.0" {
 				t.Fatalf("unexpected Darwin profile: %+v", export)
@@ -117,6 +120,8 @@ func TestDarwinSDKFailures(t *testing.T) {
 		{"missing SDK", "", "resolve macOS SDK"},
 		{"missing settings", "", "read macOS SDK settings"},
 		{"malformed settings", "{", "read macOS SDK settings"},
+		{"missing version", "{}", "invalid macOS SDK version"},
+		{"invalid version", `{"Version":"27beta"}`, "invalid macOS SDK version"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			sdk := t.TempDir()
@@ -128,7 +133,7 @@ func TestDarwinSDKFailures(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			err := configureDarwinToolchain(&Export{}, "arm64-apple-macosx", NativeToolchainInput{Environ: []string{"SDKROOT=" + sdk}})
+			_, err := configureDarwinToolchain(&Export{}, "arm64-apple-macosx", NativeToolchainInput{Environ: []string{"SDKROOT=" + sdk}})
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("error = %v, want %q", err, tt.want)
 			}

@@ -43,18 +43,21 @@ func macOSSysroot(input NativeToolchainInput) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func configureDarwinToolchain(export *Export, triple string, input NativeToolchainInput) error {
+func configureDarwinToolchain(export *Export, triple string, input NativeToolchainInput) (string, error) {
 	sdk, err := macOSSysroot(input)
 	if err != nil {
-		return fmt.Errorf("resolve macOS SDK: %w", err)
+		return "", fmt.Errorf("resolve macOS SDK: %w", err)
 	}
 	data, err := os.ReadFile(filepath.Join(sdk, "SDKSettings.json"))
 	if err != nil {
-		return fmt.Errorf("read macOS SDK settings: %w", err)
+		return "", fmt.Errorf("read macOS SDK settings: %w", err)
 	}
 	var settings struct{ Version string }
 	if err := json.Unmarshal(data, &settings); err != nil {
-		return fmt.Errorf("read macOS SDK settings: %w", err)
+		return "", fmt.Errorf("read macOS SDK settings: %w", err)
+	}
+	if !validMacOSVersion(settings.Version) {
+		return "", fmt.Errorf("invalid macOS SDK version %q in SDKSettings.json", settings.Version)
 	}
 	version := nativeEnvironmentValue(input, "MACOSX_DEPLOYMENT_TARGET")
 	if version == "" {
@@ -64,16 +67,16 @@ func configureDarwinToolchain(export *Export, triple string, input NativeToolcha
 		cmd.Env, cmd.Dir = input.Environ, input.Dir
 		out, err := cmd.Output()
 		if err != nil {
-			return fmt.Errorf("resolve macOS deployment target: %w", err)
+			return "", fmt.Errorf("resolve macOS deployment target: %w", err)
 		}
 		version = strings.TrimSpace(string(out))
 	}
 	if !validMacOSVersion(version) {
-		return fmt.Errorf("invalid macOS deployment target %q: want major[.minor[.patch]]", version)
+		return "", fmt.Errorf("invalid macOS deployment target %q: want major[.minor[.patch]]", version)
 	}
 	major, _, _ := strings.Cut(version, ".")
 	if strings.HasPrefix(triple, "arm64-") && major == "10" {
-		return fmt.Errorf("macOS deployment target %q is unsupported for arm64: requires macOS 11 or later", version)
+		return "", fmt.Errorf("macOS deployment target %q is unsupported for arm64: requires macOS 11 or later", version)
 	}
 	// Apple libLTO requires an OS version in every module's target triple.
 	// Use the same triple for Go IR, C compilation, linking, and cache identity.
@@ -134,17 +137,17 @@ func configureDarwinToolchain(export *Export, triple string, input NativeToolcha
 		case "ld", "ld64":
 			export.Toolchain.Linker = LinkerFlavorApple
 		default:
-			return fmt.Errorf("unsupported Darwin linker %q: use Apple ld or ld64.lld", path)
+			return "", fmt.Errorf("unsupported Darwin linker %q: use Apple ld or ld64.lld", path)
 		}
 		// Preserve an absolute linker path and environment selection after
 		// the generated defaults; only the matching flag dialect is emitted.
 		export.LDFLAGS = append(export.LDFLAGS, selection)
 	}
 	if input.RequireLLD && export.Toolchain.Linker != LinkerFlavorMachO {
-		return fmt.Errorf("LTO pass plugins require ld64.lld on Darwin; select it with -extldflags=-fuse-ld=lld")
+		return "", fmt.Errorf("LTO pass plugins require ld64.lld on Darwin; select it with -extldflags=-fuse-ld=lld")
 	}
 	export.LDFLAGS = append(export.LDFLAGS, input.ExternalFlags...)
-	return nil
+	return sdk, nil
 }
 
 func validMacOSVersion(version string) bool {
