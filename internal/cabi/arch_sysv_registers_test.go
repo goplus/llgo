@@ -1,11 +1,41 @@
 package cabi
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
+
+func TestSysVRegisterClassesRejectUnsupportedTypes(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+	for _, test := range []struct {
+		typ  llvm.Type
+		want string
+	}{
+		{ctx.X86FP80Type(), "x86_fp80"},
+		{ctx.FP128Type(), "fp128"},
+		{ctx.PPCFP128Type(), "ppc_fp128"},
+		{ctx.StructType([]llvm.Type{ctx.Int64Type(), ctx.FP128Type()}, false), "fp128"},
+		{llvm.ArrayType(ctx.FP128Type(), 1), "fp128"},
+	} {
+		t.Run(test.typ.String(), func(t *testing.T) {
+			defer func() {
+				got := recover()
+				message, ok := got.(string)
+				if !ok || !strings.Contains(message, "unsupported SysV register class: ") {
+					t.Fatalf("panic = %v, want an unsupported register class diagnostic", got)
+				}
+				if !strings.Contains(message, test.want) {
+					t.Fatalf("diagnostic %q omits unsupported type %q", message, test.want)
+				}
+			}()
+			sysVRegisterClasses(test.typ)
+		})
+	}
+}
 
 func TestSysVAggregateRegisterExhaustion(t *testing.T) {
 	llvm.InitializeAllTargets()

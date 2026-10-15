@@ -61,6 +61,8 @@ func sysVRegisterClasses(typ llvm.Type) (integer, floating int) {
 	case llvm.ArrayTypeKind:
 		gp, fp := sysVRegisterClasses(typ.ElementType())
 		integer, floating = gp*typ.ArrayLength(), fp*typ.ArrayLength()
+	default:
+		panic("cabi: unsupported SysV register class: " + typ.String())
 	}
 	return
 }
