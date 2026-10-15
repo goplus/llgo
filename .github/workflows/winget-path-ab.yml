@@ -29,13 +29,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
-          if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
+          if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue) -or ((& winget.exe --version) -ne 'v1.29.380')) {
             # Bootstrap from verified release files, avoiding the module's
             # failing latest-release discovery on the ARM64 image.
-            $base = 'https://github.com/microsoft/winget-cli/releases/download/v1.29.290'
+            $base = 'https://github.com/microsoft/winget-cli/releases/download/v1.29.380'
             $files = @{
-              'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' = '6824b6e9484ab24687d99a0c829d2bcbcc7849a70a4d0f596fc43c89d20dff15'
-              'DesktopAppInstaller_Dependencies.zip' = '50c377516749002dcdda9c8e52f26e8e2ea73d52131ce96ffd082dcf60ca6677'
+              'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' = '65dea9c01ce08ee7b763366b27c0e651f97db857c11ca9b9c301826c10092f2e'
+              'DesktopAppInstaller_Dependencies.zip' = 'ba875afe9d190f61218985ac0292a99d1db710bf93e13c68944ca9d89f0d82d1'
             }
             $temporary = Join-Path $env:RUNNER_TEMP 'winget-bootstrap'
             New-Item -ItemType Directory -Force $temporary | Out-Null
@@ -76,13 +76,20 @@ jobs:
         if: always()
         shell: pwsh
         run: ./.github/windows/test-winget-ab.ps1 -GoArch ${{ matrix.goarch }} -Mode ${{ matrix.mode }} -Phase uninstall
+      - name: Collect WinGet diagnostic logs
+        if: always()
+        shell: pwsh
+        run: |
+          $destination = Join-Path $env:RUNNER_TEMP 'winget-ab/logs'
+          New-Item -ItemType Directory -Force $destination | Out-Null
+          foreach ($relative in @('Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir', 'Microsoft/WinGet/DiagOutputDir')) {
+            $source = Join-Path $env:LOCALAPPDATA $relative
+            if (Test-Path $source) { Copy-Item "$source/*" $destination -Recurse -Force }
+          }
       - name: Preserve WinGet diagnostic logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: winget-logs-${{ matrix.goarch }}-${{ matrix.mode }}
-          path: |
-            ~/AppData/Local/Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir/
-            ~/AppData/Local/Microsoft/WinGet/DiagOutputDir/
-            ${{ runner.temp }}/winget-ab/
+          path: ${{ runner.temp }}/winget-ab/
           if-no-files-found: ignore
