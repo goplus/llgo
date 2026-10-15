@@ -1547,10 +1547,10 @@
       "label": "Branch cpunion/llgo:fix/arm64-hfa-stack-layout",
       "path": "series/branch/309ecea4c65013f7/summary.json",
       "configPath": "series/branch/309ecea4c65013f7/config.json",
-      "commitPath": "commits/1f69263aa14458a855ad2c0703e1a3041ffeb25a.json",
-      "sha": "1f69263aa14458a855ad2c0703e1a3041ffeb25a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/1f69263aa14458a855ad2c0703e1a3041ffeb25a",
-      "updatedAt": "2026-10-15T02:52:39.046Z"
+      "commitPath": "commits/edc67ab5a93d12f2589311bef0d3d58045186d2e.json",
+      "sha": "edc67ab5a93d12f2589311bef0d3d58045186d2e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/edc67ab5a93d12f2589311bef0d3d58045186d2e",
+      "updatedAt": "2026-10-15T15:08:12.805Z"
     },
     {
       "kind": "branch",
@@ -5056,10 +5056,10 @@
       "label": "PR #2825",
       "path": "series/pull/2825/summary.json",
       "configPath": "series/pull/2825/config.json",
-      "commitPath": "commits/1f69263aa14458a855ad2c0703e1a3041ffeb25a.json",
-      "sha": "1f69263aa14458a855ad2c0703e1a3041ffeb25a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/1f69263aa14458a855ad2c0703e1a3041ffeb25a",
-      "updatedAt": "2026-10-15T02:52:38.964Z"
+      "commitPath": "commits/edc67ab5a93d12f2589311bef0d3d58045186d2e.json",
+      "sha": "edc67ab5a93d12f2589311bef0d3d58045186d2e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/edc67ab5a93d12f2589311bef0d3d58045186d2e",
+      "updatedAt": "2026-10-15T15:08:12.685Z"
     },
     {
       "kind": "pull",
