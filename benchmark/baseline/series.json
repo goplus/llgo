@@ -2049,6 +2049,17 @@
     },
     {
       "kind": "branch",
+      "id": "6dda52fcda995c39",
+      "label": "Branch cpunion/llgo:codex/use-wasmer-7.5.0.2-20261015",
+      "path": "series/branch/6dda52fcda995c39/summary.json",
+      "configPath": "series/branch/6dda52fcda995c39/config.json",
+      "commitPath": "commits/b565cf439e017ae3e6dfd22afd681f236e5701d5.json",
+      "sha": "b565cf439e017ae3e6dfd22afd681f236e5701d5",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b565cf439e017ae3e6dfd22afd681f236e5701d5",
+      "updatedAt": "2026-10-15T08:26:42.157Z"
+    },
+    {
+      "kind": "branch",
       "id": "d7c3d41b7f68ef43",
       "label": "Branch cpunion/llgo:codex/versioned-installers-20260922",
       "path": "series/branch/d7c3d41b7f68ef43/summary.json",
@@ -8943,6 +8954,17 @@
       "sha": "1f69263aa14458a855ad2c0703e1a3041ffeb25a",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/1f69263aa14458a855ad2c0703e1a3041ffeb25a",
       "updatedAt": "2026-10-15T02:56:50.718Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2826",
+      "label": "PR #2826",
+      "path": "series/pull/2826/summary.json",
+      "configPath": "series/pull/2826/config.json",
+      "commitPath": "commits/b565cf439e017ae3e6dfd22afd681f236e5701d5.json",
+      "sha": "b565cf439e017ae3e6dfd22afd681f236e5701d5",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b565cf439e017ae3e6dfd22afd681f236e5701d5",
+      "updatedAt": "2026-10-15T08:26:40.832Z"
     }
   ]
 }
