@@ -277,9 +277,12 @@ jobs:
   macos-lto-plugin:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    name: macOS LTO plugin
+    name: macOS LTO plugin (${{ matrix.os }}, LLVM 22 / LLD 23)
     timeout-minutes: 45
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-latest, xcode-27]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
@@ -297,12 +300,19 @@ jobs:
       - name: Build LTO plugin
         run: |
           set -euo pipefail
+          llvm-config --version | grep -E '^22\.'
+          "$LLGO_LLD" --version
+          if [[ "${{ matrix.os }}" == xcode-27 ]]; then
+            [[ "$(xcrun --sdk macosx --show-sdk-version)" == 27* ]]
+          fi
+          plugin_llvm="$(brew --prefix llvm@23)"
           cmake -S ltoplugin -B ltoplugin/build \
-            -DLLVM_DIR="$(llvm-config --cmakedir)" \
+            -DLLVM_DIR="$plugin_llvm/lib/cmake/llvm" \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build ltoplugin/build --config Release
           test -f ltoplugin/build/LLGOLTOPlugin.dylib
           echo "LLGO_LTO_PLUGIN=$GITHUB_WORKSPACE/ltoplugin/build/LLGOLTOPlugin.dylib" >> "$GITHUB_ENV"
+          echo "LLGO_LTO_OPT=$plugin_llvm/bin/opt" >> "$GITHUB_ENV"
 
       - name: Test LTO plugin passes, runtime behavior, and retained symbols
         env:

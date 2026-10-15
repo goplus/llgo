@@ -173,6 +173,29 @@ run_as_root() {
     fi
 }
 
+macos_lld_is_compatible() {
+    local version
+    version="$("$1" --version)" || return 1
+    [[ "$version" =~ (^|[[:space:]])LLD[[:space:]]23\.([0-9]+)\.([0-9]+)([[:space:]]|$) ]] || return 1
+    (( BASH_REMATCH[2] > 1 || (BASH_REMATCH[2] == 1 && BASH_REMATCH[3] >= 3) ))
+}
+
+install_macos_lld() {
+    # LLD 23.1.2 still rejects SDK 27's arm64e.x1 stubs. Keep the supported
+    # major pinned even after Homebrew's unversioned formula moves to LLVM 24.
+    local formula=lld@23
+    if ! brew list --versions "$formula" >/dev/null 2>&1; then
+        brew install "$formula"
+    fi
+    local linker
+    linker="$(brew --prefix "$formula")/bin/ld64.lld"
+    if ! macos_lld_is_compatible "$linker"; then
+        brew upgrade "$formula"
+    fi
+    macos_lld_is_compatible "$linker" ||
+        die "LLD 23.x >= 23.1.3 is required for macOS arm64; update Homebrew and upgrade lld@23"
+}
+
 install_macos_dependencies() {
     command_exists xcode-select || die "xcode-select is required on macOS"
     if ! xcode-select -p >/dev/null 2>&1; then
@@ -190,6 +213,9 @@ install_macos_dependencies() {
     done
     if ((${#missing[@]})); then
         brew install "${missing[@]}"
+    fi
+    if [[ "$1" == arm64 ]]; then
+        install_macos_lld
     fi
 }
 
@@ -337,12 +363,16 @@ install_dependencies() {
     local os="$2"
     local arch="$3"
     export PATH="$root/bin:$PATH"
-    local marker="$root/dependencies/unix-v1-$os-$arch-go-$LLGO_GO_VERSION.complete"
+    local profile=unix-v1
+    if [[ "$os-$arch" == darwin-arm64 ]]; then
+        profile=unix-v2-lld23
+    fi
+    local marker="$root/dependencies/$profile-$os-$arch-go-$LLGO_GO_VERSION.complete"
     if [[ -f "$marker" ]] && system_go_is_compatible; then
         return
     fi
     case "$os" in
-        darwin) install_macos_dependencies ;;
+        darwin) install_macos_dependencies "$arch" ;;
         linux) install_linux_dependencies ;;
     esac
     ensure_go "$root" "$os" "$arch"

@@ -782,6 +782,9 @@ runs:
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
           llvm_formula="llvm@${{inputs.llvm-version}}"
           lld_formula="lld@${{inputs.llvm-version}}"
+          if [[ "$RUNNER_ARCH" == ARM64 ]]; then
+            lld_formula=lld@23
+          fi
 
           # GitHub macOS runners may pre-link another LLVM/LLD version (for example llvm@18),
           # which makes lld@<target> fail during Homebrew's automatic link step.
@@ -810,8 +813,16 @@ runs:
           echo "clang: ${clang_version}"
           echo "ld.lld: ${lld_version}"
           test "$("${llvm_bin}/clang" -dumpversion | cut -d. -f1)" = "${{inputs.llvm-version}}"
-          "${lld_bin}/ld.lld" --version | grep -Eq "(^|[[:space:]])${{inputs.llvm-version}}\."
+          "${lld_bin}/ld.lld" --version | grep -Eq "(^|[[:space:]])${lld_formula#lld@}\."
           echo "linked ld.lld path: $(command -v ld.lld || true)"
+        fi
+
+        # Release-artifact jobs also need the external linker even though
+        # install-llvm=false: their compiler already carries LLVM 22.
+        if [[ "$RUNNER_ARCH" == ARM64 ]]; then
+          LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
+          install_macos_lld
+          echo "LLGO_LLD=$(brew --prefix lld@23)/bin/ld64.lld" >> "$GITHUB_ENV"
         fi
         
         # Install common dependencies

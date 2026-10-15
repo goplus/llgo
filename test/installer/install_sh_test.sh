@@ -49,6 +49,60 @@ assert_equal "$(go_archive_checksum "$go_metadata" go1.27.0.linux-arm64.tar.gz)"
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/llgo-installer-test.XXXXXXXX")"
 trap 'rm -rf "$temporary"' EXIT
 
+# Upgrading an older 23.x installation is required: 23.1.2 lacks the SDK fix.
+(
+    lld_prefix="$temporary/lld"
+    mkdir -p "$lld_prefix/bin"
+    cat >"$lld_prefix/bin/ld64.lld" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$LLGO_INSTALLER_TEST_LLD_VERSION"
+EOF
+    chmod +x "$lld_prefix/bin/ld64.lld"
+    export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 23.1.2'
+    upgraded=0
+    # shellcheck disable=SC2329 # install_macos_lld invokes this mock.
+    brew() {
+        case "$1" in
+            list) assert_equal "$3" lld@23 ;;
+            --prefix) assert_equal "$2" lld@23; printf '%s\n' "$lld_prefix" ;;
+            upgrade)
+                assert_equal "$2" lld@23
+                upgraded=$((upgraded + 1))
+                export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 23.1.3'
+                ;;
+            *) fail "unexpected brew call: $*" ;;
+        esac
+    }
+    install_macos_lld
+    assert_equal "$upgraded" 1
+    install_macos_lld
+    assert_equal "$upgraded" 1
+    export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 24.1.0'
+    if macos_lld_is_compatible "$lld_prefix/bin/ld64.lld"; then
+        fail 'unqualified LLD major accepted'
+    fi
+)
+
+# An existing installation must not skip the newly required dependency.
+(
+    marker_root="$temporary/old-macos-install"
+    mkdir -p "$marker_root/dependencies"
+    touch "$marker_root/dependencies/unix-v1-darwin-arm64-go-$LLGO_GO_VERSION.complete"
+    dependency_calls=0
+    # shellcheck disable=SC2329
+    install_macos_dependencies() {
+        assert_equal "$1" arm64
+        dependency_calls=$((dependency_calls + 1))
+    }
+    # shellcheck disable=SC2329
+    ensure_go() { :; }
+    # shellcheck disable=SC2329
+    system_go_is_compatible() { return 0; }
+    install_dependencies "$marker_root" darwin arm64
+    install_dependencies "$marker_root" darwin arm64
+    assert_equal "$dependency_calls" 1
+)
+
 # Exercise the no-system-Go download path without fetching the large toolchain.
 go_payload="$temporary/go-payload"
 mkdir -p "$go_payload/go/bin"

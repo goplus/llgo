@@ -340,7 +340,7 @@ llgo run .
 - [Go 1.27](https://go.dev) for building LLGo; CI validates user packages separately with Go 1.20 through Go 1.27
 - [LLVM 22](https://llvm.org)
 - [Clang 22](https://clang.llvm.org)
-- [LLD 22](https://lld.llvm.org)
+- [LLD](https://lld.llvm.org): 23.x >= 23.1.3 for macOS arm64 native links; 22 for other native platforms
 - [LLDB](https://lldb.llvm.org) (LLVM 22 packages on Linux/Windows; Xcode's Apple LLDB on macOS)
 - [pkg-config 0.29+](https://gitlab.freedesktop.org/pkg-config/pkg-config)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
@@ -348,6 +348,21 @@ llgo run .
 - [OpenSSL 3.0+](https://www.openssl.org/)
 - [zlib 1.2+](https://github.com/madler/zlib)
 - [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/lib/py](https://pkg.go.dev/github.com/goplus/lib/py))
+
+On macOS arm64, install `lld@23` with Homebrew. LLGo uses its external
+`ld64.lld` to support macOS 27 SDK stubs while keeping LLVM 22 and the existing
+ESP Clang compiler. LLD 23.1.2 and earlier do not contain the SDK fix.
+The installer installs or upgrades this dependency; Homebrew also installs
+the LLVM 23 libraries required by LLD. LLGo does not bundle a separate linker.
+Native builds search `PATH` and Homebrew's `opt/lld@23` and `opt/lld` paths for
+a compatible linker. Set `LLGO_LLD` to an explicit `ld64.lld` path for another
+installation. Missing or incompatible linkers produce an installation hint.
+An explicit Clang `--ld-path` still takes precedence over this default.
+Intel, cross-compilation, and embedded linker selection are unchanged.
+
+ThinLTO and FullLTO on macOS arm64 use the LLVM 23 backend inside LLD. Optional
+[LTO plugins](ltoplugin/README.md) must be built against that LLVM 23 toolchain,
+even though LLGo itself uses LLVM 22.
 
 ## How to install
 
