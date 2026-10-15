@@ -638,6 +638,9 @@ jobs:
       - name: Run C ABI regressions
         env:
           LLGO_TEST_LLGO: ${{ runner.temp }}/llgo
+          # The preceding fault test asserts debug diagnostics; callback
+          # fixtures here assert their own exact native output instead.
+          LLGO_DYNUNWIND_DEBUG: "0"
         run: |
           "$LLGO" test -v -count=1 -timeout=2m ./test/cgo
           "$LLGO" test -v -count=1 -timeout=2m \
