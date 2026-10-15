@@ -328,7 +328,7 @@ func TestMSVCAggregateClassification(t *testing.T) {
 				checkTypeInfo(t, tr, odd, 1, AttrWidthType, "i64")
 				hfa := ctx.StructType([]llvm.Type{ctx.FloatType(), ctx.FloatType(), ctx.FloatType(), ctx.FloatType()}, false)
 				checkTypeInfo(t, tr, hfa, 0, AttrNone, hfa.String())
-				checkTypeInfo(t, tr, hfa, 1, AttrNone, hfa.String())
+				checkTypeInfo(t, tr, hfa, 1, AttrWidthType, "[4 x float]")
 				large := ctx.StructType([]llvm.Type{ctx.Int64Type(), ctx.Int64Type(), ctx.Int64Type()}, false)
 				checkTypeInfo(t, tr, large, 0, AttrPointer, "ptr")
 				checkTypeInfo(t, tr, large, 1, AttrPointer, "ptr")

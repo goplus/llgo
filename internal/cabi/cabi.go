@@ -66,7 +66,7 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 		case "amd64":
 			tr.sys = &TypeInfoWindowsAmd64{tr}
 		case "arm64":
-			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{tr}}
+			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{Transformer: tr}}
 		case "386":
 			tr.sys = &TypeInfoWindows386{tr}
 		}
@@ -82,7 +82,11 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
-		tr.sys = &TypeInfoArm64{tr}
+		darwin := target.GOOS == "darwin"
+		if strings.Contains(llvmTarget, "-") {
+			darwin = strings.Contains(llvmTarget, "-apple-")
+		}
+		tr.sys = &TypeInfoArm64{Transformer: tr, hfaStackAlign: !darwin}
 	case "arm":
 		tr.sys = &TypeInfoArm{tr}
 	case "wasm":
@@ -244,6 +248,7 @@ type TypeInfo struct {
 	Size       int
 	Align      int
 	ByValAlign int // explicit stack alignment for AttrPointer parameters
+	StackAlign int // stack alignment of direct aggregate parameters
 }
 
 func (p *TypeInfo) nativeType() llvm.Type {
@@ -371,6 +376,9 @@ func (p *Transformer) transformFuncType(
 			// skip
 		case AttrNone, AttrWidthType:
 			paramTypes = append(paramTypes, ti.Type1)
+			if ti.StackAlign != 0 {
+				addAttr(len(paramTypes), ctx.CreateEnumAttribute(llvm.AttributeKindID("alignstack"), uint64(ti.StackAlign)))
+			}
 		case AttrPointer:
 			paramTypes = append(paramTypes, ti.Type1)
 			if p.sys.SupportByVal() {
