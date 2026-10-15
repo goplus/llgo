@@ -453,7 +453,8 @@ jobs:
           set -euo pipefail
           root=$(cd "$RUNNER_TEMP/llgo-release-install/current" && pwd -P)
           test ! -e "$root/libexec/llgo/ld64.lld"
-          "$LLGO_LLD" --version
+          linker="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/lld@23/bin/ld64.lld"
+          "$linker" --version
           sdk_version=$(xcrun --sdk macosx --show-sdk-version)
           echo "Testing external LLD with SDK $sdk_version"
           if [[ "$REQUIRE_SDK27" == 1 ]]; then
@@ -464,7 +465,7 @@ jobs:
             if [[ "$mode" != native ]]; then flags+=("-lto=$mode"); fi
             output="$RUNNER_TEMP/llgo-lld-$mode"
             (cd _demo/c && llgo build "${flags[@]}" -o "$output" ./hello) 2>&1 | tee "$output.log"
-            grep -F -- "-fuse-ld=$LLGO_LLD" "$output.log"
+            grep -F -- "-fuse-ld=$linker" "$output.log"
             "$output"
           done
 

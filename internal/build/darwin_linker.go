@@ -2,7 +2,6 @@ package build
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -55,59 +54,22 @@ func configureDarwinLLD(commands commandEnv, export *crosscompile.Export) error 
 }
 
 func resolveDarwinLLD(commands commandEnv) (string, string, error) {
-	if path := commands.lookup("LLGO_LLD"); path != "" {
-		return probeDarwinLLD(commands, path)
+	prefix := commands.lookup("HOMEBREW_PREFIX")
+	if prefix == "" {
+		prefix = "/opt/homebrew"
 	}
-	var candidates []string
-	for _, dir := range filepath.SplitList(commands.lookup("PATH")) {
-		if dir != "" {
-			candidates = append(candidates, filepath.Join(dir, "ld64.lld"))
-		}
-	}
-	// Homebrew's opt paths also work when the formula is not linked into PATH.
-	for _, prefix := range []string{commands.lookup("HOMEBREW_PREFIX"), "/opt/homebrew", "/usr/local"} {
-		if prefix != "" {
-			for _, formula := range []string{"lld@23", "lld"} {
-				candidates = append(candidates, filepath.Join(prefix, "opt", formula, "bin", "ld64.lld"))
-			}
-		}
-	}
-	var failures []string
-	seen := make(map[string]bool)
-	for _, candidate := range candidates {
-		candidate = resolvePath(commands.dir, candidate)
-		if seen[candidate] {
-			continue
-		}
-		seen[candidate] = true
-		if _, err := os.Stat(candidate); os.IsNotExist(err) {
-			continue
-		}
-		path, version, err := probeDarwinLLD(commands, candidate)
-		if err == nil {
-			return path, version, nil
-		}
-		failures = append(failures, err.Error())
-	}
-	detail := ""
-	if len(failures) != 0 {
-		detail = ": " + strings.Join(failures, "; ")
-	}
-	return "", "", fmt.Errorf("macOS arm64 native linking requires LLD 23.1.3 or newer in the 23.x series; install with brew install lld@23 or set LLGO_LLD to its ld64.lld path%s", detail)
-}
-
-func probeDarwinLLD(commands commandEnv, path string) (string, string, error) {
+	path := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
 	path, err := filepath.Abs(resolvePath(commands.dir, path))
 	if err != nil {
 		return "", "", err
 	}
 	out, err := commands.configure(exec.Command(path, "--version")).CombinedOutput()
 	if err != nil {
-		return "", "", fmt.Errorf("probe LLD %q: %w: %s", path, err, strings.TrimSpace(string(out)))
+		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install lld@23", path, err, strings.TrimSpace(string(out)))
 	}
 	version := strings.TrimSpace(string(out))
 	if !compatibleDarwinLLD(version) {
-		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3", path, version)
+		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew upgrade lld@23", path, version)
 	}
 	return path, version, nil
 }

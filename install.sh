@@ -185,7 +185,7 @@ install_macos_lld() {
     # major pinned even after Homebrew's unversioned formula moves to LLVM 24.
     local formula=lld@23
     if ! brew list --versions "$formula" >/dev/null 2>&1; then
-        brew install "$formula"
+        brew install --skip-link "$formula"
     fi
     local linker
     linker="$(brew --prefix "$formula")/bin/ld64.lld"

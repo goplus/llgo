@@ -64,46 +64,35 @@ func TestResolveDarwinLLD(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("executable fixtures use /bin/sh")
 	}
-	root := t.TempDir()
-	writeLinker := func(dir, version string) string {
+	prefix := filepath.Join(t.TempDir(), "homebrew with spaces")
+	linker := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
+	if err := os.MkdirAll(filepath.Dir(linker), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeVersion := func(version string) {
 		t.Helper()
-		dir = filepath.Join(root, dir)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.WriteFile(linker, []byte("#!/bin/sh\nprintf '%s\\n' '"+version+"'\n"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		path := filepath.Join(dir, "ld64.lld")
-		if err := os.WriteFile(path, []byte("#!/bin/sh\nprintf '%s\\n' '"+version+"'\n"), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		return path
 	}
-	old := writeLinker("old", "LLD 22.1.8")
-	good := writeLinker("new linker, with spaces", "Homebrew LLD 23.1.3")
-	commands := commandEnv{dir: root, environ: []string{"PATH=" + filepath.Dir(old) + string(os.PathListSeparator) + filepath.Dir(good)}}
-	path, version, err := resolveDarwinLLD(commands)
-	if err != nil || path != good || version != "Homebrew LLD 23.1.3" {
-		t.Fatalf("resolveDarwinLLD = %q, %q, %v", path, version, err)
-	}
-	// The selected path overrides the compiler's sibling linker without
-	// changing the compiler or losing LTO flags and explicit --ld-path options.
-	export := crosscompile.Export{CC: "/esp/bin/clang++", LDFLAGS: []string{"-target", "arm64-apple-macos", "-fuse-ld=lld", "-flto=full", "--ld-path=/explicit/linker"}}
+	commands := commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}
+	writeVersion("Homebrew LLD 23.1.3")
+	export := crosscompile.Export{CC: "/esp/bin/clang++", LDFLAGS: []string{"-fuse-ld=lld", "-flto=full", "--ld-path=/explicit/linker"}}
 	if err := configureDarwinLLD(commands, &export); err != nil {
 		t.Fatal(err)
 	}
-	if export.CC != "/esp/bin/clang++" || export.Linker != "" || export.LinkerIdentity != version ||
-		!slices.Equal(export.LDFLAGS, []string{"-target", "arm64-apple-macos", "-fuse-ld=" + good, "-flto=full", "--ld-path=/explicit/linker"}) {
+	if export.CC != "/esp/bin/clang++" || export.LinkerIdentity != "Homebrew LLD 23.1.3" ||
+		!slices.Equal(export.LDFLAGS, []string{"-fuse-ld=" + linker, "-flto=full", "--ld-path=/explicit/linker"}) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
-	// An explicit wrong or missing linker must not silently fall back to PATH.
-	for _, override := range []string{old, filepath.Join(root, "missing")} {
-		explicit := commands
-		explicit.environ = append(slices.Clone(commands.environ), "LLGO_LLD="+override)
-		if _, _, err := resolveDarwinLLD(explicit); err == nil || !strings.Contains(err.Error(), override) {
-			t.Fatalf("override %q: %v", override, err)
-		}
+	writeVersion("LLD 23.1.2")
+	if _, _, err := resolveDarwinLLD(commands); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
+		t.Fatalf("old linker: %v", err)
 	}
-	commands.environ = []string{"LLGO_LLD=" + filepath.Join("new linker, with spaces", "ld64.lld")}
-	if path, _, err := resolveDarwinLLD(commands); err != nil || path != good {
-		t.Fatalf("relative explicit path = %q, %v", path, err)
+	if err := os.Remove(linker); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := resolveDarwinLLD(commands); err == nil || !strings.Contains(err.Error(), "brew install lld@23") {
+		t.Fatalf("missing linker: %v", err)
 	}
 }
