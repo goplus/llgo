@@ -170,6 +170,7 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.T
 
 type TypeInfoArm64 struct {
 	*Transformer
+	hfaStackAlign bool // Emit AAPCS64's HFA alignstack attribute; omitted on Darwin/Windows.
 }
 
 func (p *TypeInfoArm64) SupportByVal() bool {
@@ -219,6 +220,20 @@ func (p *TypeInfoArm64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.T
 				return info
 			}
 			if checkTypes(types, ctx.FloatType()) || checkTypes(types, ctx.DoubleType()) {
+				if !bret {
+					// LLVM must see one HFA array, not independent struct fields:
+					// an exhausted FP bank spills the entire argument together.
+					info.Kind = AttrWidthType
+					info.Type1 = llvm.ArrayType(types[0], n)
+					if p.hfaStackAlign {
+						// AAPCS64 C.4: HFA stack alignment is 8, or 16 for
+						// naturally 16-byte-aligned aggregates, capped at 16.
+						info.StackAlign = 8
+						if info.Align >= 16 {
+							info.StackAlign = 16
+						}
+					}
+				}
 				return info
 			}
 		}

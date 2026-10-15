@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	intllvm "github.com/xgo-dev/llgo/internal/xtool/llvm"
 	"github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
@@ -66,7 +67,7 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 		case "amd64":
 			tr.sys = &TypeInfoWindowsAmd64{tr}
 		case "arm64":
-			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{tr}}
+			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{Transformer: tr}}
 		case "386":
 			tr.sys = &TypeInfoWindows386{tr}
 		}
@@ -82,7 +83,11 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
-		tr.sys = &TypeInfoArm64{tr}
+		triple := llvmTarget
+		if triple == "" || !strings.Contains(triple, "-") {
+			triple = intllvm.GetTargetTriple(target.GOOS, arch)
+		}
+		tr.sys = &TypeInfoArm64{Transformer: tr, hfaStackAlign: !intllvm.IsDarwinTarget(triple)}
 	case "arm":
 		tr.sys = &TypeInfoArm{tr}
 	case "wasm":
@@ -244,6 +249,7 @@ type TypeInfo struct {
 	Size       int
 	Align      int
 	ByValAlign int // explicit stack alignment for AttrPointer parameters
+	StackAlign int // alignstack attribute for direct HFA parameters
 }
 
 func (p *TypeInfo) nativeType() llvm.Type {
@@ -378,6 +384,9 @@ func (p *Transformer) transformFuncType(
 			// skip
 		case AttrNone, AttrWidthType:
 			paramTypes = append(paramTypes, ti.Type1)
+			if ti.StackAlign != 0 {
+				addAttr(len(paramTypes), ctx.CreateEnumAttribute(llvm.AttributeKindID("alignstack"), uint64(ti.StackAlign)))
+			}
 		case AttrPointer:
 			paramTypes = append(paramTypes, ti.Type1)
 			if p.sys.SupportByVal() {
@@ -604,7 +613,11 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				p.reuseParamHome(fn.Param(i), params[index], nfn.EntryBasicBlock(), ti.Align, storageAlign)
 			}
 		case AttrWidthType:
-			iptr := llvm.CreateAlloca(b, ti.Type1)
+			storageType := ti.Type1
+			if p.Sizeof(ti.nativeType()) > p.Sizeof(storageType) {
+				storageType = ti.nativeType() // An aligned HFA can have trailing padding.
+			}
+			iptr := llvm.CreateAlloca(b, storageType)
 			storageAlign := max(ti.Align, p.Alignof(ti.Type1))
 			iptr.SetAlignment(storageAlign)
 			b.CreateStore(params[index], iptr)
