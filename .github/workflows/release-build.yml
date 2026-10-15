@@ -379,7 +379,6 @@ jobs:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build]
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: macos-15-intel
