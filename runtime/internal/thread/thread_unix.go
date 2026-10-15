@@ -43,8 +43,6 @@ type nativeAttr struct {
 	_ [16]uintptr
 }
 
-const pthreadCreateDetached = 1
-
 // llgo:link (*nativeAttr).Init C.pthread_attr_init
 func (attr *nativeAttr) Init() c.Int { return 0 }
 
