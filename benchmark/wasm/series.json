@@ -1521,6 +1521,17 @@
     },
     {
       "kind": "branch",
+      "id": "309ecea4c65013f7",
+      "label": "Branch cpunion/llgo:fix/arm64-hfa-stack-layout",
+      "path": "series/branch/309ecea4c65013f7/summary.json",
+      "configPath": "series/branch/309ecea4c65013f7/config.json",
+      "commitPath": "commits/1f69263aa14458a855ad2c0703e1a3041ffeb25a.json",
+      "sha": "1f69263aa14458a855ad2c0703e1a3041ffeb25a",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1f69263aa14458a855ad2c0703e1a3041ffeb25a",
+      "updatedAt": "2026-10-15T02:52:39.046Z"
+    },
+    {
+      "kind": "branch",
       "id": "f4f901c1d3a5899e",
       "label": "Branch cpunion/llgo:fix/cgo-export-foreign-threads",
       "path": "series/branch/f4f901c1d3a5899e/summary.json",
@@ -5016,6 +5027,17 @@
       "sha": "605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
       "updatedAt": "2026-10-15T02:00:44.160Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2825",
+      "label": "PR #2825",
+      "path": "series/pull/2825/summary.json",
+      "configPath": "series/pull/2825/config.json",
+      "commitPath": "commits/1f69263aa14458a855ad2c0703e1a3041ffeb25a.json",
+      "sha": "1f69263aa14458a855ad2c0703e1a3041ffeb25a",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1f69263aa14458a855ad2c0703e1a3041ffeb25a",
+      "updatedAt": "2026-10-15T02:52:38.964Z"
     }
   ]
 }
