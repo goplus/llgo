@@ -72,6 +72,7 @@ func TestRewriteRetainsFirstTypeError(t *testing.T) {
 		{"fields", "", "struct { first simd.Uint32s; last simd.Uint32s }", "field first"},
 		{"nested fields", "", "struct { Nested struct { first simd.Uint32s }; last simd.Uint32s }", "field first"},
 		{"methods", "", "interface { first() simd.Uint32s; last() simd.Uint32s }", "method first"},
+		{"nested methods", "type hidden struct { V simd.Uint32s }", "interface { First() hidden; last() simd.Uint32s }", "type hidden"},
 		{"named type", "type hidden struct { V simd.Uint32s }", "hidden", "type hidden"},
 		{"alias", "type hidden = struct { V simd.Uint32s }", "hidden", "type hidden"},
 	} {
