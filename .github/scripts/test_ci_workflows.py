@@ -18,7 +18,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 15, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 17, "doc.yml": 6, "fmt.yml": 1,
 }
 
 
@@ -193,12 +193,88 @@ else:
         for consumer, producer in {
             "build": "populate-linux-sysroot", "build-windows": "build",
             "test-windows-artifacts": "build-windows", "prepare-winget": "test-windows-artifacts",
-            "test-artifacts": "build",
+            "test-artifacts": "build", "test-linux-distributions": "build",
         }.items():
             self.assertIn(producer, needs(jobs[consumer]))
         self.assertEqual(set(needs(jobs["release"])), {
-            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "populate-linux-sysroot"})
+            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-linux-distributions", "populate-linux-sysroot"})
         self.assertIn("startsWith(github.ref, 'refs/tags/')", jobs["release"]["if"])
+
+    def test_linux_distribution_ci_builds_packages_without_publishing(self):
+        jobs = load("release-build.yml")["jobs"]
+        build = next(step for step in jobs["build"]["steps"]
+                     if step.get("name") == "Run GoReleaser (Build & Test)")["run"]
+        self.assertIn("--snapshot", build)
+        skipped = build.split("--skip=", 1)[1].split()[0].split(",")
+        self.assertIn("publish", skipped)
+        self.assertNotIn("nfpm", skipped)
+        checks = jobs["test-linux-distributions"]
+        self.assertEqual({entry["goarch"] for entry in checks["strategy"]["matrix"]["include"]},
+                         {"amd64", "arm64"})
+        commands = "\n".join(step.get("run", "") for step in checks["steps"])
+        self.assertIn("test-packages.sh", commands)
+        self.assertIn("docker build", commands)
+        self.assertIn("test-installed.sh", commands)
+        self.assertNotIn("FURY_TOKEN", str(jobs["build"]))
+        self.assertNotIn("FURY_TOKEN", str(checks))
+
+    def test_fury_upload_is_only_enabled_for_stable_tags(self):
+        steps = load("release-build.yml")["jobs"]["release"]["steps"]
+        release_type = next(step for step in steps if step.get("id") == "release-type")
+        upload = next(step for step in steps if step.get("name") == "Upload Linux packages to Fury")
+        self.assertEqual(upload["if"], "steps.release-type.outputs.stable == 'true'")
+        self.assertEqual(upload["env"]["FURY_TOKEN"], "${{ secrets.FURY_TOKEN }}")
+        for tag in ("v1.2.3", "v0.0.0", "v1.2.3-rc.1", "v1.2.3+build", "1.2.3", "v1.2", "main"):
+            with self.subTest(tag=tag), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "outputs"
+                subprocess.run(["bash", "-e", "-c", release_type["run"]], check=True,
+                               env={**os.environ, "GITHUB_REF_NAME": tag,
+                                    "GITHUB_OUTPUT": str(output)})
+                expected = "true" if tag in {"v1.2.3", "v0.0.0"} else "false"
+                self.assertEqual(output.read_text(), f"stable={expected}\n")
+
+    def test_fury_upload_validates_packages_and_stops_on_failure(self):
+        steps = load("release-build.yml")["jobs"]["release"]["steps"]
+        upload = next(step for step in steps if step.get("name") == "Upload Linux packages to Fury")
+        packages = [f".dist/llgo1.2.3.linux-{arch}.{fmt}"
+                    for arch in ("amd64", "arm64") for fmt in ("deb", "rpm")]
+        for case in ("success", "created", "missing-token", "missing-package", "invalid-account", "http-failure", "transport-failure"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / ".dist").mkdir()
+                for name in packages:
+                    if case != "missing-package" or name != packages[-1]:
+                        (root / name).write_bytes(b"test package")
+                bin_dir = root / "bin"
+                bin_dir.mkdir()
+                curl = bin_dir / "curl"
+                curl.write_text(f"#!{sys.executable}\n" +
+                                "import json, os, sys\n"
+                                "with open(os.environ['UPLOAD_LOG'], 'a') as log:\n"
+                                "    log.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+                                "print(os.environ['CURL_STATUS'], end='')\n"
+                                "sys.exit(int(os.environ['CURL_EXIT']))\n")
+                curl.chmod(0o755)
+                log = root / "uploads"
+                result = subprocess.run(["bash", "-c", upload["run"]], cwd=root,
+                                        capture_output=True, text=True, env={**os.environ,
+                                            "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
+                                            "FURY_TOKEN": "" if case == "missing-token" else "test-only-token",
+                                            "FURY_ACCOUNT": "bad/account" if case == "invalid-account" else "xgo-dev",
+                                            "GITHUB_REF_NAME": "v1.2.3",
+                                            "UPLOAD_LOG": str(log),
+                                            "CURL_STATUS": "503" if case == "http-failure" else "201" if case == "created" else "200",
+                                            "CURL_EXIT": "7" if case == "transport-failure" else "0"})
+                calls = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+                self.assertEqual(result.returncode == 0, case in {"success", "created"}, result.stderr)
+                self.assertNotIn("test-only-token", result.stdout + result.stderr)
+                expected_calls = 4 if case in {"success", "created"} else 1 if case.endswith("failure") else 0
+                self.assertEqual(len(calls), expected_calls)
+                for package, args in zip(packages, calls):
+                    self.assertIn(f"file=@{package}", args)
+                    self.assertIn("public=true", args)
+                    self.assertIn("Authorization: test-only-token", args)
+                    self.assertEqual(args[-1], "https://push.fury.io/uploads?as=xgo-dev")
 
     def test_runner_policy_is_not_duplicated_in_workflows(self):
         for path in WORKFLOWS.glob("*.yml"):
