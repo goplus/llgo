@@ -212,10 +212,10 @@ jobs:
 
           python .github/scripts/check_llgo_coverage.py coverage-llgo.txt
 
-          # TLS regressions live in the runtime submodule, outside test/.
+          # Native thread and TLS regressions live outside test/.
           (cd runtime && "$LLGO" test -v -run '^TestSlot(GCAllocation|DestructorGCRegistration)$' -count=20 -timeout=2m ./internal/clite/tls)
           if [[ "$RUNNER_OS" != Windows ]]; then
-            (cd runtime && "$LLGO" test -v -run '^TestKeyNativeLayout$' -timeout=2m ./internal/thread)
+            (cd runtime && "$LLGO" test -v -run '^Test(KeyNativeLayout|DetachedStateNativeValue)$' -timeout=2m ./internal/thread)
           fi
 
       - name: Install Codecov CLI with Windows host Python
