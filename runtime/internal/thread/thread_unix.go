@@ -60,6 +60,8 @@ func pthreadExit(retval c.Pointer)
 
 // CreateDetached starts a detached host thread using the native pthread
 // backend. GC-enabled builds select the collector-aware create entry point.
+// Native Unix retries on EAGAIN sleep on the calling thread, requesting at
+// most 1.81 seconds of sleep per call; host scheduling and creation add latency.
 func CreateDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int {
 	var attr nativeAttr
 	if ret := attr.Init(); ret != 0 {

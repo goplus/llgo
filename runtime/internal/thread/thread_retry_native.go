@@ -13,6 +13,8 @@ const (
 	microsecondsPerMillisecond c.Uint = 1000
 )
 
+// createWithRetry makes one initial attempt, followed by at most
+// maxCreateRetries additional attempts if the host reports EAGAIN.
 func createWithRetry(native *nativeThread, attr *nativeAttr, routine RoutineFunc, arg c.Pointer) c.Int {
 	ret := create(native, attr, routine, arg)
 	if ret != c.Int(csyscall.EAGAIN) {
@@ -26,8 +28,8 @@ func createWithRetry(native *nativeThread, attr *nativeAttr, routine RoutineFunc
 
 func retryThreadCreation(ret c.Int, attempt func() c.Int, pause func(c.Uint)) c.Int {
 	// Temporary host-resource shortages may settle while other threads finish.
-	// Retry at most 100 times, with delays capped at 20 ms
-	// (1.81 s total requested sleep).
+	// The caller has already made the initial attempt. Delays increase by
+	// one millisecond per retry, capped at maxCreateDelayMilliseconds.
 	for retry := 0; ret == c.Int(csyscall.EAGAIN) && retry < maxCreateRetries; retry++ {
 		delay := retry + 1
 		if delay > maxCreateDelayMilliseconds {
