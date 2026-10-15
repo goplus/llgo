@@ -28,7 +28,8 @@ if ($Phase -eq 'install') {
   Copy-Item (Join-Path $PSScriptRoot 'winget-candidates/manifests/x/XGo/LLGo/MinGW/1.0.6') $manifest -Recurse
   if ($Mode -eq 'symlink') {
     $installer = Join-Path $manifest 'XGo.LLGo.MinGW.installer.yaml'
-    (Get-Content -Raw $installer).Replace("ArchiveBinariesDependOnPath: true`n", '') | Set-Content -NoNewline $installer
+    ((Get-Content -Raw $installer) -replace '(?m)^ArchiveBinariesDependOnPath: true\r?\n', '') | Set-Content -NoNewline $installer
+    if ((Get-Content -Raw $installer) -match 'ArchiveBinariesDependOnPath') { throw 'Failed to remove the PATH setting' }
   }
   Invoke-WinGet @('--info')
   Invoke-WinGet @('settings', '--enable', 'LocalManifestFiles')
