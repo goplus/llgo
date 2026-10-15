@@ -635,10 +635,13 @@ jobs:
           # Ensure the changed GNU libunwind path actually ran.
           grep -Eq '\[dynunwind\] flavor=linux-nongnu frames=[1-9]' "$RUNNER_TEMP/arm64-faults.log"
           "$LLGO" test -v -count=1 -timeout=2m ./test/std/runtime ./test/std/sync
-      - name: Run narrow C ABI regressions
+      - name: Run C ABI regressions
+        env:
+          LLGO_TEST_LLGO: ${{ runner.temp }}/llgo
         run: |
+          "$LLGO" test -v -count=1 -timeout=2m ./test/cgo
           "$LLGO" test -v -count=1 -timeout=2m \
-            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/cgo ./test/llgoext
+            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/llgoext
       - name: Run caller regressions in C shared libraries and archives
         run: dev/test_std_buildmodes.sh ./test/std/runtime
 
