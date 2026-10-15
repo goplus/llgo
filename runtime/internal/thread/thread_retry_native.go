@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	maxCreateRetries                  = 20
+	maxCreateRetries                  = 100
+	maxCreateDelayMilliseconds        = 20
 	microsecondsPerMillisecond c.Uint = 1000
 )
 
@@ -25,9 +26,14 @@ func createWithRetry(native *nativeThread, attr *nativeAttr, routine RoutineFunc
 
 func retryThreadCreation(ret c.Int, attempt func() c.Int, pause func(c.Uint)) c.Int {
 	// Temporary host-resource shortages may settle while other threads finish.
-	// Retry at most 20 times, with 1-20 ms delays (210 ms cumulative maximum).
+	// Retry at most 100 times, with delays capped at 20 ms
+	// (1.81 s total requested sleep).
 	for retry := 0; ret == c.Int(csyscall.EAGAIN) && retry < maxCreateRetries; retry++ {
-		pause(c.Uint(retry+1) * microsecondsPerMillisecond)
+		delay := retry + 1
+		if delay > maxCreateDelayMilliseconds {
+			delay = maxCreateDelayMilliseconds
+		}
+		pause(c.Uint(delay) * microsecondsPerMillisecond)
 		ret = attempt()
 	}
 	return ret

@@ -23,7 +23,7 @@ func TestRetryThreadCreation(t *testing.T) {
 		{"permanent failure", invalid, nil, invalid, 0, 0},
 		{"temporary failures recover", again, []c.Int{again, 0}, 0, 2, 3000},
 		{"permanent failure after retry", again, []c.Int{invalid}, invalid, 1, 1000},
-		{"persistent exhaustion is bounded", again, nil, again, 20, 210000},
+		{"persistent exhaustion is bounded", again, nil, again, 100, 1810000},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
@@ -35,8 +35,12 @@ func TestRetryThreadCreation(t *testing.T) {
 				}
 				return again
 			}, func(delay c.Uint) {
-				if delay != c.Uint(calls+1)*1000 {
-					t.Errorf("delay = %d us, want %d us", delay, (calls+1)*1000)
+				want := (calls + 1) * 1000
+				if want > 20000 {
+					want = 20000
+				}
+				if delay != c.Uint(want) {
+					t.Errorf("delay = %d us, want %d us", delay, want)
 				}
 				waited += delay
 			})
