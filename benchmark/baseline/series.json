@@ -194,10 +194,10 @@
       "label": "Branch codex/native-toolchain-sdk27-20261014",
       "path": "series/branch/995173cf44366aa1/summary.json",
       "configPath": "series/branch/995173cf44366aa1/config.json",
-      "commitPath": "commits/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19.json",
-      "sha": "cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
-      "updatedAt": "2026-10-14T17:45:20.806Z"
+      "commitPath": "commits/5ed2a9788ddfd2e77429be46bd351395ae51c9f8.json",
+      "sha": "5ed2a9788ddfd2e77429be46bd351395ae51c9f8",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5ed2a9788ddfd2e77429be46bd351395ae51c9f8",
+      "updatedAt": "2026-10-15T03:13:15.318Z"
     },
     {
       "kind": "branch",
@@ -8906,10 +8906,10 @@
       "label": "PR #2820",
       "path": "series/pull/2820/summary.json",
       "configPath": "series/pull/2820/config.json",
-      "commitPath": "commits/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19.json",
-      "sha": "cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/cbbf33bdc815fbec28213dd81f3b0a3f55c3ff19",
-      "updatedAt": "2026-10-14T17:45:19.178Z"
+      "commitPath": "commits/5ed2a9788ddfd2e77429be46bd351395ae51c9f8.json",
+      "sha": "5ed2a9788ddfd2e77429be46bd351395ae51c9f8",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5ed2a9788ddfd2e77429be46bd351395ae51c9f8",
+      "updatedAt": "2026-10-15T03:13:14.215Z"
     },
     {
       "kind": "pull",
