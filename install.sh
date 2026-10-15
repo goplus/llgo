@@ -187,14 +187,19 @@ install_macos_lld() {
     # LLD 23.1.2 still rejects SDK 27's arm64e.x1 stubs. Keep the supported
     # major pinned even after Homebrew's unversioned formula moves to LLVM 24.
     local formula=lld@23
-    if ! brew list --versions "$formula" >/dev/null 2>&1; then
-        brew install --skip-link "$formula"
-    fi
     local linker
     linker="$(brew --prefix "$formula")/bin/ld64.lld"
-    if ! macos_lld_is_compatible "$linker"; then
-        brew upgrade "$formula"
+    if macos_lld_is_compatible "$linker" 2>/dev/null; then
+        return
     fi
+    # Runner images can disable auto-update and retain an older 23.x formula.
+    brew update
+    if brew list --versions "$formula" >/dev/null 2>&1; then
+        brew upgrade "$formula"
+    else
+        brew install --skip-link "$formula"
+    fi
+    linker="$(brew --prefix "$formula")/bin/ld64.lld"
     macos_lld_is_compatible "$linker" ||
         die "LLD 23.x >= 23.1.3 is required for macOS arm64; update Homebrew and upgrade lld@23"
 }

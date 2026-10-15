@@ -23,6 +23,8 @@ func TestDarwinLLDVersion(t *testing.T) {
 		{"LLD 22.1.8", false},
 		{"LLD 23.1.2", false},
 		{"LLD 23.0.0", false},
+		{"LLD 23.999999999999999999999999.3", false},
+		{"LLD 23.1.999999999999999999999999", false},
 		{"LLD 23.1.3git", false},
 		{"LLD 24.1.0", false},
 		{"clang version 23.1.3", false},
@@ -86,6 +88,9 @@ func TestResolveDarwinLLD(t *testing.T) {
 		!slices.Equal(export.LDFLAGS, []string{"-fuse-ld=" + linker, "-flto=full"}) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
+	if err := configureDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "no -fuse-ld=lld default") {
+		t.Fatalf("missing default linker flag: %v", err)
+	}
 	writeVersion("LLD 23.1.2")
 	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
 		t.Fatalf("old linker: %v", err)
@@ -138,12 +143,35 @@ func TestDarwinLLDExplicitPath(t *testing.T) {
 			})
 		}
 	}
+	// A custom linker also works without any Homebrew environment setup.
+	withoutBrew := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + custom}}
+	if err := configureDarwinLLD(commandEnv{dir: root}, &withoutBrew); err != nil {
+		t.Fatal(err)
+	}
 	// Config flags follow environment flags, and the last --ld-path wins.
 	t.Setenv("LDFLAGS", "--ld-path=/missing")
 	export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=/missing", "--ld-path=./custom linker"}}
 	if err := configureDarwinLLD(commands, &export); err != nil {
 		t.Fatal(err)
 	}
+	// Bare names must use the driver's search, including -B, not our PATH.
+	driver := filepath.Join(root, "clang++")
+	lookup := "#!/bin/sh\ncase \"$*\" in *-B/custom*--print-prog-name=ld64.lld) printf '%s\\n' '" + custom + "';; *) exit 1;; esac\n"
+	if err := os.WriteFile(driver, []byte(lookup), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bare := crosscompile.Export{CC: driver, LDFLAGS: []string{"-fuse-ld=lld", "-B/custom", "--ld-path=ld64.lld"}}
+	if err := configureDarwinLLD(commands, &bare); err != nil {
+		t.Fatal(err)
+	}
+	if bare.LDFLAGS[0] != "-fuse-ld="+custom || bare.LinkerIdentity != "LLD 23.1.4" {
+		t.Fatalf("wrong driver-selected linker: %+v", bare)
+	}
+	failedLookup := crosscompile.Export{CC: driver, LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=missing"}}
+	if err := configureDarwinLLD(commands, &failedLookup); err == nil || !strings.Contains(err.Error(), "resolve linker") {
+		t.Fatalf("driver lookup failure: %v", err)
+	}
+
 	writeLinker(custom, "LLD 23.1.5")
 	updated := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + custom}}
 	if err := configureDarwinLLD(commands, &updated); err != nil {
@@ -157,5 +185,17 @@ func TestDarwinLLDExplicitPath(t *testing.T) {
 		if err := configureDarwinLLD(commands, &export); err == nil {
 			t.Fatalf("accepted invalid explicit linker %q", path)
 		}
+	}
+}
+
+func TestDarwinLLDRejectsInvalidBuildOverride(t *testing.T) {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		t.Skip("native macOS arm64 linker selection")
+	}
+	missing := filepath.Join(t.TempDir(), "missing-ld64.lld")
+	t.Setenv("CCFLAGS", "")
+	t.Setenv("LDFLAGS", "--ld-path="+missing)
+	if _, err := Do([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeBuild}); err == nil || !strings.Contains(err.Error(), "probe LLD") || !strings.Contains(err.Error(), missing) {
+		t.Fatalf("build did not reject the invalid linker override: %v", err)
 	}
 }
