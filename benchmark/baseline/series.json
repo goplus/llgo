@@ -1569,10 +1569,10 @@
       "label": "Branch cpunion/llgo:codex/linux-container-release-20261014",
       "path": "series/branch/0cc478b35480df51/summary.json",
       "configPath": "series/branch/0cc478b35480df51/config.json",
-      "commitPath": "commits/374511bbe8eb5e11360954470d81696d84894582.json",
-      "sha": "374511bbe8eb5e11360954470d81696d84894582",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/374511bbe8eb5e11360954470d81696d84894582",
-      "updatedAt": "2026-10-14T20:46:04.880Z"
+      "commitPath": "commits/e6396d7439c9bc901893585082139c02cfa36392.json",
+      "sha": "e6396d7439c9bc901893585082139c02cfa36392",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/e6396d7439c9bc901893585082139c02cfa36392",
+      "updatedAt": "2026-10-15T01:43:18.424Z"
     },
     {
       "kind": "branch",
@@ -8829,10 +8829,10 @@
       "label": "PR #2814",
       "path": "series/pull/2814/summary.json",
       "configPath": "series/pull/2814/config.json",
-      "commitPath": "commits/374511bbe8eb5e11360954470d81696d84894582.json",
-      "sha": "374511bbe8eb5e11360954470d81696d84894582",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/374511bbe8eb5e11360954470d81696d84894582",
-      "updatedAt": "2026-10-14T20:46:02.971Z"
+      "commitPath": "commits/e6396d7439c9bc901893585082139c02cfa36392.json",
+      "sha": "e6396d7439c9bc901893585082139c02cfa36392",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/e6396d7439c9bc901893585082139c02cfa36392",
+      "updatedAt": "2026-10-15T01:43:15.993Z"
     },
     {
       "kind": "pull",
