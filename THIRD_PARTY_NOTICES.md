@@ -86,6 +86,10 @@ transitive runtime DLLs in `bin`, with the component licenses preserved under
 and the component license texts for LLVM, Clang, LLD, compiler-rt, libc++,
 libc++abi, and libunwind.
 
+macOS arm64 archives also include a patched LLVM 22 LLD from
+[xgo-dev/llvm-project](https://github.com/xgo-dev/llvm-project) under
+`libexec/llgo/ld64.lld`, with `LICENSE-LLVM.txt` and `LICENSE-LLD.txt` alongside it.
+
 LLVM, Clang, LLD, libc++, libc++abi, libunwind, compiler-rt, and other
 LLVM-project components are licensed under Apache License 2.0 with LLVM
 Exceptions. The complete license is reproduced in

@@ -454,6 +454,8 @@ jobs:
           root=$(cd "$RUNNER_TEMP/llgo-release-install/current" && pwd -P)
           linker="$root/libexec/llgo/ld64.lld"
           "$linker" --version
+          # The linker is ad-hoc signed: this checks signature integrity only.
+          # The download's SHA-256 is pinned separately in .github/lld/SHA256SUMS.
           codesign --verify "$linker"
           sdk_version=$(xcrun --sdk macosx --show-sdk-version)
           echo "Testing packaged Darwin LLD with SDK $sdk_version"

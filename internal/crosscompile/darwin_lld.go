@@ -33,6 +33,7 @@ func nativeLinkerFlags(root string, toolchain NativeToolchain, level optlevel.Le
 	// Keep the existing -fuse-ld default's precedence. In particular, an
 	// explicit --ld-path still takes precedence in Clang. Pass the absolute
 	// path as one driver argument, including when LLGO_ROOT contains spaces.
+	// nativeLLDFlags always puts its -fuse-ld=lld default at index 0.
 	flags[0] = "-fuse-ld=" + path
 	return flags, nil
 }
