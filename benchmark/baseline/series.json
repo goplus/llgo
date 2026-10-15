@@ -2830,6 +2830,17 @@
     },
     {
       "kind": "branch",
+      "id": "0cddd68c65b79960",
+      "label": "Branch dependabot/github_actions/jdx/mise-action-5.1.2",
+      "path": "series/branch/0cddd68c65b79960/summary.json",
+      "configPath": "series/branch/0cddd68c65b79960/config.json",
+      "commitPath": "commits/605e895472b5d6c4b345ad0640bd014dfaf1a0e2.json",
+      "sha": "605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
+      "updatedAt": "2026-10-15T01:57:46.268Z"
+    },
+    {
+      "kind": "branch",
       "id": "32c0191e45ed6f51",
       "label": "Branch dependabot/github_actions/xgo-dev/setup-benchmark-go-action-1.0.2",
       "path": "series/branch/32c0191e45ed6f51/summary.json",
@@ -8899,6 +8910,17 @@
       "sha": "8f428867ac6829c12c00fd42751de492c2172bd9",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/8f428867ac6829c12c00fd42751de492c2172bd9",
       "updatedAt": "2026-10-14T23:43:43.719Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2824",
+      "label": "PR #2824",
+      "path": "series/pull/2824/summary.json",
+      "configPath": "series/pull/2824/config.json",
+      "commitPath": "commits/605e895472b5d6c4b345ad0640bd014dfaf1a0e2.json",
+      "sha": "605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
+      "updatedAt": "2026-10-15T01:57:45.036Z"
     }
   ]
 }
