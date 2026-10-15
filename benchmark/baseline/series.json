@@ -179,6 +179,17 @@
     },
     {
       "kind": "branch",
+      "id": "f6967fd5ae778e66",
+      "label": "Branch codex/external-lld23-20261015",
+      "path": "series/branch/f6967fd5ae778e66/summary.json",
+      "configPath": "series/branch/f6967fd5ae778e66/config.json",
+      "commitPath": "commits/5e8bc898ffc5f01f88145b0162e485ace9337469.json",
+      "sha": "5e8bc898ffc5f01f88145b0162e485ace9337469",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5e8bc898ffc5f01f88145b0162e485ace9337469",
+      "updatedAt": "2026-10-15T16:21:25.463Z"
+    },
+    {
+      "kind": "branch",
       "id": "7acd412c699a5a72",
       "label": "Branch codex/fix-reflect-generic-send",
       "path": "series/branch/7acd412c699a5a72/summary.json",
@@ -8987,6 +8998,17 @@
       "sha": "2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
       "updatedAt": "2026-10-15T12:03:00.356Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2828",
+      "label": "PR #2828",
+      "path": "series/pull/2828/summary.json",
+      "configPath": "series/pull/2828/config.json",
+      "commitPath": "commits/5e8bc898ffc5f01f88145b0162e485ace9337469.json",
+      "sha": "5e8bc898ffc5f01f88145b0162e485ace9337469",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5e8bc898ffc5f01f88145b0162e485ace9337469",
+      "updatedAt": "2026-10-15T16:21:23.787Z"
     }
   ]
 }
