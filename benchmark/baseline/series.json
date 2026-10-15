@@ -1675,6 +1675,17 @@
     },
     {
       "kind": "branch",
+      "id": "d81add0355bea642",
+      "label": "Branch cpunion/llgo:codex/native-thread-exhaustion-20261015",
+      "path": "series/branch/d81add0355bea642/summary.json",
+      "configPath": "series/branch/d81add0355bea642/config.json",
+      "commitPath": "commits/2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b.json",
+      "sha": "2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
+      "updatedAt": "2026-10-15T12:03:02.285Z"
+    },
+    {
+      "kind": "branch",
       "id": "9b526abc755efc66",
       "label": "Branch cpunion/llgo:codex/native-thread-retry-20261013",
       "path": "series/branch/9b526abc755efc66/summary.json",
@@ -8965,6 +8976,17 @@
       "sha": "b565cf439e017ae3e6dfd22afd681f236e5701d5",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/b565cf439e017ae3e6dfd22afd681f236e5701d5",
       "updatedAt": "2026-10-15T08:26:40.832Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2827",
+      "label": "PR #2827",
+      "path": "series/pull/2827/summary.json",
+      "configPath": "series/pull/2827/config.json",
+      "commitPath": "commits/2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b.json",
+      "sha": "2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2ab4f9af83ea1bdfb0976e58b42a3fc5b792b91b",
+      "updatedAt": "2026-10-15T12:03:00.356Z"
     }
   ]
 }
