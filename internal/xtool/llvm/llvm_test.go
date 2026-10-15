@@ -6,6 +6,19 @@ import (
 	"testing"
 )
 
+func TestIsDarwinTarget(t *testing.T) {
+	for _, triple := range []string{"arm64-apple-macosx", "aarch64-apple-ios", "aarch64-unknown-darwin", "AARCH64-APPLE-DARWIN"} {
+		if !IsDarwinTarget(triple) {
+			t.Errorf("missed Apple target %q", triple)
+		}
+	}
+	for _, triple := range []string{"", "aarch64-linux-gnu", "aarch64-pc-windows-gnu", "aarch64-linux-android"} {
+		if IsDarwinTarget(triple) {
+			t.Errorf("misclassified target %q", triple)
+		}
+	}
+}
+
 func TestGetTargetTriple(t *testing.T) {
 	// Get the list of supported architectures from clang
 	cmd := exec.Command("clang", "--print-targets")

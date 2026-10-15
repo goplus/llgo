@@ -21,6 +21,8 @@ func TestArm64HFAParameterLayout(t *testing.T) {
 		{"windows", "aarch64-pc-windows-gnu", 0},
 		{"windows", "aarch64-pc-windows-msvc", 0},
 		{"darwin", "arm64-apple-darwin", 0},
+		{"darwin", "aarch64-unknown-darwin", 0},
+		{"darwin", "aarch64-APPLE-DARWIN", 0},
 		{"linux", "", 8},
 		{"darwin", "arm64", 0},
 		// Explicit LLVM targets override the program's default target.
@@ -59,7 +61,12 @@ func TestArm64HFAParameterLayout(t *testing.T) {
 			// changing only the declaration cannot fix stack argument offsets.
 			const ir = `
 %HFA = type { float, [2 x float] }
+%Padded = type { [0 x i128], float }
 define double @callee(double %a, %HFA %h) { ret double %a }
+define float @padded(%Padded %h) {
+  %f = extractvalue %Padded %h, 1
+  ret float %f
+}
 define double @caller(ptr %p, double %a, %HFA %h) {
   %r = call double %p(double %a, %HFA %h)
   ret double %r
@@ -93,6 +100,21 @@ define double @caller(ptr %p, double %a, %HFA %h) {
 				}
 			}
 			check(callee.GetEnumAttributeAtIndex(2, llvm.AttributeKindID("alignstack")))
+			// A one-float array is only four bytes; its aligned source object
+			// still needs sixteen bytes of storage when rebuilding the body.
+			padded := mod.NamedFunction("padded")
+			allocas := 0
+			for inst := padded.EntryBasicBlock().FirstInstruction(); !inst.IsNil(); inst = llvm.NextInstruction(inst) {
+				if !inst.IsAAllocaInst().IsNil() {
+					if tr.Sizeof(inst.AllocatedType()) < 16 || inst.Alignment() < 16 {
+						t.Fatal("undersized HFA reconstruction storage", padded.String())
+					}
+					allocas++
+				}
+			}
+			if allocas != 1 {
+				t.Fatalf("got %d reconstruction allocations\n%s", allocas, padded.String())
+			}
 			calls := 0
 			for bb := mod.NamedFunction("caller").FirstBasicBlock(); !bb.IsNil(); bb = llvm.NextBasicBlock(bb) {
 				for inst := bb.FirstInstruction(); !inst.IsNil(); inst = llvm.NextInstruction(inst) {

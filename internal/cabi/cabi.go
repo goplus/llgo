@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	intllvm "github.com/xgo-dev/llgo/internal/xtool/llvm"
 	"github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
@@ -82,11 +83,11 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
-		darwin := target.GOOS == "darwin"
-		if strings.Contains(llvmTarget, "-") {
-			darwin = strings.Contains(llvmTarget, "-apple-")
+		triple := llvmTarget
+		if triple == "" || !strings.Contains(triple, "-") {
+			triple = intllvm.GetTargetTriple(target.GOOS, arch)
 		}
-		tr.sys = &TypeInfoArm64{Transformer: tr, hfaStackAlign: !darwin}
+		tr.sys = &TypeInfoArm64{Transformer: tr, hfaStackAlign: !intllvm.IsDarwinTarget(triple)}
 	case "arm":
 		tr.sys = &TypeInfoArm{tr}
 	case "wasm":
@@ -248,7 +249,7 @@ type TypeInfo struct {
 	Size       int
 	Align      int
 	ByValAlign int // explicit stack alignment for AttrPointer parameters
-	StackAlign int // stack alignment of direct aggregate parameters
+	StackAlign int // alignstack attribute for direct HFA parameters
 }
 
 func (p *TypeInfo) nativeType() llvm.Type {
@@ -605,7 +606,11 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				p.reuseParamHome(fn.Param(i), params[index], nfn.EntryBasicBlock(), ti.Align, storageAlign)
 			}
 		case AttrWidthType:
-			iptr := llvm.CreateAlloca(b, ti.Type1)
+			storageType := ti.Type1
+			if p.Sizeof(ti.nativeType()) > p.Sizeof(storageType) {
+				storageType = ti.nativeType() // An aligned HFA can have trailing padding.
+			}
+			iptr := llvm.CreateAlloca(b, storageType)
 			storageAlign := max(ti.Align, p.Alignof(ti.Type1))
 			iptr.SetAlignment(storageAlign)
 			b.CreateStore(params[index], iptr)

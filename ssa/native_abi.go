@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"strings"
 
+	intllvm "github.com/xgo-dev/llgo/internal/xtool/llvm"
 	"github.com/xgo-dev/llvm"
 )
 
@@ -88,7 +89,7 @@ func nativeIntegerExtensionForTarget(target *Target) nativeIntegerExtension {
 	arch, _, _ := strings.Cut(triple, "-")
 	switch {
 	case arch == "arm64", arch == "arm64_32", arch == "aarch64", arch == "aarch64_be":
-		if strings.Contains(triple, "apple") || strings.Contains(triple, "darwin") {
+		if intllvm.IsDarwinTarget(triple) {
 			return nativeIntegerNarrowExt
 		}
 	case arch == "x86_64", arch == "amd64":
