@@ -76,7 +76,7 @@ func CreateDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int
 		}
 	}
 	var native nativeThread
-	ret := create(&native, &attr, routine, arg)
+	ret := createWithRetry(&native, &attr, routine, arg)
 	// Once create succeeds, the caller-owned context belongs to the detached
 	// thread. An attribute destroy failure cannot be reported as create failure.
 	_ = attr.Destroy()

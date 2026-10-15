@@ -190,6 +190,12 @@ jobs:
             -Profile "${{ matrix.windows_abi }}" `
             -GoArch "${{ matrix.windows_arch || 'amd64' }}"
 
+      - name: Test native thread creation retry bounds
+        if: runner.os != 'Windows'
+        working-directory: runtime
+        shell: bash
+        run: go test -v -count=1 -timeout=2m ./internal/thread
+
       - name: Run Go 1.27 LLGo core tests
         env:
           LLGO_BUILD_CACHE: "1"
