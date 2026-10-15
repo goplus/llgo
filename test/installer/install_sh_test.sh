@@ -103,6 +103,20 @@ EOF
     assert_equal "$dependency_calls" 1
 )
 
+# Source installs must provision the linker before invoking Go on macOS arm64.
+(
+    unset GITHUB_ENV
+    dependency_calls=0
+    # shellcheck disable=SC2329 # main invokes these mocks indirectly.
+    uname() { if [[ "$1" == -s ]]; then printf 'Darwin\n'; else printf 'arm64\n'; fi; }
+    # shellcheck disable=SC2329
+    install_macos_lld() { dependency_calls=$((dependency_calls + 1)); }
+    # shellcheck disable=SC2329
+    go() { assert_equal "$dependency_calls" 1; assert_equal "$*" 'install ./cmd/llgo'; }
+    main
+    assert_equal "$dependency_calls" 1
+)
+
 # Exercise the no-system-Go download path without fetching the large toolchain.
 go_payload="$temporary/go-payload"
 mkdir -p "$go_payload/go/bin"

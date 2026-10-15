@@ -1,6 +1,7 @@
 package build
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -77,22 +78,84 @@ func TestResolveDarwinLLD(t *testing.T) {
 	}
 	commands := commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}
 	writeVersion("Homebrew LLD 23.1.3")
-	export := crosscompile.Export{CC: "/esp/bin/clang++", LDFLAGS: []string{"-fuse-ld=lld", "-flto=full", "--ld-path=/explicit/linker"}}
+	export := crosscompile.Export{CC: "/esp/bin/clang++", LDFLAGS: []string{"-fuse-ld=lld", "-flto=full"}}
 	if err := configureDarwinLLD(commands, &export); err != nil {
 		t.Fatal(err)
 	}
 	if export.CC != "/esp/bin/clang++" || export.LinkerIdentity != "Homebrew LLD 23.1.3" ||
-		!slices.Equal(export.LDFLAGS, []string{"-fuse-ld=" + linker, "-flto=full", "--ld-path=/explicit/linker"}) {
+		!slices.Equal(export.LDFLAGS, []string{"-fuse-ld=" + linker, "-flto=full"}) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
 	writeVersion("LLD 23.1.2")
-	if _, _, err := resolveDarwinLLD(commands); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
 		t.Fatalf("old linker: %v", err)
 	}
 	if err := os.Remove(linker); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := resolveDarwinLLD(commands); err == nil || !strings.Contains(err.Error(), "brew install lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install lld@23") {
 		t.Fatalf("missing linker: %v", err)
+	}
+}
+
+func TestDarwinLLDExplicitPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable fixtures use /bin/sh")
+	}
+	root := t.TempDir()
+	custom := filepath.Join(root, "custom linker")
+	writeLinker := func(path, version string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("#!/bin/sh\nprintf '%s\\n' '"+version+"'\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeLinker(custom, "LLD 23.1.4")
+	commands := commandEnv{dir: root, environ: []string{"HOMEBREW_PREFIX=" + root}}
+	for _, installed := range []bool{false, true} {
+		if installed {
+			writeLinker(filepath.Join(root, "opt/lld@23/bin/ld64.lld"), "LLD 22.1.8")
+		}
+		for _, source := range []string{"CCFLAGS", "LDFLAGS", "config"} {
+			t.Run(fmt.Sprintf("installed=%v/%s", installed, source), func(t *testing.T) {
+				t.Setenv("CCFLAGS", "")
+				t.Setenv("LDFLAGS", "")
+				export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
+				if source == "config" {
+					export.LDFLAGS = append(export.LDFLAGS, "--ld-path="+custom)
+				} else {
+					t.Setenv(source, "--ld-path="+custom)
+				}
+				if err := configureDarwinLLD(commands, &export); err != nil {
+					t.Fatal(err)
+				}
+				if export.LinkerIdentity != "LLD 23.1.4" || export.LDFLAGS[0] != "-fuse-ld="+custom {
+					t.Fatalf("wrong linker: %+v", export)
+				}
+			})
+		}
+	}
+	// Config flags follow environment flags, and the last --ld-path wins.
+	t.Setenv("LDFLAGS", "--ld-path=/missing")
+	export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=/missing", "--ld-path=./custom linker"}}
+	if err := configureDarwinLLD(commands, &export); err != nil {
+		t.Fatal(err)
+	}
+	writeLinker(custom, "LLD 23.1.5")
+	updated := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + custom}}
+	if err := configureDarwinLLD(commands, &updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.LinkerIdentity == export.LinkerIdentity {
+		t.Fatal("linker upgrade did not change cache identity")
+	}
+	for _, path := range []string{"", "/missing", filepath.Join(root, "opt/lld@23/bin/ld64.lld")} {
+		export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + path}}
+		if err := configureDarwinLLD(commands, &export); err == nil {
+			t.Fatalf("accepted invalid explicit linker %q", path)
+		}
 	}
 }

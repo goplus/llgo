@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xgo-dev/llgo/internal/clang"
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 )
 
@@ -37,7 +38,7 @@ func compatibleDarwinLLD(version string) bool {
 }
 
 func configureDarwinLLD(commands commandEnv, export *crosscompile.Export) error {
-	path, version, err := resolveDarwinLLD(commands)
+	path, version, err := resolveDarwinLLD(commands, export)
 	if err != nil {
 		return err
 	}
@@ -53,12 +54,32 @@ func configureDarwinLLD(commands commandEnv, export *crosscompile.Export) error 
 	return nil
 }
 
-func resolveDarwinLLD(commands commandEnv) (string, string, error) {
+func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string, string, error) {
 	prefix := commands.lookup("HOMEBREW_PREFIX")
 	if prefix == "" {
 		prefix = "/opt/homebrew"
 	}
 	path := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
+	// Use Clang's flag merger so the last --ld-path follows the
+	// actual link command (CCFLAGS, LDFLAGS, then configured flags).
+	config := clang.NewConfig(export.CC, nil, nil, export.LDFLAGS, "")
+	flags := clang.NewLinker(config).LinkArguments()
+	for _, flag := range flags {
+		if value, ok := strings.CutPrefix(flag, "--ld-path="); ok {
+			path = value
+		}
+	}
+	if path == "" {
+		return "", "", fmt.Errorf("--ld-path requires a non-empty linker path")
+	}
+	if !strings.ContainsRune(path, '/') {
+		// Let the driver resolve bare names using -B, COMPILER_PATH and PATH.
+		out, err := commands.configure(exec.Command(export.CC, append(flags, "--print-prog-name="+path)...)).Output()
+		if err != nil {
+			return "", "", fmt.Errorf("resolve linker %q: %w", path, err)
+		}
+		path = strings.TrimSpace(string(out))
+	}
 	path, err := filepath.Abs(resolvePath(commands.dir, path))
 	if err != nil {
 		return "", "", err

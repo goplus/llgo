@@ -29,6 +29,9 @@ local_checkout_root() {
 
 install_local_checkout() {
     local root="$1"
+    if [[ "$(uname -s)-$(uname -m)" == Darwin-arm64 && "${LLGO_INSTALL_DEPS:-1}" != 0 ]]; then
+        install_macos_lld
+    fi
     printf 'Installing llgo from local source...\n'
     (cd "$root" && go install ./cmd/llgo)
     if [[ -n "${GITHUB_ENV:-}" ]]; then
