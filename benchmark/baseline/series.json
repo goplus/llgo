@@ -1679,10 +1679,10 @@
       "label": "Branch cpunion/llgo:codex/native-thread-retry-20261013",
       "path": "series/branch/9b526abc755efc66/summary.json",
       "configPath": "series/branch/9b526abc755efc66/config.json",
-      "commitPath": "commits/7396beb65122d107a25272675c7da04deee9cb85.json",
-      "sha": "7396beb65122d107a25272675c7da04deee9cb85",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/7396beb65122d107a25272675c7da04deee9cb85",
-      "updatedAt": "2026-10-15T09:21:15.097Z"
+      "commitPath": "commits/639f50b4bd7156796d5a22315f3af17533b45e14.json",
+      "sha": "639f50b4bd7156796d5a22315f3af17533b45e14",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/639f50b4bd7156796d5a22315f3af17533b45e14",
+      "updatedAt": "2026-10-15T11:03:17.295Z"
     },
     {
       "kind": "branch",
@@ -8818,10 +8818,10 @@
       "label": "PR #2804",
       "path": "series/pull/2804/summary.json",
       "configPath": "series/pull/2804/config.json",
-      "commitPath": "commits/7396beb65122d107a25272675c7da04deee9cb85.json",
-      "sha": "7396beb65122d107a25272675c7da04deee9cb85",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/7396beb65122d107a25272675c7da04deee9cb85",
-      "updatedAt": "2026-10-15T09:21:13.377Z"
+      "commitPath": "commits/639f50b4bd7156796d5a22315f3af17533b45e14.json",
+      "sha": "639f50b4bd7156796d5a22315f3af17533b45e14",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/639f50b4bd7156796d5a22315f3af17533b45e14",
+      "updatedAt": "2026-10-15T11:03:14.757Z"
     },
     {
       "kind": "pull",
