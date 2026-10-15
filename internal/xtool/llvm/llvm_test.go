@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsDarwinTarget(t *testing.T) {
-	for _, triple := range []string{"arm64-apple-macosx", "aarch64-apple-ios", "aarch64-unknown-darwin", "AARCH64-APPLE-DARWIN"} {
+	for _, triple := range []string{"arm64-apple-macosx", "aarch64-apple-ios", "aarch64-unknown-darwin", "AARCH64-APPLE-DARWIN", "aarch64-unknown-macosx", "aarch64-unknown-macosx14.0.0", "AARCH64-UNKNOWN-MACOSX"} {
 		if !IsDarwinTarget(triple) {
 			t.Errorf("missed Apple target %q", triple)
 		}

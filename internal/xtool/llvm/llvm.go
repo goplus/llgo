@@ -10,7 +10,7 @@ import (
 // IsDarwinTarget reports whether a physical LLVM target uses Apple's ABI.
 func IsDarwinTarget(triple string) bool {
 	triple = strings.ToLower(triple)
-	return strings.Contains(triple, "apple") || strings.Contains(triple, "darwin")
+	return strings.Contains(triple, "apple") || strings.Contains(triple, "darwin") || strings.Contains(triple, "macosx")
 }
 
 func GetTargetTriple(goos, goarch string) string {

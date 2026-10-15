@@ -23,10 +23,13 @@ func TestArm64HFAParameterLayout(t *testing.T) {
 		{"darwin", "arm64-apple-darwin", 0},
 		{"darwin", "aarch64-unknown-darwin", 0},
 		{"darwin", "aarch64-APPLE-DARWIN", 0},
+		{"darwin", "aarch64-unknown-macosx", 0},
 		{"linux", "", 8},
 		{"darwin", "arm64", 0},
 		// Explicit LLVM targets override the program's default target.
 		{"linux", "aarch64-apple-darwin", 0},
+		{"linux", "aarch64-unknown-macosx", 0},
+		{"linux", "aarch64-unknown-macosx14.0.0", 0},
 		{"darwin", "aarch64-unknown-linux-gnu", 8},
 	} {
 		t.Run(target.goos+"/"+target.triple, func(t *testing.T) {
