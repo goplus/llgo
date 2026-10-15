@@ -2812,10 +2812,10 @@
       "label": "Branch cpunion/llgo:fix/sysv-aggregate-register-exhaustion",
       "path": "series/branch/6d721f9228af05f9/summary.json",
       "configPath": "series/branch/6d721f9228af05f9/config.json",
-      "commitPath": "commits/8f428867ac6829c12c00fd42751de492c2172bd9.json",
-      "sha": "8f428867ac6829c12c00fd42751de492c2172bd9",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f428867ac6829c12c00fd42751de492c2172bd9",
-      "updatedAt": "2026-10-14T23:43:45.622Z"
+      "commitPath": "commits/b784126b99a568db2e11fd57dc2e919d63cc55e1.json",
+      "sha": "b784126b99a568db2e11fd57dc2e919d63cc55e1",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b784126b99a568db2e11fd57dc2e919d63cc55e1",
+      "updatedAt": "2026-10-15T14:32:13.290Z"
     },
     {
       "kind": "branch",
@@ -8939,10 +8939,10 @@
       "label": "PR #2822",
       "path": "series/pull/2822/summary.json",
       "configPath": "series/pull/2822/config.json",
-      "commitPath": "commits/8f428867ac6829c12c00fd42751de492c2172bd9.json",
-      "sha": "8f428867ac6829c12c00fd42751de492c2172bd9",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f428867ac6829c12c00fd42751de492c2172bd9",
-      "updatedAt": "2026-10-14T23:43:43.719Z"
+      "commitPath": "commits/b784126b99a568db2e11fd57dc2e919d63cc55e1.json",
+      "sha": "b784126b99a568db2e11fd57dc2e919d63cc55e1",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b784126b99a568db2e11fd57dc2e919d63cc55e1",
+      "updatedAt": "2026-10-15T14:32:11.345Z"
     },
     {
       "kind": "pull",
