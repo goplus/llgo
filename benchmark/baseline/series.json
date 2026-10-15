@@ -4231,10 +4231,10 @@
       "label": "Branch zhouguangyuan0718/llgo:codex/simd-midway-128-20261014",
       "path": "series/branch/22040eca5d272992/summary.json",
       "configPath": "series/branch/22040eca5d272992/config.json",
-      "commitPath": "commits/3424b61f3594d56a7565aecf3db397f35e4f2a89.json",
-      "sha": "3424b61f3594d56a7565aecf3db397f35e4f2a89",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/3424b61f3594d56a7565aecf3db397f35e4f2a89",
-      "updatedAt": "2026-10-14T19:43:55.561Z"
+      "commitPath": "commits/97797ec3bc234169875983816d341b2bc92c0aa6.json",
+      "sha": "97797ec3bc234169875983816d341b2bc92c0aa6",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/97797ec3bc234169875983816d341b2bc92c0aa6",
+      "updatedAt": "2026-10-15T08:00:50.751Z"
     },
     {
       "kind": "branch",
@@ -8895,10 +8895,10 @@
       "label": "PR #2819",
       "path": "series/pull/2819/summary.json",
       "configPath": "series/pull/2819/config.json",
-      "commitPath": "commits/3424b61f3594d56a7565aecf3db397f35e4f2a89.json",
-      "sha": "3424b61f3594d56a7565aecf3db397f35e4f2a89",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/3424b61f3594d56a7565aecf3db397f35e4f2a89",
-      "updatedAt": "2026-10-14T19:43:54.510Z"
+      "commitPath": "commits/97797ec3bc234169875983816d341b2bc92c0aa6.json",
+      "sha": "97797ec3bc234169875983816d341b2bc92c0aa6",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/97797ec3bc234169875983816d341b2bc92c0aa6",
+      "updatedAt": "2026-10-15T08:00:46.655Z"
     },
     {
       "kind": "pull",
