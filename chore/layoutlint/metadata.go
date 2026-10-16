@@ -14,6 +14,7 @@ import (
 type metadataCheck struct {
 	typ        types.Type
 	name, file string
+	identifier string
 	line       int
 }
 
@@ -47,19 +48,27 @@ type metadataDifference struct {
 
 type metadataResult struct {
 	fieldOffsets   map[string]uint64
-	Go             *goMetadata          `json:"go"`
-	Type           string               `json:"type"`
-	File           string               `json:"file"`
-	Line           int                  `json:"line"`
-	Observed       bool                 `json:"observed"`
-	PointerAddress string               `json:"pointer_address,omitempty"`
-	PointerSymbol  string               `json:"pointer_symbol,omitempty"`
-	TypeAddress    string               `json:"type_address,omitempty"`
-	TypeSymbol     string               `json:"type_symbol,omitempty"`
-	PointerHeader  *metadataHeader      `json:"pointer_header,omitempty"`
-	TypeHeader     *metadataHeader      `json:"type_header,omitempty"`
-	Stride         *strideResult        `json:"stride,omitempty"`
-	Differences    []metadataDifference `json:"differences,omitempty"`
+	Go             *goMetadata           `json:"go"`
+	Type           string                `json:"type"`
+	File           string                `json:"file"`
+	Line           int                   `json:"line"`
+	Observed       bool                  `json:"observed"`
+	PointerAddress string                `json:"pointer_address,omitempty"`
+	PointerSymbol  string                `json:"pointer_symbol,omitempty"`
+	TypeAddress    string                `json:"type_address,omitempty"`
+	TypeSymbol     string                `json:"type_symbol,omitempty"`
+	PointerHeader  *metadataHeader       `json:"pointer_header,omitempty"`
+	TypeHeader     *metadataHeader       `json:"type_header,omitempty"`
+	Stride         *strideResult         `json:"stride,omitempty"`
+	Differences    []metadataDifference  `json:"differences,omitempty"`
+	Fields         []metadataFieldResult `json:"fields"`
+}
+
+type metadataFieldResult struct {
+	Name     string `json:"name"`
+	Expected uint64 `json:"expected_offset"`
+	Actual   uint64 `json:"actual_offset"`
+	Observed bool   `json:"observed"`
 }
 
 func readMetadata(session *lldbSession, directory string, index int, pointer uint64, typ types.Type, fields []metadataFieldCheck, result *metadataResult) error {
@@ -222,10 +231,15 @@ func readMetadata(session *lldbSession, directory string, index int, pointer uin
 		}
 		return view, nil
 	}
-	if _, err := getLayout(typeAddress, typ); err != nil {
+	result.fieldOffsets = make(map[string]uint64, len(fields))
+	root, err := getLayout(typeAddress, typ)
+	if err != nil {
 		return err
 	}
-	result.fieldOffsets = make(map[string]uint64, len(fields))
+	for i, field := range root.fields {
+		result.Fields[i].Actual = field.offset
+		result.Fields[i].Observed = true
+	}
 	for _, field := range fields {
 		address, current := typeAddress, typ
 		var offset uint64

@@ -131,11 +131,15 @@ func goLayoutModels(pkg *packages.Package, checks []metadataCheck) (string, []st
 	emitted := false
 	names := make([]string, len(checks))
 	for i, check := range checks {
+		if check.identifier != check.name {
+			generated.NewTypeDefs().AliasType(check.identifier, check.typ)
+			emitted = true
+		}
 		model, err := convert(check.typ)
 		if err != nil {
 			return "", nil, err
 		}
-		names[i] = check.name
+		names[i] = check.identifier
 		if model == check.typ {
 			continue
 		}

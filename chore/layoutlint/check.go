@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ import (
 
 type fieldCheck struct {
 	typeName, field, operation string
+	wrapper                    string
 	file                       string
 	line                       int
 	kind                       types.BasicKind
@@ -158,7 +160,7 @@ func command(directory, logPath string, args ...string) ([]byte, error) {
 	return output, nil
 }
 
-func goOffsets(root, directory string, pkg *packages.Package, tests bool, patterns []string, checks []fieldCheck, retained []metadataCheck, nested []nestedCheck) ([]fieldLayout, []goMetadata, error) {
+func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package, tests bool, patterns []string, checks []fieldCheck, retained []metadataCheck, nested []nestedCheck, dependencies map[string]string, ownerBuild bool) ([]fieldLayout, []goMetadata, error) {
 	// Load export paths separately: asking for dependencies and syntax in the
 	// same load would retain the syntax trees of the entire dependency graph.
 	metadata, err := packages.Load(&packages.Config{
@@ -235,6 +237,7 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 		owners[check.name] = layoutNames[i]
 	}
 	var declarations strings.Builder
+	var ownerConstants []string
 	fmt.Fprintf(&declarations, "package %s\nimport \"unsafe\"\nconst _ = unsafe.Sizeof(byte(0))\n", pkg.Name)
 	for i, check := range checks {
 		owner := owners[check.typeName]
@@ -275,7 +278,14 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 				return nil, nil, fmt.Errorf("%s: generated constant %s already exists", pkg.PkgPath, constant.name)
 			}
 			fmt.Fprintf(&declarations, "const %s = %s\n", constant.name, constant.expression)
+			ownerConstants = append(ownerConstants, constant.name)
 		}
+	}
+	if ownerBuild {
+		if pkg.Types.Scope().Lookup("layoutlintOwnerConstants") != nil {
+			return nil, nil, fmt.Errorf("%s: generated constant table already exists", pkg.PkgPath)
+		}
+		fmt.Fprintf(&declarations, "var layoutlintOwnerConstants = [...]uintptr{%s}\n", strings.Join(ownerConstants, ","))
 	}
 	for i, check := range retained {
 		name := fmt.Sprintf("layoutlintABIReference%d", i)
@@ -284,8 +294,8 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 		}
 		// A named interface global gives aliases an exact descriptor relocation;
 		// no Go executable or reflection getter is needed to identify T.
-		fmt.Fprintf(&declarations, "var %s interface{} = (*%s)(nil)\n", name, check.name)
-		if layoutNames[i] != check.name {
+		fmt.Fprintf(&declarations, "var %s interface{} = (*%s)(nil)\n", name, check.identifier)
+		if layoutNames[i] != check.identifier {
 			name = fmt.Sprintf("layoutlintStorageReference%d", i)
 			if pkg.Types.Scope().Lookup(name) != nil {
 				return nil, nil, fmt.Errorf("%s: generated reference %s already exists", pkg.PkgPath, name)
@@ -336,6 +346,30 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 	if modelSource != "" {
 		args = append(args, modelSource)
 	}
+	if ownerBuild {
+		// The defining package can contain assembly (reflect is one example).
+		// Let cmd/go provide symabis and the package's other compiler settings.
+		replacements := make(map[string]string)
+		for _, path := range []string{widthSource, modelSource} {
+			if path == "" {
+				continue
+			}
+			logical := filepath.Join(filepath.Dir(pkg.GoFiles[0]), "layoutlint_"+strings.ReplaceAll(filepath.Base(path), "-", "_"))
+			if _, err := os.Stat(logical); !os.IsNotExist(err) {
+				return nil, nil, fmt.Errorf("Go baseline overlay destination must not exist: %s", logical)
+			}
+			replacements[logical] = path
+		}
+		data, err := json.Marshal(struct{ Replace map[string]string }{replacements})
+		if err != nil {
+			return nil, nil, err
+		}
+		path := filepath.Join(directory, "go-overlay.json")
+		if err := os.WriteFile(path, data, 0644); err != nil {
+			return nil, nil, err
+		}
+		args = []string{"go", "build", "-buildmode=archive", "-overlay=" + path, "-gcflags=" + pkg.PkgPath + "=-S -S", "-o", filepath.Join(directory, "reference.a"), pkg.PkgPath}
+	}
 	fmt.Println("  Go layout and ABI metadata:", pkg.PkgPath)
 	logPath := filepath.Join(directory, "go-compile.log")
 	log, err := os.Create(logPath)
@@ -354,14 +388,10 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 	compileErr := compiler.Run()
 	closeErr := log.Close()
 	if compileErr != nil {
-		return nil, nil, fmt.Errorf("go tool compile: %w; see %s", compileErr, logPath)
+		return nil, nil, fmt.Errorf("Go baseline compilation: %w; see %s", compileErr, logPath)
 	}
 	if closeErr != nil {
 		return nil, nil, closeErr
-	}
-	header, err := os.ReadFile(headerPath)
-	if err != nil {
-		return nil, nil, err
 	}
 	wanted := make(map[string]int64)
 	for i := range nested {
@@ -378,6 +408,35 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 		wanted[fmt.Sprintf("const_layoutlintWidth%d", i)] = -1
 		if check.kind != types.Invalid {
 			wanted[owner+"__size"] = -1
+		}
+	}
+	var header []byte
+	if ownerBuild {
+		addendBase := 10
+		if runtime.GOARCH == "arm" || runtime.GOARCH == "ppc64" || runtime.GOARCH == "ppc64le" {
+			addendBase = 16
+		}
+		symbols, err := readGoSymbols(logPath, pkg.PkgPath+".layoutlint", addendBase)
+		if err != nil {
+			return nil, nil, err
+		}
+		table := symbols[pkg.PkgPath+".layoutlintOwnerConstants<0>"]
+		wordSize := strconv.IntSize / 8
+		if table == nil || table.Size != len(ownerConstants)*wordSize {
+			return nil, nil, fmt.Errorf("%s: Go owner constant table missing or has an unexpected size", pkg.PkgPath)
+		}
+		for i, name := range ownerConstants {
+			value, err := goReferenceAt(table, i*wordSize, wordSize)
+			if err != nil {
+				return nil, nil, err
+			}
+			wanted["const_"+name] = int64(value.Raw)
+		}
+	} else {
+		var err error
+		header, err = os.ReadFile(headerPath)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 	scanner := bufio.NewScanner(strings.NewReader(string(header)))
@@ -443,14 +502,14 @@ func goOffsets(root, directory string, pkg *packages.Package, tests bool, patter
 			}
 		}
 	}
-	typeMetadata, err := readGoMetadata(directory, pkg.PkgPath, retained, layoutNames)
+	typeMetadata, err := readGoMetadata(root, directory, baselineDirectory, pkg.PkgPath, retained, layoutNames, dependencies)
 	if err != nil {
 		return nil, nil, err
 	}
 	return layouts, typeMetadata, nil
 }
 
-func checkOffsets(root, directory, source string, pkg *packages.Package, tests bool, checks []fieldCheck, layouts []fieldLayout, metadata []metadataCheck, goMetadata []goMetadata, nested []nestedCheck, sizes []fieldSizeCheck) (err error) {
+func checkOffsets(root, directory, source string, pkg *packages.Package, tests bool, checks []fieldCheck, layouts []fieldLayout, metadata []metadataCheck, goMetadata []goMetadata, nested []nestedCheck, sizes []fieldSizeCheck, private []privateLayout) (err error) {
 	var results []offsetResult
 	sizeResults := make([]fieldSizeResult, len(sizes))
 	for i, check := range sizes {
@@ -480,9 +539,40 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 		nestedResults[i] = offsetResult{Type: metadata[check.owner].name, Field: path.String(), Operation: operation, File: location.Filename, Line: location.Line, Expected: check.offset, Size: &sizeResults[check.sizeIndex]}
 	}
 	metadataResults := make([]metadataResult, len(metadata))
+	for i := range private {
+		plan := &private[i]
+		plan.Metadata = metadataResult{Type: plan.pkg.PkgPath + "." + plan.subject.name, File: plan.subject.file, Line: plan.subject.line, Go: &plan.baseline}
+		for _, field := range plan.baseline.Fields {
+			plan.Metadata.Fields = append(plan.Metadata.Fields, metadataFieldResult{Name: field.Name, Expected: field.Offset})
+		}
+		for _, check := range plan.paths {
+			var name strings.Builder
+			var position token.Pos
+			for _, step := range check.path {
+				if step.field != nil {
+					if name.Len() != 0 {
+						name.WriteByte('.')
+					}
+					name.WriteString(step.field.Name())
+					position = step.field.Pos()
+				} else {
+					fmt.Fprintf(&name, "[%d]", step.index)
+				}
+			}
+			location := plan.pkg.Fset.PositionFor(position, true)
+			operation := "private-field"
+			if check.path[len(check.path)-1].field == nil {
+				operation = "array-element"
+			}
+			plan.Fields = append(plan.Fields, offsetResult{Type: plan.Metadata.Type, Field: name.String(), Operation: operation, File: location.Filename, Line: location.Line, Expected: check.offset, Size: &fieldSizeResult{Expected: uint64(check.width)}})
+		}
+	}
 	metadataFields := make([][]metadataFieldCheck, len(metadata))
 	for i, check := range metadata {
 		metadataResults[i] = metadataResult{Type: check.name, File: check.file, Line: check.line, Go: &goMetadata[i]}
+		for _, field := range goMetadata[i].Fields {
+			metadataResults[i].Fields = append(metadataResults[i].Fields, metadataFieldResult{Name: field.Name, Expected: field.Offset})
+		}
 		st := types.Unalias(check.typ).Underlying().(*types.Struct)
 		for pair := 0; pair < len(checks); pair += 2 {
 			if checks[pair].typeName != check.name {
@@ -526,7 +616,8 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 			Arrays   []offsetResult   `json:"array_elements,omitempty"`
 			Nested   []offsetResult   `json:"nested_fields,omitempty"`
 			Metadata []metadataResult `json:"metadata"`
-		}{Package: pkg.PkgPath, Results: results, Metadata: metadataResults}
+			Private  []privateLayout  `json:"private_layouts,omitempty"`
+		}{Package: pkg.PkgPath, Results: results, Metadata: metadataResults, Private: private}
 		for _, result := range nestedResults {
 			if result.Operation == "nested-field" {
 				report.Nested = append(report.Nested, result)
@@ -544,7 +635,7 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 		if marshalErr != nil {
 			err = fmt.Errorf("%w; write offsets.json: %v", err, marshalErr)
 		}
-		if annotationErr := writeAnnotations(directory, source, pkg, checks, results, nestedResults, metadataResults); annotationErr != nil {
+		if annotationErr := writeAnnotations(directory, source, pkg, checks, results, nestedResults, metadataResults, private); annotationErr != nil {
 			err = fmt.Errorf("%w; annotate source: %v", err, annotationErr)
 		}
 	}()
@@ -553,7 +644,16 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 	if _, err := os.Stat(logical); !os.IsNotExist(err) {
 		return fmt.Errorf("generated source destination must not exist: %s", logical)
 	}
-	overlay, err := json.Marshal(struct{ Replace map[string]string }{map[string]string{logical: source}})
+	replacements := map[string]string{logical: source}
+	for _, plan := range private {
+		for _, name := range plan.logical {
+			if _, err := os.Stat(name); !os.IsNotExist(err) {
+				return fmt.Errorf("generated private source destination must not exist: %s", name)
+			}
+			replacements[name] = plan.source
+		}
+	}
+	overlay, err := json.Marshal(struct{ Replace map[string]string }{replacements})
 	if err != nil {
 		return err
 	}
@@ -629,7 +729,7 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 	for _, setup := range []string{
 		"settings set auto-confirm true",
 		"settings set symbols.enable-external-lookup false",
-		`breakpoint set --func-regex '\.layoutlintCheckpoint$' --skip-prologue false`,
+		`breakpoint set --func-regex '\.layoutlint(Checkpoint|PrivateCheckpoint[0-9]+)$' --skip-prologue false`,
 		"process launch --no-stdio --stop-at-entry",
 		"process continue --continue-to-bkpt 1",
 	} {
@@ -639,7 +739,7 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 	}
 	fmt.Printf("  LLDB: %d field accesses\n", len(results))
 	register := regexp.MustCompile(`(?m)^\s*[a-zA-Z][a-zA-Z0-9]*\s*=\s*(0x[0-9a-fA-F]+)(?:\s|$)`)
-	checkpoint := func(want uint64) ([3]uint64, error) {
+	readArguments := func() ([3]uint64, error) {
 		var arguments [3]uint64
 		output, err := session.run("register read -f hex arg1 arg2 arg3")
 		if err != nil {
@@ -656,12 +756,22 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 			}
 			arguments[j] = value
 		}
+		return arguments, nil
+	}
+	checkpoint := func(want uint64) ([3]uint64, error) {
+		arguments, err := readArguments()
+		if err != nil {
+			return arguments, err
+		}
 		if arguments[2] != want {
 			return arguments, fmt.Errorf("unexpected access ID %d, want %d", arguments[2], want)
 		}
 		return arguments, nil
 	}
-	failed := false
+	failed, err := observePrivateLayouts(&session, private, readArguments)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("  LLDB: %d retained type descriptors\n", len(metadata))
 	for i := range metadata {
 		arguments, err := checkpoint(uint64(2*len(checks) + i))
@@ -720,6 +830,14 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 					result.Differences = append(result.Differences, metadataDifference{header.descriptor, field.name, field.expected, field.actual})
 					fmt.Printf("FAIL %s: metadata.%s: expected %d, got %d\n", header.typeName, field.name, field.expected, field.actual)
 				}
+			}
+		}
+		for index, field := range result.Fields {
+			if field.Observed && field.Actual != field.Expected {
+				failed = true
+				name := fmt.Sprintf("Fields[%d](%s).Offset", index, field.Name)
+				result.Differences = append(result.Differences, metadataDifference{"type", name, field.Expected, field.Actual})
+				fmt.Printf("FAIL %s: metadata.%s: expected %d, got %d\n", result.Type, name, field.Expected, field.Actual)
 			}
 		}
 		if readErr != nil {
@@ -953,7 +1071,15 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 	if failed {
 		return fmt.Errorf("field offset/size, access, nested layout, array stride or ABI metadata checks failed; see %s", filepath.Join(directory, "offsets.json"))
 	}
-	fmt.Printf("PASS %s: %d field accesses, %d array strides, %d nested layout observations, %d checked type headers\n", pkg.PkgPath, len(results), len(metadataResults), len(nestedResults), 2*len(metadataResults))
+	metadataFieldsChecked, privateFieldsChecked := 0, 0
+	for _, result := range metadataResults {
+		metadataFieldsChecked += len(result.Fields)
+	}
+	for _, plan := range private {
+		metadataFieldsChecked += len(plan.Metadata.Fields)
+		privateFieldsChecked += len(plan.Fields)
+	}
+	fmt.Printf("PASS %s: %d concrete struct types, %d field accesses, %d array strides, %d nested layout observations, %d owner-package field observations, %d metadata field offsets, %d checked type headers\n", pkg.PkgPath, len(metadataResults)+len(private), len(results), len(metadataResults)+len(private), len(nestedResults), privateFieldsChecked, metadataFieldsChecked, 2*(len(metadataResults)+len(private)))
 	return nil
 }
 

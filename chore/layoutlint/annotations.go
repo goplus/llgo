@@ -16,7 +16,7 @@ import (
 
 // writeAnnotations renders observed facts after a failure. It never changes
 // the input or the generated source that was compiled into the executable.
-func writeAnnotations(directory, source string, pkg *packages.Package, checks []fieldCheck, results, nested []offsetResult, metadata []metadataResult) error {
+func writeAnnotations(directory, source string, pkg *packages.Package, checks []fieldCheck, results, nested []offsetResult, metadata []metadataResult, private []privateLayout) error {
 	type note struct {
 		subject, text string
 	}
@@ -26,6 +26,16 @@ func writeAnnotations(directory, source string, pkg *packages.Package, checks []
 		notes[name] = make(map[int][]note)
 	}
 	notes[source] = make(map[int][]note)
+	for _, plan := range private {
+		for _, file := range plan.pkg.Syntax {
+			name := plan.pkg.Fset.PositionFor(file.Pos(), false).Filename
+			if notes[name] == nil {
+				notes[name] = make(map[int][]note)
+			}
+		}
+		nested = append(slices.Clone(nested), plan.Fields...)
+		metadata = append(slices.Clone(metadata), plan.Metadata)
+	}
 	add := func(file string, line int, subject, text string) {
 		lines, ok := notes[file]
 		if !ok {
@@ -150,9 +160,9 @@ func writeAnnotations(directory, source string, pkg *packages.Package, checks []
 		if check.kind == types.Invalid {
 			continue
 		}
-		operation, name := "load", "layoutRead_"+result.Type+"_"+result.Field
+		operation, name := "load", check.wrapper
 		if result.Operation == "write" {
-			operation, name = "store", "layoutWrite_"+result.Type+"_"+result.Field
+			operation = "store"
 		}
 		var reasons []string
 		access := result.Access

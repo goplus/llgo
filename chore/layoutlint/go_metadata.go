@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"go/types"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -57,6 +59,12 @@ type goMetadata struct {
 	PointerHeader *goMetadataHeader `json:"pointer_header"`
 	TypeHeader    *goMetadataHeader `json:"type_header"`
 	Layout        goStorageLayout   `json:"layout"`
+	Fields        []goMetadataField `json:"fields"`
+}
+
+type goMetadataField struct {
+	Name   string `json:"name"`
+	Offset uint64 `json:"offset"`
 }
 
 // The model supplies storage facts only. Names, Kind and comparability must
@@ -217,7 +225,7 @@ func decodeGoHeader(symbol *goDataSymbol, wordSize int) (*goMetadataHeader, erro
 	return result, nil
 }
 
-func readGoMetadata(directory, pkgPath string, checks []metadataCheck, layoutNames []string) ([]goMetadata, error) {
+func readGoMetadata(root, directory, baselineDirectory, pkgPath string, checks []metadataCheck, layoutNames []string, dependencies map[string]string) ([]goMetadata, error) {
 	addendBase := 10
 	if runtime.GOARCH == "arm" || runtime.GOARCH == "ppc64" || runtime.GOARCH == "ppc64le" {
 		// cmd/internal/obj.writeSymDebugNamed prints these targets' addends
@@ -228,6 +236,62 @@ func readGoMetadata(directory, pkgPath string, checks []metadataCheck, layoutNam
 	symbols, err := readGoSymbols(filepath.Join(directory, "go-compile.log"), prefix, addendBase)
 	if err != nil {
 		return nil, err
+	}
+	// An imported alias keeps the defining package's descriptor. Go emits a
+	// relocation here, not a second copy of (for example) reflect.Value.
+	for i, check := range checks {
+		anchor := symbols[fmt.Sprintf("%sABIReference%d<0>", prefix, i)]
+		if anchor == nil {
+			return nil, fmt.Errorf("Go metadata %s: missing reference symbol", check.name)
+		}
+		reference, err := goReferenceAt(anchor, 0, strconv.IntSize/8)
+		if err != nil {
+			return nil, err
+		}
+		if reference.Relocation == nil || symbols[reference.Relocation.Symbol] != nil {
+			continue
+		}
+		named, ok := types.Unalias(check.typ).(*types.Named)
+		if !ok || named.Obj().Pkg() == nil || named.Obj().Pkg().Path() == pkgPath {
+			continue // The ordinary resolver reports an unresolved local reference.
+		}
+		owner := named.Obj().Pkg().Path()
+		path := dependencies[owner]
+		if path == "" {
+			path = filepath.Join(baselineDirectory, fmt.Sprintf("dependency-%d.log", len(dependencies)))
+			log, err := os.Create(path)
+			if err != nil {
+				return nil, err
+			}
+			args := []string{"build", "-gcflags=" + owner + "=-S -S", owner}
+			fmt.Fprintf(log, "go %q\n", args)
+			compiler := exec.Command("go", args...)
+			compiler.Dir = root
+			compiler.Stdout, compiler.Stderr = log, log
+			compileErr := compiler.Run()
+			closeErr := log.Close()
+			if compileErr != nil || closeErr != nil {
+				data, readErr := os.ReadFile(path)
+				if readErr != nil {
+					return nil, readErr
+				}
+				failurePath := filepath.Join(directory, "go-dependency-error.log")
+				if err := os.WriteFile(failurePath, data, 0644); err != nil {
+					return nil, err
+				}
+				return nil, fmt.Errorf("Go metadata dependency %s: compile %v, log %v; see %s", owner, compileErr, closeErr, failurePath)
+			}
+			dependencies[owner] = path
+		}
+		imported, err := readGoSymbols(path, owner+".layoutlint", addendBase)
+		if err != nil {
+			return nil, fmt.Errorf("Go metadata dependency %s: %w", owner, err)
+		}
+		for name, symbol := range imported {
+			if symbols[name] == nil {
+				symbols[name] = symbol
+			}
+		}
 	}
 	// Keep full data and relocations as evidence, including struct-field tables
 	// beyond the common header. Imported references retain their symbol names.
@@ -246,7 +310,7 @@ func readGoMetadata(directory, pkgPath string, checks []metadataCheck, layoutNam
 			return nil, fmt.Errorf("Go metadata %s: %w", check.name, err)
 		}
 		storage := original
-		if layoutNames[i] != check.name {
+		if layoutNames[i] != check.identifier {
 			storage, err = readGoReferencedType(symbols, fmt.Sprintf("%sStorageReference%d<0>", prefix, i), wordSize)
 			if err != nil {
 				return nil, fmt.Errorf("Go storage layout %s: %w", check.name, err)
@@ -254,9 +318,58 @@ func readGoMetadata(directory, pkgPath string, checks []metadataCheck, layoutNam
 		}
 		header := storage.TypeHeader
 		original.Layout = goStorageLayout{storage.TypeSymbol, header.Size, header.PtrBytes, header.Align, header.FieldAlign}
+		original.Fields, err = readGoStructFields(symbols, storage.TypeSymbol, types.Unalias(check.typ).Underlying().(*types.Struct), wordSize)
+		if err != nil {
+			return nil, fmt.Errorf("Go metadata fields %s: %w", check.name, err)
+		}
 		results[i] = original
 	}
 	return results, nil
+}
+
+// readGoStructFields follows the compiler's field-table relocation. Field
+// indices include blanks; accessibility does not affect metadata coverage.
+func readGoStructFields(symbols map[string]*goDataSymbol, name string, typ *types.Struct, wordSize int) ([]goMetadataField, error) {
+	symbol := symbols[name]
+	if symbol == nil {
+		return nil, fmt.Errorf("missing struct descriptor %s", name)
+	}
+	headerSize := 4*wordSize + 16
+	length, err := goReferenceAt(symbol, headerSize+2*wordSize, wordSize)
+	if err != nil {
+		return nil, err
+	}
+	if length.Raw != uint64(typ.NumFields()) {
+		return nil, fmt.Errorf("field count %d, want %d", length.Raw, typ.NumFields())
+	}
+	fields := make([]goMetadataField, typ.NumFields())
+	if len(fields) == 0 {
+		return fields, nil
+	}
+	reference, err := goReferenceAt(symbol, headerSize+wordSize, wordSize)
+	if err != nil {
+		return nil, err
+	}
+	if reference.Relocation == nil {
+		return nil, fmt.Errorf("field table has no relocation")
+	}
+	table := symbols[reference.Relocation.Symbol]
+	if table == nil {
+		return nil, fmt.Errorf("missing field table %s", reference.Relocation.Symbol)
+	}
+	for i := range fields {
+		// Go StructField is Name, Typ and Offset, each one machine word.
+		offset := reference.Relocation.Addend + int64((3*i+2)*wordSize)
+		if offset < 0 || offset > int64(len(table.data)) {
+			return nil, fmt.Errorf("field %d offset exceeds its data symbol", i)
+		}
+		value, err := goReferenceAt(table, int(offset), wordSize)
+		if err != nil {
+			return nil, err
+		}
+		fields[i] = goMetadataField{Name: typ.Field(i).Name(), Offset: value.Raw}
+	}
+	return fields, nil
 }
 
 func readGoReferencedType(symbols map[string]*goDataSymbol, anchorName string, wordSize int) (goMetadata, error) {

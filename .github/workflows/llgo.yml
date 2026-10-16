@@ -294,6 +294,9 @@ jobs:
             echo "$layout_group<<LAYOUT_INPUTS"
             for layout_dir in "${layout_dirs[@]}"; do
               [[ -d "$layout_dir" && ${layout_dir##*/} != _* ]] || continue
+              [[ "$layout_group" != compiler || "$layout_dir" != ./cl/_testpy/* ]] || continue
+              # Match TestRunAndTestFromTestlibc: pthread_once is not a Windows input.
+              [[ "$RUNNER_OS" != Windows || "$layout_dir" != ./cl/_testlibc/once ]] || continue
               if [[ "$layout_group" == runtime ]]; then layout_dir="./${layout_dir#./runtime/}"; fi
               printf '%s\n' "$layout_dir"
             done | LC_ALL=C sort -u
