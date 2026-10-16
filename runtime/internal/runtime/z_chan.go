@@ -250,8 +250,11 @@ func (w *chanWaiter) wait() {
 	w.signal.destroy()
 }
 
-// finish keeps the signal locked through ready. Otherwise, the completed
-// waiter can wake and destroy its signal before ready returns.
+// finish keeps the signal locked through ready. An ordinary waiter can otherwise
+// wake spuriously, observe completion, and destroy its signal before ready runs.
+// Select cleanup also acquires the channel lock held by finish's caller, which
+// protects its signal's lifetime. Use the same ordering so notification completes
+// under the signal lock in both branches.
 func (w *chanWaiter) finish(status waitStatus) {
 	if w.sel != nil {
 		w.sel.signal.lock()
