@@ -960,6 +960,17 @@
     },
     {
       "kind": "branch",
+      "id": "0a6e4ff1afb4ebb3",
+      "label": "Branch cpunion/llgo:codex/hosted-gcgort-resource-20261016",
+      "path": "series/branch/0a6e4ff1afb4ebb3/summary.json",
+      "configPath": "series/branch/0a6e4ff1afb4ebb3/config.json",
+      "commitPath": "commits/338a06262a2432a0736cc31a85b85d574e0d4626.json",
+      "sha": "338a06262a2432a0736cc31a85b85d574e0d4626",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/338a06262a2432a0736cc31a85b85d574e0d4626",
+      "updatedAt": "2026-10-16T03:23:35.855Z"
+    },
+    {
+      "kind": "branch",
       "id": "670ffd3ec8fb3f88",
       "label": "Branch cpunion/llgo:codex/large-aggregate-equality",
       "path": "series/branch/670ffd3ec8fb3f88/summary.json",
@@ -5104,6 +5115,17 @@
       "sha": "073855da4451fa8927dbe886b11e72cb1e43b2f1",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/073855da4451fa8927dbe886b11e72cb1e43b2f1",
       "updatedAt": "2026-10-16T02:22:50.001Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2829",
+      "label": "PR #2829",
+      "path": "series/pull/2829/summary.json",
+      "configPath": "series/pull/2829/config.json",
+      "commitPath": "commits/338a06262a2432a0736cc31a85b85d574e0d4626.json",
+      "sha": "338a06262a2432a0736cc31a85b85d574e0d4626",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/338a06262a2432a0736cc31a85b85d574e0d4626",
+      "updatedAt": "2026-10-16T03:23:35.720Z"
     }
   ]
 }
