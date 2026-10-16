@@ -254,14 +254,16 @@ func (w *chanWaiter) finish(status waitStatus) {
 	if w.sel != nil {
 		w.sel.signal.lock()
 		w.sel.status = status
-		w.sel.signal.unlock()
 		w.sel.signal.ready()
+		w.sel.signal.unlock()
 		return
 	}
 	w.signal.lock()
 	w.status = status
-	w.signal.unlock()
+	// Keep the signal alive until ready returns: a spurious wake can let
+	// the waiter observe status and destroy its condition after unlock.
 	w.signal.ready()
+	w.signal.unlock()
 }
 
 func claimWaiter(w *chanWaiter) bool {
