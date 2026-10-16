@@ -133,7 +133,7 @@ func checkPackage(root, output, baselineDirectory string, tests bool, patterns [
 	if err != nil {
 		return err
 	}
-	for _, subject := range metadata {
+	for subjectIndex, subject := range metadata {
 		st := types.Unalias(subject.typ).Underlying().(*types.Struct)
 		if generated == nil {
 			generated = gogen.NewPackage(pkg.PkgPath, pkg.Name, &gogen.Config{Types: pkg.Types, Fset: pkg.Fset})
@@ -219,7 +219,7 @@ func checkPackage(root, output, baselineDirectory string, tests bool, patterns [
 					call.read = fn
 				}
 				location := pkg.Fset.PositionFor(field.Pos(), false)
-				checks = append(checks, fieldCheck{typeName: subject.name, field: field.Name(), operation: strings.ToLower(operation), wrapper: name, file: location.Filename, line: location.Line, kind: kind})
+				checks = append(checks, fieldCheck{owner: subjectIndex, typeName: subject.name, field: field.Name(), operation: strings.ToLower(operation), wrapper: name, file: location.Filename, line: location.Line, kind: kind})
 			}
 			calls = append(calls, call)
 		}

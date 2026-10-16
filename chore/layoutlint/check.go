@@ -27,6 +27,9 @@ import (
 )
 
 type fieldCheck struct {
+	// owner indexes the package's subjects. Distinct generic instances can
+	// print the same typeName when their arguments contain private fields.
+	owner                      int
 	typeName, field, operation string
 	wrapper                    string
 	file                       string
@@ -219,8 +222,8 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 	if err := os.WriteFile(configPath, []byte(importcfg.String()), 0644); err != nil {
 		return nil, nil, err
 	}
-	// These constants are compiled by Go only. They provide alignment and
-	// scalar widths without asking LLGo to describe the memory being checked.
+	// Go emits the reference and storage-model descriptors used by every
+	// layout check. No generated expression supplies a separate layout fact.
 	models, layoutNames, err := goLayoutModels(pkg, retained)
 	if err != nil {
 		return nil, nil, err
@@ -232,61 +235,8 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 			return nil, nil, err
 		}
 	}
-	owners := make(map[string]string, len(retained))
-	for i, check := range retained {
-		owners[check.name] = layoutNames[i]
-	}
 	var declarations strings.Builder
-	var ownerConstants []string
-	fmt.Fprintf(&declarations, "package %s\nimport \"unsafe\"\nconst _ = unsafe.Sizeof(byte(0))\n", pkg.Name)
-	for i, check := range checks {
-		owner := owners[check.typeName]
-		constants := []struct{ name, expression string }{
-			{fmt.Sprintf("layoutlintObjectAlign%d", i), fmt.Sprintf("unsafe.Alignof(%s{})", owner)},
-			{fmt.Sprintf("layoutlintFieldAlign%d", i), fmt.Sprintf("unsafe.Alignof((*%s)(nil).%s)", owner, check.field)},
-			{fmt.Sprintf("layoutlintWidth%d", i), fmt.Sprintf("unsafe.Sizeof((*%s)(nil).%s)", owner, check.field)},
-		}
-		for _, declaration := range constants {
-			if pkg.Types.Scope().Lookup(declaration.name) != nil {
-				return nil, nil, fmt.Errorf("%s: generated constant %s already exists", pkg.PkgPath, declaration.name)
-			}
-			fmt.Fprintf(&declarations, "const %s = %s\n", declaration.name, declaration.expression)
-		}
-	}
-	for i, check := range nested {
-		value := fmt.Sprintf("(*%s)(nil)", layoutNames[check.owner])
-		var base string
-		for _, step := range check.path {
-			base = value
-			if step.field != nil {
-				value += "." + step.field.Name()
-			} else {
-				value += fmt.Sprintf("[%d]", step.index)
-			}
-		}
-		offset := "unsafe.Offsetof(" + value + ")"
-		if last := check.path[len(check.path)-1]; last.field == nil {
-			offset = fmt.Sprintf("%d * unsafe.Sizeof(%s)", last.index, value)
-		}
-		for _, constant := range []struct{ name, expression string }{
-			{fmt.Sprintf("layoutlintNestedOffset%d", i), offset},
-			{fmt.Sprintf("layoutlintNestedBaseAlign%d", i), "unsafe.Alignof(" + base + ")"},
-			{fmt.Sprintf("layoutlintNestedAlign%d", i), "unsafe.Alignof(" + value + ")"},
-			{fmt.Sprintf("layoutlintNestedWidth%d", i), "unsafe.Sizeof(" + value + ")"},
-		} {
-			if pkg.Types.Scope().Lookup(constant.name) != nil {
-				return nil, nil, fmt.Errorf("%s: generated constant %s already exists", pkg.PkgPath, constant.name)
-			}
-			fmt.Fprintf(&declarations, "const %s = %s\n", constant.name, constant.expression)
-			ownerConstants = append(ownerConstants, constant.name)
-		}
-	}
-	if ownerBuild {
-		if pkg.Types.Scope().Lookup("layoutlintOwnerConstants") != nil {
-			return nil, nil, fmt.Errorf("%s: generated constant table already exists", pkg.PkgPath)
-		}
-		fmt.Fprintf(&declarations, "var layoutlintOwnerConstants = [...]uintptr{%s}\n", strings.Join(ownerConstants, ","))
-	}
+	fmt.Fprintf(&declarations, "package %s\n", pkg.Name)
 	for i, check := range retained {
 		name := fmt.Sprintf("layoutlintABIReference%d", i)
 		if pkg.Types.Scope().Lookup(name) != nil {
@@ -303,12 +253,11 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 			fmt.Fprintf(&declarations, "var %s interface{} = (*%s)(nil)\n", name, layoutNames[i])
 		}
 	}
-	widthSource := filepath.Join(directory, "go-widths.go")
-	if err := os.WriteFile(widthSource, []byte(declarations.String()), 0644); err != nil {
+	referenceSource := filepath.Join(directory, "go-references.go")
+	if err := os.WriteFile(referenceSource, []byte(declarations.String()), 0644); err != nil {
 		return nil, nil, err
 	}
-	headerPath := filepath.Join(directory, "go-layout.h")
-	args := []string{"go", "tool", "compile", "-S", "-S", "-p", pkg.PkgPath, "-importcfg", configPath, "-asmhdr", headerPath, "-o", filepath.Join(directory, "reference.a")}
+	args := []string{"go", "tool", "compile", "-S", "-S", "-p", pkg.PkgPath, "-importcfg", configPath, "-o", filepath.Join(directory, "reference.a")}
 	if pkg.Module != nil && pkg.Module.GoVersion != "" {
 		args = append(args, "-lang="+version.Lang("go"+pkg.Module.GoVersion))
 	}
@@ -342,7 +291,7 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 		}
 		args = append(args, file)
 	}
-	args = append(args, widthSource)
+	args = append(args, referenceSource)
 	if modelSource != "" {
 		args = append(args, modelSource)
 	}
@@ -350,7 +299,7 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 		// The defining package can contain assembly (reflect is one example).
 		// Let cmd/go provide symabis and the package's other compiler settings.
 		replacements := make(map[string]string)
-		for _, path := range []string{widthSource, modelSource} {
+		for _, path := range []string{referenceSource, modelSource} {
 			if path == "" {
 				continue
 			}
@@ -393,118 +342,54 @@ func goOffsets(root, directory, baselineDirectory string, pkg *packages.Package,
 	if closeErr != nil {
 		return nil, nil, closeErr
 	}
-	wanted := make(map[string]int64)
-	for i := range nested {
-		wanted[fmt.Sprintf("const_layoutlintNestedOffset%d", i)] = -1
-		wanted[fmt.Sprintf("const_layoutlintNestedBaseAlign%d", i)] = -1
-		wanted[fmt.Sprintf("const_layoutlintNestedAlign%d", i)] = -1
-		wanted[fmt.Sprintf("const_layoutlintNestedWidth%d", i)] = -1
-	}
-	for i, check := range checks {
-		owner := owners[check.typeName]
-		wanted[owner+"_"+check.field] = -1
-		wanted[fmt.Sprintf("const_layoutlintObjectAlign%d", i)] = -1
-		wanted[fmt.Sprintf("const_layoutlintFieldAlign%d", i)] = -1
-		wanted[fmt.Sprintf("const_layoutlintWidth%d", i)] = -1
-		if check.kind != types.Invalid {
-			wanted[owner+"__size"] = -1
-		}
-	}
-	var header []byte
-	if ownerBuild {
-		addendBase := 10
-		if runtime.GOARCH == "arm" || runtime.GOARCH == "ppc64" || runtime.GOARCH == "ppc64le" {
-			addendBase = 16
-		}
-		symbols, err := readGoSymbols(logPath, pkg.PkgPath+".layoutlint", addendBase)
-		if err != nil {
-			return nil, nil, err
-		}
-		table := symbols[pkg.PkgPath+".layoutlintOwnerConstants<0>"]
-		wordSize := strconv.IntSize / 8
-		if table == nil || table.Size != len(ownerConstants)*wordSize {
-			return nil, nil, fmt.Errorf("%s: Go owner constant table missing or has an unexpected size", pkg.PkgPath)
-		}
-		for i, name := range ownerConstants {
-			value, err := goReferenceAt(table, i*wordSize, wordSize)
-			if err != nil {
-				return nil, nil, err
-			}
-			wanted["const_"+name] = int64(value.Raw)
-		}
-	} else {
-		var err error
-		header, err = os.ReadFile(headerPath)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	scanner := bufio.NewScanner(strings.NewReader(string(header)))
-	for scanner.Scan() {
-		parts := strings.Fields(scanner.Text())
-		if len(parts) != 3 || parts[0] != "#define" {
-			continue
-		}
-		previous, ok := wanted[parts[1]]
-		if !ok {
-			continue
-		}
-		if previous != -1 {
-			return nil, nil, fmt.Errorf("ambiguous Go layout macro %s", parts[1])
-		}
-		offset, err := strconv.ParseInt(parts[2], 10, 64)
-		if err != nil || offset < 0 {
-			return nil, nil, fmt.Errorf("invalid Go layout %s=%s", parts[1], parts[2])
-		}
-		wanted[parts[1]] = offset
-	}
-	if err := scanner.Err(); err != nil {
+	typeMetadata, err := readGoMetadata(root, directory, baselineDirectory, pkg.PkgPath, retained, layoutNames, dependencies)
+	if err != nil {
 		return nil, nil, err
 	}
 	for i := range nested {
 		check := &nested[i]
-		check.offset = wanted[fmt.Sprintf("const_layoutlintNestedOffset%d", i)]
-		check.baseAlign = wanted[fmt.Sprintf("const_layoutlintNestedBaseAlign%d", i)]
-		check.alignment = wanted[fmt.Sprintf("const_layoutlintNestedAlign%d", i)]
-		check.width = wanted[fmt.Sprintf("const_layoutlintNestedWidth%d", i)]
-		if check.offset < 0 || check.width < 0 {
-			return nil, nil, fmt.Errorf("Go did not emit nested offset/width %d", i)
-		}
-		for _, alignment := range []int64{check.baseAlign, check.alignment} {
-			if alignment <= 0 || alignment&(alignment-1) != 0 {
-				return nil, nil, fmt.Errorf("invalid Go nested alignment %d for observation %d", alignment, i)
+		current := typeMetadata[check.owner].storage
+		alignment := current.header.Align
+		for _, step := range check.path {
+			check.baseAlign = int64(alignment)
+			if step.field != nil {
+				index := slices.IndexFunc(current.fields, func(field goMetadataField) bool { return field.Name == step.field.Name() })
+				if index == -1 {
+					return nil, nil, fmt.Errorf("Go metadata %s: missing field %s", retained[check.owner].name, step.field.Name())
+				}
+				field := &current.fields[index]
+				check.offset = int64(field.Offset)
+				current = field.storage
+				alignment = current.header.FieldAlign
+			} else {
+				if current.elem == nil {
+					return nil, nil, fmt.Errorf("Go metadata %s: missing array element", retained[check.owner].name)
+				}
+				current = current.elem
+				check.offset = step.index * int64(current.header.Size)
+				alignment = current.header.Align
 			}
 		}
+		check.alignment = int64(alignment)
+		check.width = int64(current.header.Size)
 	}
 	layouts := make([]fieldLayout, len(checks))
 	for i, check := range checks {
-		owner := owners[check.typeName]
-		offset := wanted[owner+"_"+check.field]
-		if offset < 0 {
-			return nil, nil, fmt.Errorf("Go did not emit an offset for %s.%s", check.typeName, check.field)
+		storage := typeMetadata[check.owner].storage
+		index := slices.IndexFunc(storage.fields, func(field goMetadataField) bool { return field.Name == check.field })
+		if index == -1 {
+			return nil, nil, fmt.Errorf("Go metadata %s: missing field %s", check.typeName, check.field)
 		}
-		layouts[i].offset = offset
-		layouts[i].objectAlign = wanted[fmt.Sprintf("const_layoutlintObjectAlign%d", i)]
-		layouts[i].fieldAlign = wanted[fmt.Sprintf("const_layoutlintFieldAlign%d", i)]
-		layouts[i].width = wanted[fmt.Sprintf("const_layoutlintWidth%d", i)]
-		if layouts[i].width < 0 {
-			return nil, nil, fmt.Errorf("Go did not emit a width for %s.%s", check.typeName, check.field)
-		}
-		for _, alignment := range []int64{layouts[i].objectAlign, layouts[i].fieldAlign} {
-			if alignment <= 0 || alignment&(alignment-1) != 0 {
-				return nil, nil, fmt.Errorf("invalid Go alignment %d for %s.%s", alignment, check.typeName, check.field)
-			}
+		field := &storage.fields[index]
+		layouts[i] = fieldLayout{
+			offset: int64(field.Offset), size: int64(storage.header.Size), width: int64(field.storage.header.Size),
+			objectAlign: int64(storage.header.Align), fieldAlign: int64(field.storage.header.FieldAlign),
 		}
 		if check.kind != types.Invalid {
-			layouts[i].size = wanted[owner+"__size"]
-			if layouts[i].width <= 0 || offset+layouts[i].width > layouts[i].size {
+			if layouts[i].width <= 0 || layouts[i].offset > layouts[i].size-layouts[i].width {
 				return nil, nil, fmt.Errorf("incomplete Go size/width for %s.%s", check.typeName, check.field)
 			}
 		}
-	}
-	typeMetadata, err := readGoMetadata(root, directory, baselineDirectory, pkg.PkgPath, retained, layoutNames, dependencies)
-	if err != nil {
-		return nil, nil, err
 	}
 	return layouts, typeMetadata, nil
 }
@@ -575,7 +460,7 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 		}
 		st := types.Unalias(check.typ).Underlying().(*types.Struct)
 		for pair := 0; pair < len(checks); pair += 2 {
-			if checks[pair].typeName != check.name {
+			if checks[pair].owner != i {
 				continue
 			}
 			for field := 0; field < st.NumFields(); field++ {
@@ -700,6 +585,10 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 		return err
 	}
 	defer script.Close()
+	launchPath := filepath.Join(directory, "launch.lldb")
+	if err := os.WriteFile(launchPath, []byte("process launch --no-stdio\n"), 0644); err != nil {
+		return err
+	}
 	debugger := exec.Command(lldb, "--no-lldbinit", "--no-use-colors", "-O", "settings set prompt layoutlint>", "--", executable)
 	debugger.Dir = root
 	input, err := debugger.StdinPipe()
@@ -726,21 +615,131 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 			err = waitErr
 		}
 	}()
-	for _, setup := range []string{
+	setup := []string{
 		"settings set auto-confirm true",
 		"settings set symbols.enable-external-lookup false",
+		`settings set thread-format "layoutlint-thread ${thread.index}|{${frame.pc}}|{${thread.stop-reason}}\n"`,
 		`breakpoint set --func-regex '\.layoutlint(Checkpoint|PrivateCheckpoint[0-9]+)$' --skip-prologue false`,
-		"process launch --no-stdio --stop-at-entry",
-		"process continue --continue-to-bkpt 1",
-	} {
-		if _, err := session.run(setup); err != nil {
+	}
+	if runtime.GOOS == "linux" {
+		// Boehm suspends/resumes threads with SIGPWR/SIGXCPU; LLGo uses
+		// SIGURG for thread snapshots. Deliver these runtime handshakes.
+		setup = append(setup, "process handle --pass true --stop false --notify false SIGPWR SIGXCPU SIGURG")
+	}
+	// command source with stop-on-continue=false runs synchronously. Let
+	// LLDB consume the loader's initial stop (dyld SIGSTOP on macOS, for
+	// example) and resume to the first checkpoint before reading arguments.
+	setup = append(setup, fmt.Sprintf("command source --stop-on-continue false --stop-on-error true %q", launchPath))
+	for _, command := range setup {
+		if _, err := session.run(command); err != nil {
 			return err
 		}
 	}
 	fmt.Printf("  LLDB: %d field accesses\n", len(results))
 	register := regexp.MustCompile(`(?m)^\s*[a-zA-Z][a-zA-Z0-9]*\s*=\s*(0x[0-9a-fA-F]+)(?:\s|$)`)
+	stopReason := regexp.MustCompile(`^breakpoint (1\.[0-9]+)$`)
+	breakpointLocation := regexp.MustCompile(`(?m)^\s*(1\.[0-9]+):.* address = (0x[0-9a-fA-F]+), resolved, hit count = ([0-9]+)\b`)
 	readArguments := func() ([3]uint64, error) {
 		var arguments [3]uint64
+		// A synchronous continue can return on a signal or exception. In
+		// particular, libc's x2 at a GC handshake is not a checkpoint ID.
+		threads, err := session.run("thread list")
+		if err != nil {
+			return arguments, err
+		}
+		var thread, location string
+		var pc uint64
+		selected := false
+		for _, line := range strings.Split(threads, "\n") {
+			line = strings.TrimSpace(line)
+			current := strings.HasPrefix(line, "* ")
+			line = strings.TrimPrefix(line, "* ")
+			line, ok := strings.CutPrefix(line, "layoutlint-thread ")
+			if !ok {
+				continue
+			}
+			parts := strings.SplitN(line, "|", 3)
+			if len(parts) != 3 {
+				return arguments, fmt.Errorf("invalid LLDB thread status %q", line)
+			}
+			if parts[2] == "" {
+				continue
+			}
+			reason := stopReason.FindStringSubmatch(parts[2])
+			if reason == nil {
+				return arguments, fmt.Errorf("unexpected LLDB stop: thread %s at %s: %s", parts[0], parts[1], parts[2])
+			}
+			if thread != "" {
+				return arguments, fmt.Errorf("multiple threads stopped at layout checkpoints; see lldb.log")
+			}
+			if _, err := strconv.ParseUint(parts[0], 10, 32); err != nil {
+				return arguments, fmt.Errorf("invalid LLDB thread index %q", parts[0])
+			}
+			pc, err = strconv.ParseUint(parts[1], 0, 64)
+			if err != nil {
+				return arguments, fmt.Errorf("invalid LLDB checkpoint address %q", parts[1])
+			}
+			thread, location, selected = parts[0], reason[1], current
+		}
+		if thread == "" {
+			return arguments, fmt.Errorf("LLDB did not stop at a layout checkpoint: %s", strings.TrimSpace(threads))
+		}
+		locations, err := session.run("breakpoint list 1")
+		if err != nil {
+			return arguments, err
+		}
+		matched := false
+		for _, entry := range breakpointLocation.FindAllStringSubmatch(locations, -1) {
+			if entry[1] != location {
+				continue
+			}
+			address, err := strconv.ParseUint(entry[2], 0, 64)
+			if err != nil {
+				return arguments, err
+			}
+			matched = address == pc && entry[3] != "0"
+			break
+		}
+		if !matched {
+			return arguments, fmt.Errorf("thread %s PC 0x%x does not match hit checkpoint %s; see lldb.log", thread, pc, location)
+		}
+		if !selected {
+			if _, err := session.run("thread select " + thread); err != nil {
+				return arguments, err
+			}
+		}
+		if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+			// Both MSVC and MinGW pass these three words on the stack. The
+			// breakpoint skips no prologue, so ESP still points to the return
+			// address; base, address and id are at ESP+4, ESP+8 and ESP+12.
+			output, err := session.run("register read -f hex esp")
+			if err != nil {
+				return arguments, err
+			}
+			values := register.FindAllStringSubmatch(output, -1)
+			if len(values) != 1 {
+				return arguments, fmt.Errorf("LLDB returned %d stack-pointer values, want 1; see lldb.log", len(values))
+			}
+			stack, err := strconv.ParseUint(values[0][1], 0, 32)
+			if err != nil {
+				return arguments, err
+			}
+			path := filepath.Join(directory, "checkpoint-arguments.bin")
+			if _, err := session.run(fmt.Sprintf("memory read --binary --force --size 1 --count 12 --outfile %q 0x%x", path, stack+4)); err != nil {
+				return arguments, err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return arguments, err
+			}
+			if len(data) != 12 {
+				return arguments, fmt.Errorf("LLDB returned %d argument bytes, want 12", len(data))
+			}
+			for i := range arguments {
+				arguments[i] = uint64(binary.LittleEndian.Uint32(data[4*i:]))
+			}
+			return arguments, nil
+		}
 		output, err := session.run("register read -f hex arg1 arg2 arg3")
 		if err != nil {
 			return arguments, err
@@ -783,13 +782,18 @@ func checkOffsets(root, directory, source string, pkg *packages.Package, tests b
 		}
 		result := &metadataResults[i]
 		readErr := readMetadata(&session, directory, i, arguments[0], metadata[i].typ, metadataFields[i], result)
-		for _, observations := range [][]offsetResult{results, nestedResults} {
-			for j := range observations {
-				observation := &observations[j]
-				if observation.Type == result.Type {
-					if offset, ok := result.fieldOffsets[observation.Field]; ok {
-						observation.MetadataOffset = &offset
-					}
+		for j := range results {
+			observation := &results[j]
+			if checks[observation.checkIndex].owner == i {
+				if offset, ok := result.fieldOffsets[observation.Field]; ok {
+					observation.MetadataOffset = &offset
+				}
+			}
+		}
+		for j := range nestedResults {
+			if nested[j].owner == i {
+				if offset, ok := result.fieldOffsets[nestedResults[j].Field]; ok {
+					nestedResults[j].MetadataOffset = &offset
 				}
 			}
 		}

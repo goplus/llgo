@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"go/types"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,11 +61,22 @@ type goMetadata struct {
 	TypeHeader    *goMetadataHeader `json:"type_header"`
 	Layout        goStorageLayout   `json:"layout"`
 	Fields        []goMetadataField `json:"fields"`
+	storage       *goStorageType
 }
 
 type goMetadataField struct {
-	Name   string `json:"name"`
-	Offset uint64 `json:"offset"`
+	Name       string `json:"name"`
+	Offset     uint64 `json:"offset"`
+	TypeSymbol string `json:"type_symbol"`
+	storage    *goStorageType
+}
+
+// Only inline struct/array edges are followed. Pointer and container fields
+// keep their own header, so recursive types cannot create a layout cycle.
+type goStorageType struct {
+	header *goMetadataHeader
+	fields []goMetadataField
+	elem   *goStorageType
 }
 
 // The model supplies storage facts only. Names, Kind and comparability must
@@ -237,31 +249,20 @@ func readGoMetadata(root, directory, baselineDirectory, pkgPath string, checks [
 	if err != nil {
 		return nil, err
 	}
-	// An imported alias keeps the defining package's descriptor. Go emits a
-	// relocation here, not a second copy of (for example) reflect.Value.
-	for i, check := range checks {
-		anchor := symbols[fmt.Sprintf("%sABIReference%d<0>", prefix, i)]
-		if anchor == nil {
-			return nil, fmt.Errorf("Go metadata %s: missing reference symbol", check.name)
+	// Go emits basic descriptors in runtime and imported named descriptors in
+	// their defining package. Resolve those relocations from compiler listings,
+	// never from synthesized Sizeof/Alignof expressions or go/types sizes.
+	loaded := make(map[string]bool)
+	load := func(owner string) error {
+		if loaded[owner] || owner == pkgPath {
+			return nil
 		}
-		reference, err := goReferenceAt(anchor, 0, strconv.IntSize/8)
-		if err != nil {
-			return nil, err
-		}
-		if reference.Relocation == nil || symbols[reference.Relocation.Symbol] != nil {
-			continue
-		}
-		named, ok := types.Unalias(check.typ).(*types.Named)
-		if !ok || named.Obj().Pkg() == nil || named.Obj().Pkg().Path() == pkgPath {
-			continue // The ordinary resolver reports an unresolved local reference.
-		}
-		owner := named.Obj().Pkg().Path()
 		path := dependencies[owner]
 		if path == "" {
 			path = filepath.Join(baselineDirectory, fmt.Sprintf("dependency-%d.log", len(dependencies)))
 			log, err := os.Create(path)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			args := []string{"build", "-gcflags=" + owner + "=-S -S", owner}
 			fmt.Fprintf(log, "go %q\n", args)
@@ -273,56 +274,163 @@ func readGoMetadata(root, directory, baselineDirectory, pkgPath string, checks [
 			if compileErr != nil || closeErr != nil {
 				data, readErr := os.ReadFile(path)
 				if readErr != nil {
-					return nil, readErr
+					return readErr
 				}
 				failurePath := filepath.Join(directory, "go-dependency-error.log")
 				if err := os.WriteFile(failurePath, data, 0644); err != nil {
-					return nil, err
+					return err
 				}
-				return nil, fmt.Errorf("Go metadata dependency %s: compile %v, log %v; see %s", owner, compileErr, closeErr, failurePath)
+				return fmt.Errorf("Go metadata dependency %s: compile %v, log %v; see %s", owner, compileErr, closeErr, failurePath)
 			}
 			dependencies[owner] = path
 		}
 		imported, err := readGoSymbols(path, owner+".layoutlint", addendBase)
 		if err != nil {
-			return nil, fmt.Errorf("Go metadata dependency %s: %w", owner, err)
+			return fmt.Errorf("Go metadata dependency %s: %w", owner, err)
 		}
 		for name, symbol := range imported {
 			if symbols[name] == nil {
 				symbols[name] = symbol
 			}
 		}
+		loaded[owner] = true
+		return nil
 	}
-	// Keep full data and relocations as evidence, including struct-field tables
-	// beyond the common header. Imported references retain their symbol names.
-	data, err := json.MarshalIndent(symbols, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(filepath.Join(directory, "go-abi.json"), append(data, '\n'), 0644); err != nil {
-		return nil, err
+	resolve := func(name string, typ types.Type) (*goDataSymbol, error) {
+		if symbol := symbols[name]; symbol != nil {
+			return symbol, nil
+		}
+		base := types.Unalias(typ)
+		if pointer, ok := base.(*types.Pointer); ok {
+			base = types.Unalias(pointer.Elem())
+		}
+		owner := "runtime"
+		if named, ok := base.(*types.Named); ok && named.Obj().Pkg() != nil {
+			owner = named.Obj().Pkg().Path()
+		}
+		if err := load(owner); err != nil {
+			return nil, err
+		}
+		if symbol := symbols[name]; symbol != nil {
+			return symbol, nil
+		}
+		return nil, fmt.Errorf("missing Go descriptor %s for %s after reading %s", name, typ, owner)
 	}
 	wordSize := strconv.IntSize / 8
+	headerSize := 4*wordSize + 16
+	var readStorage func(string, types.Type) (*goStorageType, error)
+	readStorage = func(name string, typ types.Type) (*goStorageType, error) {
+		symbol, err := resolve(name, typ)
+		if err != nil {
+			return nil, err
+		}
+		header, err := decodeGoHeader(symbol, wordSize)
+		if err != nil {
+			return nil, fmt.Errorf("Go descriptor %s: %w", name, err)
+		}
+		if header.Size > math.MaxInt64 || header.Align == 0 || header.Align&(header.Align-1) != 0 || header.FieldAlign == 0 || header.FieldAlign&(header.FieldAlign-1) != 0 {
+			return nil, fmt.Errorf("invalid Go storage header %s: size %d, align %d, field align %d", name, header.Size, header.Align, header.FieldAlign)
+		}
+		storage := &goStorageType{header: header}
+		switch underlying := types.Unalias(typ).Underlying().(type) {
+		case *types.Struct:
+			if header.Kind&31 != 25 {
+				return nil, fmt.Errorf("Go descriptor %s is not a struct", name)
+			}
+			storage.fields, err = readGoStructFields(symbols, name, underlying, wordSize)
+			if err != nil {
+				return nil, err
+			}
+			for i := range storage.fields {
+				field := &storage.fields[i]
+				field.storage, err = readStorage(field.TypeSymbol, underlying.Field(i).Type())
+				if err != nil {
+					return nil, fmt.Errorf("Go field %s.%s: %w", name, field.Name, err)
+				}
+			}
+		case *types.Array:
+			if header.Kind&31 != 17 {
+				return nil, fmt.Errorf("Go descriptor %s is not an array", name)
+			}
+			elem, err := goReferenceAt(symbol, headerSize, wordSize)
+			if err != nil {
+				return nil, err
+			}
+			if elem.Relocation == nil || elem.Relocation.Addend != 0 {
+				return nil, fmt.Errorf("Go array %s has no element descriptor relocation", name)
+			}
+			length, err := goReferenceAt(symbol, headerSize+2*wordSize, wordSize)
+			if err != nil {
+				return nil, err
+			}
+			if length.Raw != uint64(underlying.Len()) {
+				return nil, fmt.Errorf("Go array %s length %d, want %d", name, length.Raw, underlying.Len())
+			}
+			storage.elem, err = readStorage(elem.Relocation.Symbol, underlying.Elem())
+			if err != nil {
+				return nil, err
+			}
+		}
+		return storage, nil
+	}
+	readRoot := func(anchorName string, typ types.Type) (goMetadata, error) {
+		var result goMetadata
+		anchor := symbols[anchorName]
+		if anchor == nil {
+			return result, fmt.Errorf("missing reference symbol %s", anchorName)
+		}
+		reference, err := goReferenceAt(anchor, 0, wordSize)
+		if err != nil {
+			return result, err
+		}
+		if reference.Relocation == nil || reference.Relocation.Addend != 0 {
+			return result, fmt.Errorf("reference %s has no descriptor relocation", anchorName)
+		}
+		pointer, err := resolve(reference.Relocation.Symbol, types.NewPointer(typ))
+		if err != nil {
+			return result, err
+		}
+		elem, err := goReferenceAt(pointer, headerSize, wordSize)
+		if err != nil {
+			return result, err
+		}
+		if elem.Relocation == nil || elem.Relocation.Addend != 0 {
+			return result, fmt.Errorf("reference %s pointer has no Elem relocation", anchorName)
+		}
+		if _, err := resolve(elem.Relocation.Symbol, typ); err != nil {
+			return result, err
+		}
+		return readGoReferencedType(symbols, anchorName, wordSize)
+	}
 	results := make([]goMetadata, len(checks))
 	for i, check := range checks {
-		original, err := readGoReferencedType(symbols, fmt.Sprintf("%sABIReference%d<0>", prefix, i), wordSize)
+		original, err := readRoot(fmt.Sprintf("%sABIReference%d<0>", prefix, i), check.typ)
 		if err != nil {
 			return nil, fmt.Errorf("Go metadata %s: %w", check.name, err)
 		}
 		storage := original
 		if layoutNames[i] != check.identifier {
-			storage, err = readGoReferencedType(symbols, fmt.Sprintf("%sStorageReference%d<0>", prefix, i), wordSize)
+			storage, err = readRoot(fmt.Sprintf("%sStorageReference%d<0>", prefix, i), check.typ)
 			if err != nil {
 				return nil, fmt.Errorf("Go storage layout %s: %w", check.name, err)
 			}
 		}
 		header := storage.TypeHeader
 		original.Layout = goStorageLayout{storage.TypeSymbol, header.Size, header.PtrBytes, header.Align, header.FieldAlign}
-		original.Fields, err = readGoStructFields(symbols, storage.TypeSymbol, types.Unalias(check.typ).Underlying().(*types.Struct), wordSize)
+		original.storage, err = readStorage(storage.TypeSymbol, check.typ)
 		if err != nil {
 			return nil, fmt.Errorf("Go metadata fields %s: %w", check.name, err)
 		}
+		original.Fields = original.storage.fields
 		results[i] = original
+	}
+	// Include the defining-package descriptors used by fields and array elements.
+	data, err := json.MarshalIndent(symbols, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(directory, "go-abi.json"), append(data, '\n'), 0644); err != nil {
+		return nil, err
 	}
 	return results, nil
 }
@@ -367,7 +475,14 @@ func readGoStructFields(symbols map[string]*goDataSymbol, name string, typ *type
 		if err != nil {
 			return nil, err
 		}
-		fields[i] = goMetadataField{Name: typ.Field(i).Name(), Offset: value.Raw}
+		typeReference, err := goReferenceAt(table, int(offset)-wordSize, wordSize)
+		if err != nil {
+			return nil, err
+		}
+		if value.Raw > math.MaxInt64 || typeReference.Relocation == nil || typeReference.Relocation.Addend != 0 {
+			return nil, fmt.Errorf("invalid Go field %s.%s offset or type relocation", name, typ.Field(i).Name())
+		}
+		fields[i] = goMetadataField{Name: typ.Field(i).Name(), Offset: value.Raw, TypeSymbol: typeReference.Relocation.Symbol}
 	}
 	return fields, nil
 }
