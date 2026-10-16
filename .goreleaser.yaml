@@ -3,6 +3,7 @@ version: 2
 dist: .dist
 
 env:
+  - DOCKER_IMAGE_REPO={{ envOrDefault "DOCKER_IMAGE_REPO" "ghcr.io/xgo-dev/llgo" }}
   - SYSROOT_DARWIN_AMD64={{.Env.PWD}}/.sysroot/darwin/amd64
   - SYSROOT_DARWIN_ARM64={{.Env.PWD}}/.sysroot/darwin/arm64
   - SYSROOT_LINUX_AMD64={{.Env.PWD}}/.sysroot/linux/amd64
@@ -113,7 +114,9 @@ checksum:
     - glob: '{{ if not .IsSnapshot }}.windows-dist/llgo{{ .Version }}.windows-*.zip{{ end }}'
 
 nfpms:
-  - package_name: llgo
+  - id: llgo
+    package_name: llgo
+    ids: [llgo-linux-amd64, llgo-linux-arm64]
     vendor: goplus
     homepage: https://github.com/xgo-dev/llgo
     maintainer: Aofei Sheng <aofei@aofeisheng.com>
@@ -135,7 +138,36 @@ nfpms:
     file_name_template: >-
       {{.ProjectName}}{{.Version}}.{{.Os}}-{{.Arch}}
       {{- if .Arm}}v{{.Arm}}{{end}}
-    bindir: /usr/local/bin
+    bindir: /usr/lib/llgo
+    overrides:
+      deb:
+        dependencies:
+          - golang-go (>= 1.20)
+          - libc6 (>= 2.36)
+          - build-essential
+          - pkg-config
+          - libgc-dev
+          - libssl-dev
+          - zlib1g-dev
+          - libffi-dev
+          - libcjson-dev
+          - libsqlite3-dev
+          - libuv1-dev
+      rpm:
+        dependencies:
+          - golang-bin >= 1.20
+          - glibc >= 2.36
+          - gcc
+          - gcc-c++
+          - make
+          - pkgconf-pkg-config
+          - gc-devel
+          - openssl-devel
+          - zlib-devel
+          - libffi-devel
+          - cjson-devel
+          - sqlite-devel
+          - libuv-devel
     contents:
       - src: LICENSE
         dst: /usr/share/doc/llgo/LICENSE
@@ -144,6 +176,36 @@ nfpms:
       - src: LICENSES/
         dst: /usr/share/doc/llgo/LICENSES
         type: tree
+      - src: runtime/
+        dst: /usr/lib/llgo/runtime
+        type: tree
+      - src: targets/
+        dst: /usr/lib/llgo/targets
+        type: tree
+      - src: ".sysroot/linux/{{.Arch}}/crosscompile/clang/"
+        dst: /usr/lib/llgo/crosscompile/clang
+        type: tree
+      - src: /usr/lib/llgo/bin/llgo
+        dst: /usr/bin/llgo
+        type: symlink
+
+dockers_v2:
+  - id: llgo
+    ids: [llgo]
+    dockerfile: Dockerfile
+    images:
+      - "{{.Env.DOCKER_IMAGE_REPO}}"
+    tags:
+      - "{{.Version}}"
+      - '{{ if not .Prerelease }}{{.Major}}.{{.Minor}}{{ end }}'
+      - '{{ if not .Prerelease }}{{.Major}}{{ end }}'
+      - '{{ if not .Prerelease }}latest{{ end }}'
+    platforms: [linux/amd64, linux/arm64]
+    labels:
+      org.opencontainers.image.source: "{{.GitURL}}"
+      org.opencontainers.image.licenses: Apache-2.0
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
 
 snapcrafts:
   - name: llgo
@@ -174,7 +236,9 @@ snapcrafts:
       {{- if .Arm}}v{{.Arm}}{{end}}
 
 snapshot:
-  version_template: '{{trimprefix .Summary "v"}}'
+  # Tagged CI builds supply versioned Windows ZIPs to the release job.
+  # Untagged checkouts need a numeric version for DEB/RPM metadata.
+  version_template: '{{ if eq .Summary .Tag }}{{ .Version }}{{ else }}0.0.0-{{ .ShortCommit }}{{ end }}'
 
 release:
   prerelease: auto

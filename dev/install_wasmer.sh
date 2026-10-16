@@ -6,26 +6,26 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "${SCRIPT_DIR}/llgo_cache_dir.sh"
 WASMER_BIN_DIR="$(llgo_cache_dir)/bin"
 WASMER_REPOSITORY=xgo-dev/wasmer
-WASMER_VERSION=llgo-v7.5.0.1
+WASMER_VERSION=llgo-v7.5.0.2
 WASMER_NAME=wasmer
 
 case "$(uname -s)-$(uname -m)" in
     Darwin-arm64)
         asset=wasmer-darwin-arm64.tar.gz
-        digest=d76adbb9da9caff280404efba88f2a863e525c4c476a9c63543fd8650a35cc4f ;;
+        digest=9d49b44647a9c56f352fe40755088ef1275ee1c9f77c8ab72547d3795cdc9a8f ;;
     Linux-x86_64)
         asset=wasmer-linux-amd64.tar.gz
-        digest=2d7da51fe5b86fcad5268a716d3ca5a257cd0b50efdd23fac1232ee32e029950 ;;
+        digest=7878597d48f7e2435b8da1f43e11499fc3073dc0191a6c74c00c27f33849f179 ;;
     Linux-aarch64|Linux-arm64)
         asset=wasmer-linux-aarch64.tar.gz
-        digest=cd229e0fe14fa358bac52bc26f5149ca2744e72864a2946e34ce3b361f9c6dfd ;;
+        digest=9b8032161920d4453b8a91208f500578fa8ae4640cf7f8b5f5203d8335b2e565 ;;
     Linux-riscv64)
         asset=wasmer-linux-riscv64.tar.gz
-        digest=28d42d8a80ac6423495127001af609e8310ec3c1c29abef7e54cba7ed344ab6c ;;
+        digest=0590f470bf07ee3ff85e72df79a7bc5478ea901b46228c87cacb8769c9405e95 ;;
     MINGW*-x86_64|MSYS*-x86_64|CYGWIN*-x86_64)
         # This standalone host executable also runs LLGo's MinGW-built guests.
         asset=wasmer-windows-amd64.tar.gz
-        digest=db380e5259f0de8720918dea4012377ec2408aa106015e120fa1ea6e6fe8bef5
+        digest=c5c6ae9ee4cc44760308472343eb300dd1c1a4c9f763e00facfbfae362f92e97
         WASMER_NAME=wasmer.exe ;;
     *)
         echo "Wasmer ${WASMER_VERSION} has no supported prebuilt CLI for $(uname -s)-$(uname -m); install it from source and put wasmer on PATH." >&2
