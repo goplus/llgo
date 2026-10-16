@@ -229,7 +229,7 @@ func (c *Cmd) mergeCompilerFlags() []string {
 
 	// Add environment CFLAGS
 	if envCFlags := os.Getenv("CFLAGS"); envCFlags != "" {
-		flags = append(flags, safesplit.SplitDriverFlags(envCFlags)...)
+		flags = append(flags, safesplit.SplitPkgConfigFlags(envCFlags)...)
 	}
 
 	// Add config CCFLAGS

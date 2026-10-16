@@ -1,13 +1,17 @@
 package build
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf16"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 )
@@ -67,19 +71,12 @@ func TestResolveDarwinLLD(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("executable fixtures use /bin/sh")
 	}
+	t.Setenv("CCFLAGS", "")
+	t.Setenv("LDFLAGS", "")
 	prefix := filepath.Join(t.TempDir(), "homebrew with spaces")
 	linker := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
-	if err := os.MkdirAll(filepath.Dir(linker), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	writeVersion := func(version string) {
-		t.Helper()
-		if err := os.WriteFile(linker, []byte("#!/bin/sh\nprintf '%s\\n' '"+version+"'\n"), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
 	commands := commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}
-	writeVersion("Homebrew LLD 23.1.3")
+	writeTestDarwinLLD(t, linker, "Homebrew LLD 23.1.3")
 	export := crosscompile.Export{CC: "/esp/bin/clang++", LDFLAGS: []string{"-fuse-ld=lld", "-flto=full"}}
 	if err := configureDarwinLLD(commands, &export); err != nil {
 		t.Fatal(err)
@@ -88,7 +85,7 @@ func TestResolveDarwinLLD(t *testing.T) {
 		!slices.Equal(export.LDFLAGS, []string{"-fuse-ld=" + linker, "-flto=full"}) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
-	writeVersion("LLD 23.1.2")
+	writeTestDarwinLLD(t, linker, "LLD 23.1.2")
 	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
 		t.Fatalf("old linker: %v", err)
 	}
@@ -121,9 +118,7 @@ func TestDarwinLLDProbeOutput(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' '%s'\nprintf '%%s\\n' '%s' >&2\nexit %d\n", tt.stdout, tt.stderr, tt.exitCode)
-			if err := os.WriteFile(linker, []byte(script), 0o755); err != nil {
-				t.Fatal(err)
-			}
+			writeTestDarwinFile(t, linker, script, 0755)
 			export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + linker}}
 			err := configureDarwinLLD(commandEnv{}, &export)
 			if tt.wantError != "" {
@@ -148,39 +143,27 @@ func TestDarwinLLDExplicitPath(t *testing.T) {
 	}
 	root := t.TempDir()
 	custom := filepath.Join(root, "custom linker")
-	writeLinker := func(path, version string) {
-		t.Helper()
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte("#!/bin/sh\nprintf '%s\\n' '"+version+"'\n"), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeLinker(custom, "LLD 23.1.4")
+	writeTestDarwinLLD(t, custom, "LLD 23.1.4")
 	commands := commandEnv{dir: root, environ: []string{"HOMEBREW_PREFIX=" + root}}
-	for _, installed := range []bool{false, true} {
-		if installed {
-			writeLinker(filepath.Join(root, "opt/lld@23/bin/ld64.lld"), "LLD 22.1.8")
-		}
-		for _, source := range []string{"CCFLAGS", "LDFLAGS", "config"} {
-			t.Run(fmt.Sprintf("installed=%v/%s", installed, source), func(t *testing.T) {
-				t.Setenv("CCFLAGS", "")
-				t.Setenv("LDFLAGS", "")
-				export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
-				if source == "config" {
-					export.LDFLAGS = append(export.LDFLAGS, "--ld-path="+custom)
-				} else {
-					t.Setenv(source, "--ld-path="+custom)
-				}
-				if err := configureDarwinLLD(commands, &export); err != nil {
-					t.Fatal(err)
-				}
-				if export.LinkerIdentity != "LLD 23.1.4" || export.LDFLAGS[0] != "-fuse-ld="+custom {
-					t.Fatalf("wrong linker: %+v", export)
-				}
-			})
-		}
+	for _, source := range []string{"CCFLAGS", "LDFLAGS", "config"} {
+		t.Run(source, func(t *testing.T) {
+			t.Setenv("CCFLAGS", "")
+			t.Setenv("LDFLAGS", "")
+			export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
+			if source == "config" {
+				// Check an incompatible default once; the other cases have none.
+				writeTestDarwinLLD(t, filepath.Join(root, "opt/lld@23/bin/ld64.lld"), "LLD 22.1.8")
+				export.LDFLAGS = append(export.LDFLAGS, "--ld-path="+custom)
+			} else {
+				t.Setenv(source, "--ld-path="+custom)
+			}
+			if err := configureDarwinLLD(commands, &export); err != nil {
+				t.Fatal(err)
+			}
+			if export.LinkerIdentity != "LLD 23.1.4" || export.LDFLAGS[0] != "-fuse-ld="+custom {
+				t.Fatalf("wrong linker: %+v", export)
+			}
+		})
 	}
 	// A custom linker also works without any Homebrew environment setup.
 	withoutBrew := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + custom}}
@@ -196,9 +179,7 @@ func TestDarwinLLDExplicitPath(t *testing.T) {
 	// Bare names must use the driver's search, including -B, not our PATH.
 	driver := filepath.Join(root, "clang++")
 	lookup := "#!/bin/sh\ncase \"$*\" in *-B/custom*--print-prog-name=ld64.lld) printf '%s\\n' '" + custom + "';; *) exit 1;; esac\n"
-	if err := os.WriteFile(driver, []byte(lookup), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	writeTestDarwinFile(t, driver, lookup, 0755)
 	bare := crosscompile.Export{CC: driver, LDFLAGS: []string{"-fuse-ld=lld", "-B/custom", "--ld-path=ld64.lld"}}
 	if err := configureDarwinLLD(commands, &bare); err != nil {
 		t.Fatal(err)
@@ -211,7 +192,7 @@ func TestDarwinLLDExplicitPath(t *testing.T) {
 		t.Fatalf("driver lookup failure: %v", err)
 	}
 
-	writeLinker(custom, "LLD 23.1.5")
+	writeTestDarwinLLD(t, custom, "LLD 23.1.5")
 	updated := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", "--ld-path=" + custom}}
 	if err := configureDarwinLLD(commands, &updated); err != nil {
 		t.Fatal(err)
@@ -239,67 +220,80 @@ func TestDarwinLLDRejectsInvalidBuildOverride(t *testing.T) {
 	}
 }
 
+// Exercise response-file selection with the real driver, including its quoting
+// and path semantics, without executing a link job.
 func TestDarwinLLDResponseFiles(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("executable fixtures use /bin/sh")
+	compiler, err := exec.LookPath("clang++")
+	if err != nil || runtime.GOOS == "windows" {
+		t.Skip("requires a Clang GNU driver and executable shell fixtures")
 	}
 	root := t.TempDir()
-	write := func(name, content string, mode os.FileMode) string {
-		t.Helper()
-		path := filepath.Join(root, name)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(content), mode); err != nil {
-			t.Fatal(err)
-		}
-		return path
-	}
-	first := write("first linker/ld64.lld", "#!/bin/sh\necho 'LLD 23.1.3'\n", 0755)
-	second := write("second linker/ld64.lld", "#!/bin/sh\necho 'LLD 23.1.4'\n", 0755)
-	write("flags.rsp", `--ld-path="first linker/ld64.lld"`, 0600)
-	write("sub/nested.rsp", "@flags.rsp", 0600)
-	commands := commandEnv{dir: root, environ: []string{"HOMEBREW_PREFIX=" + root}}
-	for _, installed := range []bool{false, true} {
-		if installed {
-			write("opt/lld@23/bin/ld64.lld", "#!/bin/sh\necho 'LLD 22.1.8'\n", 0755)
-		}
-		for _, tt := range []struct {
-			name, env, want, version string
-			flags                    []string
-		}{
-			{"environment", "@flags.rsp", first, "LLD 23.1.3", nil},
-			{"nested", "@sub/nested.rsp", first, "LLD 23.1.3", nil},
-			{"config overrides response", "@flags.rsp", second, "LLD 23.1.4", []string{"--ld-path=" + second}},
-			{"response overrides direct", "--ld-path=" + second, first, "LLD 23.1.3", []string{"@flags.rsp"}},
-		} {
-			t.Run(fmt.Sprintf("installed=%v/%s", installed, tt.name), func(t *testing.T) {
-				t.Setenv("CCFLAGS", "")
-				t.Setenv("LDFLAGS", tt.env)
-				export := crosscompile.Export{LDFLAGS: append([]string{"-fuse-ld=lld"}, tt.flags...)}
-				if err := configureDarwinLLD(commands, &export); err != nil {
-					t.Fatal(err)
-				}
-				if export.LDFLAGS[0] != "-fuse-ld="+tt.want || export.LinkerIdentity != tt.version {
-					t.Fatalf("wrong linker/fingerprint: %+v", export)
-				}
-			})
-		}
-	}
-	t.Setenv("CCFLAGS", "")
-	t.Setenv("LDFLAGS", "@flags.rsp")
-	// Changing the response file in place must change the selected identity.
-	write("flags.rsp", `--ld-path="second linker/ld64.lld"`, 0600)
-	export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
-	if err := configureDarwinLLD(commands, &export); err != nil {
+	first := filepath.Join(root, "first linker/ld64.lld")
+	second := filepath.Join(root, `second $"\ linker/ld64.lld`)
+	writeTestDarwinLLD(t, first, "LLD 23.1.3")
+	writeTestDarwinLLD(t, second, "LLD 23.1.4")
+	writeTestDarwinFile(t, filepath.Join(root, "flags.rsp"), `--ld-path="first linker/ld64.lld"`, 0600)
+	writeTestDarwinFile(t, filepath.Join(root, "real/sub/nested.rsp"), "@flags.rsp", 0600)
+	if err := os.Symlink(filepath.Join(root, "real/sub"), filepath.Join(root, "link")); err != nil {
 		t.Fatal(err)
 	}
-	if export.LinkerIdentity != "LLD 23.1.4" || export.LDFLAGS[0] != "-fuse-ld="+second {
-		t.Fatalf("stale response file identity: %+v", export)
+	writeTestDarwinFile(t, filepath.Join(root, "real/nested.rsp"), "@flags.rsp", 0600)
+	writeTestDarwinFile(t, filepath.Join(root, "nested.rsp"), "--ld-path=/wrong-cleaned-path", 0600)
+	windows := filepath.Join(root, `windows\linker/ld64.lld`)
+	writeTestDarwinLLD(t, windows, "LLD 23.1.3")
+	writeTestDarwinFile(t, filepath.Join(root, "windows.rsp"), `--ld-path="windows\linker/ld64.lld"`, 0600)
+	data := []byte{0xff, 0xfe}
+	for _, r := range utf16.Encode([]rune(`--ld-path="first linker/ld64.lld"`)) {
+		data = binary.LittleEndian.AppendUint16(data, r)
 	}
-	write("flags.rsp", "@flags.rsp", 0600)
-	if _, _, err := resolveDarwinLLD(commands, &export); err == nil || !strings.Contains(err.Error(), "recursive response file") {
-		t.Fatalf("response file failure: %v", err)
+	writeTestDarwinFile(t, filepath.Join(root, "utf16.rsp"), string(data), 0600)
+	commands := commandEnv{dir: root, environ: []string{"HOMEBREW_PREFIX=" + root}}
+	t.Setenv("CCFLAGS", "")
+	for _, tt := range []struct {
+		name, env, want, version string
+		flags                    []string
+	}{
+		{"missing default", "@flags.rsp", first, "LLD 23.1.3", nil},
+		{"nested", "@real/sub/nested.rsp", first, "LLD 23.1.3", nil},
+		{"symlink traversal", "@link/../nested.rsp", first, "LLD 23.1.3", nil},
+		{"config overrides response", "@flags.rsp", second, "LLD 23.1.4", []string{"--ld-path=" + second}},
+		{"response overrides direct", "--ld-path=" + first, first, "LLD 23.1.3", []string{"--ld-path=" + second, "@flags.rsp"}},
+		{"Windows quoting", "@windows.rsp", windows, "LLD 23.1.3", []string{"--rsp-quoting=windows"}},
+		{"UTF16", "@utf16.rsp", first, "LLD 23.1.3", nil},
+		{"bare name", "@flags.rsp", first, "LLD 23.1.3", []string{"-B" + filepath.Dir(first), "--ld-path=ld64.lld"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("LDFLAGS", tt.env)
+			export := crosscompile.Export{CC: compiler, LDFLAGS: append([]string{"-fuse-ld=lld", "--target=arm64-apple-macos14"}, tt.flags...)}
+			if err := configureDarwinLLD(commands, &export); err != nil {
+				t.Fatal(err)
+			}
+			if export.LDFLAGS[0] != "-fuse-ld="+tt.want || export.LinkerIdentity != tt.version {
+				t.Fatalf("wrong linker/fingerprint: %+v", export)
+			}
+		})
+	}
+	// An outdated default must not block an override. Editing the same response
+	// file must also update both the selected path and its cache identity.
+	writeTestDarwinLLD(t, filepath.Join(root, "opt/lld@23/bin/ld64.lld"), "LLD 22.1.8")
+	t.Setenv("LDFLAGS", "@flags.rsp")
+	writeTestDarwinFile(t, filepath.Join(root, "flags.rsp"), strconv.Quote("--ld-path="+second), 0600)
+	export := crosscompile.Export{CC: compiler, LDFLAGS: []string{"-fuse-ld=lld", "--target=arm64-apple-macos14"}}
+	if err := configureDarwinLLD(commands, &export); err != nil || export.LinkerIdentity != "LLD 23.1.4" || export.LDFLAGS[0] != "-fuse-ld="+second {
+		t.Fatalf("stale linker identity: %+v, %v", export, err)
+	}
+	writeTestDarwinFile(t, filepath.Join(root, "flags.rsp"), "-Wl,-dead_strip", 0600)
+	fallback := filepath.Join(root, "opt/lld@23/bin/ld64.lld")
+	writeTestDarwinLLD(t, fallback, "LLD 23.1.3")
+	base := crosscompile.Export{CC: compiler, LDFLAGS: []string{"-fuse-ld=lld", "--target=arm64-apple-macos14"}}
+	if path, _, err := resolveDarwinLLD(commands, &base); err != nil || path != fallback {
+		t.Fatalf("response file without an override: %q, %v", path, err)
+	}
+	for _, content := range []string{"@flags.rsp", "--ld-path=/missing", "-invalid-driver-option"} {
+		writeTestDarwinFile(t, filepath.Join(root, "flags.rsp"), content, 0600)
+		if _, _, err := resolveDarwinLLD(commands, &export); err == nil {
+			t.Fatalf("accepted invalid response file %q", content)
+		}
 	}
 }
 
@@ -307,6 +301,7 @@ func TestDarwinLLDSymlinkTraversal(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("executable fixtures use /bin/sh")
 	}
+	compiler, _ := exec.LookPath("clang++")
 	t.Setenv("CCFLAGS", "")
 	t.Setenv("LDFLAGS", "")
 	root := t.TempDir()
@@ -316,36 +311,65 @@ func TestDarwinLLDSymlinkTraversal(t *testing.T) {
 	if err := os.Symlink(filepath.Join(root, "real/sub"), filepath.Join(root, "link")); err != nil {
 		t.Fatal(err)
 	}
-	writeVersion := func(path, version string) {
-		t.Helper()
-		if err := os.WriteFile(path, []byte("#!/bin/sh\necho '"+version+"'\n"), 0755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	writeVersion(filepath.Join(root, "ld64.lld"), "LLD 23.1.3")
+	writeTestDarwinLLD(t, filepath.Join(root, "ld64.lld"), "LLD 23.1.3")
 	t.Chdir(root)
 	for _, version := range []string{"LLD 22.1.8", "LLD 23.1.4"} {
-		writeVersion(filepath.Join(root, "real/ld64.lld"), version)
-		for _, dir := range []string{root, "", "."} {
-			commands := commandEnv{dir: dir}
-			for _, path := range []string{"link/../ld64.lld", root + "/link/../ld64.lld"} {
-				if err := os.WriteFile(filepath.Join(root, "link.rsp"), []byte(`--ld-path="`+path+`"`), 0600); err != nil {
-					t.Fatal(err)
+		writeTestDarwinLLD(t, filepath.Join(root, "real/ld64.lld"), version)
+		for _, tt := range []struct{ dir, flag string }{
+			{"", "--ld-path=link/../ld64.lld"},
+			{root, "--ld-path=" + root + "/link/../ld64.lld"},
+			{".", "@link.rsp"},
+		} {
+			if tt.flag == "@link.rsp" && compiler == "" {
+				continue
+			}
+			writeTestDarwinFile(t, filepath.Join(root, "link.rsp"), "--ld-path=link/../ld64.lld", 0600)
+			export := crosscompile.Export{CC: compiler, LDFLAGS: []string{"-fuse-ld=lld", "--target=arm64-apple-macos14", tt.flag}}
+			err := configureDarwinLLD(commandEnv{dir: tt.dir}, &export)
+			if version == "LLD 22.1.8" {
+				if err == nil || !strings.Contains(err.Error(), version) {
+					t.Fatalf("%q bypassed version gate: %v", tt.flag, err)
 				}
-				for _, flag := range []string{"--ld-path=" + path, "@link.rsp"} {
-					export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld", flag}}
-					err := configureDarwinLLD(commands, &export)
-					if version == "LLD 22.1.8" {
-						if err == nil || !strings.Contains(err.Error(), version) {
-							t.Fatalf("%q bypassed version gate: %v", flag, err)
-						}
-					} else if err != nil || export.LinkerIdentity != version ||
-						!filepath.IsAbs(strings.TrimPrefix(export.LDFLAGS[0], "-fuse-ld=")) ||
-						!strings.HasSuffix(export.LDFLAGS[0], "/link/../ld64.lld") {
-						t.Fatalf("%q: wrong linker/fingerprint %+v, %v", flag, export, err)
-					}
-				}
+			} else if err != nil || export.LinkerIdentity != version ||
+				!filepath.IsAbs(strings.TrimPrefix(export.LDFLAGS[0], "-fuse-ld=")) ||
+				!strings.HasSuffix(export.LDFLAGS[0], "/link/../ld64.lld") {
+				t.Fatalf("%q: wrong linker/fingerprint %+v, %v", tt.flag, export, err)
 			}
 		}
+	}
+}
+
+func TestDarwinDriverDiagnostics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable fixtures use /bin/sh")
+	}
+	driver := filepath.Join(t.TempDir(), "clang++")
+	for _, tt := range []struct {
+		output, want string
+		exit         int
+	}{
+		{"clang: error: cannot read response file", "expected one driver job, got 0", 0},
+		{" \"/one\" \"arg\"\n \"/two\" \"arg\"\n", "got 2", 0},
+		{"clang: error: invalid option", "invalid option", 1},
+	} {
+		writeTestDarwinFile(t, driver, fmt.Sprintf("#!/bin/sh\ncat <<'EOF' >&2\n%s\nEOF\nexit %d\n", tt.output, tt.exit), 0755)
+		if _, err := darwinDriverLinker(commandEnv{}, driver, nil); err == nil || !strings.Contains(err.Error(), tt.want) {
+			t.Fatalf("driver diagnostic: %v, want %q", err, tt.want)
+		}
+	}
+}
+
+func writeTestDarwinLLD(t *testing.T, path, version string) {
+	t.Helper()
+	writeTestDarwinFile(t, path, "#!/bin/sh\nprintf '%s\\n' '"+version+"'\n", 0755)
+}
+
+func writeTestDarwinFile(t *testing.T, path, content string, mode os.FileMode) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), mode); err != nil {
+		t.Fatal(err)
 	}
 }

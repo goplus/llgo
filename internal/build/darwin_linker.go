@@ -67,14 +67,26 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	// actual link command (CCFLAGS, LDFLAGS, then configured flags).
 	// Like the actual link command, it reads flags from the process environment,
 	// rather than commands.environ, which configures the probe subprocesses.
-	config := clang.NewConfig(export.CC, nil, nil, export.LDFLAGS, "")
-	flags, err := clang.ExpandGNUDriverResponseFiles(commands.dir, clang.NewLinker(config).LinkArguments())
-	if err != nil {
-		return "", "", err
+	ldflags := slices.Clone(export.LDFLAGS)
+	if index := slices.Index(ldflags, "-fuse-ld=lld"); index >= 0 {
+		ldflags[index] = "-fuse-ld=" + path
 	}
-	for _, flag := range flags {
-		if value, ok := strings.CutPrefix(flag, "--ld-path="); ok {
-			path = value
+	config := clang.NewConfig(export.CC, nil, nil, ldflags, "")
+	flags := clang.NewLinker(config).LinkArguments()
+	if slices.ContainsFunc(flags, func(arg string) bool { return strings.HasPrefix(arg, "@") }) {
+		// Let the actual driver handle nested files, encodings and quoting.
+		// The default must already be replaced: --ld-path still takes precedence,
+		// even when the Homebrew linker is missing or outdated.
+		var err error
+		path, err = darwinDriverLinker(commands, export.CC, flags)
+		if err != nil {
+			return "", "", err
+		}
+	} else {
+		for _, flag := range flags {
+			if value, ok := strings.CutPrefix(flag, "--ld-path="); ok {
+				path = value
+			}
 		}
 	}
 	if path == "" {
@@ -114,4 +126,24 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew upgrade lld@23", path, version)
 	}
 	return path, version, nil
+}
+
+// Clang's -### command lines start with a space and a quoted executable.
+// llvm::sys::printArg escapes only backslashes, double quotes and dollar signs;
+// this is not shell syntax or Go string quoting.
+var darwinDriverCommand = regexp.MustCompile(`(?m)^ "((?:\\["\\$]|[^"\\])*)" `)
+
+func darwinDriverLinker(commands commandEnv, compiler string, flags []string) (string, error) {
+	// An existing input with no source language produces only the link job.
+	// -### prints that job without executing it or writing the output file.
+	args := append(slices.Clone(flags), "-###", "-x", "none", os.DevNull, "-o", os.DevNull)
+	out, err := commands.configure(exec.Command(compiler, args...)).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("resolve response-file linker: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	jobs := darwinDriverCommand.FindAllSubmatch(out, -1)
+	if len(jobs) != 1 {
+		return "", fmt.Errorf("resolve response-file linker: expected one driver job, got %d: %s", len(jobs), strings.TrimSpace(string(out)))
+	}
+	return strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\$`, `$`).Replace(string(jobs[0][1])), nil
 }

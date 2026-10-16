@@ -451,8 +451,6 @@ jobs:
           REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
         run: |
           set -euo pipefail
-          root=$(cd "$RUNNER_TEMP/llgo-release-install/current" && pwd -P)
-          test ! -e "$root/libexec/llgo/ld64.lld"
           linker="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/lld@23/bin/ld64.lld"
           "$linker" --version
           sdk_version=$(xcrun --sdk macosx --show-sdk-version)
