@@ -18,10 +18,10 @@
       "label": "Branch MeteorsLiu/llgo:codex/layout-integration-tests",
       "path": "series/branch/5bc53c6e53371965/summary.json",
       "configPath": "series/branch/5bc53c6e53371965/config.json",
-      "commitPath": "commits/39c166e544e6d92499ae1ede93b3b85ca8d2b2d2.json",
-      "sha": "39c166e544e6d92499ae1ede93b3b85ca8d2b2d2",
-      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/39c166e544e6d92499ae1ede93b3b85ca8d2b2d2",
-      "updatedAt": "2026-10-15T06:22:33.395Z"
+      "commitPath": "commits/2e03e5718b535f6b09025faf56d71d052a287e35.json",
+      "sha": "2e03e5718b535f6b09025faf56d71d052a287e35",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/2e03e5718b535f6b09025faf56d71d052a287e35",
+      "updatedAt": "2026-10-16T06:25:52.844Z"
     },
     {
       "kind": "branch",
@@ -8895,10 +8895,10 @@
       "label": "PR #2813",
       "path": "series/pull/2813/summary.json",
       "configPath": "series/pull/2813/config.json",
-      "commitPath": "commits/39c166e544e6d92499ae1ede93b3b85ca8d2b2d2.json",
-      "sha": "39c166e544e6d92499ae1ede93b3b85ca8d2b2d2",
-      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/39c166e544e6d92499ae1ede93b3b85ca8d2b2d2",
-      "updatedAt": "2026-10-15T06:22:31.452Z"
+      "commitPath": "commits/2e03e5718b535f6b09025faf56d71d052a287e35.json",
+      "sha": "2e03e5718b535f6b09025faf56d71d052a287e35",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/2e03e5718b535f6b09025faf56d71d052a287e35",
+      "updatedAt": "2026-10-16T06:25:51.080Z"
     },
     {
       "kind": "pull",
