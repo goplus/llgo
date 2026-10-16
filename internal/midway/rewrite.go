@@ -28,6 +28,31 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 	if !importsSIMD(pkg, make(map[*types.Package]bool)) || pkg.Path() == bridgePath || pkg.Path() == "simd/archsimd" {
 		return false, nil, nil
 	}
+	// Separate RHS expressions are separate initialization units. Preserve
+	// them before recording dependency reads; a multi-result RHS stays grouped.
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok || gd.Tok != token.VAR {
+				continue
+			}
+			var specs []ast.Spec
+			for _, spec := range gd.Specs {
+				vs := spec.(*ast.ValueSpec)
+				if len(vs.Names) > 1 && len(vs.Values) == len(vs.Names) {
+					for i, name := range vs.Names {
+						copy := *vs
+						copy.Names = []*ast.Ident{name}
+						copy.Values = []ast.Expr{vs.Values[i]}
+						specs = append(specs, &copy)
+					}
+				} else {
+					specs = append(specs, spec)
+				}
+			}
+			gd.Specs = specs
+		}
+	}
 	a := analyze(pkg, info, files)
 	r := &rewriter{fset: fset, a: a, imports: make(map[string]bool), dependencies: make(map[ast.Node][]*types.Var)}
 	// Record initialization edges before any original body is replaced.
@@ -221,7 +246,7 @@ func (f *fileRewriter) qualify(path, name string, pos token.Pos) ast.Expr {
 	alias := f.aliases[path]
 	if alias == "" {
 		alias = "llgoMidway" + strconv.Itoa(len(f.aliases))
-		for f.used[alias] {
+		for f.used[alias] || f.a.pkg.Scope().Lookup(alias) != nil {
 			alias += "_"
 		}
 		f.used[alias] = true
@@ -406,6 +431,18 @@ func (f *fileRewriter) dispatch(decl *ast.FuncDecl) *ast.BlockStmt {
 				field.Names[i] = name
 			}
 			args = append(args, ident(name.Name, pos))
+		}
+	}
+	// Blank type parameters cannot be used as explicit type arguments.
+	if decl.Type.TypeParams != nil {
+		n := 0
+		for _, field := range decl.Type.TypeParams.List {
+			for i, name := range field.Names {
+				if name.Name == "_" {
+					field.Names[i] = ident("@typearg"+strconv.Itoa(n), name.Pos())
+				}
+				n++
+			}
 		}
 	}
 	invoke := func(width int) []ast.Stmt {

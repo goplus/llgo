@@ -148,6 +148,10 @@ func analyze(pkg *types.Package, info *types.Info, files []*ast.File) *analysis 
 			if p, ok := rule.typ.(*types.Pointer); ok {
 				rule.typ = p.Elem()
 			}
+			if named, ok := rule.typ.(*types.Named); ok {
+				// A method body applies to every instance of its receiver.
+				rule.typ = named.Origin()
+			}
 		}
 		a.watchType(rule, obj.Type())
 		a.watchBody(rule, decl.Body)
@@ -266,6 +270,9 @@ func (a *analysis) addType(t types.Type) {
 	}
 	switch t := t.(type) {
 	case *types.Named:
+		if t.Origin() != t {
+			edge(t.Origin())
+		}
 		if baseType(t.Obj()) || t.Obj().Pkg() != a.pkg && exportedVariant(t.Obj()) {
 			a.seed(t)
 		}

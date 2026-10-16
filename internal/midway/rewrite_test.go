@@ -125,8 +125,9 @@ func (Uint32x4) Len() int { return 4 }
 	fset := token.NewFileSet()
 	var files []*ast.File
 	for name, src := range map[string]string{
-		"shadow.go": `package client; import s "simd"; type V = s.Uint32s; func Shadow(s int) int { var v V; return s+v.Len() }`,
-		"plain.go":  `package client; import s "simd"; func Plain() int { var v s.Uint32s; return v.Len() }`,
+		"shadow.go":    `package client; import s "simd"; type V = s.Uint32s; func Shadow(s int) int { var v V; return s+v.Len() }`,
+		"collision.go": `package client; var llgoMidway1 = 1; var llgoMidway1_ = 2`,
+		"plain.go":     `package client; import s "simd"; func Plain() int { var v s.Uint32s; return v.Len() }`,
 	} {
 		file, err := parser.ParseFile(fset, name, src, 0)
 		if err != nil {
@@ -162,7 +163,7 @@ func (Uint32x4) Len() int { return 4 }
 }
 
 func testInfo() *types.Info {
-	return &types.Info{Types: map[ast.Expr]types.TypeAndValue{}, Defs: map[*ast.Ident]types.Object{}, Uses: map[*ast.Ident]types.Object{}, Implicits: map[ast.Node]types.Object{}, Instances: map[*ast.Ident]types.Instance{}, Selections: map[*ast.SelectorExpr]*types.Selection{}}
+	return &types.Info{Scopes: map[ast.Node]*types.Scope{}, Types: map[ast.Expr]types.TypeAndValue{}, Defs: map[*ast.Ident]types.Object{}, Uses: map[*ast.Ident]types.Object{}, Implicits: map[ast.Node]types.Object{}, Instances: map[*ast.Ident]types.Instance{}, Selections: map[*ast.SelectorExpr]*types.Selection{}}
 }
 
 func testCheck(t *testing.T, imports testImporter, path, source string, rewrite bool) (*types.Package, *types.Info) {

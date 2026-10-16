@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
+	"strings"
 )
 
 // typeExpr supplies explicit types for inferred global declarations and their
@@ -39,6 +40,9 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 			}
 		}
 		var expr ast.Expr = ident(n, pos)
+		if obj.Pkg() == nil && obj.Parent() == types.Universe {
+			expr = f.predeclaredType(n, pos)
+		}
 		if path != "" {
 			expr = f.qualify(path, n, pos)
 		}
@@ -56,7 +60,7 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 		if t.Kind() == types.UnsafePointer {
 			return f.qualify("unsafe", "Pointer", pos)
 		}
-		return ident(t.Name(), pos)
+		return f.predeclaredType(t.Name(), pos)
 	case *types.Named:
 		return name(t.Obj(), t.TypeArgs())
 	case *types.Alias:
@@ -149,4 +153,18 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 	}
 	f.err = fmt.Errorf("%s: unsupported SIMD initializer type %v", f.fset.Position(pos), t)
 	return &ast.BadExpr{From: pos, To: pos}
+}
+
+// A bare predeclared name may bind to a user declaration after the second
+// check. The official bridge supplies aliases with stable qualified bindings.
+func (f *fileRewriter) predeclaredType(name string, pos token.Pos) ast.Expr {
+	scope := f.a.info.Scopes[f.file]
+	if scope == nil {
+		scope = f.a.pkg.Scope()
+	}
+	_, obj := scope.LookupParent(name, pos)
+	if obj == types.Universe.Lookup(name) {
+		return ident(name, pos)
+	}
+	return f.qualify(bridgePath, "LLGoMidway"+strings.ToUpper(name[:1])+name[1:], pos)
 }
