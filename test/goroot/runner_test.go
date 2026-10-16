@@ -418,6 +418,7 @@ func TestGoRootRunCases(t *testing.T) {
 }
 
 func hostedThreadResourceSkip(hostPlatform, targetPlatform, runnerEnvironment string, tc testCase) string {
+	// xfail.yaml host_skips cannot express the runner environment or native-only execution.
 	if runnerEnvironment != "github-hosted" || targetPlatform != hostPlatform ||
 		(hostPlatform != "darwin/arm64" && hostPlatform != "darwin/amd64") ||
 		tc.Directive != "run" || tc.RelPath != "gcgort.go" {
