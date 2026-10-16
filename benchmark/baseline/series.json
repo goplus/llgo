@@ -1437,10 +1437,10 @@
       "label": "Branch cpunion/llgo:codex/goroot-remaining-timeouts-20261016",
       "path": "series/branch/e0d33d310e7e7097/summary.json",
       "configPath": "series/branch/e0d33d310e7e7097/config.json",
-      "commitPath": "commits/717654a9aa258e24b0afecf9caf6ca595d133c0a.json",
-      "sha": "717654a9aa258e24b0afecf9caf6ca595d133c0a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/717654a9aa258e24b0afecf9caf6ca595d133c0a",
-      "updatedAt": "2026-10-16T05:25:34.609Z"
+      "commitPath": "commits/87b4c57ac792fc25e31d4ff775a40dff97d630a3.json",
+      "sha": "87b4c57ac792fc25e31d4ff775a40dff97d630a3",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/87b4c57ac792fc25e31d4ff775a40dff97d630a3",
+      "updatedAt": "2026-10-16T10:57:58.620Z"
     },
     {
       "kind": "branch",
@@ -9049,10 +9049,10 @@
       "label": "PR #2830",
       "path": "series/pull/2830/summary.json",
       "configPath": "series/pull/2830/config.json",
-      "commitPath": "commits/717654a9aa258e24b0afecf9caf6ca595d133c0a.json",
-      "sha": "717654a9aa258e24b0afecf9caf6ca595d133c0a",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/717654a9aa258e24b0afecf9caf6ca595d133c0a",
-      "updatedAt": "2026-10-16T05:25:32.644Z"
+      "commitPath": "commits/87b4c57ac792fc25e31d4ff775a40dff97d630a3.json",
+      "sha": "87b4c57ac792fc25e31d4ff775a40dff97d630a3",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/87b4c57ac792fc25e31d4ff775a40dff97d630a3",
+      "updatedAt": "2026-10-16T10:57:57.568Z"
     }
   ]
 }
