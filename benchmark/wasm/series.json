@@ -95,10 +95,10 @@
       "label": "Branch codex/external-lld23-20261015",
       "path": "series/branch/f6967fd5ae778e66/summary.json",
       "configPath": "series/branch/f6967fd5ae778e66/config.json",
-      "commitPath": "commits/f87a1f902b75323fd938d440276de6131737246c.json",
-      "sha": "f87a1f902b75323fd938d440276de6131737246c",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/f87a1f902b75323fd938d440276de6131737246c",
-      "updatedAt": "2026-10-15T23:58:03.549Z"
+      "commitPath": "commits/073855da4451fa8927dbe886b11e72cb1e43b2f1.json",
+      "sha": "073855da4451fa8927dbe886b11e72cb1e43b2f1",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/073855da4451fa8927dbe886b11e72cb1e43b2f1",
+      "updatedAt": "2026-10-16T02:22:50.123Z"
     },
     {
       "kind": "branch",
@@ -5100,10 +5100,10 @@
       "label": "PR #2828",
       "path": "series/pull/2828/summary.json",
       "configPath": "series/pull/2828/config.json",
-      "commitPath": "commits/f87a1f902b75323fd938d440276de6131737246c.json",
-      "sha": "f87a1f902b75323fd938d440276de6131737246c",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/f87a1f902b75323fd938d440276de6131737246c",
-      "updatedAt": "2026-10-15T23:58:03.486Z"
+      "commitPath": "commits/073855da4451fa8927dbe886b11e72cb1e43b2f1.json",
+      "sha": "073855da4451fa8927dbe886b11e72cb1e43b2f1",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/073855da4451fa8927dbe886b11e72cb1e43b2f1",
+      "updatedAt": "2026-10-16T02:22:50.001Z"
     }
   ]
 }
