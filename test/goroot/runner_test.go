@@ -382,6 +382,10 @@ func TestGoRootRunCases(t *testing.T) {
 				writeCaseResult(os.Stdout, tc, caseResultHostSkip)
 				t.Skipf("skipping host-unsafe case: %s", reason)
 			}
+			if reason := hostedThreadResourceSkip(hostPlatform, targetPlatform, os.Getenv("RUNNER_ENVIRONMENT"), tc); reason != "" {
+				writeCaseResult(os.Stdout, tc, caseResultHostSkip)
+				t.Skipf("skipping host-resource-limited case: %s", reason)
+			}
 			runTimeout := *flagRunTO
 			if timeout, reason, ok := xfails.MatchTimeout(envInfo.GOVERSION, targetPlatform, tc); ok {
 				runTimeout = timeout
@@ -411,6 +415,18 @@ func TestGoRootRunCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func hostedThreadResourceSkip(hostPlatform, targetPlatform, runnerEnvironment string, tc testCase) string {
+	if runnerEnvironment != "github-hosted" || targetPlatform != hostPlatform ||
+		(hostPlatform != "darwin/arm64" && hostPlatform != "darwin/amd64") ||
+		tc.Directive != "run" || tc.RelPath != "gcgort.go" {
+		return ""
+	}
+	// The original source stays unchanged. Its nested goroutines can exceed
+	// hosted macOS's 2048-thread process limit with the native 1:1 backend.
+	// TestGCConcurrentTypedMutation retains GC coverage with fixed workers.
+	return "gcgort.go can exceed the hosted macOS process thread limit with LLGo's 1:1 backend; bounded coverage: TestGCConcurrentTypedMutation"
 }
 
 func classifyCaseResult(err error, xfail, flaky bool) caseResult {
