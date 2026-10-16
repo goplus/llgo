@@ -105,6 +105,8 @@ archives:
         dst: crosscompile/clang
         info:
           mode: 0755
+      - src: ".sysroot/{{.Os}}/{{.Arch}}/libexec"
+        dst: libexec
 checksum:
   name_template: "{{.ProjectName}}{{.Version}}.checksums.txt"
   # Windows CGO builds run on native Windows runners and arrive as tested

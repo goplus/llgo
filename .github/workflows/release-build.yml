@@ -389,6 +389,11 @@ jobs:
             goos: darwin
             goarch: arm64
             go-mod-version: "1.27"
+          - os: xcode-27
+            goos: darwin
+            goarch: arm64
+            go-mod-version: "1.27"
+            require-sdk27: true
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
@@ -440,6 +445,34 @@ jobs:
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
 
+      - name: Test packaged Darwin LLD and FullLTO
+        if: matrix.goos == 'darwin' && matrix.goarch == 'arm64'
+        env:
+          REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          root=$(cd "$RUNNER_TEMP/llgo-release-install/current" && pwd -P)
+          linker="$root/libexec/llgo/ld64.lld"
+          "$linker" --version
+          # The linker is ad-hoc signed: this checks signature integrity only.
+          # The download's SHA-256 is pinned separately in .github/lld/SHA256SUMS.
+          codesign --verify "$linker"
+          sdk_version=$(xcrun --sdk macosx --show-sdk-version)
+          echo "Testing packaged Darwin LLD with SDK $sdk_version"
+          if [[ "$REQUIRE_SDK27" == 1 ]]; then
+            [[ "$sdk_version" == 27* ]]
+          fi
+          (
+            cd _demo/c
+            llgo build -x -lto=full -o "$RUNNER_TEMP/llgo-lld-probe" ./hello
+          ) 2>&1 | tee "$RUNNER_TEMP/llgo-lld-probe.log"
+          grep -F -- "-fuse-ld=$linker" "$RUNNER_TEMP/llgo-lld-probe.log"
+          "$RUNNER_TEMP/llgo-lld-probe"
+
+      - name: Verify Intel archive retains the existing linker layout
+        if: matrix.goos == 'darwin' && matrix.goarch == 'amd64'
+        run: test ! -e "$RUNNER_TEMP/llgo-release-install/current/libexec/llgo/ld64.lld"
+
   test-linux-distributions:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build]
@@ -473,6 +506,7 @@ jobs:
           docker run --rm llgo-release:test
           docker run --rm -v "$PWD/.github/linux:/tests:ro" \
             llgo-release:test bash /tests/test-installed.sh
+
 
   release:
     permissions:

@@ -665,7 +665,11 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
 		}
-		export.LDFLAGS = append(export.LDFLAGS, nativeLLDFlags(export.Toolchain, level, ltoMode)...)
+		linkerFlags, linkerErr := nativeLinkerFlags(llgoRoot, export.Toolchain, level, ltoMode)
+		if linkerErr != nil {
+			return export, linkerErr
+		}
+		export.LDFLAGS = append(export.LDFLAGS, linkerFlags...)
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
 			clangInc := filepath.Join(clangRoot, "include")
