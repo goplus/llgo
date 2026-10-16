@@ -224,12 +224,12 @@ func (c *Cmd) mergeCompilerFlags() []string {
 
 	// Add environment CCFLAGS
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envCCFlags)...)
 	}
 
 	// Add environment CFLAGS
 	if envCFlags := os.Getenv("CFLAGS"); envCFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envCFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envCFlags)...)
 	}
 
 	// Add config CCFLAGS
@@ -247,12 +247,12 @@ func (c *Cmd) mergeLinkerFlags() []string {
 
 	// Add environment CCFLAGS (for linker)
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envCCFlags)...)
 	}
 
 	// Add environment LDFLAGS
 	if envLDFlags := os.Getenv("LDFLAGS"); envLDFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envLDFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envLDFlags)...)
 	}
 
 	// Add config LDFLAGS

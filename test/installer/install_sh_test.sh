@@ -146,6 +146,39 @@ EOF
     assert_equal "$dependency_calls" 1
 )
 
+# Source installs honor dependency opt-outs before calling Homebrew or Go.
+for opt_out in flag environment; do
+    (
+        unset GITHUB_ENV LLGO_ARCHIVE_PATH
+        export LLGO_INSTALL_DEPS=1
+        # shellcheck disable=SC2329 # main invokes these mocks indirectly.
+        uname() { if [[ "$1" == -s ]]; then printf 'Darwin\n'; else printf 'arm64\n'; fi; }
+        # shellcheck disable=SC2329
+        install_macos_lld() { fail 'source install ignored dependency opt-out'; }
+        # shellcheck disable=SC2329
+        go() { printf '%s\n' "$*" >>"$temporary/source-go-$opt_out"; }
+        if [[ "$opt_out" == flag ]]; then
+            main --no-deps
+        else
+            export LLGO_INSTALL_DEPS=0
+            main
+        fi
+        assert_equal "$(cat "$temporary/source-go-$opt_out")" 'install ./cmd/llgo'
+    )
+done
+
+# Help and invalid options must not start a source installation either.
+(
+    # shellcheck disable=SC2329
+    install_local_checkout() { fail 'option handling started a source install'; }
+    main --help >"$temporary/source-help"
+    grep -q 'Usage: install.sh' "$temporary/source-help" || fail 'source help missing'
+    if (main --unknown) >"$temporary/source-error" 2>&1; then
+        fail 'source install accepted an unknown option'
+    fi
+    grep -q 'unknown argument: --unknown' "$temporary/source-error" || fail 'wrong source option error'
+)
+
 # Exercise the no-system-Go download path without fetching the large toolchain.
 go_payload="$temporary/go-payload"
 mkdir -p "$go_payload/go/bin"

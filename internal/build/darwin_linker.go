@@ -3,6 +3,7 @@ package build
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -61,13 +62,16 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	if prefix == "" {
 		prefix = "/opt/homebrew"
 	}
-	path := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
+	path := prefix + string(os.PathSeparator) + filepath.Join("opt", "lld@23", "bin", "ld64.lld")
 	// Use Clang's flag merger so the last --ld-path follows the
 	// actual link command (CCFLAGS, LDFLAGS, then configured flags).
 	// Like the actual link command, it reads flags from the process environment,
 	// rather than commands.environ, which configures the probe subprocesses.
 	config := clang.NewConfig(export.CC, nil, nil, export.LDFLAGS, "")
-	flags := clang.NewLinker(config).LinkArguments()
+	flags, err := clang.ExpandGNUDriverResponseFiles(commands.dir, clang.NewLinker(config).LinkArguments())
+	if err != nil {
+		return "", "", err
+	}
 	for _, flag := range flags {
 		if value, ok := strings.CutPrefix(flag, "--ld-path="); ok {
 			path = value
@@ -84,9 +88,18 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 		}
 		path = strings.TrimSpace(string(out))
 	}
-	path, err := filepath.Abs(resolvePath(commands.dir, path))
-	if err != nil {
-		return "", "", err
+	// Preserve symlink/.. traversal exactly as the driver sees it. filepath.Abs
+	// and Join clean these components lexically and can select a different file.
+	if !filepath.IsAbs(path) {
+		dir := commands.dir
+		if !filepath.IsAbs(dir) {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return "", "", err
+			}
+			dir = cwd + string(os.PathSeparator) + dir
+		}
+		path = dir + string(os.PathSeparator) + path
 	}
 	var stderr bytes.Buffer
 	cmd := commands.configure(exec.Command(path, "--version"))

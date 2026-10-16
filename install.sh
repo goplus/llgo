@@ -569,15 +569,6 @@ EOF
 }
 
 main() {
-    local checkout_root=""
-    if [[ -z "${LLGO_ARCHIVE_PATH:-}" ]]; then
-        checkout_root="$(local_checkout_root || true)"
-    fi
-    if [[ -n "$checkout_root" ]]; then
-        install_local_checkout "$checkout_root"
-        return
-    fi
-
     LLGO_VERSION="${LLGO_VERSION:-}"
     LLGO_INSTALL_ROOT="${LLGO_INSTALL_ROOT:-$HOME/.llgo}"
     LLGO_INSTALL_DEPS="${LLGO_INSTALL_DEPS:-1}"
@@ -611,6 +602,15 @@ main() {
 
     [[ "$LLGO_INSTALL_DEPS" == 0 || "$LLGO_INSTALL_DEPS" == 1 ]] || die "LLGO_INSTALL_DEPS must be 0 or 1"
     [[ "$LLGO_UPDATE_PATH" == 0 || "$LLGO_UPDATE_PATH" == 1 ]] || die "LLGO_UPDATE_PATH must be 0 or 1"
+    local checkout_root=""
+    if [[ -z "$local_archive" ]]; then
+        checkout_root="$(local_checkout_root || true)"
+    fi
+    if [[ -n "$checkout_root" ]]; then
+        install_local_checkout "$checkout_root"
+        return
+    fi
+
     local os
     os="$(normalize_os "$(uname -s)")" || die "unsupported operating system: $(uname -s)"
     if [[ "$os" == windows ]]; then
