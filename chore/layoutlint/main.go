@@ -156,6 +156,13 @@ func checkPackage(root, output, baselineDirectory string, tests bool, patterns [
 				fmt.Printf("INFO %s.%s: no direct field access (%q, line %d)\n", subject.name, field.Name(), subject.file, subject.line)
 				continue
 			}
+			switch types.Unalias(field.Type()).Underlying().(type) {
+			case *types.Array, *types.Struct:
+				// Inline aggregates use the address observations below. Passing
+				// a field such as [1 << 21]byte by value adds an unverified copy
+				// that can expand into millions of backend operations.
+				continue
+			}
 			call := wrapperCall{owner: subject.typ, field: field.Type()}
 			kind := types.Invalid
 			if basic, ok := field.Type().Underlying().(*types.Basic); ok && basic.Info()&(types.IsBoolean|types.IsNumeric) != 0 {
@@ -238,8 +245,14 @@ func checkPackage(root, output, baselineDirectory string, tests bool, patterns [
 					continue
 				}
 				child := append(slices.Clone(path), layoutStep{field: field})
-				if len(path) != 0 {
-					// Direct root fields already have read/write observations.
+				observe := len(path) != 0
+				switch types.Unalias(field.Type()).Underlying().(type) {
+				case *types.Array, *types.Struct:
+					// Direct aggregate fields have no value wrappers. Measure
+					// their placement before descending into inline storage.
+					observe = true
+				}
+				if observe {
 					nested = append(nested, nestedCheck{owner: owner, path: child})
 				}
 				walk(owner, field.Type(), child)
