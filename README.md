@@ -356,8 +356,9 @@ LLD 23.1.3 is required for macOS 27 SDK stubs; LLGo and ESP Clang remain on
 LLVM 22. No separate linker is bundled. An explicit Clang `--ld-path` retains
 precedence. Intel, cross-compilation, and embedded linker selection are unchanged.
 
-ThinLTO and FullLTO use LLD's LLVM 23 backend, so optional
-[LTO plugins](ltoplugin/README.md) must also be built against LLVM 23.
+For macOS arm64 native links, ThinLTO and FullLTO use LLD's LLVM 23 backend,
+so optional [LTO plugins](ltoplugin/README.md) must also be built against
+LLVM 23. Other native platforms continue to use LLVM 22 for LTO and its plugins.
 
 ## How to install
 

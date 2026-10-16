@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 )
 
-// LLVM 23.1.3 is the first 23.x release that recognizes SDK 27's arm64e.x1
+// LLD 23.1.3 is the first 23.x release that recognizes SDK 27's arm64e.x1
 // stubs. Keep the compiler on LLVM 22; only the native arm64 linker and its
 // optional LTO plugin use LLVM 23. Intel and embedded toolchains are unchanged.
 func needsExternalDarwinLLD(hostOS, hostArch string, conf *Config) bool {
@@ -24,6 +25,7 @@ func needsExternalDarwinLLD(hostOS, hostArch string, conf *Config) bool {
 
 var darwinLLDVersion = regexp.MustCompile(`(?:^|\s)LLD ([0-9]+)\.([0-9]+)\.([0-9]+)(?:\s|$)`)
 
+// Keep this version policy in sync with install.sh's macos_lld_is_compatible.
 func compatibleDarwinLLD(version string) bool {
 	match := darwinLLDVersion.FindStringSubmatch(version)
 	if match == nil || match[1] != "23" {
@@ -38,15 +40,15 @@ func compatibleDarwinLLD(version string) bool {
 }
 
 func configureDarwinLLD(commands commandEnv, export *crosscompile.Export) error {
-	path, version, err := resolveDarwinLLD(commands, export)
-	if err != nil {
-		return err
-	}
 	// Replace the default, retaining Clang's --ld-path override precedence.
 	// An absolute -fuse-ld path avoids selecting ESP Clang's sibling LLD 22.
 	index := slices.Index(export.LDFLAGS, "-fuse-ld=lld")
 	if index < 0 {
 		return fmt.Errorf("native Darwin linker flags have no -fuse-ld=lld default")
+	}
+	path, version, err := resolveDarwinLLD(commands, export)
+	if err != nil {
+		return err
 	}
 	export.LDFLAGS[index] = "-fuse-ld=" + path
 	// Both the path (LDFLAGS) and version participate in package fingerprints.
@@ -62,6 +64,8 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	path := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
 	// Use Clang's flag merger so the last --ld-path follows the
 	// actual link command (CCFLAGS, LDFLAGS, then configured flags).
+	// Like the actual link command, it reads flags from the process environment,
+	// rather than commands.environ, which configures the probe subprocesses.
 	config := clang.NewConfig(export.CC, nil, nil, export.LDFLAGS, "")
 	flags := clang.NewLinker(config).LinkArguments()
 	for _, flag := range flags {
@@ -84,9 +88,13 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	if err != nil {
 		return "", "", err
 	}
-	out, err := commands.configure(exec.Command(path, "--version")).CombinedOutput()
+	var stderr bytes.Buffer
+	cmd := commands.configure(exec.Command(path, "--version"))
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil {
-		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install lld@23", path, err, strings.TrimSpace(string(out)))
+		diagnostic := strings.TrimSpace(string(out) + stderr.String())
+		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install lld@23", path, err, diagnostic)
 	}
 	version := strings.TrimSpace(string(out))
 	if !compatibleDarwinLLD(version) {

@@ -176,6 +176,7 @@ run_as_root() {
     fi
 }
 
+# Keep this version policy in sync with internal/build/darwin_linker.go's compatibleDarwinLLD.
 macos_lld_is_compatible() {
     local version
     version="$("$1" --version)" || return 1
