@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Target only the main thread's next wait, an ordinary channel waiter.
+// Target only the armed test thread's next wait, an ordinary channel waiter.
 // Select waiters have additional lifetime protection through channel cleanup.
 static _Thread_local int armed;
 static pthread_cond_t *target_cond;
@@ -89,4 +89,5 @@ void llgo_lifetime_check(void) {
     if (!atomic_load(&destroyed)) {
         fail("channel waiter lifetime was not exercised");
     }
+    atomic_store(&waiting, 0);
 }
