@@ -250,6 +250,8 @@ func (w *chanWaiter) wait() {
 	w.signal.destroy()
 }
 
+// finish keeps the signal locked through ready. Otherwise, the completed
+// waiter can wake and destroy its signal before ready returns.
 func (w *chanWaiter) finish(status waitStatus) {
 	if w.sel != nil {
 		w.sel.signal.lock()
@@ -260,8 +262,6 @@ func (w *chanWaiter) finish(status waitStatus) {
 	}
 	w.signal.lock()
 	w.status = status
-	// Keep the signal alive until ready returns: a spurious wake can let
-	// the waiter observe status and destroy its condition after unlock.
 	w.signal.ready()
 	w.signal.unlock()
 }
