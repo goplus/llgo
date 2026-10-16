@@ -964,10 +964,10 @@
       "label": "Branch cpunion/llgo:codex/hosted-gcgort-resource-20261016",
       "path": "series/branch/0a6e4ff1afb4ebb3/summary.json",
       "configPath": "series/branch/0a6e4ff1afb4ebb3/config.json",
-      "commitPath": "commits/338a06262a2432a0736cc31a85b85d574e0d4626.json",
-      "sha": "338a06262a2432a0736cc31a85b85d574e0d4626",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/338a06262a2432a0736cc31a85b85d574e0d4626",
-      "updatedAt": "2026-10-16T03:23:35.855Z"
+      "commitPath": "commits/0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc.json",
+      "sha": "0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc",
+      "updatedAt": "2026-10-16T04:05:39.641Z"
     },
     {
       "kind": "branch",
@@ -5122,10 +5122,10 @@
       "label": "PR #2829",
       "path": "series/pull/2829/summary.json",
       "configPath": "series/pull/2829/config.json",
-      "commitPath": "commits/338a06262a2432a0736cc31a85b85d574e0d4626.json",
-      "sha": "338a06262a2432a0736cc31a85b85d574e0d4626",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/338a06262a2432a0736cc31a85b85d574e0d4626",
-      "updatedAt": "2026-10-16T03:23:35.720Z"
+      "commitPath": "commits/0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc.json",
+      "sha": "0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0b6a5ee435e8cacc70d78f6eb5a9524ce421e4fc",
+      "updatedAt": "2026-10-16T04:05:39.576Z"
     }
   ]
 }
