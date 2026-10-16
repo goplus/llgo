@@ -1,0 +1,108 @@
+name: Check layouts with layoutlint
+description: Check supplied inputs with native LLDB and upload only failures
+inputs:
+  llgo:
+    description: Existing LLGo compiler executable
+    required: true
+  artifact-name:
+    description: Unique report directory and artifact name
+    required: true
+  args:
+    description: Existing layoutlint arguments, one per line without shell expansion
+    required: true
+  source-root:
+    description: Input working directory; defaults to the checkout
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Prepare Linux LLDB
+      if: runner.os == 'Linux'
+      id: linux
+      shell: bash
+      run: |
+        set -euo pipefail
+        debugger="$("${LLVM_CONFIG:-llvm-config}" --bindir)/lldb"
+        if [[ ! -x "$debugger" ]]; then
+          sudo apt-get install -y lldb-22
+        fi
+        test -x "$debugger"
+        echo "debugger=$debugger" >> "$GITHUB_OUTPUT"
+
+    - name: Locate macOS LLDB
+      if: runner.os == 'macOS'
+      id: macos
+      shell: bash
+      run: echo "debugger=$(xcrun --find lldb)" >> "$GITHUB_OUTPUT"
+
+    - name: Locate Windows LLDB
+      if: runner.os == 'Windows'
+      id: windows
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+        if (-not $env:LLGO_LLDB -or -not (Test-Path -LiteralPath $env:LLGO_LLDB)) {
+          throw "Prepare target-native LLDB before check-layout"
+        }
+        "debugger=$env:LLGO_LLDB" >> $env:GITHUB_OUTPUT
+
+    - name: Run layoutlint
+      id: check
+      shell: python
+      env:
+        LAYOUT_TOOL_ROOT: ${{ github.action_path }}/../../..
+        LAYOUT_SOURCE: ${{ inputs.source-root || github.workspace }}
+        LAYOUT_LLGO: ${{ inputs.llgo }}
+        LAYOUT_LLDB: ${{ steps.linux.outputs.debugger || steps.macos.outputs.debugger || steps.windows.outputs.debugger }}
+        LAYOUT_ARGS: ${{ inputs.args }}
+        LAYOUT_OUTPUT: ${{ runner.temp }}/${{ inputs.artifact-name }}
+      run: |
+        import os, subprocess, sys, tempfile
+        from pathlib import Path
+
+        root = Path(os.environ["LAYOUT_TOOL_ROOT"]).resolve()
+        source = Path(os.environ["LAYOUT_SOURCE"]).resolve()
+        output = Path(os.environ["LAYOUT_OUTPUT"])
+        env = dict(os.environ, GOTOOLCHAIN="local", GOWORK="off", GOENV="off")
+        args = [line for line in os.environ["LAYOUT_ARGS"].splitlines() if line]
+        if not args:
+            raise RuntimeError("layoutlint inputs must not be empty")
+        with tempfile.TemporaryDirectory(prefix="layoutlint-bin.", dir=output.parent) as tools:
+            tool = Path(tools) / ("layoutlint.exe" if os.name == "nt" else "layoutlint")
+            # Keep the selected GOARCH, including a 386 checker on Windows x64.
+            subprocess.run(["go", "build", "-o", str(tool), "./chore/layoutlint"],
+                           cwd=root, env=dict(env, GOFLAGS=""), check=True)
+            env.update(LLGO=os.environ["LAYOUT_LLGO"], LLGO_LLDB=os.environ["LAYOUT_LLDB"])
+            env.setdefault("LLGO_ROOT", str(root))
+            if os.name == "nt" and env.get("LLGO_WINDOWS_LLDB_PYTHON_HOME"):
+                for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONUTF8", "PYTHONIOENCODING"):
+                    env.pop(key, None)
+                env["PYTHONHOME"] = env["LLGO_WINDOWS_LLDB_PYTHON_HOME"]
+                env["PATH"] = env["PYTHONHOME"] + os.pathsep + env["PATH"]
+                env.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+                if env.get("LLGO_WINDOWS_LLDB_PYTHONPATH"):
+                    env["PYTHONPATH"] = env["LLGO_WINDOWS_LLDB_PYTHONPATH"]
+            log_path = output.parent / (output.name + ".log")
+            with log_path.open("wb") as log, subprocess.Popen(
+                [str(tool), "-root", str(source), "-output", str(output), *args],
+                cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            ) as check:
+                for line in check.stdout:
+                    sys.stdout.buffer.write(line)
+                    sys.stdout.buffer.flush()
+                    log.write(line)
+                status = check.wait()
+            if status:
+                output.mkdir(parents=True, exist_ok=True)
+                log_path.replace(output / "run.log")
+            else:
+                log_path.unlink()
+        sys.exit(status)
+
+    - name: Upload failed observations and annotated source
+      if: always() && steps.check.outcome == 'failure'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ runner.temp }}/${{ inputs.artifact-name }}
+        if-no-files-found: warn
