@@ -94,3 +94,44 @@ func main() { println(sum([]uint32{1,2,3,4}),width()) }
 		})
 	}
 }
+
+func TestSIMDMidwayRejectGlobalLinkname(t *testing.T) {
+	for _, tc := range []struct{ name, decl, want string }{
+		{"vector", `var V = simd.BroadcastUint32s(7)
+//go:linkname Alias main.V
+var Alias simd.Uint32s
+func main() { out:=make([]uint32,4);Alias.Store(out);println(out[0]) }
+`, "binding for SIMD-dependent global Alias"},
+		{"named scalar", `type Number int
+func (Number) Width() int {var v simd.Uint32s;return v.Len()}
+var V Number=7
+//go:linkname Alias main.V
+var Alias Number
+func main() {println(Alias,V)}
+`, "binding for SIMD-dependent global Alias"},
+		{"scalar alias to dependent target", `type Number int
+func (Number) Width() int {var v simd.Uint32s;return v.Len()}
+var V Number=7
+//go:linkname Alias main.V
+var Alias int
+func main() {println(Alias,V)}
+`, "target SIMD-dependent global main.V"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for name, source := range map[string]string{"go.mod": "module midwaylinkname\n\ngo 1.27\n", "main.go": "package main\nimport (\"simd\"; _ \"unsafe\")\n" + tc.decl} {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte(source), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			conf := NewDefaultConf(ModeGen)
+			conf.Goos, conf.Goarch, conf.GOEXPERIMENT = "wasip1", "wasm", "simd"
+			output := captureStderr(t)
+			_, err := Build(Invocation{Args: []string{"."}, Config: conf, Dir: dir})
+			diagnostic := output()
+			if err == nil || !strings.Contains(diagnostic, tc.want) {
+				t.Fatalf("got %v (%s), want %s", err, diagnostic, tc.want)
+			}
+		})
+	}
+}

@@ -54,6 +54,9 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 		}
 	}
 	a := analyze(pkg, info, files)
+	if err := a.validateGlobalLinknames(fset, files); err != nil {
+		return false, nil, err
+	}
 	r := &rewriter{fset: fset, a: a, imports: make(map[string]bool), dependencies: make(map[ast.Node][]*types.Var)}
 	// Record initialization edges before any original body is replaced.
 	for _, file := range files {
@@ -149,7 +152,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 						fileChanged = true
 					case *ast.ValueSpec:
 						if d.Tok == token.VAR {
-							extra, rewritten := fr.global(s)
+							extra, rewritten := fr.global(d, s)
 							decls = append(decls, extra...)
 							changed = changed || rewritten
 							fileChanged = fileChanged || rewritten

@@ -4,12 +4,86 @@
 package midway
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
 	"slices"
 	"strconv"
+	"strings"
+
+	"github.com/xgo-dev/llgo/internal/directive"
 )
+
+// A linkname denotes one externally visible storage location. Splitting that
+// location into width-specific globals needs a matching ABI on both sides of
+// the binding, which Midway does not currently provide. Reject it instead of
+// silently allocating unrelated storage for the concrete references.
+func (a *analysis) validateGlobalLinknames(fset *token.FileSet, files []*ast.File) error {
+	packages := make(map[string]*types.Package)
+	var collect func(*types.Package)
+	collect = func(pkg *types.Package) {
+		if packages[pkg.Path()] != nil {
+			return
+		}
+		packages[pkg.Path()] = pkg
+		for _, imp := range pkg.Imports() {
+			collect(imp)
+		}
+	}
+	collect(a.pkg)
+	if a.pkg.Name() == "main" {
+		packages["main"] = a.pkg
+	}
+	dependent := func(obj types.Object) bool {
+		v, ok := obj.(*types.Var)
+		return ok && (a.types[v.Type()] || exportedVariant(v))
+	}
+	for _, file := range files {
+		for _, group := range file.Comments {
+			for _, d := range directive.ParseGroup(group) {
+				if d.Name != "go:linkname" {
+					continue
+				}
+				args := strings.Fields(d.Args)
+				if len(args) == 0 {
+					continue // Leave malformed directives to their usual validator.
+				}
+				if dependent(a.pkg.Scope().Lookup(args[0])) {
+					return fmt.Errorf("%s: cannot specialize go:linkname binding for SIMD-dependent global %s", fset.Position(d.Pos), args[0])
+				}
+				// An alias can use an ordinary scalar type even when its target
+				// is a named scalar specialized because of a method body.
+				if len(args) == 2 {
+					if dot := strings.LastIndexByte(args[1], '.'); dot >= 0 {
+						if pkg := packages[args[1][:dot]]; pkg != nil && dependent(pkg.Scope().Lookup(args[1][dot+1:])) {
+							return fmt.Errorf("%s: cannot specialize go:linkname target SIMD-dependent global %s", fset.Position(d.Pos), args[1])
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// Embedding is a storage initializer, not an ordinary RHS expression. Preserve
+// only its directives on the concrete globals; copying arbitrary declaration
+// metadata could also copy external bindings to the new storage.
+func embedDoc(groups ...*ast.CommentGroup) *ast.CommentGroup {
+	var comments []*ast.Comment
+	for _, group := range groups {
+		for _, d := range directive.ParseGroup(group) {
+			if d.Name == "go:embed" {
+				comments = append(comments, &ast.Comment{Slash: d.Pos, Text: d.Raw})
+			}
+		}
+	}
+	if len(comments) == 0 {
+		return nil
+	}
+	return &ast.CommentGroup{List: comments}
+}
 
 // globalDependencies recovers the original package-init edges through local
 // functions and methods, before their bodies become dispatchers or stubs.
@@ -63,7 +137,7 @@ func dependencyReads(vars []*types.Var, pos token.Pos) []ast.Stmt {
 	return result
 }
 
-func (f *fileRewriter) global(spec *ast.ValueSpec) (extra []ast.Decl, changed bool) {
+func (f *fileRewriter) global(decl *ast.GenDecl, spec *ast.ValueSpec) (extra []ast.Decl, changed bool) {
 	dependent := false
 	for _, id := range spec.Names {
 		dependent = dependent || f.a.types[f.a.info.Defs[id].Type()]
@@ -78,7 +152,7 @@ func (f *fileRewriter) global(spec *ast.ValueSpec) (extra []ast.Decl, changed bo
 			continue
 		}
 		for _, width := range widths {
-			extra = append(extra, &ast.GenDecl{TokPos: pos, Tok: token.VAR, Specs: []ast.Spec{&ast.ValueSpec{
+			extra = append(extra, &ast.GenDecl{Doc: embedDoc(decl.Doc, spec.Doc), TokPos: pos, Tok: token.VAR, Specs: []ast.Spec{&ast.ValueSpec{
 				Names: []*ast.Ident{ident(id.Name+suffix(width), pos)}, Type: f.typeExpr(obj.Type(), width, pos),
 			}}})
 		}

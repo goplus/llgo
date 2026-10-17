@@ -79,8 +79,11 @@ architecture vector types and its hardware round trip is tested separately.
 Remaining limits include reflection-driven calls with portable signatures,
 bodyless user functions depending on portable types, and inferred global types
 requiring another package's unexported type, field, or method names.
-The latter two cases produce source diagnostics. Wider variants and general
-FMV are follow-up work.
+The latter two cases produce source diagnostics. Midway also diagnoses
+`go:linkname` on SIMD-dependent globals, or targeting a known SIMD-dependent
+global: an external storage binding needs an ABI shared by both concrete
+representations. Embedded named strings and byte slices retain their contents
+in both variants. Wider variants and general FMV are follow-up work.
 
 For the WASI portable matrix, including explicit guest emulation, run
 `LLGO=/path/to/llgo bash dev/test_portable_simd_wasi.sh`. It passes `GODEBUG`
