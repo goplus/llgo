@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/xgo-dev/llgo/internal/clang"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 	"github.com/xgo-dev/llgo/xtool/safesplit"
 )
@@ -32,18 +33,20 @@ import (
 // darwinLTOObjectArgs keeps the native LTO output available to dsymutil after
 // Clang exits. Each link owns its directory so rebuilding an output cannot
 // overwrite an object still referenced by another executable's debug map.
-func darwinLTOObjectArgs(ctx *context, args []string) ([]string, error) {
+// The output owns the enclosing sidecar, which clean and temporary-output
+// cleanup reclaim along with the executable.
+func darwinLTOObjectArgs(ctx *context, app string, cmd *clang.Cmd, args []string) ([]string, error) {
 	conf := ctx.buildConf
 	if conf.Goos != "darwin" || conf.Target != "" || !conf.ltoEnabled() ||
 		!shouldEmitDebugInfo(conf, &ctx.crossCompile) {
 		return nil, nil
 	}
-	for _, arg := range ctx.linker().LinkArguments(args...) {
+	for _, arg := range cmd.LinkArguments(args...) {
 		if strings.Contains(arg, "object_path_lto") {
 			return nil, nil
 		}
 	}
-	root := filepath.Join(buildCacheRootDir(), "debug-lto")
+	root := darwinLTOObjectDir(app)
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, err
 	}
@@ -52,6 +55,10 @@ func darwinLTOObjectArgs(ctx *context, args []string) ([]string, error) {
 		return nil, err
 	}
 	return []string{"-Xlinker", "-object_path_lto", "-Xlinker", filepath.Join(dir, "lto.o")}, nil
+}
+
+func darwinLTOObjectDir(app string) string {
+	return app + ".llgo-debug-lto"
 }
 
 type darwinSizeSymbolPlan struct {

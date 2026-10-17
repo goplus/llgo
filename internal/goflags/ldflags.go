@@ -87,6 +87,7 @@ func ParseLinkFlags(buildFlags []string) (ParsedLinkFlags, error) {
 				if err != nil {
 					return ParsedLinkFlags{}, err
 				}
+				// The public flag enables compression; the option records an opt-out.
 				opts.Options.DisableDWARFCompression = !v
 			case linkFlag == "-extld":
 				if i+1 >= len(linkFlags) {

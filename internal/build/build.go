@@ -1404,6 +1404,9 @@ func removeOutFmts(outFmts *OutFmtDetails) {
 		_ = os.RemoveAll(outFmts.tempDir)
 		return
 	}
+	if outFmts.Out != "" {
+		_ = os.RemoveAll(darwinLTOObjectDir(outFmts.Out))
+	}
 	for _, output := range []string{
 		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex,
 		outFmts.Img, outFmts.Uf2, outFmts.Zip,
@@ -2900,17 +2903,20 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		objFiles = compiledObjFiles
 	}
 
-	ltoObjectArgs, err := darwinLTOObjectArgs(ctx, buildArgs)
+	cmd := ctx.linker()
+	ltoObjectArgs, err := darwinLTOObjectArgs(ctx, app, cmd, buildArgs)
 	if err != nil {
 		return fmt.Errorf("retain Darwin LTO debug object: %w", err)
 	}
 	buildArgs = append(buildArgs, ltoObjectArgs...)
 	buildArgs = append(buildArgs, objFiles...)
 
-	cmd := ctx.linker()
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
 	if err := cmd.Link(buildArgs...); err != nil {
+		if len(ltoObjectArgs) != 0 {
+			_ = os.RemoveAll(filepath.Dir(ltoObjectArgs[len(ltoObjectArgs)-1]))
+		}
 		return err
 	}
 	if !moveExactWindowsOutput {

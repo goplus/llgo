@@ -20,6 +20,7 @@ import (
 	"debug/dwarf"
 	"debug/elf"
 	"debug/macho"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -30,6 +31,86 @@ import (
 	"github.com/xgo-dev/llgo/internal/lto"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
+
+func TestDarwinLTOObjectLifecycle(t *testing.T) {
+	conf := Config{Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
+	ctx := &context{buildConf: &conf, crossCompile: configurableDebugInfo()}
+	app := filepath.Join(t.TempDir(), "app")
+	first, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	object := first[len(first)-1]
+	if err := os.WriteFile(object, []byte("older debug object"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	second, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second[len(second)-1] == object {
+		t.Fatal("rebuild reused the previous executable's debug object")
+	}
+	if data, err := os.ReadFile(object); err != nil || string(data) != "older debug object" {
+		t.Fatalf("rebuild invalidated the older debug map: %q, %v", data, err)
+	}
+	if err := removeExecutableArtifacts(app, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(darwinLTOObjectDir(app)); !os.IsNotExist(err) {
+		t.Fatalf("clean retained LTO objects: %v", err)
+	}
+	if _, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil); err != nil {
+		t.Fatal(err)
+	}
+	removeOutFmts(&OutFmtDetails{Out: app})
+	if _, err := os.Stat(darwinLTOObjectDir(app)); !os.IsNotExist(err) {
+		t.Fatalf("temporary-output cleanup retained LTO objects: %v", err)
+	}
+	if err := os.WriteFile(darwinLTOObjectDir(app), []byte("occupied"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil); err == nil {
+		t.Fatal("accepted an occupied object-directory path")
+	}
+}
+
+func TestDarwinLTOObjectPolicy(t *testing.T) {
+	base := Config{Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
+	for _, name := range []string{"linux", "no-lto", "named-target", "omit-dwarf", "driver-option", "linker-option", "environment-option"} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("LDFLAGS", "")
+			t.Setenv("CCFLAGS", "")
+			conf := base
+			ctx := &context{buildConf: &conf, crossCompile: configurableDebugInfo()}
+			var args []string
+			switch name {
+			case "linux":
+				conf.Goos = "linux"
+			case "no-lto":
+				conf.LTO = lto.Off
+			case "named-target":
+				conf.Target = "custom"
+			case "omit-dwarf":
+				conf.LinkOptions.DWARF = DWARFOmit
+			case "driver-option":
+				args = []string{"-Xlinker", "-object_path_lto", "-Xlinker", "chosen.o"}
+			case "linker-option":
+				args = []string{"-Wl,-object_path_lto,chosen.o"}
+			case "environment-option":
+				t.Setenv("LDFLAGS", "-Wl,-object_path_lto,chosen.o")
+			}
+			app := filepath.Join(t.TempDir(), "app")
+			got, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), args)
+			if err != nil || len(got) != 0 {
+				t.Fatalf("unexpected automatic object path: %v, %v", got, err)
+			}
+			if _, err := os.Stat(darwinLTOObjectDir(app)); !os.IsNotExist(err) {
+				t.Fatalf("unused object directory was created: %v", err)
+			}
+		})
+	}
+}
 
 func TestLinuxDWARFCompressionArgs(t *testing.T) {
 	target := crosscompile.Export{
