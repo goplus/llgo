@@ -112,6 +112,81 @@ func TestDarwinLTOObjectPolicy(t *testing.T) {
 	}
 }
 
+func TestDarwinLTOFailedLinkPreservesOlderObjects(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "fail")
+	for _, occupied := range []bool{false, true} {
+		t.Run(strconv.FormatBool(occupied), func(t *testing.T) {
+			conf := Config{Mode: ModeBuild, BuildMode: BuildModeExe, Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
+			ctx := &context{buildConf: &conf, crossCompile: configurableDebugInfo()}
+			ctx.crossCompile.CC = os.Args[0]
+			app := filepath.Join(t.TempDir(), "app")
+			if occupied {
+				if err := os.WriteFile(darwinLTOObjectDir(app), []byte("occupied"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				if err := linkObjFiles(ctx, app, nil, nil, false); err == nil || !strings.Contains(err.Error(), "retain Darwin LTO debug object") {
+					t.Fatalf("retention failure was not reported: %v", err)
+				}
+				return
+			}
+			older, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object := older[len(older)-1]
+			if err := os.WriteFile(object, []byte("older"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := linkObjFiles(ctx, app, nil, nil, false); err == nil {
+				t.Fatal("failing linker succeeded")
+			}
+			entries, err := os.ReadDir(darwinLTOObjectDir(app))
+			if err != nil || len(entries) != 1 {
+				t.Fatalf("failed link retained its new object directory: %v, %v", entries, err)
+			}
+			if data, err := os.ReadFile(object); err != nil || string(data) != "older" {
+				t.Fatalf("failed link invalidated an older debug object: %q, %v", data, err)
+			}
+		})
+	}
+}
+
+func TestDarwinLTOObjectDirectoryPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("requires POSIX directory permissions without root bypass")
+	}
+	conf := Config{Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
+	ctx := &context{buildConf: &conf, crossCompile: configurableDebugInfo()}
+	app := filepath.Join(t.TempDir(), "app")
+	dir := darwinLTOObjectDir(app)
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(dir, 0o700)
+	if _, err := darwinLTOObjectArgs(ctx, app, ctx.linker(), nil); err == nil {
+		t.Fatal("created an LTO object directory without write permission")
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	keep := filepath.Join(dir, "keep.o")
+	if err := os.WriteFile(keep, []byte("debug object"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	if err := removeArtifactDirectory(dir, false); err == nil {
+		t.Fatal("clean silently ignored an inaccessible retained object")
+	}
+	if data, err := os.ReadFile(keep); err != nil || string(data) != "debug object" {
+		t.Fatalf("failed clean changed the debug object: %q, %v", data, err)
+	}
+}
+
 func TestLinuxDWARFCompressionArgs(t *testing.T) {
 	target := crosscompile.Export{
 		Toolchain: crosscompile.NativeToolchain{ObjectFormat: crosscompile.ObjectFormatELF},
