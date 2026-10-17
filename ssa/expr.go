@@ -1506,15 +1506,11 @@ func (b Builder) CallForwardVarargs(fn Expr, args ...Expr) Expr {
 			b.Func.Name(), fn.impl.Name()))
 	}
 	ret := b.Call(fn, args...)
-	call := ret.impl.IsACallInst()
-	if call.IsNil() {
-		panic(fmt.Sprintf("cannot forward C variadic arguments from %s to %s: call result was converted",
-			b.Func.Name(), fn.impl.Name()))
-	}
+	// The preflight result check guarantees Call returns its raw instruction.
 	// LLVM's thunk attribute makes musttail forward the incoming ellipsis,
 	// including arguments that have no explicit operands in the call IR.
 	b.Func.impl.AddFunctionAttr(b.Prog.ctx.CreateStringAttribute("thunk", ""))
-	call.SetTailCallKind(llvm.TailCallKindMustTail)
+	ret.impl.SetTailCallKind(llvm.TailCallKindMustTail)
 	return ret
 }
 

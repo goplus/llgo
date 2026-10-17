@@ -43,3 +43,24 @@ func TestCVariadicForwardingRejectsResultConversion(t *testing.T) {
 	}()
 	b.CallForwardVarargs(callee.Expr)
 }
+
+func TestCVariadicForwardingRejectsDifferentPrototype(t *testing.T) {
+	prog := NewProgram(&Target{GOOS: "linux", GOARCH: "amd64"})
+	defer prog.Dispose()
+	pkg := prog.NewPackage("forward", "forward")
+	signature := func(fixed types.Type) *types.Signature {
+		return types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewVar(token.NoPos, nil, "fixed", fixed), VArg(),
+		), nil, true)
+	}
+	callee := pkg.NewFunc("native", signature(types.Typ[types.Int32]), CDecl)
+	caller := pkg.NewFunc("wrapper", signature(types.Typ[types.Float64]), CDecl)
+	b := caller.MakeBody(1)
+	if b.CanForwardVarargs(callee.Expr) {
+		t.Fatal("different fixed-argument ABIs must prevent variadic forwarding")
+	}
+	b.Return()
+	if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
+		t.Fatal(err)
+	}
+}

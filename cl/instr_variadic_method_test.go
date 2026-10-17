@@ -69,9 +69,9 @@ func TestCVariadicMethodExternalDeclaration(t *testing.T) {
 	const source = `package foo
 type T int8
 //llgo:link (*T).Check C.check
-func (*T) Check(tag int32, number float64, __llgo_va_list ...any)
+func (*T) Check(tag int32, number float64, data *int8, __llgo_va_list ...any)
 type Wrapper struct { *T }
-func use(w *Wrapper) { w.Check(7, 1.5, int32(42)) }
+func use(w *Wrapper) { w.Check(7, 1.5, new(int8), int32(42)) }
 `
 	ssaPkg, _, files := buildGoSSAPkg(t, source)
 	prog := newLLSSAProgForTarget(t, &llssa.Target{GOOS: "linux", GOARCH: "amd64", OptLevel: optlevel.O0})
@@ -81,7 +81,7 @@ func use(w *Wrapper) { w.Check(7, 1.5, int32(42)) }
 		t.Fatal(err)
 	}
 	fn := mustNamedFunction(t, pkg.Module(), "foo.(*Wrapper).Check")
-	if text := fn.String(); !strings.Contains(text, "musttail call void (ptr, i32, double, ...) @check(") ||
+	if text := fn.String(); !strings.Contains(text, "musttail call void (ptr, i32, double, ptr, ...) @check(") ||
 		strings.Contains(text, "RecoverFrameAlias") {
 		t.Fatalf("external variadic declaration is not tail-forwarded:\n%s", text)
 	}
@@ -116,13 +116,16 @@ func use(w *Wrapper) int32 { return w.Check(int32(42)) }
 	}
 }
 
-func TestCVariadicAggregateWrapper(t *testing.T) {
-	// These signatures need instructions or ABI rewrites that cannot retain a
-	// musttail call followed immediately by its return. Keep their existing
-	// lowering instead of introducing invalid IR or a lost forwarding marker.
+func TestCVariadicIncompatibleSignature(t *testing.T) {
+	// Ordinary methods have no ellipsis to forward. Aggregate signatures need
+	// instructions or ABI rewrites that cannot retain a musttail call followed
+	// immediately by its return. Keep the existing lowering for both cases.
 	for _, tc := range []struct {
 		name, declaration, use string
 	}{
+		{"non_variadic",
+			"func (*T) Check(value int32) int32 { return 0 }",
+			"func use(w *Wrapper) int32 { return w.Check(42) }"},
 		{"multiple_results",
 			"func (*T) Check(__llgo_va_list ...any) (int32, int32) { return 0, 0 }",
 			"func use(w *Wrapper) (int32, int32) { return w.Check(int32(42)) }"},
@@ -147,10 +150,10 @@ func TestCVariadicAggregateWrapper(t *testing.T) {
 			mod := pkg.Module()
 			fn := mustNamedFunction(t, mod, "foo.(*Wrapper).Check")
 			if text := fn.String(); !strings.Contains(text, "@check(") || strings.Contains(text, "musttail") {
-				t.Fatalf("aggregate wrapper must retain a regular C call:\n%s", text)
+				t.Fatalf("incompatible wrapper must retain a regular C call:\n%s", text)
 			}
 			if !fn.GetStringAttributeAtIndex(-1, "thunk").IsNil() {
-				t.Fatal("aggregate wrapper must not be marked as a forwarding thunk")
+				t.Fatal("incompatible wrapper must not be marked as a forwarding thunk")
 			}
 			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
 				t.Fatal(err)
