@@ -1312,6 +1312,17 @@
     },
     {
       "kind": "branch",
+      "id": "c09431e8b4a5cda4",
+      "label": "Branch cpunion/llgo:codex/go-cli-workflows-2649-20261017",
+      "path": "series/branch/c09431e8b4a5cda4/summary.json",
+      "configPath": "series/branch/c09431e8b4a5cda4/config.json",
+      "commitPath": "commits/16b971d794cdbf3e92c430075931b88136f52044.json",
+      "sha": "16b971d794cdbf3e92c430075931b88136f52044",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/16b971d794cdbf3e92c430075931b88136f52044",
+      "updatedAt": "2026-10-17T05:24:23.585Z"
+    },
+    {
+      "kind": "branch",
       "id": "fda43f9faab6d989",
       "label": "Branch cpunion/llgo:codex/go-command-proxy",
       "path": "series/branch/fda43f9faab6d989/summary.json",
@@ -9075,6 +9086,17 @@
       "sha": "328f37da14e216a0c0e9454411c6e9f4d3b44fa6",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/328f37da14e216a0c0e9454411c6e9f4d3b44fa6",
       "updatedAt": "2026-10-17T04:44:52.493Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2834",
+      "label": "PR #2834",
+      "path": "series/pull/2834/summary.json",
+      "configPath": "series/pull/2834/config.json",
+      "commitPath": "commits/16b971d794cdbf3e92c430075931b88136f52044.json",
+      "sha": "16b971d794cdbf3e92c430075931b88136f52044",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/16b971d794cdbf3e92c430075931b88136f52044",
+      "updatedAt": "2026-10-17T05:24:21.091Z"
     }
   ]
 }
