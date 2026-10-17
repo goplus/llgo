@@ -325,7 +325,7 @@ var (
 func AddTestBinaryFlags(fs *flag.FlagSet) {
 	AddCoverageFlags(fs)
 	TestCoverProfile = ""
-	fs.BoolVar(&TestArtifacts, "artifacts", false, "Save test artifacts in the output directory (Go 1.27 and later)")
+	fs.BoolVar(&TestArtifacts, "artifacts", false, "Save test artifacts in the output directory")
 	fs.StringVar(&TestRun, "run", "", "Run only tests matching the regular expression")
 	fs.StringVar(&TestBench, "bench", "", "Run benchmarks matching the regular expression")
 	fs.StringVar(&TestTimeout, "timeout", DefaultTestTimeout, "Test timeout duration (e.g., 10m, 30s)")

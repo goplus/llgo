@@ -140,7 +140,7 @@ func TestNativeUnsupportedControlsFailBeforeLoading(t *testing.T) {
 			}
 		}
 	}
-	for _, control := range []string{"-exec=wrapper", "-vet=off", "-artifacts"} {
+	for _, control := range []string{"-vet=off"} {
 		out, code := nativeCommand(t, dir, nil, "test", "./nonexistent-package", control)
 		if code == 0 || !strings.Contains(out, "unsupported") || strings.Contains(out, "nonexistent-package") {
 			t.Fatalf("post-package %s exit=%d output=%s", control, code, out)
@@ -162,13 +162,24 @@ func TestNativeUnsupportedControlsFailBeforeLoading(t *testing.T) {
 			t.Fatalf("%s exit=%d output=%s", control, code, out)
 		}
 	}
-	out, code = nativeCommand(t, dir, nil, "version", "missing.exe")
-	if code != 1 || !strings.Contains(out, "inspection") {
-		t.Fatalf("version exit=%d output=%s", code, out)
-	}
 	out, code = nativeCommand(t, dir, nil, "tool", "unknown")
 	if code == 0 || !strings.Contains(out, "unknown") {
 		t.Fatalf("tool exit=%d output=%s", code, out)
+	}
+}
+
+func TestNativeVersionInspectionDiagnostics(t *testing.T) {
+	dir := t.TempDir()
+	want := exec.Command("go", "version", "missing.exe")
+	want.Dir = dir
+	wantOutput, err := want.CombinedOutput()
+	exit, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("Go missing-file fixture: %v, %s", err, wantOutput)
+	}
+	out, code := nativeCommand(t, dir, nil, "version", "missing.exe")
+	if code != exit.ExitCode() || out != string(wantOutput) {
+		t.Fatalf("version: llgo=(%d,%q), go=(%d,%q)", code, out, exit.ExitCode(), wantOutput)
 	}
 }
 

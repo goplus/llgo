@@ -50,6 +50,13 @@ func TestManifestNamesOwnersAndRegistration(t *testing.T) {
 	if len(surface.Commands) < 19 {
 		t.Fatal("incomplete Go command inventory")
 	}
+	for _, name := range strings.Fields(compat.TestBinaryFlags) {
+		bare := testcmd.Cmd.Flag.Lookup(name)
+		alias := testcmd.Cmd.Flag.Lookup(surface.TestFlagPrefix + name)
+		if bare == nil || alias == nil {
+			t.Errorf("test -%s must register both bare and test. spellings", name)
+		}
+	}
 	for command, names := range surface.Commands {
 		c := compat.Command(command)
 		if c.Status == "" || c.Owner == "" || c.Note == "" {

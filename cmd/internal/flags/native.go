@@ -191,8 +191,8 @@ func defaults(fs *flag.FlagSet) ([]string, error) {
 			// Go validates flag names across commands, then applies only the
 			// defaults relevant to this command (for example, -run is ignored
 			// by build). Native rejections remain registered and fail below.
-			known := compat.Extensions[name] != "" || strings.HasPrefix(name, "test.") &&
-				slices.Contains(strings.Fields(compat.TestBinaryFlags), strings.TrimPrefix(name, "test."))
+			known := compat.Extensions[name] != "" || (strings.HasPrefix(name, "test.") &&
+				slices.Contains(strings.Fields(compat.TestBinaryFlags), strings.TrimPrefix(name, "test.")))
 			for _, names := range surface.Commands {
 				known = known || slices.Contains(names, name)
 			}

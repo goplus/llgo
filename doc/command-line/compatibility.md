@@ -70,18 +70,35 @@ only its implemented package tags, verbosity and directory selection; cleanup
 planning and cache controls are pending. Size reports belong to `build`, and
 LTO pass plugins belong to build-producing commands rather than `monitor`.
 
-`test` rejects execution trace and block/mutex profile controls, including their
-reserved `-test.*` spellings after `-args`. LLGo does not produce those runtime
-samples. CPU and allocation profiles retain LLGo's runtime semantics. Reserved
-`-test.*` spellings are recorded separately; other test aliases work after
-`-args`, and driver alias parsing is pending. The
-manifest records remaining test-driver and scheduler limits; in particular,
-`-cpu` repeats test runs but does not yet bound native goroutine execution.
+`run` and `cmptest` select consecutive `.go` file operands before program
+arguments. The Go reference used by `cmptest` receives exactly those files.
+`_test.go` files and versioned `package@version` run operands are rejected.
+`run -exec` and `test -exec` accept a quoted execution wrapper. The wrapper
+receives its own arguments, the linked artifact and unchanged program/test
+arguments, without shell expansion. It overrides the default native or target
+runner. Test wrappers execute in each package's source directory.
+
+`test` accepts public test-binary flags with or without a `test.` prefix before
+`-args`, including after package operands. Both spellings share the same value;
+later settings win. Driver-only flags such as `-json`, `-cover` and `-exec` do
+not have `test.` aliases. Arguments after `-args` are passed to the test binary.
+Execution trace and block/mutex profile controls are rejected, including their
+reserved `-test.*` spellings after `-args`, because LLGo does not produce those
+runtime samples. CPU and allocation profiles retain LLGo's runtime semantics.
+`-artifacts` retains `testing.ArtifactDir` output. Its default output directory
+is the invocation directory; relative `-outputdir` paths are resolved there
+before changing into package directories. The manifest records remaining
+test-driver and scheduler limits; in particular, `-cpu` repeats test runs but
+does not yet bound native goroutine execution. Fuzzing still requires
+profile-specific acceptance.
 
 `tool compile` parses source and generates LLGo IR in memory. It rejects gc
 object output, import configurations, search paths and package import identity
-controls. `version` prints LLGo identity and rejects binary file inspection
-until that workflow is implemented. `bug` opens an LLGo issue draft containing
+controls. `version` prints LLGo identity when no file operand, `-m` or `-json`
+is present, including with `-v` alone. File inspection, `-m` and `-json` delegate
+to Go, preserving diagnostics and exit status. This reader requires Go build
+information; it cannot inspect LLGo artifacts that lack that metadata.
+`bug` opens an LLGo issue draft containing
 only LLGo/LLVM/Go build versions and the host platform; `bug -n` prints the
 payload. Paths, arbitrary environment settings and dependency lists are not
 collected.

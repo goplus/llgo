@@ -99,7 +99,7 @@ func Flag(command, name string) Record {
 			return Record{"native", "cmd/internal/flags", "Changes directory before parsing relative paths"}
 		}
 		if in(name, "m v json") {
-			return Record{"delegated", "cmd/internal/gocommand", "File inspection delegates to Go with its diagnostics and exit status"}
+			return Record{"delegated", "cmd/internal/gocommand", "File inspection, -m and -json delegate to Go; -v alone retains LLGo identity"}
 		}
 		return rejected
 	}
