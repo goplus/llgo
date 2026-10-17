@@ -1103,6 +1103,17 @@
     },
     {
       "kind": "branch",
+      "id": "5a1c9d6fec625055",
+      "label": "Branch cpunion/llgo:codex/native-symbol-strip-20261017-fpj_ieo5",
+      "path": "series/branch/5a1c9d6fec625055/summary.json",
+      "configPath": "series/branch/5a1c9d6fec625055/config.json",
+      "commitPath": "commits/0c417c89c3cc8a5dc3412f41127d45d1e0496006.json",
+      "sha": "0c417c89c3cc8a5dc3412f41127d45d1e0496006",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0c417c89c3cc8a5dc3412f41127d45d1e0496006",
+      "updatedAt": "2026-10-17T20:28:32.716Z"
+    },
+    {
+      "kind": "branch",
       "id": "d81add0355bea642",
       "label": "Branch cpunion/llgo:codex/native-thread-exhaustion-20261015",
       "path": "series/branch/d81add0355bea642/summary.json",
@@ -5291,6 +5302,17 @@
       "sha": "012bd03aa7ba7e49cdb5b5979707fb8b4488d77a",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/012bd03aa7ba7e49cdb5b5979707fb8b4488d77a",
       "updatedAt": "2026-10-17T20:01:35.867Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2843",
+      "label": "PR #2843",
+      "path": "series/pull/2843/summary.json",
+      "configPath": "series/pull/2843/config.json",
+      "commitPath": "commits/0c417c89c3cc8a5dc3412f41127d45d1e0496006.json",
+      "sha": "0c417c89c3cc8a5dc3412f41127d45d1e0496006",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0c417c89c3cc8a5dc3412f41127d45d1e0496006",
+      "updatedAt": "2026-10-17T20:28:32.630Z"
     },
     {
       "kind": "pull",
