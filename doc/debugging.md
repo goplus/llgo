@@ -22,15 +22,16 @@ outputs reclaim it automatically. For a custom `-o program`, remove
 `program.llgo-debug-lto/` when disposing of its debug maps. Generate any dSYMs
 needed by retained executable copies before cleaning these objects.
 
-For native Linux and macOS executables and shared libraries, `-ldflags=-s` removes ordinary
-symbols after runtime PCLN packaging and implies `-w`. Use
+For native Linux and macOS executables and shared libraries, `-ldflags=-s`
+removes ordinary symbols after runtime PCLN packaging and implies `-w`. Use
 `-ldflags='-s -w=false'` to retain source-level debugging, including the few
 symbols used for debugger ABI/registry discovery. Linux retains its DWARF
 sections; macOS generates a matching adjacent `.dSYM` before removing
 the executable's debug map and re-signing. Build artifact reports include
 the complete dSYM bundle. Shared-library dynamic exports are preserved.
-Archives, Wasm, fixed targets, and other native
-object formats retain their existing symbol policy.
+`llgo clean` also removes the default output's adjacent dSYM bundle.
+Archives, Wasm, fixed targets, and other native object formats retain their
+existing symbol policy.
 
 `llgo debug` is the target-aware entry point for building and debugging an
 LLGo program:
