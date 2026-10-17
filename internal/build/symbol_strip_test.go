@@ -198,6 +198,54 @@ func TestNativeSymbolStripIntegration(t *testing.T) {
 	}
 }
 
+func TestELFSymbolStripStaging(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("POSIX executable permissions")
+	}
+	for _, fail := range []bool{false, true} {
+		t.Run(map[bool]string{false: "success", true: "failure"}[fail], func(t *testing.T) {
+			out := &OutFmtDetails{Out: filepath.Join(t.TempDir(), "app")}
+			if err := os.WriteFile(out.Out, []byte("linked"), 0o751); err != nil {
+				t.Fatal(err)
+			}
+			ctx := &context{buildConf: &Config{Goos: "linux"}}
+			run := func(_ string, args ...string) error {
+				input, output := args[len(args)-2], args[len(args)-1]
+				if input != out.Out || input == output {
+					t.Fatalf("objcopy must read the linked file and write a separate staged result: %v", args)
+				}
+				if _, err := os.Stat(output); !os.IsNotExist(err) {
+					t.Fatalf("ELF staging made a redundant executable copy: %v", err)
+				}
+				if err := os.WriteFile(output, []byte("stripped"), 0o600); err != nil {
+					return err
+				}
+				if fail {
+					return errors.New("objcopy failed after writing partial output")
+				}
+				return nil
+			}
+			err := stripNativeSymbolsWith(ctx, out, nil, false, run)
+			if (err != nil) != fail {
+				t.Fatalf("strip error: %v", err)
+			}
+			want := "stripped"
+			if fail {
+				want = "linked"
+			}
+			if data, err := os.ReadFile(out.Out); err != nil || string(data) != want {
+				t.Fatalf("published executable: %q, %v", data, err)
+			}
+			if info, err := os.Stat(out.Out); err != nil || info.Mode().Perm() != 0o751 {
+				t.Fatalf("executable mode: %v, %v", info, err)
+			}
+			if dirs, _ := filepath.Glob(filepath.Join(filepath.Dir(out.Out), ".app.symbols-*")); len(dirs) != 0 {
+				t.Fatalf("staging survived: %v", dirs)
+			}
+		})
+	}
+}
+
 func TestDSYMArtifactSize(t *testing.T) {
 	dir := t.TempDir()
 	out := &OutFmtDetails{Out: filepath.Join(dir, "app"), DSYM: filepath.Join(dir, "app.dSYM")}

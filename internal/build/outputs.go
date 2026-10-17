@@ -278,6 +278,8 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 		details.DWARF = dwarfSidecarPath(debugWasmModulePath(conf, details.Out))
 	}
 	if conf.Goos == "darwin" && shouldStripNativeSymbols(conf, crossCompile) && shouldEmitDebugInfo(conf, crossCompile) {
+		// stripNativeSymbolsWith requires this adjacent bundle before it can
+		// discard the executable's debug map while preserving DWARF.
 		details.DSYM = details.Out + ".dSYM"
 	}
 

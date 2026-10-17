@@ -34,8 +34,8 @@ func shouldStripNativeSymbols(conf *Config, target *crosscompile.Export) bool {
 		conf.Mode == ModeGen || conf.Target != "" || conf.BuildMode == BuildModeCArchive {
 		return false
 	}
-	return conf.Goos == "linux" && target.Toolchain.ObjectFormat == crosscompile.ObjectFormatELF ||
-		conf.Goos == "darwin" && target.Toolchain.ObjectFormat == crosscompile.ObjectFormatMachO
+	return (conf.Goos == "linux" && target.Toolchain.ObjectFormat == crosscompile.ObjectFormatELF) ||
+		(conf.Goos == "darwin" && target.Toolchain.ObjectFormat == crosscompile.ObjectFormatMachO)
 }
 
 func finalizeNativeSymbols(ctx *context, out *OutFmtDetails, verbose bool) error {
@@ -89,17 +89,14 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 		}
 	}()
 	staged := filepath.Join(dir, filepath.Base(out.Out))
-	if err := copyFileAtomic(out.Out, staged); err != nil {
-		return err
-	}
-	if err := os.Chmod(staged, info.Mode()); err != nil {
-		return err
-	}
 	darwin := ctx.buildConf.Goos == "darwin"
 	preserve := shouldEmitDebugInfo(ctx.buildConf, &ctx.crossCompile)
 	stagedDSYM := ""
 	debuggerSymbols := []string{debugabi.NativeRecordSymbol, debugabi.LegacyMarkerSymbol, "llgo_debugger_threads_v1"}
 	if darwin {
+		if err := copyFileAtomic(out.Out, staged); err != nil {
+			return err
+		}
 		args := []string{"-u"}
 		if preserve {
 			if out.DSYM == "" {
@@ -144,10 +141,15 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 				args = append(args, "--keep-symbol="+symbol)
 			}
 		}
-		args = append(args, staged)
+		// Let objcopy read the linked image and write the staged result in
+		// one pass, avoiding a separate full-file copy before stripping.
+		args = append(args, out.Out, staged)
 		if err := run(tool, args...); err != nil {
 			return err
 		}
+	}
+	if err := os.Chmod(staged, info.Mode()); err != nil {
+		return err
 	}
 	file, err := os.OpenFile(staged, os.O_RDWR, 0)
 	if err != nil {
@@ -188,8 +190,11 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 	if err := os.Rename(staged, out.Out); err != nil {
 		if stagedDSYM != "" {
 			if removeErr := os.RemoveAll(out.DSYM); removeErr != nil {
-				discardStage = false
-				return fmt.Errorf("publish stripped executable: %v; previous dSYM retained at %s: %w", err, backup, removeErr)
+				if backup != "" {
+					discardStage = false
+					return fmt.Errorf("publish stripped executable: %v; previous dSYM retained at %s: %w", err, backup, removeErr)
+				}
+				return fmt.Errorf("publish stripped executable: %v; cannot remove newly published dSYM %s: %w", err, out.DSYM, removeErr)
 			}
 			if backup != "" {
 				if restoreErr := os.Rename(backup, out.DSYM); restoreErr != nil {
