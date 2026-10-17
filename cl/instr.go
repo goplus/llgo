@@ -2665,7 +2665,7 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			if act == llssa.Call && p.forwardCVariadicWrapper(call) {
+			if act == llssa.Call && p.forwardCVariadicWrapper(call) && b.CanForwardVarargs(aFn.Expr) {
 				// A tail transfer removes the synthetic frame itself, so no
 				// recover-frame alias may surround it (or run after the call).
 				ret = b.CallForwardVarargs(aFn.Expr, args...)
@@ -2832,18 +2832,50 @@ func (p *context) forwardCVariadicWrapper(call *ssa.CallCommon) bool {
 	// Promoted pointer methods adjust the receiver and return the C call's
 	// result. compileValues omits the incoming ellipsis marker: the wrapper
 	// must forward the unknown register/stack arguments with a mandatory tail
-	// call. Keep this on hosted native targets: Wasm does not support variadic
-	// tail calls, and embedded backends do not all support musttail. Value
-	// receivers do not have the matching fixed prototype required by LLVM.
+	// call. Wasm does not support variadic tail calls. Explicit -target
+	// profiles (including custom native profiles) remain excluded because
+	// their backend and storage ABI may not support this forwarding path.
 	target := p.prog.Target()
-	if target.GOARCH == "wasm" || target.Target != "" || fn == nil || fn.Synthetic == "" ||
-		fn.Signature.Recv() == nil || !isPointerGoType(fn.Signature.Recv().Type()) ||
-		callee.Recv() == nil || !isPointerGoType(callee.Recv().Type()) ||
-		!llssa.HasNameValist(fn.Signature) || !llssa.HasNameValist(callee) || len(call.Args) == 0 {
+	if target.GOARCH == "wasm" || target.Target != "" {
 		return false
+	}
+	if fn == nil || fn.Synthetic == "" {
+		return false
+	}
+	// Value receivers do not have LLVM's required matching fixed prototype.
+	if fn.Signature.Recv() == nil || !isPointerGoType(fn.Signature.Recv().Type()) ||
+		callee.Recv() == nil || !isPointerGoType(callee.Recv().Type()) {
+		return false
+	}
+	if !llssa.HasNameValist(fn.Signature) || !llssa.HasNameValist(callee) ||
+		len(call.Args) == 0 || len(fn.Params) == 0 {
+		return false
+	}
+	// Tuple returns need extract/insert instructions after the call, while
+	// aggregate ABI lowering can replace the call and lose its tail marker.
+	// Neither path can preserve the immediate return required by musttail.
+	results := callee.Results()
+	if results.Len() > 1 || results.Len() == 1 && !isCVariadicForwardScalar(results.At(0).Type()) {
+		return false
+	}
+	params := callee.Params()
+	for i := 0; i < params.Len()-1; i++ {
+		if !isCVariadicForwardScalar(params.At(i).Type()) {
+			return false
+		}
 	}
 	param, ok := call.Args[len(call.Args)-1].(*ssa.Parameter)
 	return ok && param == fn.Params[len(fn.Params)-1]
+}
+
+func isCVariadicForwardScalar(t types.Type) bool {
+	switch t := t.Underlying().(type) {
+	case *types.Pointer:
+		return true
+	case *types.Basic:
+		return t.Info()&(types.IsBoolean|types.IsInteger|types.IsFloat) != 0 || t.Kind() == types.UnsafePointer
+	}
+	return false
 }
 
 func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon, hasVArg int) []llssa.Expr {

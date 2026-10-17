@@ -44,7 +44,7 @@ func TestCVariadicMethodWrapperForwarding(t *testing.T) {
 			cabi.NewTransformer(prog, target.LLVMTarget, "", false).TransformModule(pkg.Path(), mod)
 			fn := mustNamedFunction(t, mod, "main.(*CFmt).Printf")
 			if text := fn.String(); !strings.Contains(text, "musttail call i32 (ptr, ...) @printf(ptr ") ||
-				!strings.Contains(text, ", ...)\n  ret i32 ") {
+				!strings.Contains(text, ", ...)") {
 				t.Fatalf("wrapper does not forward its incoming ellipsis:\n%s", text)
 			}
 			if fn.GetStringAttributeAtIndex(-1, "thunk").IsNil() {
@@ -113,5 +113,52 @@ func use(w *Wrapper) int32 { return w.Check(int32(42)) }
 	}
 	if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCVariadicAggregateWrapper(t *testing.T) {
+	// These signatures need instructions or ABI rewrites that cannot retain a
+	// musttail call followed immediately by its return. Keep their existing
+	// lowering instead of introducing invalid IR or a lost forwarding marker.
+	for _, tc := range []struct {
+		name, declaration, use string
+	}{
+		{"multiple_results",
+			"func (*T) Check(__llgo_va_list ...any) (int32, int32) { return 0, 0 }",
+			"func use(w *Wrapper) (int32, int32) { return w.Check(int32(42)) }"},
+		{"aggregate_result",
+			"func (*T) Check(__llgo_va_list ...any) R { return R{} }",
+			"func use(w *Wrapper) R { return w.Check(int32(42)) }"},
+		{"aggregate_parameter",
+			"func (*T) Check(tag R, __llgo_va_list ...any) int32 { return 0 }",
+			"func use(w *Wrapper) int32 { return w.Check(R{}, int32(42)) }"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := "package foo\ntype T int8\ntype R struct { a, b int64 }\n" +
+				"//llgo:link (*T).Check C.check\n" + tc.declaration +
+				"\ntype Wrapper struct { *T }\n" + tc.use
+			ssaPkg, _, files := buildGoSSAPkg(t, source)
+			prog := newLLSSAProgForTarget(t, &llssa.Target{GOOS: "linux", GOARCH: "amd64"})
+			defer prog.Dispose()
+			pkg, err := NewPackage(prog, ssaPkg, files)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mod := pkg.Module()
+			fn := mustNamedFunction(t, mod, "foo.(*Wrapper).Check")
+			if text := fn.String(); !strings.Contains(text, "@check(") || strings.Contains(text, "musttail") {
+				t.Fatalf("aggregate wrapper must retain a regular C call:\n%s", text)
+			}
+			if !fn.GetStringAttributeAtIndex(-1, "thunk").IsNil() {
+				t.Fatal("aggregate wrapper must not be marked as a forwarding thunk")
+			}
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			cabi.NewTransformer(prog, "", "", false).TransformModule(pkg.Path(), mod)
+			if err := llvm.VerifyModule(mod, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

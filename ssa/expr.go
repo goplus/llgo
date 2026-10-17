@@ -1485,15 +1485,34 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }
 
+// CanForwardVarargs checks the unlowered ABI of a direct variadic forwarding
+// call. The physical result must equal the logical Go result so Call cannot
+// insert a result conversion between the tail call and its return.
+func (b Builder) CanForwardVarargs(fn Expr) bool {
+	if fn.kind != vkFuncDecl || !b.Func.hasVArg || fn.ll != b.Func.ll ||
+		fn.impl.FunctionCallConv() != b.Func.impl.FunctionCallConv() {
+		return false
+	}
+	sig := fn.raw.Type.(*types.Signature)
+	return fn.ll.ReturnType() == b.Prog.retType(sig).ll
+}
+
 // CallForwardVarargs forwards a variadic thunk's incoming ellipsis unchanged.
-// The caller must return the result immediately and have the same fixed ABI.
+// CanForwardVarargs must hold, the caller must return the result immediately,
+// and later ABI lowering must preserve the call and return without rewrites.
 func (b Builder) CallForwardVarargs(fn Expr, args ...Expr) Expr {
+	if !b.CanForwardVarargs(fn) {
+		panic(fmt.Sprintf("cannot forward C variadic arguments from %s to %s: incompatible ABI",
+			b.Func.Name(), fn.impl.Name()))
+	}
 	ret := b.Call(fn, args...)
 	call := ret.impl.IsACallInst()
-	if call.IsNil() || !b.Func.hasVArg || call.CalledFunctionType() != b.Func.ll ||
-		call.InstructionCallConv() != b.Func.impl.FunctionCallConv() {
-		panic("cannot forward C variadic arguments through an incompatible wrapper")
+	if call.IsNil() {
+		panic(fmt.Sprintf("cannot forward C variadic arguments from %s to %s: call result was converted",
+			b.Func.Name(), fn.impl.Name()))
 	}
+	// LLVM's thunk attribute makes musttail forward the incoming ellipsis,
+	// including arguments that have no explicit operands in the call IR.
 	b.Func.impl.AddFunctionAttr(b.Prog.ctx.CreateStringAttribute("thunk", ""))
 	call.SetTailCallKind(llvm.TailCallKindMustTail)
 	return ret
