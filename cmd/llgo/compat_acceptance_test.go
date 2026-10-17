@@ -100,7 +100,8 @@ func FuzzSeed(f *testing.F) { f.Add(1); f.Fuzz(func(t *testing.T, n int){if n!=1
 		t.Fatalf("failfast: exit=%d output=%s", code, out)
 	}
 	out, code = nativeCommand(t, dir, nil, "test", ".", "-run=^TestFullpath$", "-fullpath")
-	if code == 0 || !strings.Contains(out, filepath.Join(dir, "workflow_test.go")) {
+	// Compiler source positions use slash separators on every host.
+	if code == 0 || !strings.Contains(out, filepath.ToSlash(filepath.Join(dir, "workflow_test.go"))) {
 		t.Fatalf("fullpath: exit=%d output=%s", code, out)
 	}
 	out, code = nativeCommand(t, dir, nil, "test", ".", "-v", "-run=^FuzzSeed$")
