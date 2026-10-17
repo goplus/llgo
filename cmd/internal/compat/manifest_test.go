@@ -78,7 +78,14 @@ func TestManifestNamesOwnersAndRegistration(t *testing.T) {
 			if strings.TrimSpace(f.Usage) == "" {
 				t.Errorf("%s -%s has empty help", name, f.Name)
 			}
-			if !slices.Contains(surface.Commands[goName], f.Name) && compat.Extensions[f.Name] == "" {
+			flagName := f.Name
+			if name == "test" && strings.HasPrefix(flagName, surface.TestFlagPrefix) {
+				flagName = strings.TrimPrefix(flagName, surface.TestFlagPrefix)
+				if !slices.Contains(strings.Fields(compat.TestBinaryFlags), flagName) {
+					t.Errorf("%s -%s is not a test-binary alias", name, f.Name)
+				}
+			}
+			if !slices.Contains(surface.Commands[goName], flagName) && compat.Extensions[flagName] == "" {
 				t.Errorf("%s -%s has no manifest entry", name, f.Name)
 			}
 		})
@@ -86,7 +93,7 @@ func TestManifestNamesOwnersAndRegistration(t *testing.T) {
 			continue
 		}
 		for _, f := range surface.Commands[goName] {
-			record := compat.Flag(goName, f)
+			record := compat.Flag(name, f)
 			if record.Status != "rejected" && f != "args" && cmd.Flag.Lookup(f) == nil {
 				t.Errorf("%s -%s is advertised but not registered", name, f)
 			}

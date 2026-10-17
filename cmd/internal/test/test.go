@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,7 @@ var Cmd = &base.Command{
 }
 
 var goBuildFlags *base.PassArgs
+var testExec *[]string
 
 const testRunnerExitGrace = 30 * time.Second
 
@@ -34,6 +36,7 @@ func init() {
 	flags.AddBuildModeFlags(&Cmd.Flag)
 	flags.AddTestFlags(&Cmd.Flag)
 	flags.AddTestBinaryFlags(&Cmd.Flag)
+	testExec = flags.AddExecFlag(&Cmd.Flag)
 	flags.AddEmulatorFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
 	flags.FinalizeNativeFlags("test", &Cmd.Flag)
@@ -71,6 +74,7 @@ func runCmd(cmd *base.Command, args []string) {
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)
+	conf.Exec = *testExec
 	if err := flags.UpdateBuildConfig(conf); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		mockable.Exit(1)
@@ -92,6 +96,14 @@ func runCmd(cmd *base.Command, args []string) {
 	vars["testBinary"] = "1"
 
 	// Build test binary arguments from flags
+	if flags.TestOutputDir != "" || flags.TestArtifacts {
+		flags.TestOutputDir, err = filepath.Abs(flags.TestOutputDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			mockable.Exit(1)
+			return
+		}
+	}
 	conf.RunArgs = buildTestArgs(testBinaryArgs)
 	runnerTimeout, err := testRunnerTimeout(flags.TestTimeout)
 	if err != nil {
@@ -235,6 +247,7 @@ func buildTestArgs(customArgs []string) []string {
 	appendString(flags.TestShuffle, "-test.shuffle=")
 
 	appendBool(flags.TestFullpath, "-test.fullpath")
+	appendBool(flags.TestArtifacts, "-test.artifacts")
 
 	appendBool(flags.TestBenchmem, "-test.benchmem")
 	appendString(flags.TestBenchtime, "-test.benchtime=")

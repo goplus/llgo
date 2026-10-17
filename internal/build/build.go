@@ -163,6 +163,7 @@ type Config struct {
 	Port               string  // target port for flashing
 	BaudRate           int     // baudrate for serial communication
 	RunArgs            []string
+	Exec               []string      // Explicit execution wrapper, before the artifact and RunArgs.
 	RunnerTimeout      time.Duration // Host execution limit; zero disables it.
 	Mode               Mode
 	BuildMode          BuildMode // Build mode: exe, c-archive, c-shared
@@ -286,6 +287,7 @@ func (c *Config) clone() *Config {
 		cloned.Coverage = &options
 	}
 	cloned.RunArgs = slices.Clone(c.RunArgs)
+	cloned.Exec = slices.Clone(c.Exec)
 	cloned.GoBuildFlags = slices.Clone(c.GoBuildFlags)
 	cloned.toolTags = slices.Clone(c.toolTags)
 	cloned.Overlay = cloneOverlay(c.Overlay)
@@ -1318,7 +1320,14 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 			return nil, flash.FlashDevice(linkCtx.crossCompile.Device, envMap, linkCtx.buildConf.Port, verbose)
 		}
 	case ModeRun, ModeTest, ModeCmpTest:
-		if link.conf.Mode == ModeTest && (link.conf.Target == "" || namedTargetUsesEmulatorPath(link.conf) && !link.conf.CompileOnly) {
+		if link.conf.Mode == ModeCmpTest && link.pkg.PkgPath == "command-line-arguments" {
+			// The reference must compile the same selected files. The synthetic
+			// package name is not importable, and using the directory would also
+			// compile files the caller deliberately omitted.
+			cmpTest(linkCtx.commands, link.pkg.Dir, link.pkg.PkgPath, link.outFmts.Out, link.conf.GenExpect, link.conf.RunArgs, link.pkg.GoFiles...)
+			return nil, nil
+		}
+		if link.conf.Mode == ModeTest && (len(link.conf.Exec) != 0 || link.conf.Target == "" || namedTargetUsesEmulatorPath(link.conf) && !link.conf.CompileOnly) {
 			runner := goCompatibleWasmRunner(link.conf)
 			if link.conf.Target != "" {
 				runner = linkCtx.crossCompile.Emulator
@@ -1337,6 +1346,11 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 				cleanupTemp = false // runNativeTest now owns the temporary output.
 			}
 			return program, nil
+		}
+		if link.conf.Mode == ModeRun && len(link.conf.Exec) != 0 {
+			return nil, runWithExec(linkCtx.commands, link.outFmts.Out, link.conf,
+				runnerDetails{phase: "run", target: link.conf.Target, artifact: link.outFmts.Out, packageName: link.pkg.PkgPath, timeout: link.conf.RunnerTimeout},
+				os.Stdout, os.Stderr)
 		}
 		if link.conf.Target == "" {
 			runner := goCompatibleWasmRunner(link.conf)

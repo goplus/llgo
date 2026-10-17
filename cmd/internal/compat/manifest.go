@@ -66,7 +66,7 @@ func Command(name string) Record {
 	case "bug":
 		return Record{"native", "cmd/internal/bug", "LLGo issue tracker; allowlisted version/platform diagnostics"}
 	case "version":
-		return Record{"partial", "cmd/internal/version", "LLGo identity; binary inspection is rejected pending implementation"}
+		return Record{"partial", "cmd/internal/version", "LLGo identity; file inspection delegates to Go and requires Go build information"}
 	case "tool":
 		return Record{"partial", "cmd/llgo/tool_cmd.gox", "LLGo tools only; gc object/ABI tools are not delegated"}
 	case "cmptest":
@@ -83,19 +83,25 @@ func Command(name string) Record {
 // undefined-flag error; neither may successfully parse and discard a value.
 func Flag(command, name string) Record {
 	if command == "test" && strings.HasPrefix(name, "test.") {
-		base := Flag(command, strings.TrimPrefix(name, "test."))
-		if base.Status == "rejected" {
-			return base
+		short := strings.TrimPrefix(name, "test.")
+		if !in(short, TestBinaryFlags) {
+			return Record{"rejected", "cmd/internal/test", "Only Go test-binary flags have a test. alias"}
 		}
-		return Record{"partial", "cmd/internal/test", "Test binary spellings work after -args; driver aliases before -args are pending"}
+		return Flag(command, short)
 	}
 	c := Command(command)
 	if c.Status == "delegated" || command == "env" {
 		return Record{"delegated", c.Owner, c.Note}
 	}
 	rejected := Record{"rejected", c.Owner, "Not implemented by this native LLGo command"}
-	if command == "version" && name == "C" {
-		return Record{"native", "cmd/internal/flags", "Changes directory before parsing relative paths"}
+	if command == "version" {
+		if name == "C" {
+			return Record{"native", "cmd/internal/flags", "Changes directory before parsing relative paths"}
+		}
+		if in(name, "m v json") {
+			return Record{"delegated", "cmd/internal/gocommand", "File inspection delegates to Go with its diagnostics and exit status"}
+		}
+		return rejected
 	}
 	if command == "clean" {
 		if in(name, "C tags v") {
@@ -108,6 +114,9 @@ func Flag(command, name string) Record {
 	}
 	if in(name, "C a p v x tags mod modfile modcacherw") {
 		return Record{"native", "cmd/internal/flags", "Typed native build configuration or source graph selection"}
+	}
+	if name == "exec" && in(command, "run test") {
+		return Record{"native", "internal/build", "Quoted external execution wrapper, overriding the default target runner"}
 	}
 	if name == "overlay" {
 		return Record{"partial", "internal/goflags", "Go source replacement, addition and deletion; non-Go replacements are explicitly rejected"}
@@ -122,7 +131,7 @@ func Flag(command, name string) Record {
 		return Record{"native", "cmd/internal/build", "Artifact output, coverage or C ABI build modes"}
 	}
 	if command == "test" {
-		if in(name, "c o cover covermode coverpkg coverprofile args bench benchmem benchtime count cpuprofile failfast fullpath json list memprofile memprofilerate outputdir parallel run short shuffle skip timeout") {
+		if in(name, "c o cover covermode coverpkg coverprofile args artifacts bench benchmem benchtime count cpuprofile failfast fullpath json list memprofile memprofilerate outputdir parallel run short shuffle skip timeout") {
 			return Record{"native", "cmd/internal/test", "Test driver, LLGo testing runtime or pprof output"}
 		}
 		if name == "cpu" {
@@ -134,6 +143,10 @@ func Flag(command, name string) Record {
 	}
 	return rejected
 }
+
+// TestBinaryFlags is the public Go 1.27 set accepting a test. prefix. Driver
+// flags such as -json and -cover are deliberately excluded.
+const TestBinaryFlags = "artifacts bench benchmem benchtime blockprofile blockprofilerate count coverprofile cpu cpuprofile failfast fullpath fuzz fuzzminimizetime fuzztime list memprofile memprofilerate mutexprofile mutexprofilefraction outputdir parallel run short shuffle skip timeout trace v"
 
 // Extensions lists names outside the Go contract, with their actual consumers.
 // Command-specific registration is checked separately against these names.

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xgo-dev/llgo/cmd/internal/compat"
 	"github.com/xgo-dev/llgo/cmd/internal/compilerhash"
 	"github.com/xgo-dev/llgo/internal/build"
 	"github.com/xgo-dev/llgo/internal/buildenv"
@@ -318,11 +319,13 @@ var (
 	TestFuzz             string
 	TestFuzzTime         string
 	TestFuzzMinimizeTime string
+	TestArtifacts        bool
 )
 
 func AddTestBinaryFlags(fs *flag.FlagSet) {
 	AddCoverageFlags(fs)
 	TestCoverProfile = ""
+	fs.BoolVar(&TestArtifacts, "artifacts", false, "Save test artifacts in the output directory (Go 1.27 and later)")
 	fs.StringVar(&TestRun, "run", "", "Run only tests matching the regular expression")
 	fs.StringVar(&TestBench, "bench", "", "Run benchmarks matching the regular expression")
 	fs.StringVar(&TestTimeout, "timeout", DefaultTestTimeout, "Test timeout duration (e.g., 10m, 30s)")
@@ -360,6 +363,11 @@ func AddTestBinaryFlags(fs *flag.FlagSet) {
 	fs.StringVar(&TestFuzz, "fuzz", "", "Run the fuzz test matching the regular expression")
 	fs.StringVar(&TestFuzzTime, "fuzztime", "", "Run fuzzing for the specified duration (e.g., 10s, 1m)")
 	fs.StringVar(&TestFuzzMinimizeTime, "fuzzminimizetime", "", "Time to spend minimizing a value after finding a crash (default: 60s)")
+	for _, name := range strings.Fields(compat.TestBinaryFlags) {
+		if f := fs.Lookup(name); f != nil {
+			fs.Var(f.Value, "test."+name, f.Usage+" (alias for -"+name+")")
+		}
+	}
 }
 
 func AddEmulatorFlags(fs *flag.FlagSet) {

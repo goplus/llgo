@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"flag"
 	"reflect"
 	"testing"
@@ -80,6 +81,35 @@ func resetTestFlags() {
 	flags.TestFuzz = ""
 	flags.TestFuzzTime = ""
 	flags.TestFuzzMinimizeTime = ""
+	flags.TestArtifacts = false
+}
+
+func TestTestBinaryAliasesAfterPackages(t *testing.T) {
+	resetTestFlags()
+	defer resetTestFlags()
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	fs.SetOutput(new(bytes.Buffer))
+	flags.AddCommonFlags(fs)
+	flags.AddTestBinaryFlags(fs)
+	args, err := interspersedTestFlags(fs, []string{"-run=old", ".", "-test.run", "TestAlias", "-test.v", "-test.count=2", "-test.coverprofile=cover.out", "-test.artifacts"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := fs.Parse(args); err != nil {
+		t.Fatal(err)
+	}
+	if flags.TestRun != "TestAlias" || !flags.Verbose || flags.TestCount != 2 || !flags.Cover || !flags.TestArtifacts || flags.TestCoverProfile != "cover.out" || !reflect.DeepEqual(fs.Args(), []string{"."}) {
+		t.Fatalf("aliases did not configure the test driver: %v", args)
+	}
+	got := buildTestArgs([]string{"-test.run=AfterArgs"})
+	if got[len(got)-1] != "-test.run=AfterArgs" {
+		t.Fatalf("custom test arguments lost precedence: %v", got)
+	}
+	for _, name := range []string{"test.json", "test.cover", "test.vet", "test.exec"} {
+		if fs.Lookup(name) != nil {
+			t.Errorf("driver-only flag has a test-binary alias: %s", name)
+		}
+	}
 }
 
 func TestSplitArgsAt(t *testing.T) {
