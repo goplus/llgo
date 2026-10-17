@@ -1631,6 +1631,8 @@ func initRuntimePCLineFramesOnce() {
 		runtimeFuncInfoStringOffsets == nil {
 		return
 	}
+	// Bound distinct source rows per function; shared physical sites do not
+	// contribute additional rows to this limit.
 	if runtimePCLineCount > 1<<20 || runtimePCLineCount > runtimeFuncInfoCount*1024 {
 		return
 	}
