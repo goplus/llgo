@@ -14,6 +14,17 @@
     },
     {
       "kind": "branch",
+      "id": "3dee0da4ecdf39f5",
+      "label": "Branch MeteorsLiu/llgo:codex/fix-alias-promoted-method-symbols",
+      "path": "series/branch/3dee0da4ecdf39f5/summary.json",
+      "configPath": "series/branch/3dee0da4ecdf39f5/config.json",
+      "commitPath": "commits/6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b.json",
+      "sha": "6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
+      "updatedAt": "2026-10-17T20:15:32.057Z"
+    },
+    {
+      "kind": "branch",
       "id": "5bc53c6e53371965",
       "label": "Branch MeteorsLiu/llgo:codex/layout-integration-tests",
       "path": "series/branch/5bc53c6e53371965/summary.json",
@@ -5280,6 +5291,17 @@
       "sha": "012bd03aa7ba7e49cdb5b5979707fb8b4488d77a",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/012bd03aa7ba7e49cdb5b5979707fb8b4488d77a",
       "updatedAt": "2026-10-17T20:01:35.867Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2845",
+      "label": "PR #2845",
+      "path": "series/pull/2845/summary.json",
+      "configPath": "series/pull/2845/config.json",
+      "commitPath": "commits/6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b.json",
+      "sha": "6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
+      "updatedAt": "2026-10-17T20:15:31.968Z"
     }
   ]
 }
