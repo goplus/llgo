@@ -340,7 +340,7 @@ llgo run .
 - [Go 1.27](https://go.dev) for building LLGo; CI validates user packages separately with Go 1.20 through Go 1.27
 - [LLVM 22](https://llvm.org)
 - [Clang 22](https://clang.llvm.org)
-- [LLD](https://lld.llvm.org): 23.x >= 23.1.3 for macOS arm64 native links; 22 for other native platforms
+- [LLD](https://lld.llvm.org): 23.x >= 23.1.3 for macOS arm64 native links; 22 for other native platforms and LLVM 22 cross-target links
 - [LLDB](https://lldb.llvm.org) (LLVM 22 packages on Linux/Windows; Xcode's Apple LLDB on macOS)
 - [pkg-config 0.29+](https://gitlab.freedesktop.org/pkg-config/pkg-config)
 - [bdwgc/libgc 8.0+](https://www.hboehm.info/gc/)
@@ -355,7 +355,9 @@ On macOS arm64, the installer installs or upgrades Homebrew `lld@23`
 LLD 23.1.3 is required for macOS 27 SDK stubs; LLGo and ESP Clang remain on
 LLVM 22. No separate linker is bundled. An explicit Clang `--ld-path` retains
 precedence, including when supplied through an `@response-file`.
-Intel, cross-compilation, and embedded linker selection are unchanged.
+Keep the matching LLVM 22 and LLD 22 tools on PATH for WASI and other
+cross-target links. LLD 23 is selected separately for native macOS arm64 links;
+Intel and embedded linker selection are unchanged.
 
 For macOS arm64 native links, ThinLTO and FullLTO use LLD's LLVM 23 backend,
 so optional [LTO plugins](ltoplugin/README.md) must also be built against
@@ -393,14 +395,10 @@ In either shell, run `cd ..`, then use `go run ./cmd/llgo version` or
 
 ```sh
 brew update
-brew install llvm@22 bdw-gc openssl cjson libffi libuv pkg-config
+brew install llvm@22 lld@22 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
-brew link --force --overwrite llvm@22 libffi
-if [[ "$(uname -m)" != arm64 ]]; then
-    brew install lld@22
-    brew link --force --overwrite lld@22
-fi
-# install.sh also provisions lld@23 for macOS arm64 source installs.
+brew link --force --overwrite llvm@22 lld@22 libffi
+# install.sh also provisions lld@23 for native macOS arm64 links.
 ./install.sh
 ```
 

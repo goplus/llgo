@@ -195,14 +195,12 @@ install_macos_lld() {
     fi
     # Runner images can disable auto-update and retain an older 23.x formula.
     brew update
-    if brew list --versions "$formula" >/dev/null 2>&1; then
-        brew upgrade "$formula"
-    else
-        brew install --skip-link "$formula"
-    fi
+    # install also upgrades an outdated formula, while --skip-link keeps the
+    # matching LLD 22 drivers on PATH. brew upgrade has no --skip-link option.
+    HOMEBREW_NO_INSTALL_UPGRADE='' brew install --skip-link "$formula"
     linker="$(brew --prefix "$formula")/bin/ld64.lld"
     macos_lld_is_compatible "$linker" ||
-        die "LLD 23.x >= 23.1.3 is required for macOS arm64; update Homebrew and upgrade lld@23"
+        die "LLD 23.x >= 23.1.3 is required for macOS arm64; update Homebrew and install lld@23 with --skip-link"
 }
 
 install_macos_dependencies() {

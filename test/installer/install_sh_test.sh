@@ -59,17 +59,18 @@ printf '%s\n' "$LLGO_INSTALLER_TEST_LLD_VERSION"
 EOF
     chmod +x "$lld_prefix/bin/ld64.lld"
     export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 23.1.2'
+    export HOMEBREW_NO_INSTALL_UPGRADE=1
     upgraded=0
     refreshed=0
     # shellcheck disable=SC2329 # install_macos_lld invokes this mock.
     brew() {
         case "$1" in
-            list) assert_equal "$3" lld@23 ;;
             --prefix) assert_equal "$2" lld@23; printf '%s\n' "$lld_prefix" ;;
             update) refreshed=$((refreshed + 1)) ;;
-            upgrade)
+            install)
                 assert_equal "$refreshed" 1
-                assert_equal "$2" lld@23
+                assert_equal "$*" 'install --skip-link lld@23'
+                assert_equal "$HOMEBREW_NO_INSTALL_UPGRADE" ''
                 upgraded=$((upgraded + 1))
                 export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 23.1.3'
                 ;;
@@ -81,6 +82,7 @@ EOF
     install_macos_lld
     assert_equal "$upgraded" 1
     assert_equal "$refreshed" 1
+    assert_equal "$HOMEBREW_NO_INSTALL_UPGRADE" 1
     export LLGO_INSTALLER_TEST_LLD_VERSION='Homebrew LLD 24.1.0'
     if macos_lld_is_compatible "$lld_prefix/bin/ld64.lld"; then
         fail 'unqualified LLD major accepted'
@@ -95,7 +97,6 @@ EOF
     brew() {
         case "$1" in
             --prefix) printf '%s\n' "$fresh_prefix" ;;
-            list) return 1 ;;
             update) fresh_updates=$((fresh_updates + 1)) ;;
             install)
                 assert_equal "$fresh_updates" 1

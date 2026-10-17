@@ -782,9 +782,6 @@ runs:
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
           llvm_formula="llvm@${{inputs.llvm-version}}"
           lld_formula="lld@${{inputs.llvm-version}}"
-          if [[ "$RUNNER_ARCH" == ARM64 ]]; then
-            lld_formula=lld@23
-          fi
 
           # GitHub macOS runners may pre-link another LLVM/LLD version (for example llvm@18),
           # which makes lld@<target> fail during Homebrew's automatic link step.
@@ -798,19 +795,7 @@ runs:
             esac
           done < <(brew list --formula)
 
-          brew_install_missing "${llvm_formula}"
-          if [[ "$RUNNER_ARCH" != ARM64 ]]; then
-            brew_install_missing "${lld_formula}"
-          fi
-        fi
-
-        # Release-artifact jobs also need LLD when install-llvm=false.
-        if [[ "$RUNNER_ARCH" == ARM64 ]]; then
-          LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
-          install_macos_lld
-        fi
-
-        if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
+          brew_install_missing "${llvm_formula}" "${lld_formula}"
           brew link --force --overwrite "${llvm_formula}" "${lld_formula}"
           llvm_bin="$(brew --prefix "${llvm_formula}")/bin"
           lld_bin="$(brew --prefix "${lld_formula}")/bin"
@@ -825,10 +810,18 @@ runs:
           echo "clang: ${clang_version}"
           echo "ld.lld: ${lld_version}"
           test "$("${llvm_bin}/clang" -dumpversion | cut -d. -f1)" = "${{inputs.llvm-version}}"
-          "${lld_bin}/ld.lld" --version | grep -Eq "(^|[[:space:]])${lld_formula#lld@}\."
+          "${lld_bin}/ld.lld" --version | grep -Eq "(^|[[:space:]])${{inputs.llvm-version}}\."
           echo "linked ld.lld path: $(command -v ld.lld || true)"
         fi
         
+        # Native Darwin links use this separate absolute path. Keep the matching
+        # LLVM/LLD toolchain above on PATH for WASI and other cross-target links.
+        # Release-artifact jobs also need it when install-llvm=false.
+        if [[ "$RUNNER_ARCH" == ARM64 ]]; then
+          LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
+          install_macos_lld
+        fi
+
         # Install common dependencies
         brew_install_missing bdw-gc openssl libffi libuv
         brew link --overwrite libffi

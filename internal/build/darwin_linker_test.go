@@ -50,6 +50,8 @@ func TestDarwinLLDScope(t *testing.T) {
 		{"shared", "darwin", "arm64", "darwin", "arm64", "", ModeBuild, BuildModeCShared, true},
 		{"run", "darwin", "arm64", "darwin", "arm64", "", ModeRun, BuildModeExe, true},
 		{"test", "darwin", "arm64", "darwin", "arm64", "", ModeTest, BuildModeExe, true},
+		{"install", "darwin", "arm64", "darwin", "arm64", "", ModeInstall, BuildModeExe, true},
+		{"compile test", "darwin", "arm64", "darwin", "arm64", "", ModeCmpTest, BuildModeExe, true},
 		{"archive", "darwin", "arm64", "darwin", "arm64", "", ModeBuild, BuildModeCArchive, false},
 		{"IR", "darwin", "arm64", "darwin", "arm64", "", ModeGen, BuildModeExe, false},
 		{"Intel", "darwin", "amd64", "darwin", "amd64", "", ModeBuild, BuildModeExe, false},
@@ -86,7 +88,7 @@ func TestResolveDarwinLLD(t *testing.T) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
 	writeTestDarwinLLD(t, linker, "LLD 23.1.2")
-	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew upgrade lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld@23") {
 		t.Fatalf("old linker: %v", err)
 	}
 	if err := os.Remove(linker); err != nil {
@@ -95,7 +97,7 @@ func TestResolveDarwinLLD(t *testing.T) {
 	if err := configureDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "no -fuse-ld=lld default") {
 		t.Fatalf("missing default linker flag must fail before probing: %v", err)
 	}
-	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld@23") {
 		t.Fatalf("missing linker: %v", err)
 	}
 }

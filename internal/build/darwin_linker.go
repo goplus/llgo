@@ -119,11 +119,11 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	out, err := cmd.Output()
 	if err != nil {
 		diagnostic := strings.TrimSpace(string(out) + stderr.String())
-		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install lld@23", path, err, diagnostic)
+		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install --skip-link lld@23", path, err, diagnostic)
 	}
 	version := strings.TrimSpace(string(out))
 	if !compatibleDarwinLLD(version) {
-		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew upgrade lld@23", path, version)
+		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew update and brew install --skip-link lld@23", path, version)
 	}
 	return path, version, nil
 }
