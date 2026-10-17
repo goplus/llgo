@@ -208,11 +208,16 @@ func TestELFSymbolStripStaging(t *testing.T) {
 			if err := os.WriteFile(out.Out, []byte("linked"), 0o751); err != nil {
 				t.Fatal(err)
 			}
-			ctx := &context{buildConf: &Config{Goos: "linux"}}
+			ctx := &context{buildConf: &Config{Goos: "linux", LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, crossCompile: configurableDebugInfo()}
 			run := func(_ string, args ...string) error {
 				input, output := args[len(args)-2], args[len(args)-1]
 				if input != out.Out || input == output {
 					t.Fatalf("objcopy must read the linked file and write a separate staged result: %v", args)
+				}
+				for _, option := range []string{"--keep-section=.debug_*", "--keep-symbol=" + debugabi.NativeRecordSymbol, "--keep-symbol=llgo_debugger_threads_v1"} {
+					if !strings.Contains(strings.Join(args, " "), option) {
+						t.Fatalf("retained DWARF lost a debugger option %s: %v", option, args)
+					}
 				}
 				if _, err := os.Stat(output); !os.IsNotExist(err) {
 					t.Fatalf("ELF staging made a redundant executable copy: %v", err)

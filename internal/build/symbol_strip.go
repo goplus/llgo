@@ -29,6 +29,29 @@ import (
 	llvmenv "github.com/xgo-dev/llgo/xtool/env/llvm"
 )
 
+type symbolStripFileOps struct {
+	stat      func(string) (os.FileInfo, error)
+	lstat     func(string) (os.FileInfo, error)
+	mkdirTemp func(string, string) (string, error)
+	copyFile  func(string, string) error
+	writeFile func(string, []byte, os.FileMode) error
+	chmod     func(string, os.FileMode) error
+	openFile  func(string, int, os.FileMode) (*os.File, error)
+	syncFile  func(*os.File) error
+	closeFile func(*os.File) error
+	rename    func(string, string) error
+	removeAll func(string) error
+}
+
+func symbolStripOSFileOps() symbolStripFileOps {
+	return symbolStripFileOps{
+		stat: os.Stat, lstat: os.Lstat, mkdirTemp: os.MkdirTemp,
+		copyFile: copyFileAtomic, writeFile: os.WriteFile, chmod: os.Chmod,
+		openFile: os.OpenFile, syncFile: (*os.File).Sync, closeFile: (*os.File).Close,
+		rename: os.Rename, removeAll: os.RemoveAll,
+	}
+}
+
 func shouldStripNativeSymbols(conf *Config, target *crosscompile.Export) bool {
 	if conf == nil || target == nil || !conf.LinkOptions.OmitSymbolTable ||
 		conf.Mode == ModeGen || conf.Target != "" || conf.BuildMode == BuildModeCArchive {
@@ -71,21 +94,25 @@ func finalizeNativeSymbols(ctx *context, out *OutFmtDetails, verbose bool) error
 // stripNativeSymbolsWith stages both outputs. Tool failures leave the linked
 // executable and any previous dSYM untouched. PCLN finalization must run first.
 func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []string, verbose bool, run func(string, ...string) error) error {
+	return stripNativeSymbolsWithIO(ctx, out, darwinExports, run, symbolStripOSFileOps())
+}
+
+func stripNativeSymbolsWithIO(ctx *context, out *OutFmtDetails, darwinExports []string, run func(string, ...string) error, files symbolStripFileOps) error {
 	if out == nil || out.Out == "" {
 		return fmt.Errorf("strip symbols: executable path is empty")
 	}
-	info, err := os.Stat(out.Out)
+	info, err := files.stat(out.Out)
 	if err != nil {
 		return err
 	}
-	dir, err := os.MkdirTemp(filepath.Dir(out.Out), "."+filepath.Base(out.Out)+".symbols-*")
+	dir, err := files.mkdirTemp(filepath.Dir(out.Out), "."+filepath.Base(out.Out)+".symbols-*")
 	if err != nil {
 		return err
 	}
 	discardStage := true
 	defer func() {
 		if discardStage {
-			_ = os.RemoveAll(dir)
+			_ = files.removeAll(dir)
 		}
 	}()
 	staged := filepath.Join(dir, filepath.Base(out.Out))
@@ -94,7 +121,7 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 	stagedDSYM := ""
 	debuggerSymbols := []string{debugabi.NativeRecordSymbol, debugabi.LegacyMarkerSymbol, "llgo_debugger_threads_v1"}
 	if darwin {
-		if err := copyFileAtomic(out.Out, staged); err != nil {
+		if err := files.copyFile(out.Out, staged); err != nil {
 			return err
 		}
 		args := []string{"-u"}
@@ -114,7 +141,7 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 				names = append(names, "_"+symbol)
 			}
 			slices.Sort(names)
-			if err := os.WriteFile(keep, []byte(strings.Join(slices.Compact(names), "\n")+"\n"), 0o600); err != nil {
+			if err := files.writeFile(keep, []byte(strings.Join(slices.Compact(names), "\n")+"\n"), 0o600); err != nil {
 				return err
 			}
 			args = append(args, "-s", keep)
@@ -148,15 +175,15 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 			return err
 		}
 	}
-	if err := os.Chmod(staged, info.Mode()); err != nil {
+	if err := files.chmod(staged, info.Mode()); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(staged, os.O_RDWR, 0)
+	file, err := files.openFile(staged, os.O_RDWR, 0)
 	if err != nil {
 		return err
 	}
-	syncErr := file.Sync()
-	closeErr := file.Close()
+	syncErr := files.syncFile(file)
+	closeErr := files.closeFile(file)
 	if syncErr != nil {
 		return syncErr
 	}
@@ -166,20 +193,20 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 
 	backup := ""
 	if stagedDSYM != "" {
-		if st, err := os.Lstat(out.DSYM); err == nil {
+		if st, err := files.lstat(out.DSYM); err == nil {
 			if !st.IsDir() {
 				return fmt.Errorf("dSYM output %q is not a directory", out.DSYM)
 			}
 			backup = filepath.Join(dir, "previous.dSYM")
-			if err := os.Rename(out.DSYM, backup); err != nil {
+			if err := files.rename(out.DSYM, backup); err != nil {
 				return err
 			}
 		} else if !os.IsNotExist(err) {
 			return err
 		}
-		if err := os.Rename(stagedDSYM, out.DSYM); err != nil {
+		if err := files.rename(stagedDSYM, out.DSYM); err != nil {
 			if backup != "" {
-				if restoreErr := os.Rename(backup, out.DSYM); restoreErr != nil {
+				if restoreErr := files.rename(backup, out.DSYM); restoreErr != nil {
 					discardStage = false
 					return fmt.Errorf("publish dSYM: %v; previous bundle retained at %s: %w", err, backup, restoreErr)
 				}
@@ -187,9 +214,9 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 			return err
 		}
 	}
-	if err := os.Rename(staged, out.Out); err != nil {
+	if err := files.rename(staged, out.Out); err != nil {
 		if stagedDSYM != "" {
-			if removeErr := os.RemoveAll(out.DSYM); removeErr != nil {
+			if removeErr := files.removeAll(out.DSYM); removeErr != nil {
 				if backup != "" {
 					discardStage = false
 					return fmt.Errorf("publish stripped executable: %v; previous dSYM retained at %s: %w", err, backup, removeErr)
@@ -197,7 +224,7 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 				return fmt.Errorf("publish stripped executable: %v; cannot remove newly published dSYM %s: %w", err, out.DSYM, removeErr)
 			}
 			if backup != "" {
-				if restoreErr := os.Rename(backup, out.DSYM); restoreErr != nil {
+				if restoreErr := files.rename(backup, out.DSYM); restoreErr != nil {
 					discardStage = false
 					return fmt.Errorf("publish stripped executable: %v; previous dSYM retained at %s: %w", err, backup, restoreErr)
 				}
@@ -207,7 +234,7 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []st
 	}
 	if darwin && !preserve {
 		// A successful -s/-w rebuild owns and removes its obsolete bundle.
-		return os.RemoveAll(out.Out + ".dSYM")
+		return files.removeAll(out.Out + ".dSYM")
 	}
 	return nil
 }
