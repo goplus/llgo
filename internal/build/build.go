@@ -2879,14 +2879,23 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	linkOutput := app
 	moveExactWindowsOutput := false
 	if ctx.crossCompile.Toolchain.ObjectFormat == crosscompile.ObjectFormatCOFF &&
-		ctx.buildConf.Target == "" && ctx.buildConf.BuildMode == BuildModeExe &&
-		filepath.Ext(app) == "" {
-		// Clang's Windows driver appends .exe when -o has no extension, while
-		// cmd/go treats an explicit -o name as exact. Link to the conventional
-		// driver name, then publish the requested name after a successful link.
-		// Implicit outputs already carry Config.AppExt.
-		linkOutput = app + ".exe"
-		moveExactWindowsOutput = true
+		ctx.buildConf.Target == "" && filepath.Ext(app) == "" {
+		switch ctx.buildConf.BuildMode {
+		case BuildModeExe:
+			// Clang's Windows driver appends .exe when -o has no extension,
+			// while cmd/go treats an explicit -o name as exact. Implicit
+			// outputs already carry Config.AppExt.
+			linkOutput = app + ".exe"
+			moveExactWindowsOutput = true
+		case BuildModeCShared:
+			if ctx.crossCompile.Toolchain.ABI == crosscompile.PlatformABIGNU {
+				// MinGW's driver appends .exe even for -shared. Like cmd/link,
+				// suppress that suffix with a trailing dot. Windows resolves
+				// it to the requested name; cross-host links need a rename.
+				linkOutput = app + "."
+				moveExactWindowsOutput = runtime.GOOS != "windows"
+			}
+		}
 	}
 	buildArgs := []string{"-o", linkOutput}
 	buildArgs = append(buildArgs, linkArgs...)
@@ -2964,7 +2973,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	if !moveExactWindowsOutput {
 		return nil
 	}
-	if ctx.mode == ModeTest && !ctx.buildConf.CompileOnly {
+	if ctx.buildConf.BuildMode == BuildModeExe && ctx.mode == ModeTest && !ctx.buildConf.CompileOnly {
 		// Keep the .exe sibling so os/exec's Windows PATHEXT lookup can run an
 		// extensionless explicit test output, while also publishing the exact
 		// file requested by -o.
