@@ -1818,6 +1818,17 @@
     },
     {
       "kind": "branch",
+      "id": "f9e1ceda6ed55a76",
+      "label": "Branch cpunion/llgo:codex/prune-external-pcln-2420-20261018",
+      "path": "series/branch/f9e1ceda6ed55a76/summary.json",
+      "configPath": "series/branch/f9e1ceda6ed55a76/config.json",
+      "commitPath": "commits/e74de73f3aeb273a0670da137ab3d2d940c25dda.json",
+      "sha": "e74de73f3aeb273a0670da137ab3d2d940c25dda",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/e74de73f3aeb273a0670da137ab3d2d940c25dda",
+      "updatedAt": "2026-10-17T22:37:10.708Z"
+    },
+    {
+      "kind": "branch",
       "id": "fa4f734a67efeb8d",
       "label": "Branch cpunion/llgo:codex/readme-compat-20260815",
       "path": "series/branch/fa4f734a67efeb8d/summary.json",
@@ -9207,6 +9218,17 @@
       "sha": "6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/6db529283efc3ad3ea39a0c65e92ac6eeaba7e3b",
       "updatedAt": "2026-10-17T20:13:16.541Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2846",
+      "label": "PR #2846",
+      "path": "series/pull/2846/summary.json",
+      "configPath": "series/pull/2846/config.json",
+      "commitPath": "commits/e74de73f3aeb273a0670da137ab3d2d940c25dda.json",
+      "sha": "e74de73f3aeb273a0670da137ab3d2d940c25dda",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/e74de73f3aeb273a0670da137ab3d2d940c25dda",
+      "updatedAt": "2026-10-17T22:37:08.775Z"
     }
   ]
 }
