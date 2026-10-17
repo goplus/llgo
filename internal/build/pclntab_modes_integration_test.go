@@ -862,7 +862,18 @@ func pclnIntegrationHasSymbolTable(t *testing.T, path string) bool {
 			t.Fatal(err)
 		}
 		defer f.Close()
-		return f.Section(".symtab") != nil
+		// Retained DWARF can need a small set of debugger discovery symbols.
+		// Check ordinary Go names, independently of that required metadata.
+		symbols, err := f.Symbols()
+		if err != nil && err != elf.ErrNoSymbols {
+			t.Fatal(err)
+		}
+		for _, sym := range symbols {
+			if sym.Section != elf.SHN_UNDEF && (strings.HasPrefix(sym.Name, "main.") || strings.HasPrefix(sym.Name, "command-line-arguments.")) {
+				return true
+			}
+		}
+		return false
 	case "darwin":
 		f, err := macho.Open(path)
 		if err != nil {

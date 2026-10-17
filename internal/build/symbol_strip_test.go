@@ -29,6 +29,7 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/debugabi"
 	"github.com/xgo-dev/llgo/internal/lto"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
@@ -99,7 +100,7 @@ func TestNativeSymbolStripStaging(t *testing.T) {
 				}
 				return nil
 			}
-			err := stripNativeSymbolsWith(ctx, out, false, run)
+			err := stripNativeSymbolsWith(ctx, out, nil, false, run)
 			if (err != nil) != (fail != "") {
 				t.Fatalf("error=%v, failing tool=%s", err, fail)
 			}
@@ -165,6 +166,7 @@ func TestNativeSymbolStripIntegration(t *testing.T) {
 				}
 				verifyPCLNIntegrationSignature(t, bin)
 				if preserve {
+					verifyStrippedDebuggerSymbols(t, bin)
 					var data *dwarf.Data
 					if runtime.GOOS == "linux" {
 						f, err := elf.Open(bin)
@@ -288,5 +290,45 @@ func TestNativeSymbolStripLTO(t *testing.T) {
 	if !pclnIntegrationHasDebugInfo(t, bin) {
 		t.Fatal("full LTO -s -w=false lost debugger DWARF")
 	}
+	verifyStrippedDebuggerSymbols(t, bin)
 	verifyPCLNIntegrationSignature(t, bin)
+}
+
+func verifyStrippedDebuggerSymbols(t *testing.T, path string) {
+	t.Helper()
+	found := make(map[string]bool)
+	if runtime.GOOS == "linux" {
+		f, err := elf.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+		symbols, err := f.Symbols()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, symbol := range symbols {
+			if symbol.Section != elf.SHN_UNDEF {
+				found[symbol.Name] = true
+			}
+		}
+	} else {
+		f, err := macho.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+		if f.Symtab != nil {
+			for _, symbol := range f.Symtab.Syms {
+				if symbol.Sect != 0 {
+					found[strings.TrimPrefix(symbol.Name, "_")] = true
+				}
+			}
+		}
+	}
+	for _, name := range []string{debugabi.NativeRecordSymbol, debugabi.LegacyMarkerSymbol, "llgo_debugger_threads_v1"} {
+		if !found[name] {
+			t.Errorf("-s -w=false lost debugger discovery symbol %s", name)
+		}
+	}
 }

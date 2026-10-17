@@ -21,8 +21,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/debugabi"
 	llvmenv "github.com/xgo-dev/llgo/xtool/env/llvm"
 )
 
@@ -39,7 +42,21 @@ func finalizeNativeSymbols(ctx *context, out *OutFmtDetails, verbose bool) error
 	if ctx == nil || !shouldStripNativeSymbols(ctx.buildConf, &ctx.crossCompile) {
 		return nil
 	}
-	return stripNativeSymbolsWith(ctx, out, verbose, func(name string, args ...string) error {
+	if out == nil || out.Out == "" {
+		return fmt.Errorf("strip symbols: executable path is empty")
+	}
+	var exports []string
+	if ctx.buildConf.Goos == "darwin" && shouldEmitDebugInfo(ctx.buildConf, &ctx.crossCompile) {
+		// A strip keep-list also filters dyld exports. Preserve the existing
+		// public interface, including explicit C exports. nm provides raw
+		// linker names; debug/macho normalizes underscores in Go names.
+		output, err := ctx.commands.configure(exec.Command("nm", "-gjU", out.Out)).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("read Darwin exports: %w: %s", err, output)
+		}
+		exports = strings.Split(strings.TrimSpace(string(output)), "\n")
+	}
+	return stripNativeSymbolsWith(ctx, out, exports, verbose, func(name string, args ...string) error {
 		if verbose {
 			fmt.Fprintf(os.Stderr, "%s %q\n", name, args)
 		}
@@ -53,7 +70,7 @@ func finalizeNativeSymbols(ctx *context, out *OutFmtDetails, verbose bool) error
 
 // stripNativeSymbolsWith stages both outputs. Tool failures leave the linked
 // executable and any previous dSYM untouched. PCLN finalization must run first.
-func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, verbose bool, run func(string, ...string) error) error {
+func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, darwinExports []string, verbose bool, run func(string, ...string) error) error {
 	if out == nil || out.Out == "" {
 		return fmt.Errorf("strip symbols: executable path is empty")
 	}
@@ -81,7 +98,9 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, verbose bool, run 
 	darwin := ctx.buildConf.Goos == "darwin"
 	preserve := shouldEmitDebugInfo(ctx.buildConf, &ctx.crossCompile)
 	stagedDSYM := ""
+	debuggerSymbols := []string{debugabi.NativeRecordSymbol, debugabi.LegacyMarkerSymbol, "llgo_debugger_threads_v1"}
 	if darwin {
+		args := []string{"-u"}
 		if preserve {
 			if out.DSYM == "" {
 				return fmt.Errorf("strip symbols: retained Darwin DWARF needs a dSYM output")
@@ -90,10 +109,22 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, verbose bool, run 
 			if err := run("dsymutil", out.Out, "-o", stagedDSYM); err != nil {
 				return err
 			}
+			// LLDB does not expose all non-DWARF globals from a dSYM's
+			// symbol table. Retain the adapter's discovery names in the image.
+			keep := filepath.Join(dir, "debugger-symbols")
+			names := append([]string(nil), darwinExports...)
+			for _, symbol := range debuggerSymbols {
+				names = append(names, "_"+symbol)
+			}
+			slices.Sort(names)
+			if err := os.WriteFile(keep, []byte(strings.Join(slices.Compact(names), "\n")+"\n"), 0o600); err != nil {
+				return err
+			}
+			args = append(args, "-s", keep)
 		}
 		// Keep undefined symbols needed by dynamic binding. The export trie
 		// remains intact, including C exports from shared libraries.
-		if err := run("strip", "-u", staged); err != nil {
+		if err := run("strip", append(args, staged)...); err != nil {
 			return err
 		}
 		if err := run("codesign", "-f", "-s", "-", staged); err != nil {
@@ -107,6 +138,11 @@ func stripNativeSymbolsWith(ctx *context, out *OutFmtDetails, verbose bool, run 
 		args := []string{"--strip-all"}
 		if preserve {
 			args = append(args, "--keep-section=.debug_*", "--keep-section=.zdebug_*", "--keep-section=.gdb_index", "--keep-section=.gnu_debuglink", "--keep-section=.gnu_debugaltlink")
+			// The native debugger adapters discover these globals by symbol
+			// name; their bytes alone and DWARF function entries are insufficient.
+			for _, symbol := range debuggerSymbols {
+				args = append(args, "--keep-symbol="+symbol)
+			}
 		}
 		args = append(args, staged)
 		if err := run(tool, args...); err != nil {
