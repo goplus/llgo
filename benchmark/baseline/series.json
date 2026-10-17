@@ -1723,10 +1723,10 @@
       "label": "Branch cpunion/llgo:codex/native-debug-size-20261017-fpj_ieo5",
       "path": "series/branch/97d2b9c6b45fa996/summary.json",
       "configPath": "series/branch/97d2b9c6b45fa996/config.json",
-      "commitPath": "commits/2b8587e6a290d870c49039ccc4b30b835812a600.json",
-      "sha": "2b8587e6a290d870c49039ccc4b30b835812a600",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/2b8587e6a290d870c49039ccc4b30b835812a600",
-      "updatedAt": "2026-10-17T16:52:41.242Z"
+      "commitPath": "commits/225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4.json",
+      "sha": "225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4",
+      "updatedAt": "2026-10-17T17:53:38.925Z"
     },
     {
       "kind": "branch",
@@ -9159,10 +9159,10 @@
       "label": "PR #2842",
       "path": "series/pull/2842/summary.json",
       "configPath": "series/pull/2842/config.json",
-      "commitPath": "commits/2b8587e6a290d870c49039ccc4b30b835812a600.json",
-      "sha": "2b8587e6a290d870c49039ccc4b30b835812a600",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/2b8587e6a290d870c49039ccc4b30b835812a600",
-      "updatedAt": "2026-10-17T16:52:40.150Z"
+      "commitPath": "commits/225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4.json",
+      "sha": "225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/225fdfccff9e54c1a9f1757ebe1bdaff1a3599c4",
+      "updatedAt": "2026-10-17T17:53:36.955Z"
     }
   ]
 }
