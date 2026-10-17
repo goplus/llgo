@@ -1719,6 +1719,17 @@
     },
     {
       "kind": "branch",
+      "id": "97d2b9c6b45fa996",
+      "label": "Branch cpunion/llgo:codex/native-debug-size-20261017-fpj_ieo5",
+      "path": "series/branch/97d2b9c6b45fa996/summary.json",
+      "configPath": "series/branch/97d2b9c6b45fa996/config.json",
+      "commitPath": "commits/2b8587e6a290d870c49039ccc4b30b835812a600.json",
+      "sha": "2b8587e6a290d870c49039ccc4b30b835812a600",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2b8587e6a290d870c49039ccc4b30b835812a600",
+      "updatedAt": "2026-10-17T16:52:41.242Z"
+    },
+    {
+      "kind": "branch",
       "id": "a55cc5116f20b264",
       "label": "Branch cpunion/llgo:codex/native-panic-traceback-20260925",
       "path": "series/branch/a55cc5116f20b264/summary.json",
@@ -9141,6 +9152,17 @@
       "sha": "9e18154574f47117823059a1877357ed39d96b0c",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/9e18154574f47117823059a1877357ed39d96b0c",
       "updatedAt": "2026-10-17T13:22:43.657Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2842",
+      "label": "PR #2842",
+      "path": "series/pull/2842/summary.json",
+      "configPath": "series/pull/2842/config.json",
+      "commitPath": "commits/2b8587e6a290d870c49039ccc4b30b835812a600.json",
+      "sha": "2b8587e6a290d870c49039ccc4b30b835812a600",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2b8587e6a290d870c49039ccc4b30b835812a600",
+      "updatedAt": "2026-10-17T16:52:40.150Z"
     }
   ]
 }
