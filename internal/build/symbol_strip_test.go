@@ -347,6 +347,27 @@ func TestNativeSymbolStripLTO(t *testing.T) {
 	verifyPCLNIntegrationSignature(t, bin)
 }
 
+func TestDarwinStrippedPanicTraceback(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Darwin DWARF runtime dlsym lookup")
+	}
+	setPCLNIntegrationEnv(t)
+	fixture := writePCLNIntegrationSource(t, darwinDWARFPanicProbe)
+	for _, mode := range []lto.Mode{lto.Off, lto.Full} {
+		t.Run(mode.String(), func(t *testing.T) {
+			bin := filepath.Join(t.TempDir(), "stripped-panic")
+			conf := &Config{Mode: ModeBuild, OutFile: bin, OptLevel: optlevel.Os, LTO: mode,
+				LinkOptions: LinkOptions{OmitSymbolTable: true, DWARF: DWARFPreserve}}
+			if _, err := Do([]string{fixture}, conf); err != nil {
+				t.Fatal(err)
+			}
+			if out := runBinary(t, bin); out != "PCLN_DWARF_OK\n" {
+				t.Fatalf("stripping lost the recovered panic stack: %s", out)
+			}
+		})
+	}
+}
+
 func verifyStrippedDebuggerSymbols(t *testing.T, path string) {
 	t.Helper()
 	found := make(map[string]bool)

@@ -880,11 +880,12 @@ func pclnIntegrationHasSymbolTable(t *testing.T, path string) bool {
 			t.Fatal(err)
 		}
 		defer f.Close()
-		// Mach-O must keep dynamic-binding entries. Test ordinary Go names
-		// instead of requiring LC_SYMTAB itself to disappear.
+		// Mach-O must keep dynamic-binding entries and the public functions
+		// used by DWARF runtime dlsym lookup. Test local Go names instead of
+		// requiring LC_SYMTAB itself to disappear.
 		if f.Symtab != nil {
 			for _, sym := range f.Symtab.Syms {
-				if sym.Sect != 0 && sym.Type&0xe0 == 0 && (strings.HasPrefix(sym.Name, "main.") || strings.HasPrefix(sym.Name, "command-line-arguments.")) {
+				if sym.Sect != 0 && sym.Type&0xe0 == 0 && sym.Type&0x11 != 1 && (strings.HasPrefix(sym.Name, "main.") || strings.HasPrefix(sym.Name, "command-line-arguments.")) {
 					return true
 				}
 			}
