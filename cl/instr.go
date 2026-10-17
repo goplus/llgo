@@ -2665,7 +2665,13 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			if act == llssa.Call && p.forwardCVariadicWrapper(call) {
+				// A tail transfer removes the synthetic frame itself, so no
+				// recover-frame alias may surround it (or run after the call).
+				ret = b.CallForwardVarargs(aFn.Expr, args...)
+			} else {
+				ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			}
 		case goFunc:
 			args := p.compileValues(b, args, kind)
 			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
@@ -2818,6 +2824,26 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 		ret = p.emitDo(b, act, ds, mayRecover, fn, llssa.Builder.Call, args...)
 	}
 	return
+}
+
+func (p *context) forwardCVariadicWrapper(call *ssa.CallCommon) bool {
+	fn := p.goFn
+	callee := call.Signature()
+	// Promoted pointer methods adjust the receiver and return the C call's
+	// result. compileValues omits the incoming ellipsis marker: the wrapper
+	// must forward the unknown register/stack arguments with a mandatory tail
+	// call. Keep this on hosted native targets: Wasm does not support variadic
+	// tail calls, and embedded backends do not all support musttail. Value
+	// receivers do not have the matching fixed prototype required by LLVM.
+	target := p.prog.Target()
+	if target.GOARCH == "wasm" || target.Target != "" || fn == nil || fn.Synthetic == "" ||
+		fn.Signature.Recv() == nil || !isPointerGoType(fn.Signature.Recv().Type()) ||
+		callee.Recv() == nil || !isPointerGoType(callee.Recv().Type()) ||
+		!llssa.HasNameValist(fn.Signature) || !llssa.HasNameValist(callee) || len(call.Args) == 0 {
+		return false
+	}
+	param, ok := call.Args[len(call.Args)-1].(*ssa.Parameter)
+	return ok && param == fn.Params[len(fn.Params)-1]
 }
 
 func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon, hasVArg int) []llssa.Expr {

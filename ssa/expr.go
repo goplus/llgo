@@ -1485,6 +1485,20 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }
 
+// CallForwardVarargs forwards a variadic thunk's incoming ellipsis unchanged.
+// The caller must return the result immediately and have the same fixed ABI.
+func (b Builder) CallForwardVarargs(fn Expr, args ...Expr) Expr {
+	ret := b.Call(fn, args...)
+	call := ret.impl.IsACallInst()
+	if call.IsNil() || !b.Func.hasVArg || call.CalledFunctionType() != b.Func.ll ||
+		call.InstructionCallConv() != b.Func.impl.FunctionCallConv() {
+		panic("cannot forward C variadic arguments through an incompatible wrapper")
+	}
+	b.Func.impl.AddFunctionAttr(b.Prog.ctx.CreateStringAttribute("thunk", ""))
+	call.SetTailCallKind(llvm.TailCallKindMustTail)
+	return ret
+}
+
 // The Call instruction represents a function call.
 //
 // The Call instruction yields the function result if there is exactly
