@@ -1,5 +1,17 @@
 # LLGo debug sessions
 
+Native Linux links compress retained DWARF with zlib by default. Use
+`-ldflags=-compressdwarf=false` to keep it uncompressed; `-ldflags=-w` still
+omits DWARF entirely. Compression retains the ordinary symbol table and the
+runtime PCLN metadata.
+
+On macOS, size-optimized main executables limit automatic dynamic exports
+even when DWARF is enabled. Explicit exports, shared libraries, and dynamic
+lookup configurations keep their export policy. DWARF builds retain their
+debug maps, so `dsymutil program` can generate a separate `program.dSYM`.
+Full/ThinLTO debug objects are retained in LLGo's build cache for this purpose;
+generate the dSYM before clearing that cache.
+
 `llgo debug` is the target-aware entry point for building and debugging an
 LLGo program:
 

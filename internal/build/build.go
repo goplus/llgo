@@ -2900,6 +2900,11 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		objFiles = compiledObjFiles
 	}
 
+	ltoObjectArgs, err := darwinLTOObjectArgs(ctx, buildArgs)
+	if err != nil {
+		return fmt.Errorf("retain Darwin LTO debug object: %w", err)
+	}
+	buildArgs = append(buildArgs, ltoObjectArgs...)
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()

@@ -80,6 +80,14 @@ func ParseLinkFlags(buildFlags []string) (ParsedLinkFlags, error) {
 				} else {
 					opts.Options.DWARF = build.DWARFPreserve
 				}
+			case linkFlag == "-compressdwarf" || linkFlag == "--compressdwarf":
+				opts.Options.DisableDWARFCompression = false
+			case hasLinkFlagBoolValue(linkFlag, "compressdwarf"):
+				v, err := parseLinkFlagBool("-compressdwarf", linkFlagBoolValue(linkFlag, "compressdwarf"))
+				if err != nil {
+					return ParsedLinkFlags{}, err
+				}
+				opts.Options.DisableDWARFCompression = !v
 			case linkFlag == "-extld":
 				if i+1 >= len(linkFlags) {
 					return ParsedLinkFlags{}, fmt.Errorf("-extld requires a value")

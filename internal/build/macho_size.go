@@ -29,6 +29,31 @@ import (
 	"github.com/xgo-dev/llgo/xtool/safesplit"
 )
 
+// darwinLTOObjectArgs keeps the native LTO output available to dsymutil after
+// Clang exits. Each link owns its directory so rebuilding an output cannot
+// overwrite an object still referenced by another executable's debug map.
+func darwinLTOObjectArgs(ctx *context, args []string) ([]string, error) {
+	conf := ctx.buildConf
+	if conf.Goos != "darwin" || conf.Target != "" || !conf.ltoEnabled() ||
+		!shouldEmitDebugInfo(conf, &ctx.crossCompile) {
+		return nil, nil
+	}
+	for _, arg := range ctx.linker().LinkArguments(args...) {
+		if strings.Contains(arg, "object_path_lto") {
+			return nil, nil
+		}
+	}
+	root := filepath.Join(buildCacheRootDir(), "debug-lto")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return nil, err
+	}
+	dir, err := os.MkdirTemp(root, "link-*")
+	if err != nil {
+		return nil, err
+	}
+	return []string{"-Xlinker", "-object_path_lto", "-Xlinker", filepath.Join(dir, "lto.o")}, nil
+}
+
 type darwinSizeSymbolPlan struct {
 	linkerArgs     []string
 	stripLTOLocals bool
@@ -66,8 +91,7 @@ func planDarwinSizeSymbolsFor(ctx *context, pkgs []*aPackage, linkArgs []string,
 	}
 	conf := ctx.buildConf
 	if !nativeDarwin || conf.Goos != "darwin" || conf.Target != "" ||
-		conf.BuildMode != BuildModeExe || !isSizeOptLevel(conf.OptLevel) ||
-		shouldEmitDebugInfo(conf, &ctx.crossCompile) {
+		conf.BuildMode != BuildModeExe || !isSizeOptLevel(conf.OptLevel) {
 		return darwinSizeSymbolPlan{}
 	}
 	// Without either the prebuilt table or site records, Darwin symbolization
@@ -85,11 +109,13 @@ func planDarwinSizeSymbolsFor(ctx *context, pkgs []*aPackage, linkArgs []string,
 		return darwinSizeSymbolPlan{}
 	}
 
-	if conf.ltoEnabled() {
+	if conf.ltoEnabled() && !shouldEmitDebugInfo(conf, &ctx.crossCompile) {
 		// LTO internalizes ordinary Go definitions. Keep those local symbols
 		// through pclnpost, then remove them from the final signed executable.
 		return darwinSizeSymbolPlan{stripLTOLocals: true}
 	}
+	// DWARF builds retain their debug map for dsymutil. Export visibility is
+	// independent of that map, including when LTO produces the definitions.
 	// A main executable does not need to publish every package definition to
 	// dyld. Keeping them as private externs preserves the Mach-O symbol table
 	// for pclnpost and offline tools while eliminating the large export trie.
