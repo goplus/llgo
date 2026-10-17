@@ -209,5 +209,44 @@ func isRecoverTransparentWrapper(fn *ssa.Function) bool {
 	// abi.FuncIDWrapper rule in gorecover.
 	return strings.HasPrefix(fn.Synthetic, "wrapper for ") ||
 		strings.HasPrefix(fn.Synthetic, "thunk for ") ||
-		strings.HasPrefix(fn.Synthetic, "bound method wrapper for ")
+		strings.HasPrefix(fn.Synthetic, "bound method wrapper for ") ||
+		isMidwayRecoverDispatcher(fn)
+}
+
+// Midway retains the source entry as a dispatcher, so it is not an SSA
+// synthetic wrapper. Its two sibling names contain compiler-only identifiers;
+// ordinary Go source cannot declare or call them. Check the forwarding calls
+// as well, excluding the retained trapping entries with dependent signatures.
+func isMidwayRecoverDispatcher(fn *ssa.Function) bool {
+	origin := fn.Origin()
+	if origin == nil {
+		origin = fn
+	}
+	if origin.Pkg == nil {
+		return false
+	}
+	software := origin.Pkg.Func(origin.Name() + "@simd0")
+	hardware := origin.Pkg.Func(origin.Name() + "@simd128")
+	if software == nil || hardware == nil {
+		return false
+	}
+	var seenSoftware, seenHardware bool
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			call, ok := instr.(*ssa.Call)
+			if !ok {
+				continue
+			}
+			callee := call.Common().StaticCallee()
+			if callee == nil {
+				continue
+			}
+			if base := callee.Origin(); base != nil {
+				callee = base
+			}
+			seenSoftware = seenSoftware || callee == software
+			seenHardware = seenHardware || callee == hardware
+		}
+	}
+	return seenSoftware && seenHardware
 }

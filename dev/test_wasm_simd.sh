@@ -31,5 +31,7 @@ for profile in gojs emscripten emscripten-memory64; do
       # O3 argument promotion must preserve the JS SjLj memory bridge.
       "$LLGO" run -O3 "-lto=$lto" "${target[@]}" ./test/simd/testdata/boundary
     done
+    GODEBUG=simd=0 "$LLGO" test -O2 "${target[@]}" \
+      -v -count=1 -timeout=2m -pclntab=none ./test/simd/portable
   )
 done

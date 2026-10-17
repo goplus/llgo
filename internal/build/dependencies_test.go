@@ -105,3 +105,13 @@ func TestLinkedPackageClosureSkipsUnbuiltRuntime(t *testing.T) {
 		t.Fatalf("C-only link includes unbuilt runtime: %v", got)
 	}
 }
+
+func TestLinkedPackageClosureUsesPreparedOutput(t *testing.T) {
+	metadata := &packages.Package{ID: "p"}
+	prepared := &aPackage{Package: &packages.Package{ID: "p", ExportFile: "llgo.backend"}}
+	ctx := &context{pkgByID: map[string]Package{"p": prepared}}
+	got := linkedPackageClosure(ctx, metadata, nil)
+	if len(got) != 1 || got[0] != prepared {
+		t.Fatalf("metadata-only load dropped the prepared package: %v", got)
+	}
+}

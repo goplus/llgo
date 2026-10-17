@@ -92,6 +92,7 @@ type aDeduper struct {
 	setpath   func(path string, name string) string
 	preload   func(pkg *packages.Package)
 	prepare   func([]*Package, *Config) error
+	rewrite   func(*Package) (bool, error)
 	llgoFiles map[string][]string
 }
 
@@ -109,6 +110,14 @@ func (p Deduper) SetPreload(fn func(pkg *packages.Package)) {
 // The hook may add generated files and their imports (for example, coverage).
 func (p Deduper) SetPrepare(fn func([]*Package, *Config) error) {
 	p.prepare = fn
+}
+
+// SetRewrite installs a typed source transformation. It runs after the initial
+// check, before importing packages are checked. A changed package is checked
+// again with fresh types and binding information; preload runs for that new
+// package as well. The callback must add metadata for any injected imports.
+func (p Deduper) SetRewrite(fn func(*Package) (bool, error)) {
+	p.rewrite = fn
 }
 
 func (p Deduper) SetPkgPath(fn func(path, name string) string) {
@@ -190,7 +199,14 @@ func LoadExWithSourceOverlay(dedup Deduper, sizes func(sizes types.Sizes, compil
 	// and typechecking ourselves.
 	driverCfg.Mode = (origMode &^ (NeedTypes | NeedTypesSizes | NeedTypesInfo | NeedSyntax)) | NeedCompiledGoFiles | NeedImports | NeedName | NeedFiles
 	if origMode&(NeedEmbedPatterns|NeedEmbedFiles|NeedTypes|NeedTypesInfo|NeedSyntax) != 0 {
-		driverCfg.Mode |= NeedEmbedPatterns | NeedEmbedFiles | NeedExportFile
+		driverCfg.Mode |= NeedEmbedPatterns | NeedEmbedFiles
+		// A typed source transform owns compilation of the original source.
+		// Do not ask cmd/go to compile it into unused export data first: that
+		// would apply the other compiler's Midway before our initial check.
+		// Explicit export-data requests and ordinary loads keep their contract.
+		if dedup == nil || dedup.rewrite == nil {
+			driverCfg.Mode |= NeedExportFile
+		}
 	}
 	if origMode&NeedTypesSizes != 0 {
 		driverCfg.Mode |= NeedTypesSizes
@@ -463,16 +479,7 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 
 	pkg.Types = types.NewPackage(pkg.PkgPath, pkg.Name)
 
-	pkg.TypesInfo = &types.Info{
-		Types:        make(map[ast.Expr]types.TypeAndValue),
-		Defs:         make(map[*ast.Ident]types.Object),
-		Uses:         make(map[*ast.Ident]types.Object),
-		Implicits:    make(map[ast.Node]types.Object),
-		Instances:    make(map[*ast.Ident]types.Instance),
-		Scopes:       make(map[ast.Node]*types.Scope),
-		Selections:   make(map[*ast.SelectorExpr]*types.Selection),
-		FileVersions: make(map[*ast.File]string),
-	}
+	pkg.TypesInfo = newTypesInfo()
 
 	importer := importerFunc(func(path string) (*types.Package, error) {
 		if path == "unsafe" {
@@ -505,6 +512,19 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 	}
 
 	typErr := types.NewChecker(typeConf, fset, pkg.Types, pkg.TypesInfo).Files(pkg.Syntax)
+	if typErr == nil && len(pkg.Errors) == 0 && tc.dedup != nil && tc.dedup.rewrite != nil {
+		changed, err := tc.dedup.rewrite(pkg)
+		if err != nil {
+			appendError(err)
+		} else if changed {
+			pkg.Types = types.NewPackage(pkg.PkgPath, pkg.Name)
+			pkg.TypesInfo = newTypesInfo()
+			if tc.dedup.preload != nil {
+				tc.dedup.preload(pkg)
+			}
+			typErr = types.NewChecker(typeConf, fset, pkg.Types, pkg.TypesInfo).Files(pkg.Syntax)
+		}
+	}
 	if typErr != nil && len(pkg.Errors) == 0 && len(pkg.Syntax) > 0 {
 		if msg := typErr.Error(); strings.HasPrefix(msg, "package requires newer Go version") {
 			appendError(types.Error{
@@ -529,6 +549,19 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 		}
 	}
 	pkg.IllTyped = illTyped
+}
+
+func newTypesInfo() *types.Info {
+	return &types.Info{
+		Types:        make(map[ast.Expr]types.TypeAndValue),
+		Defs:         make(map[*ast.Ident]types.Object),
+		Uses:         make(map[*ast.Ident]types.Object),
+		Implicits:    make(map[ast.Node]types.Object),
+		Instances:    make(map[*ast.Ident]types.Instance),
+		Scopes:       make(map[ast.Node]*types.Scope),
+		Selections:   make(map[*ast.SelectorExpr]*types.Selection),
+		FileVersions: make(map[*ast.File]string),
+	}
 }
 
 const embedPatternDriverDiagnostic = "pattern //: invalid pattern syntax"

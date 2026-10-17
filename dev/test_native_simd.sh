@@ -17,6 +17,7 @@ export GOEXPERIMENT=simd
 if [[ "$(go env GOARCH)" != amd64 ]]; then
   "$LLGO" test -O0 -count=1 -timeout=2m ./test/simd/...
   "$LLGO" test -O2 -count=1 -timeout=2m ./test/simd/...
+  GODEBUG=simd=0 "$LLGO" test -O2 -count=1 -timeout=2m ./test/simd/portable
   exit
 fi
 
@@ -37,11 +38,21 @@ for profile in O0-off O2-off O2-thin O2-full; do
     flags+=("-lto=$lto")
   fi
   echo "SIMD: amd64 $profile"
-  binary="$output/simd-$profile.exe"
-  "$LLGO" test "${flags[@]}" -c -o "$binary" ./test/simd
-  "$binary" -test.v -test.count=1 -test.timeout=2m
-  for debug in cpu.avx2=off cpu.avx=off cpu.fma=off cpu.all=off; do
-    echo "SIMD FMV/bridge: $profile GODEBUG=$debug"
-    GODEBUG="$debug" "$binary" -test.v -test.count=1 -test.timeout=2m -test.run='^TestSIMD(FMV|Bridge)'
+  for suite in arch portable; do
+    package=./test/simd
+    filter='^TestSIMD(FMV|Bridge)'
+    settings=(cpu.avx2=off cpu.avx=off cpu.fma=off cpu.all=off)
+    if [[ "$suite" == portable ]]; then
+      package+=/portable
+      filter='^TestPortable'
+      settings+=(simd=0 simd=128 simd=+128)
+    fi
+    binary="$output/simd-$suite-$profile.exe"
+    "$LLGO" test "${flags[@]}" -c -o "$binary" "$package"
+    "$binary" -test.v -test.count=1 -test.timeout=2m
+    for debug in "${settings[@]}"; do
+      echo "SIMD $suite: $profile GODEBUG=$debug"
+      GODEBUG="$debug" "$binary" -test.v -test.count=1 -test.timeout=2m -test.run="$filter"
+    done
   done
 done
