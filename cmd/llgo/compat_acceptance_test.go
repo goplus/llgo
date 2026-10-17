@@ -241,7 +241,7 @@ func TestDelegatedCommandStreamsAndExitStatus(t *testing.T) {
 			encoded, _ := json.Marshal(args)
 			got := exec.Command(self, "-test.run=^TestNativeCommandProcess$")
 			got.Dir = dir
-			got.Env = append(want.Env, "GOCOVERDIR="+t.TempDir(), "LLGO_ROOT="+root, "LLGO_TEST_NATIVE_ARGS="+string(encoded))
+			got.Env = append(want.Env, "GOCOVERDIR="+nativeCoverageDir(t), "LLGO_ROOT="+root, "LLGO_TEST_NATIVE_ARGS="+string(encoded))
 			got.Stdout, got.Stderr = &llOut, &llErr
 			gotErr := got.Run()
 			code := func(err error) int {

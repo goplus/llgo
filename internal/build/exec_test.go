@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -48,13 +49,18 @@ func TestExecOverridesTargetRunner(t *testing.T) {
 	for _, artifact := range []string{"program with spaces", "module {out}.wasm", "firmware.elf"} {
 		program := testProgram{app: filepath.Join(dir, artifact), pkgDir: dir, runner: "missing-default-runner", pkgName: "example.com/fixture"}
 		conf := &Config{
-			Exec:    []string{self, "-test.run=^TestExecHelperProcess$", "--", "args"},
-			RunArgs: []string{"argument with spaces", "{out}", "-guest-flag", "semi;colon"},
-			Target:  "named-target",
+			Exec:          []string{self, "-test.run=^TestExecHelperProcess$", "--", "args"},
+			RunArgs:       []string{"argument with spaces", "{out}", "-guest-flag", "semi;colon"},
+			Target:        "named-target",
+			PrintCommands: true,
 		}
 		var stdout, stderr bytes.Buffer
 		if err := runNativeTest(commands, program, conf, &stdout, &stderr); err != nil {
 			t.Fatalf("custom runner: %v\n%s", err, &stderr)
+		}
+		wantTrace := fmt.Sprintf("%s -test.run=^TestExecHelperProcess$ -- args %s argument with spaces {out} -guest-flag semi;colon\n", self, program.app)
+		if stderr.String() != wantTrace {
+			t.Fatalf("wrapper command trace = %q, want %q", stderr.String(), wantTrace)
 		}
 		var result struct {
 			Args []string

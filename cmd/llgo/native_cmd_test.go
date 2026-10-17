@@ -48,6 +48,15 @@ func TestNativeCommandProcess(t *testing.T) {
 	}
 }
 
+func nativeCoverageDir(t *testing.T) string {
+	t.Helper()
+	// Let go test include subprocess execution in the parent's coverage profile.
+	if dir := os.Getenv("GOCOVERDIR"); dir != "" {
+		return dir
+	}
+	return t.TempDir()
+}
+
 func nativeCommand(t *testing.T, dir string, env []string, args ...string) (string, int) {
 	t.Helper()
 	self, err := os.Executable()
@@ -58,7 +67,7 @@ func nativeCommand(t *testing.T, dir string, env []string, args ...string) (stri
 	cmd := exec.Command(self, "-test.run=^TestNativeCommandProcess$")
 	cmd.Dir = dir
 	root, _ := filepath.Abs("../..")
-	coverage := t.TempDir()
+	coverage := nativeCoverageDir(t)
 	cmd.Env = append(os.Environ(), "GOCOVERDIR="+coverage, "LLGO_ROOT="+root, "GOENV=off", "GOFLAGS= ", "GOWORK=off", "GOTOOLCHAIN=local", "LLGO_TEST_NATIVE_ARGS="+string(data))
 	cmd.Env = append(cmd.Env, env...)
 	out, err := cmd.CombinedOutput()
