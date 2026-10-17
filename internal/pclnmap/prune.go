@@ -46,16 +46,21 @@ func Prune(data Data) (Data, error) {
 	}
 	livePC := make(map[uint64]bool, len(data.PCSites))
 	for _, site := range data.PCSites {
-		livePC[site.ID] = true
+		livePC[site.ID] = false // requested, not yet matched to a unique record
 	}
 	pcLines := make([]funcinfo.PCLineRecord, 0, len(livePC))
 	for _, rec := range table.PCLines {
-		if !livePC[rec.ID] {
+		seen, needed := livePC[rec.ID]
+		if !needed {
 			continue
+		}
+		if seen {
+			return Data{}, fmt.Errorf("duplicate live PC-line record %#x", rec.ID)
 		}
 		if rec.Func == 0 || uint64(rec.Func) > uint64(len(table.Records)) {
 			return Data{}, fmt.Errorf("PC-line %#x has invalid function index %d", rec.ID, rec.Func)
 		}
+		livePC[rec.ID] = true
 		live[rec.Func] = true
 		pcLines = append(pcLines, funcinfo.PCLineRecord{
 			ID: rec.ID, Symbol: table.Symbol(table.Records[rec.Func-1]),
@@ -66,18 +71,33 @@ func Prune(data Data) (Data, error) {
 		return Data{}, fmt.Errorf("PC-line sites have %d IDs but %d matching records", len(livePC), len(pcLines))
 	}
 
+	liveCount := 0
+	for _, used := range live {
+		if used {
+			liveCount++
+		}
+	}
 	remap := make([]uint32, len(live))
-	records := make([]funcinfo.Record, 0)
+	records := make([]funcinfo.Record, 0, liveCount)
+	symbolNames := make(map[string]bool, liveCount)
 	for i, rec := range table.Records {
 		if !live[i+1] {
 			continue
 		}
+		// EncodeWithPCLines joins by symbol string. Check the compiler's
+		// unique, non-empty symbol contract before it can drop or misjoin a
+		// retained PC line. Equal display names remain valid for wrappers.
+		symbol := table.Symbol(rec)
+		if symbol == "" || symbolNames[symbol] {
+			return Data{}, fmt.Errorf("live function record %d has empty or duplicate symbol %q", i+1, symbol)
+		}
+		symbolNames[symbol] = true
 		flags := uint32(0)
 		if rec.Line&funcinfo.EncodedLineWrapper != 0 {
 			flags = funcinfo.RecordFlagWrapper
 		}
 		records = append(records, funcinfo.Record{
-			Symbol: table.Symbol(rec), Name: table.Name(rec), File: table.File(rec),
+			Symbol: symbol, Name: table.Name(rec), File: table.File(rec),
 			Line: rec.Line & funcinfo.EncodedLineMask, Flags: flags,
 		})
 		remap[i+1] = uint32(len(records))

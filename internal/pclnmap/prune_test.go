@@ -126,6 +126,15 @@ func TestPruneRejectsBrokenJoins(t *testing.T) {
 		"missing PC line":    func(d *Data) { d.PCSites[0].ID = 99 },
 		"zero PC function":   func(d *Data) { d.Table.PCLines[0].Func = 0 },
 		"large PC function":  func(d *Data) { d.Table.PCLines[0].Func = 2 },
+		"duplicate PC line":  func(d *Data) { d.Table.PCLines = append(d.Table.PCLines, d.Table.PCLines[0]) },
+		"empty symbol": func(d *Data) {
+			d.Table.Records[0].SymbolPkg, d.Table.Records[0].SymbolName = 0, 0
+		},
+		"duplicate symbol": func(d *Data) {
+			d.Table.Records = append(d.Table.Records, d.Table.Records[0])
+			d.SymbolIndex = append(d.SymbolIndex, SymbolIndexEntry{SymbolID: 12, FuncIndex: 2})
+			d.EntrySites = append(d.EntrySites, Site{PCOffset: 0x2010, ID: 12})
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			data := sampleData(t)
