@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/xgo-dev/llgo/cmd/internal/flags"
+	"github.com/xgo-dev/llgo/internal/build"
 )
 
 func TestCoverageFlagsAfterPackages(t *testing.T) {
@@ -55,7 +56,6 @@ func resetTestFlags() {
 	flags.TestTimeout = flags.DefaultTestTimeout
 	flags.TestShort = false
 	flags.TestCount = 1
-	flags.TestCPU = ""
 	flags.Cover = false
 	flags.CoverMode = ""
 	flags.TestCoverProfile = ""
@@ -76,11 +76,6 @@ func resetTestFlags() {
 	flags.TestPaniconexit0 = false
 	flags.TestTestLogFile = ""
 	flags.TestGoCoverDir = ""
-	flags.TestFuzzWorker = false
-	flags.TestFuzzCacheDir = ""
-	flags.TestFuzz = ""
-	flags.TestFuzzTime = ""
-	flags.TestFuzzMinimizeTime = ""
 	flags.TestArtifacts = false
 }
 
@@ -182,9 +177,9 @@ func TestTestRunsMustBeSequential(t *testing.T) {
 	}
 	flags.TestCoverProfile = ""
 
-	flags.TestFuzz = "FuzzOne"
+	flags.TestCPUProfile = "cpu.prof"
 	if !testRunsMustBeSequential() {
-		t.Fatal("fuzzing must force sequential test execution")
+		t.Fatal("profiling must force sequential test execution")
 	}
 }
 
@@ -269,23 +264,6 @@ func TestBuildTestArgs(t *testing.T) {
 			wantContain: []string{"-test.bench=.", "-test.benchtime=5s", "-test.benchmem"},
 		},
 		{
-			name: "cpu list and parallel",
-			setupFlags: func() {
-				flags.TestCPU = "1,2,4"
-				flags.TestParallel = 8
-			},
-			customArgs:  nil,
-			wantContain: []string{"-test.cpu=1,2,4", "-test.parallel=8"},
-		},
-		{
-			name: "profiling rate flags",
-			setupFlags: func() {
-				flags.TestMemProfileRate = 1
-			},
-			customArgs:  nil,
-			wantContain: []string{"-test.memprofilerate=1"},
-		},
-		{
 			name: "panic on exit and test log file",
 			setupFlags: func() {
 				flags.TestPaniconexit0 = true
@@ -293,15 +271,6 @@ func TestBuildTestArgs(t *testing.T) {
 			},
 			customArgs:  nil,
 			wantContain: []string{"-test.paniconexit0", "-test.testlogfile=actions.log"},
-		},
-		{
-			name: "fuzz worker and cache dir",
-			setupFlags: func() {
-				flags.TestFuzzWorker = true
-				flags.TestFuzzCacheDir = "fuzzcache"
-			},
-			customArgs:  nil,
-			wantContain: []string{"-test.fuzzworker", "-test.fuzzcachedir=fuzzcache"},
 		},
 		{
 			name: "json and gocoverdir",
@@ -397,6 +366,40 @@ func TestUnsupportedRuntimeArgsRespectFlagValues(t *testing.T) {
 	for _, args := range [][]string{{"-run", "-trace"}, {"-args", "-test.run", "-test.trace"}, {"-args", "-custom-trace=out"}, {"-args", "-trace=custom-value"}, {"-args", "--", "-test.trace=literal"}, {"-v", "-run=Trace"}} {
 		if err := rejectUnsupportedTestArgs(&Cmd.Flag, args); err != nil {
 			t.Fatalf("rejected a flag value: %v: %v", args, err)
+		}
+	}
+}
+
+func TestProfileTargetQualification(t *testing.T) {
+	for _, tc := range []struct {
+		goos, arch, target, option string
+		wantErr                    bool
+	}{
+		{"linux", "amd64", "", "-test.cpuprofile=cpu", false},
+		{"darwin", "arm64", "", "-test.cpuprofile=cpu", false},
+		{"windows", "386", "", "-test.cpuprofile=cpu", false},
+		{"linux", "386", "", "-test.cpuprofile=cpu", true},
+		{"js", "wasm", "", "-test.cpuprofile=cpu", true},
+		{"wasip1", "wasm", "wasi", "-test.memprofile=mem", true},
+		{"linux", "arm64", "board", "-test.cpuprofile=cpu", true},
+		{"linux", "386", "", "-test.memprofile=mem", false},
+	} {
+		conf := &build.Config{Goos: tc.goos, Goarch: tc.arch, Target: tc.target}
+		err := validateProfileTarget(conf, []string{tc.option})
+		if (err != nil) != tc.wantErr {
+			t.Errorf("%+v: %v", tc, err)
+		}
+	}
+	for _, tag := range []string{"baremetal", "wasm", "llgo,baremetal", "llgo wasm"} {
+		conf := &build.Config{Goos: "linux", Goarch: "amd64", Tags: tag}
+		if err := validateProfileTarget(conf, []string{"-test.memprofile=mem"}); err == nil {
+			t.Errorf("freestanding tag %q was accepted", tag)
+		}
+	}
+	conf := &build.Config{Goos: "js", Goarch: "wasm"}
+	for _, args := range [][]string{{"--", "-test.cpuprofile=literal"}, {"-test.run", "-test.cpuprofile=literal"}, {"-cpuprofile=custom"}, {"-memprofile=custom"}} {
+		if err := validateProfileTarget(conf, args); err != nil {
+			t.Errorf("rejected literal flag value %q: %v", args, err)
 		}
 	}
 }

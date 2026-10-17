@@ -78,11 +78,18 @@ func runCmd(cmd *base.Command, args []string) {
 	if err := flags.UpdateBuildConfig(conf); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		mockable.Exit(1)
+		return
+	}
+	if conf.BuildMode != build.BuildModeExe && !conf.CompileOnly {
+		fmt.Fprintln(os.Stderr, "test execution requires -buildmode=exe; use -c to produce a library artifact")
+		mockable.Exit(1)
+		return
 	}
 	conf.BuildTrace = flags.BuildTrace
 	if err := flags.ApplyGoBuildFlags(conf, goBuildFlags.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		mockable.Exit(1)
+		return
 	}
 
 	// Match `go test` behavior: set testing.Testing() to true by forcing the
@@ -96,7 +103,8 @@ func runCmd(cmd *base.Command, args []string) {
 	vars["testBinary"] = "1"
 
 	// Build test binary arguments from flags
-	if flags.TestOutputDir != "" || flags.TestArtifacts {
+	conf.RetainTestBinary = flags.TestCPUProfile != "" || flags.TestMemProfile != ""
+	if flags.TestOutputDir != "" || flags.TestArtifacts || conf.RetainTestBinary {
 		flags.TestOutputDir, err = filepath.Abs(flags.TestOutputDir)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -105,6 +113,11 @@ func runCmd(cmd *base.Command, args []string) {
 		}
 	}
 	conf.RunArgs = buildTestArgs(testBinaryArgs)
+	if err := validateProfileTarget(conf, conf.RunArgs); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+		return
+	}
 	runnerTimeout, err := testRunnerTimeout(flags.TestTimeout)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -134,6 +147,47 @@ func runCmd(cmd *base.Command, args []string) {
 		}
 		mockable.Exit(1)
 	}
+}
+
+// Profiles are qualified on native targets. Named target runtimes may lack
+// sampling or filesystem support and must not return placeholder profiles.
+func validateProfileTarget(conf *build.Config, args []string) error {
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--" {
+			break
+		}
+		name, value, hasValue := strings.Cut(strings.TrimLeft(args[i], "-"), "=")
+		if !strings.HasPrefix(args[i], "-") {
+			break
+		}
+		if !strings.HasPrefix(name, "test.") {
+			// Bare names after -args belong to user-defined test flags.
+			continue
+		}
+		name = strings.TrimPrefix(name, "test.")
+		if f := Cmd.Flag.Lookup(name); f != nil && !hasValue {
+			isBool, ok := f.Value.(interface{ IsBoolFlag() bool })
+			if !ok || !isBool.IsBoolFlag() {
+				i++
+				if i < len(args) {
+					value = args[i]
+				}
+			}
+		}
+		if value == "" || name != "cpuprofile" && name != "memprofile" {
+			continue
+		}
+		nativeOS := conf.Goos == "linux" || conf.Goos == "darwin" || conf.Goos == "windows"
+		cpuArch := conf.Goarch == "amd64" || conf.Goarch == "arm64" || conf.Goos == "windows" && conf.Goarch == "386"
+		freestanding := false
+		for _, tag := range strings.Fields(strings.ReplaceAll(conf.Tags, ",", " ")) {
+			freestanding = freestanding || tag == "baremetal" || tag == "wasm"
+		}
+		if conf.Target != "" || !nativeOS || conf.Goarch == "wasm" || freestanding || name == "cpuprofile" && !cpuArch {
+			return fmt.Errorf("-%s is unsupported for target %s (%s/%s): LLGo profiling requires a qualified native runtime", name, conf.Target, conf.Goos, conf.Goarch)
+		}
+	}
+	return nil
 }
 
 // Go test accepts driver flags on either side of the package list. Move known
@@ -186,12 +240,11 @@ func testRunnerTimeout(value string) (time.Duration, error) {
 }
 
 func testRunsMustBeSequential() bool {
-	// These flags either name output paths shared by every test binary or, for
-	// fuzzing, require one active test binary. Keep their execution sequential.
+	// These flags name output paths shared by test binaries. Keep their
+	// execution sequential.
 	return flags.TestCPUProfile != "" ||
 		flags.TestMemProfile != "" ||
-		flags.TestTestLogFile != "" ||
-		flags.TestFuzz != ""
+		flags.TestTestLogFile != ""
 }
 
 // splitArgsAt splits args at the separator flag (e.g., "-args")
@@ -237,7 +290,6 @@ func buildTestArgs(customArgs []string) []string {
 	appendString(flags.TestBench, "-test.bench=")
 	appendString(flags.TestList, "-test.list=")
 	appendString(flags.TestSkip, "-test.skip=")
-	appendString(flags.TestCPU, "-test.cpu=")
 
 	appendString(flags.TestTimeout, "-test.timeout=") // always has a default
 	appendBool(flags.TestShort, "-test.short")
@@ -259,12 +311,6 @@ func buildTestArgs(customArgs []string) []string {
 	appendBool(flags.TestPaniconexit0, "-test.paniconexit0")
 	appendString(flags.TestTestLogFile, "-test.testlogfile=")
 	appendString(flags.TestGoCoverDir, "-test.gocoverdir=")
-	appendBool(flags.TestFuzzWorker, "-test.fuzzworker")
-	appendString(flags.TestFuzzCacheDir, "-test.fuzzcachedir=")
-
-	appendString(flags.TestFuzz, "-test.fuzz=")
-	appendString(flags.TestFuzzTime, "-test.fuzztime=")
-	appendString(flags.TestFuzzMinimizeTime, "-test.fuzzminimizetime=")
 
 	return append(args, customArgs...)
 }
@@ -290,8 +336,16 @@ func rejectUnsupportedTestArgs(fs *flag.FlagSet, args []string) error {
 		}
 		name = strings.TrimPrefix(name, "test.")
 		switch name {
-		case "trace", "blockprofile", "blockprofilerate", "mutexprofile", "mutexprofilefraction":
-			return fmt.Errorf("-%s is recognized but unsupported: LLGo does not implement these runtime samples or Go execution traces", name)
+		case "trace", "blockprofile", "blockprofilerate", "mutexprofile", "mutexprofilefraction", "cpu", "fuzz", "fuzztime", "fuzzminimizetime", "fuzzworker", "fuzzcachedir":
+			return fmt.Errorf("-%s is recognized but unsupported: %s", name, strings.TrimPrefix(fs.Lookup(name).Usage, "Unsupported: "))
+		case "memprofilerate":
+			_, value, _ := strings.Cut(arg, "=")
+			if !hasValue && i+1 < len(args) {
+				value = args[i+1]
+			}
+			if err := flags.ValidateMemProfileRate(value); err != nil {
+				return err
+			}
 		}
 		if f := fs.Lookup(name); f != nil && !hasValue {
 			isBool, ok := f.Value.(interface{ IsBoolFlag() bool })

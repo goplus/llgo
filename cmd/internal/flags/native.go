@@ -19,12 +19,26 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/xgo-dev/llgo/cmd/internal/compat"
 	"github.com/xgo-dev/llgo/cmd/internal/gocommand"
 	"github.com/xgo-dev/llgo/internal/quoted"
 )
+
+// ValidateMemProfileRate accepts the full-allocation mode implemented by LLGo.
+// Size-class counters do not implement Go's probabilistic sampling intervals.
+func ValidateMemProfileRate(value string) error {
+	n, err := strconv.ParseInt(value, 0, 0)
+	if err != nil {
+		return fmt.Errorf("invalid memory profile rate: %w", err)
+	}
+	if n != 1 {
+		return fmt.Errorf("-memprofilerate=%s is unsupported: LLGo supports only 1 (full allocation counting)", value)
+	}
+	return nil
+}
 
 func rejectValue(fs *flag.FlagSet, name, reason string) {
 	fs.Func(name, "Unsupported: "+reason, func(string) error {

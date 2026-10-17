@@ -47,6 +47,20 @@ func TestExecFlagQuotedWords(t *testing.T) {
 	}
 }
 
+func TestMemProfileRateFullCountingOnly(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	fs.SetOutput(new(bytes.Buffer))
+	AddTestBinaryFlags(fs)
+	if err := fs.Parse([]string{"-test.memprofilerate=1"}); err != nil || TestMemProfileRate != 1 {
+		t.Fatalf("full-counting mode: rate=%d error=%v", TestMemProfileRate, err)
+	}
+	for _, value := range []string{"0", "2", "512000", "invalid"} {
+		if err := fs.Parse([]string{"-memprofilerate=" + value}); err == nil || TestMemProfileRate != 1 {
+			t.Fatalf("unsupported rate %q changed the mode: rate=%d error=%v", value, TestMemProfileRate, err)
+		}
+	}
+}
+
 func TestOtherCommandsIgnoreKnownTestAliasDefaults(t *testing.T) {
 	t.Setenv("GOENV", "off")
 	t.Setenv("GOFLAGS", "-test.run=TestAlias")

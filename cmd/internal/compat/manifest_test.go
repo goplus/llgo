@@ -62,6 +62,9 @@ func TestManifestNamesOwnersAndRegistration(t *testing.T) {
 		if c.Status == "" || c.Owner == "" || c.Note == "" {
 			t.Errorf("missing command contract for %q", command)
 		}
+		if !slices.Contains([]string{"native", "delegated", "omitted", "rejected"}, c.Status) {
+			t.Errorf("%s has no final command contract: %+v", command, c)
+		}
 		if !slices.IsSorted(names) {
 			t.Errorf("%s flags are not sorted", command)
 		}

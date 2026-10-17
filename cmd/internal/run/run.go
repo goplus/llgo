@@ -59,6 +59,7 @@ func init() {
 	CmpTestCmd.Run = runCmpTest
 	runGoBuildFlags = flags.CaptureGoBuildFlags(Cmd)
 	flags.AddCommonFlags(&Cmd.Flag)
+	flags.AddCompilerVerboseFlag(&Cmd.Flag)
 	flags.AddBuildFlags(&Cmd.Flag)
 	flags.AddEmulatorFlags(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag) // for -target support
