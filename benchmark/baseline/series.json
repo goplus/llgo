@@ -2922,10 +2922,10 @@
       "label": "Branch dependabot/github_actions/jdx/mise-action-5.1.2",
       "path": "series/branch/0cddd68c65b79960/summary.json",
       "configPath": "series/branch/0cddd68c65b79960/config.json",
-      "commitPath": "commits/605e895472b5d6c4b345ad0640bd014dfaf1a0e2.json",
-      "sha": "605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
-      "updatedAt": "2026-10-15T01:57:46.268Z"
+      "commitPath": "commits/7b3fad939ec9013014293c0b9cadd2c79a4187d6.json",
+      "sha": "7b3fad939ec9013014293c0b9cadd2c79a4187d6",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/7b3fad939ec9013014293c0b9cadd2c79a4187d6",
+      "updatedAt": "2026-10-17T09:30:11.211Z"
     },
     {
       "kind": "branch",
@@ -9016,10 +9016,10 @@
       "label": "PR #2824",
       "path": "series/pull/2824/summary.json",
       "configPath": "series/pull/2824/config.json",
-      "commitPath": "commits/605e895472b5d6c4b345ad0640bd014dfaf1a0e2.json",
-      "sha": "605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/605e895472b5d6c4b345ad0640bd014dfaf1a0e2",
-      "updatedAt": "2026-10-15T01:57:45.036Z"
+      "commitPath": "commits/7b3fad939ec9013014293c0b9cadd2c79a4187d6.json",
+      "sha": "7b3fad939ec9013014293c0b9cadd2c79a4187d6",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/7b3fad939ec9013014293c0b9cadd2c79a4187d6",
+      "updatedAt": "2026-10-17T09:30:09.249Z"
     },
     {
       "kind": "pull",
