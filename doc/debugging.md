@@ -8,7 +8,11 @@ runtime PCLN metadata.
 On macOS, size-optimized main executables limit automatic dynamic exports
 even when DWARF is enabled. Explicit exports, shared libraries, and dynamic
 lookup configurations keep their export policy. DWARF builds retain their
-debug maps, so `dsymutil program` can generate a separate `program.dSYM`.
+function exports when the embedded runtime table needs `dlsym`; data and type
+definitions are hidden in non-LTO builds. LTO with DWARF keeps its existing
+visibility policy. Builds with function-entry sites can suppress all automatic
+exports. DWARF builds retain their debug maps, so `dsymutil program`
+can generate a separate `program.dSYM`.
 Full/ThinLTO debug objects are retained in an adjacent
 `program.llgo-debug-lto/` directory for this purpose. Each link retains a
 separate object so rebuilding cannot invalidate a copied older executable.

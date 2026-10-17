@@ -32,6 +32,30 @@ import (
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
 
+const darwinDWARFPanicProbe = `package main
+import (
+	"os"
+	"runtime"
+)
+//go:noinline
+func panicSite() { panic("dwarf panic") }
+func checkPanic() {
+	defer func() {
+		if recover() != "dwarf panic" { panic("bad recovery") }
+		var pcs [32]uintptr
+		n := runtime.Callers(1, pcs[:])
+		frames := runtime.CallersFrames(pcs[:n])
+		for {
+			frame, more := frames.Next()
+			if frame.Function == "main.panicSite" && frame.Line > 0 { return }
+			if !more { panic("lost panic site") }
+		}
+	}()
+	panicSite()
+}
+func main() { checkPanic(); os.Stdout.WriteString("PCLN_DWARF_OK\n") }
+`
+
 func TestDarwinLTOObjectLifecycle(t *testing.T) {
 	conf := Config{Goos: "darwin", LTO: lto.Full, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
 	ctx := &context{buildConf: &conf, crossCompile: configurableDebugInfo()}
@@ -263,11 +287,18 @@ func TestDarwinDWARFSizeSymbols(t *testing.T) {
 		source = strings.ReplaceAll(source, marker+"_LINE", strconv.Itoa(dwarfPCLNMarkerLine(source, marker+"_MARK")))
 	}
 	fixture := writePCLNIntegrationSource(t, source)
+	panicFixture := writePCLNIntegrationSource(t, darwinDWARFPanicProbe)
 	for _, mode := range []lto.Mode{lto.Off, lto.Full, lto.Thin} {
 		t.Run(mode.String(), func(t *testing.T) {
+			input := fixture
+			if mode.Enabled() {
+				// LTO keeps its previous visibility and inlining policy. Check
+				// physical panic frames without imposing new inline-line rules.
+				input = panicFixture
+			}
 			bin := filepath.Join(t.TempDir(), "debug-size")
 			conf := &Config{Mode: ModeBuild, OutFile: bin, OptLevel: optlevel.Os, LTO: mode, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
-			if _, err := Do([]string{fixture}, conf); err != nil {
+			if _, err := Do([]string{input}, conf); err != nil {
 				t.Fatal(err)
 			}
 			if got := runBinary(t, bin); got != "PCLN_DWARF_OK\n" {
@@ -281,10 +312,19 @@ func TestDarwinDWARFSizeSymbols(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer f.Close()
+			functionExports := 0
 			for _, sym := range f.Symtab.Syms {
 				if sym.Sect != 0 && sym.Type&0xe0 == 0 && sym.Type&0x11 == 1 {
-					t.Fatalf("unexpected public definition %s", sym.Name)
+					if mode == lto.Off && (strings.HasPrefix(sym.Name, "__llgo_") || strings.HasPrefix(sym.Name, "___llgo_") || strings.HasPrefix(sym.Name, "main.") && f.Sections[sym.Sect-1].Name != "__text") {
+						t.Fatalf("unexpected public Go data definition %s", sym.Name)
+					}
+					if f.Sections[sym.Sect-1].Name == "__text" {
+						functionExports++
+					}
 				}
+			}
+			if functionExports == 0 {
+				t.Fatal("DWARF runtime dlsym fallback lost its function exports")
 			}
 			data, _ := openNativeDWARF(t, bin)
 			if findDWARFNode(readDWARFTree(t, data), dwarf.TagSubprogram, "main.main") == nil {
@@ -295,7 +335,7 @@ func TestDarwinDWARFSizeSymbols(t *testing.T) {
 				if err := copyFileAtomic(bin, older); err != nil {
 					t.Fatal(err)
 				}
-				if _, err := Do([]string{fixture}, conf); err != nil {
+				if _, err := Do([]string{input}, conf); err != nil {
 					t.Fatal(err)
 				}
 				data, _ := openNativeDWARF(t, older)
