@@ -28,6 +28,10 @@ func TestRuntimeCompilerPackageCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	const declaration = `const Compiler = "llgo"`
+	if strings.Count(string(source), declaration) != 1 {
+		t.Fatal("runtime patch must contain exactly one Compiler declaration")
+	}
 	const identityPath = "github.com/xgo-dev/llgo/internal/build/testdata/runtimecompiler/identity"
 	fingerprints := make(map[string]string)
 	for phase, tc := range []struct {
@@ -48,7 +52,7 @@ func TestRuntimeCompilerPackageCache(t *testing.T) {
 				conf.OutFile += ".exe"
 			}
 			if tc.name != "llgo" {
-				conf.Overlay = map[string][]byte{patch: []byte(strings.Replace(string(source), `"llgo"`, `"`+tc.name+`"`, 1))}
+				conf.Overlay = map[string][]byte{patch: []byte(strings.Replace(string(source), declaration, `const Compiler = "`+tc.name+`"`, 1))}
 			}
 			pkgs, err := Build(Invocation{
 				Args: []string{"."}, Config: conf,

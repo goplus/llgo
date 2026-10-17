@@ -1,5 +1,5 @@
 package runtime
 
-// Replace the GOROOT declaration before type checking importers: constants
-// have already been folded by the time the alternative runtime is linked.
+// Replace GOROOT's "gc" declaration before importers fold runtime.Compiler.
+// Linking the alternative runtime later cannot change those constants.
 const Compiler = "llgo"
