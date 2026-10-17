@@ -1327,10 +1327,10 @@
       "label": "Branch cpunion/llgo:codex/go-cli-workflows-2649-20261017",
       "path": "series/branch/c09431e8b4a5cda4/summary.json",
       "configPath": "series/branch/c09431e8b4a5cda4/config.json",
-      "commitPath": "commits/4150e52c528c5a14e036191fe300c6e64a680e2b.json",
-      "sha": "4150e52c528c5a14e036191fe300c6e64a680e2b",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/4150e52c528c5a14e036191fe300c6e64a680e2b",
-      "updatedAt": "2026-10-17T14:08:40.128Z"
+      "commitPath": "commits/2565149f6a7c7618becec6cae00b7491009bec94.json",
+      "sha": "2565149f6a7c7618becec6cae00b7491009bec94",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2565149f6a7c7618becec6cae00b7491009bec94",
+      "updatedAt": "2026-10-17T14:33:59.069Z"
     },
     {
       "kind": "branch",
@@ -9115,10 +9115,10 @@
       "label": "PR #2834",
       "path": "series/pull/2834/summary.json",
       "configPath": "series/pull/2834/config.json",
-      "commitPath": "commits/4150e52c528c5a14e036191fe300c6e64a680e2b.json",
-      "sha": "4150e52c528c5a14e036191fe300c6e64a680e2b",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/4150e52c528c5a14e036191fe300c6e64a680e2b",
-      "updatedAt": "2026-10-17T14:08:38.167Z"
+      "commitPath": "commits/2565149f6a7c7618becec6cae00b7491009bec94.json",
+      "sha": "2565149f6a7c7618becec6cae00b7491009bec94",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2565149f6a7c7618becec6cae00b7491009bec94",
+      "updatedAt": "2026-10-17T14:33:57.944Z"
     },
     {
       "kind": "pull",
