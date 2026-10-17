@@ -277,6 +277,9 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 	if conf.DebugArtifactMode == DebugArtifactExternal {
 		details.DWARF = dwarfSidecarPath(debugWasmModulePath(conf, details.Out))
 	}
+	if conf.Goos == "darwin" && shouldStripNativeSymbols(conf, crossCompile) && shouldEmitDebugInfo(conf, crossCompile) {
+		details.DSYM = details.Out + ".dSYM"
+	}
 
 	if conf.Target == "" {
 		// Native target - we're done

@@ -40,8 +40,8 @@ const (
 // Command packages are responsible for parsing user-facing flag syntax into
 // this representation.
 type LinkOptions struct {
-	// OmitSymbolTable records the requested -s intent. Phase one uses it for
-	// Go's implied -w rule; native symbol-table omission is implemented later.
+	// OmitSymbolTable implements -s for native ELF/Mach-O linked outputs,
+	// after runtime PCLN has consumed the linker's ordinary symbols.
 	OmitSymbolTable bool
 	DWARF           DWARFMode
 	// DisableDWARFCompression implements -compressdwarf=false. Native Linux

@@ -124,6 +124,7 @@ type OutFmts struct {
 type OutFmtDetails struct {
 	Out   string // Base output file path
 	DWARF string // External debugger-owned DWARF container (.debug.wasm)
+	DSYM  string // Native Darwin debugger-owned .dSYM bundle
 	PCLN  string // PCLN sidecar output file path (.pclntab)
 	Bin   string // Binary output file path (.bin)
 	Hex   string // Intel hex output file path (.hex)
@@ -1285,7 +1286,10 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 		if err := finalizeDebugArtifact(link.conf, link.outFmts, verbose); err != nil {
 			return err
 		}
-		return finalizeDarwinSizeExecutable(linkCtx, link.outFmts.Out, verbose)
+		if err := finalizeDarwinSizeExecutable(linkCtx, link.outFmts.Out, verbose); err != nil {
+			return err
+		}
+		return finalizeNativeSymbols(linkCtx, link.outFmts, verbose)
 	}()
 	if err != nil {
 		return nil, err
@@ -1407,6 +1411,9 @@ func removeOutFmts(outFmts *OutFmtDetails) {
 	}
 	if outFmts.Out != "" {
 		_ = os.RemoveAll(darwinLTOObjectDir(outFmts.Out))
+	}
+	if outFmts.DSYM != "" {
+		_ = os.RemoveAll(outFmts.DSYM)
 	}
 	for _, output := range []string{
 		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex,
