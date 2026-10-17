@@ -7,9 +7,6 @@ import (
 	"testing"
 )
 
-// A generated import in another file must avoid these package-level names.
-var llgoMidway1, llgoMidway1_ = 1, 2
-
 type midwayBox[T any] struct{}
 
 func (midwayBox[T]) Width() int { var v simd.Uint32s; return v.Len() }
@@ -108,3 +105,9 @@ func TestPortableDeferredRecover(t *testing.T) {
 		t.Fatalf("indirect recovery: outer=%v inner=%v", outer, midwayRecovered)
 	}
 }
+
+// Blank declarations are checked but never executed or specialized. In
+// particular, multiple blank functions must not acquire the same variant name.
+func _() int          { var v simd.Uint32s; return v.Len() }
+func _() simd.Uint32s { return simd.BroadcastUint32s(1) }
+func _() simd.Uint32s { return simd.BroadcastUint32s(2) }

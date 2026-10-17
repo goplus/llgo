@@ -37,7 +37,7 @@ var (
 		t.Fatal(err)
 	}
 	info := testInfo()
-	cfg := types.Config{Importer: reviewImports(t)}
+	cfg := types.Config{Importer: testSIMDImports(t)}
 	pkg, err := cfg.Check("client", fset, []*ast.File{file}, info)
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ var (
 	}
 }
 
-func TestRewriteRejectsGlobalLinkname(t *testing.T) {
+func TestRewriteRejectsGlobalBindings(t *testing.T) {
 	for _, tc := range []struct {
 		name, decl, directive string
 		reject                bool
@@ -71,22 +71,29 @@ func TestRewriteRejectsGlobalLinkname(t *testing.T) {
 		{"scalar method dependency", "type Number int; func (Number) Width() int {var v simd.Uint32s;return v.Len()}; var Value Number", "//go:linkname Value client.Target", true},
 		{"exported binding", "var Value simd.Uint32s", "//go:linkname Value", true},
 		{"external binding", "var Value simd.Uint32s", "//go:linkname Value external.Target", true},
+		{"llgo link", "var Value simd.Uint32s", "//llgo:link Value client.Target", true},
+		{"spaced llgo link", "var Value simd.Uint32s", "// llgo:link Value client.Target", true},
 		{"ordinary scalar", "var Value int;var Vector simd.Uint32s", "//go:linkname Value client.Target", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fset := token.NewFileSet()
 			// Linkname need not be attached to the declaration and may live in a
 			// different file. Inspect package comments, not only declaration docs.
-			first, err := parser.ParseFile(fset, "decl.go", "package client\nimport \"simd\"\n"+tc.decl, parser.ParseComments)
+			decl, link, position := tc.decl, tc.directive, "link.go:3"
+			if strings.Contains(tc.directive, "llgo:link") {
+				// LLGo links, unlike go:linkname, must be attached to the variable.
+				decl, link, position = tc.directive+"\n"+decl, "", "decl.go:3"
+			}
+			first, err := parser.ParseFile(fset, "decl.go", "package client\nimport \"simd\"\n"+decl, parser.ParseComments)
 			if err != nil {
 				t.Fatal(err)
 			}
-			second, err := parser.ParseFile(fset, "link.go", "package client\nimport _ \"unsafe\"\n"+tc.directive+"\n", parser.ParseComments)
+			second, err := parser.ParseFile(fset, "link.go", "package client\nimport _ \"unsafe\"\n"+link+"\n", parser.ParseComments)
 			if err != nil {
 				t.Fatal(err)
 			}
 			files := []*ast.File{first, second}
-			cfg := types.Config{Importer: reviewImports(t)}
+			cfg := types.Config{Importer: testSIMDImports(t)}
 			info := testInfo()
 			pkg, err := cfg.Check("client", fset, files, info)
 			if err != nil {
@@ -94,7 +101,7 @@ func TestRewriteRejectsGlobalLinkname(t *testing.T) {
 			}
 			_, _, err = Rewrite(fset, pkg, info, files)
 			if tc.reject {
-				if err == nil || !strings.Contains(err.Error(), "cannot specialize go:linkname binding for SIMD-dependent global Value") || !strings.Contains(err.Error(), "link.go:3") {
+				if err == nil || !strings.Contains(err.Error(), "binding for SIMD-dependent global Value") || !strings.Contains(err.Error(), position) {
 					t.Fatalf("unexpected diagnostic: %v", err)
 				}
 			} else if err != nil {
@@ -105,7 +112,7 @@ func TestRewriteRejectsGlobalLinkname(t *testing.T) {
 }
 
 func TestRewriteRejectsImportedGlobalLinknameTarget(t *testing.T) {
-	imports := reviewImports(t)
+	imports := testSIMDImports(t)
 	testCheck(t, imports, "foreign", `package foreign
 import "simd"
 type Number int

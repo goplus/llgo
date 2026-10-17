@@ -25,7 +25,7 @@ var (
 var embeddedAtInit = string(midwayEmbeddedText) + string(midwayEmbeddedBytes)
 
 func TestPortableEmbeddedGlobals(t *testing.T) {
-	const want = "embedded data\n"
+	const want = "embedded data"
 	if string(midwayEmbeddedText) != want || string(midwayEmbeddedBytes) != want || embeddedAtInit != want+want {
 		t.Fatalf("embedded globals: text=%q bytes=%q init=%q", midwayEmbeddedText, midwayEmbeddedBytes, embeddedAtInit)
 	}

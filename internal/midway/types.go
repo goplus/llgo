@@ -14,6 +14,8 @@ import (
 
 // typeExpr supplies explicit types for inferred global declarations and their
 // initializer result tuples. A negative width denotes the retained original.
+// Package-level value types cannot contain free type parameters or constraint
+// unions; generic declarations are cloned from their checked syntax instead.
 func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr {
 	// Keep the first diagnostic and stop descending after an unnameable type.
 	// Rewrite discards this partial result as soon as the declaration finishes.
@@ -65,8 +67,6 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 		return name(t.Obj(), t.TypeArgs())
 	case *types.Alias:
 		return name(t.Obj(), t.TypeArgs())
-	case *types.TypeParam:
-		return ident(t.Obj().Name(), pos)
 	case *types.Pointer:
 		return &ast.StarExpr{Star: pos, X: child(t.Elem())}
 	case *types.Slice:
@@ -135,21 +135,6 @@ func (f *fileRewriter) typeExpr(t types.Type, width int, pos token.Pos) ast.Expr
 			methods.List = append(methods.List, &ast.Field{Type: child(t.EmbeddedType(i))})
 		}
 		return &ast.InterfaceType{Interface: pos, Methods: methods}
-	case *types.Union:
-		var expr ast.Expr
-		for i := 0; i < t.Len(); i++ {
-			term := t.Term(i)
-			right := child(term.Type())
-			if term.Tilde() {
-				right = &ast.UnaryExpr{OpPos: pos, Op: token.TILDE, X: right}
-			}
-			if expr == nil {
-				expr = right
-			} else {
-				expr = &ast.BinaryExpr{X: expr, OpPos: pos, Op: token.OR, Y: right}
-			}
-		}
-		return expr
 	}
 	f.err = fmt.Errorf("%s: unsupported SIMD initializer type %v", f.fset.Position(pos), t)
 	return &ast.BadExpr{From: pos, To: pos}

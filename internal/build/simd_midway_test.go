@@ -95,7 +95,7 @@ func main() { println(sum([]uint32{1,2,3,4}),width()) }
 	}
 }
 
-func TestSIMDMidwayRejectGlobalLinkname(t *testing.T) {
+func TestSIMDMidwayRejectGlobalBinding(t *testing.T) {
 	for _, tc := range []struct{ name, decl, want string }{
 		{"vector", `var V = simd.BroadcastUint32s(7)
 //go:linkname Alias main.V
@@ -116,6 +116,26 @@ var V Number=7
 var Alias int
 func main() {println(Alias,V)}
 `, "target SIMD-dependent global main.V"},
+		{"llgo link", `type Number int
+func (Number) Width() int {var v simd.Uint32s;return v.Len()}
+var V Number=7
+//llgo:link Alias main.V
+var Alias Number
+func main() {println(Alias,V)}
+`, "llgo:link binding for SIMD-dependent global Alias"},
+		{"explicit Go namespace", `type Number int
+func (Number) Width() int {var v simd.Uint32s;return v.Len()}
+var V Number=7
+//go:linkname Alias go:main.V
+var Alias int
+func main() {println(Alias,V)}
+`, "target SIMD-dependent global go:main.V"},
+		{"exported variable", `type Number int
+func (Number) Width() int {var v simd.Uint32s;return v.Len()}
+//export V
+var V Number=7
+func main() {println(V)}
+`, "export binding for SIMD-dependent global V"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()

@@ -106,7 +106,9 @@ func analyze(pkg *types.Package, info *types.Info, files []*ast.File) *analysis 
 	}
 	for _, file := range files {
 		for _, decl := range file.Decls {
-			if fn, ok := decl.(*ast.FuncDecl); ok {
+			// Blank functions and methods cannot be referenced or executed.
+			// Their bodies were checked, but must not seed specialization.
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name != "_" {
 				if obj, ok := info.Defs[fn.Name].(*types.Func); ok {
 					a.funcs[obj] = fn
 				}

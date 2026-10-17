@@ -12,7 +12,7 @@ import (
 // with the initially checked tree. Parser Object/Scope links are deliberately
 // discarded: the new checker provides all binding information. Copying only
 // the AST's public syntax fields also avoids cycles through those old links.
-func cloneSyntax[T ast.Node](node T) (T, map[ast.Node]ast.Node) {
+func cloneSyntax(node ast.Node) (ast.Node, map[ast.Node]ast.Node) {
 	original := make(map[ast.Node]ast.Node)
 	var copyValue func(reflect.Value) reflect.Value
 	copyValue = func(v reflect.Value) reflect.Value {
@@ -52,5 +52,5 @@ func cloneSyntax[T ast.Node](node T) (T, map[ast.Node]ast.Node) {
 		}
 		return v
 	}
-	return copyValue(reflect.ValueOf(node)).Interface().(T), original
+	return copyValue(reflect.ValueOf(node)).Interface().(ast.Node), original
 }

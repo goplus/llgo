@@ -19,8 +19,8 @@ import (
 // location into width-specific globals needs a matching ABI on both sides of
 // the binding, which Midway does not currently provide. Reject it instead of
 // silently allocating unrelated storage for the concrete references.
-func (a *analysis) validateGlobalLinknames(fset *token.FileSet, files []*ast.File) error {
-	packages := make(map[string]*types.Package)
+func (a *analysis) validateGlobalBindings(fset *token.FileSet, files []*ast.File) error {
+	var packages map[string]*types.Package
 	var collect func(*types.Package)
 	collect = func(pkg *types.Package) {
 		if packages[pkg.Path()] != nil {
@@ -31,18 +31,31 @@ func (a *analysis) validateGlobalLinknames(fset *token.FileSet, files []*ast.Fil
 			collect(imp)
 		}
 	}
-	collect(a.pkg)
-	if a.pkg.Name() == "main" {
-		packages["main"] = a.pkg
-	}
 	dependent := func(obj types.Object) bool {
 		v, ok := obj.(*types.Var)
 		return ok && (a.types[v.Type()] || exportedVariant(v))
 	}
 	for _, file := range files {
+		// Export directives bind the attached declaration, including when
+		// ExportRename gives its external symbol a different name.
+		for _, decl := range file.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok || gd.Tok != token.VAR || len(gd.Specs) != 1 {
+				continue
+			}
+			vs := gd.Specs[0].(*ast.ValueSpec)
+			if len(vs.Names) != 1 || !dependent(a.info.Defs[vs.Names[0]]) {
+				continue
+			}
+			for _, d := range directive.ParseGroup(gd.Doc) {
+				if d.Name == "export" {
+					return fmt.Errorf("%s: cannot specialize export binding for SIMD-dependent global %s", fset.Position(d.Pos), vs.Names[0].Name)
+				}
+			}
+		}
 		for _, group := range file.Comments {
 			for _, d := range directive.ParseGroup(group) {
-				if d.Name != "go:linkname" {
+				if d.Name != "go:linkname" && d.Name != "llgo:link" {
 					continue
 				}
 				args := strings.Fields(d.Args)
@@ -50,14 +63,23 @@ func (a *analysis) validateGlobalLinknames(fset *token.FileSet, files []*ast.Fil
 					continue // Leave malformed directives to their usual validator.
 				}
 				if dependent(a.pkg.Scope().Lookup(args[0])) {
-					return fmt.Errorf("%s: cannot specialize go:linkname binding for SIMD-dependent global %s", fset.Position(d.Pos), args[0])
+					return fmt.Errorf("%s: cannot specialize %s binding for SIMD-dependent global %s", fset.Position(d.Pos), d.Name, args[0])
 				}
 				// An alias can use an ordinary scalar type even when its target
 				// is a named scalar specialized because of a method body.
 				if len(args) == 2 {
-					if dot := strings.LastIndexByte(args[1], '.'); dot >= 0 {
-						if pkg := packages[args[1][:dot]]; pkg != nil && dependent(pkg.Scope().Lookup(args[1][dot+1:])) {
-							return fmt.Errorf("%s: cannot specialize go:linkname target SIMD-dependent global %s", fset.Position(d.Pos), args[1])
+					// The backend also accepts an explicit Go symbol namespace.
+					target := strings.TrimPrefix(args[1], "go:")
+					if dot := strings.LastIndexByte(target, '.'); dot >= 0 {
+						if packages == nil {
+							packages = make(map[string]*types.Package)
+							collect(a.pkg)
+							if a.pkg.Name() == "main" {
+								packages["main"] = a.pkg
+							}
+						}
+						if pkg := packages[target[:dot]]; pkg != nil && dependent(pkg.Scope().Lookup(target[dot+1:])) {
+							return fmt.Errorf("%s: cannot specialize %s target SIMD-dependent global %s", fset.Position(d.Pos), d.Name, args[1])
 						}
 					}
 				}

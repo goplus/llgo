@@ -54,7 +54,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 		}
 	}
 	a := analyze(pkg, info, files)
-	if err := a.validateGlobalLinknames(fset, files); err != nil {
+	if err := a.validateGlobalBindings(fset, files); err != nil {
 		return false, nil, err
 	}
 	r := &rewriter{fset: fset, a: a, imports: make(map[string]bool), dependencies: make(map[ast.Node][]*types.Var)}
@@ -63,10 +63,13 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 		for _, decl := range file.Decls {
 			switch d := decl.(type) {
 			case *ast.FuncDecl:
-				if d.Body != nil {
+				if d.Name.Name != "_" && a.dependent(info.Defs[d.Name]) && d.Body != nil {
 					r.dependencies[d] = a.globalDependencies(d.Body)
 				}
 			case *ast.GenDecl:
+				if d.Tok != token.VAR {
+					continue
+				}
 				for _, spec := range d.Specs {
 					if vs, ok := spec.(*ast.ValueSpec); ok {
 						r.dependencies[vs] = a.globalDependencies(vs)
@@ -83,7 +86,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 			switch d := decl.(type) {
 			case *ast.FuncDecl:
 				obj, _ := info.Defs[d.Name].(*types.Func)
-				if !a.dependent(obj) {
+				if d.Name.Name == "_" || !a.dependent(obj) {
 					decls = append(decls, d)
 					continue
 				}

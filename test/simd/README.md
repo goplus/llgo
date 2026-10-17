@@ -80,8 +80,8 @@ Remaining limits include reflection-driven calls with portable signatures,
 bodyless user functions depending on portable types, and inferred global types
 requiring another package's unexported type, field, or method names.
 The latter two cases produce source diagnostics. Midway also diagnoses
-`go:linkname` on SIMD-dependent globals, or targeting a known SIMD-dependent
-global: an external storage binding needs an ABI shared by both concrete
+`go:linkname`, `llgo:link`, and `export` bindings on SIMD-dependent globals,
+or link directives targeting a known SIMD-dependent global: an external storage binding needs an ABI shared by both concrete
 representations. Embedded named strings and byte slices retain their contents
 in both variants. Wider variants and general FMV are follow-up work.
 

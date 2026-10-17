@@ -31,5 +31,4 @@ type (
 	LLGoMidwayRune       = rune
 	LLGoMidwayError      = error
 	LLGoMidwayAny        = any
-	LLGoMidwayComparable = comparable
 )

@@ -5,36 +5,10 @@ import (
 	"testing"
 )
 
-func reviewImports(t *testing.T) testImporter {
-	t.Helper()
-	imports := testImporter{}
-	testCheck(t, imports, simdPath, `package simd
- type Uint32s struct{}
- func (Uint32s) Len() int { return 4 }
- func BroadcastUint32s(uint32) Uint32s { return Uint32s{} }
- func Emulated() bool {return false}
- func VectorBitSize() int {return 128}
- `, false)
-	testCheck(t, imports, bridgePath, `package bridge
- type Uint32s [4]uint32
- type Uint32x4 [4]uint32
- func (Uint32s) Len() int {return 4}
- func (Uint32x4) Len() int {return 4}
- func BroadcastUint32s(uint32) Uint32s {return Uint32s{}}
- func BroadcastUint32x4(uint32) Uint32x4 {return Uint32x4{}}
- func LLGoMidwayUnreachable(){panic("unspecialized")}
- type LLGoMidwayInt = int
- type LLGoMidwayBool = bool
- type LLGoMidwayString = string
- type LLGoMidwayError = error
- `, false)
-	return imports
-}
-
 func TestRewriteGenericReceiverInstances(t *testing.T) {
 	for _, recv := range []string{"Box[T]", "*Box[T]"} {
 		t.Run(recv, func(t *testing.T) {
-			pkg, _ := testCheck(t, reviewImports(t), "client", `package client
+			pkg, _ := testCheck(t, testSIMDImports(t), "client", `package client
  import "simd"
  type Box[T any] struct{}
  func (`+recv+`) Width() int {var v simd.Uint32s;return v.Len()}
@@ -63,7 +37,7 @@ func TestRewriteIndependentInitializers(t *testing.T) {
 		{"tuple RHS", "func pair()(simd.Uint32s,int){return simd.BroadcastUint32s(1),C};var A,B=pair();var C=42", []string{"C", "A", "B"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, info := testCheck(t, reviewImports(t), "client", "package client;import \"simd\";"+tc.decl, true)
+			_, info := testCheck(t, testSIMDImports(t), "client", "package client;import \"simd\";"+tc.decl, true)
 			var got []string
 			for _, init := range info.InitOrder {
 				for _, v := range init.Lhs {
@@ -88,7 +62,7 @@ func TestRewriteIndependentInitializers(t *testing.T) {
 }
 
 func TestRewriteShadowedPredeclaredTypes(t *testing.T) {
-	imports := reviewImports(t)
+	imports := testSIMDImports(t)
 	testCheck(t, imports, "foreign", `package foreign
  import "simd"
  func Make() (simd.Uint32s,string,error) {return simd.Uint32s{},"ok",nil}
@@ -118,7 +92,7 @@ func TestRewriteShadowedPredeclaredTypes(t *testing.T) {
 }
 
 func TestRewriteBlankTypeParameters(t *testing.T) {
-	testCheck(t, reviewImports(t), "client", `package client
+	testCheck(t, testSIMDImports(t), "client", `package client
  import "simd"
  func Width[_, _ any, T ~int](x T) T {var v simd.Uint32s;return x+T(v.Len())}
  func Use() int {return Width[int,string](3)}
@@ -126,12 +100,29 @@ func TestRewriteBlankTypeParameters(t *testing.T) {
 }
 
 func TestRewriteImportShadowsPredeclaredType(t *testing.T) {
-	pkg, _ := testCheck(t, reviewImports(t), "client", `package client
+	pkg, _ := testCheck(t, testSIMDImports(t), "client", `package client
  import ("simd";int "unsafe")
  var Width=(simd.Uint32s{}).Len()
  var _=int.Sizeof(0)
  `, true)
 	if !types.Identical(pkg.Scope().Lookup("Width").Type(), types.Typ[types.Int]) {
 		t.Fatal("lost builtin int identity")
+	}
+}
+
+func TestRewriteBlankFunctions(t *testing.T) {
+	pkg, _ := testCheck(t, testSIMDImports(t), "client", `package client
+import "simd"
+func _() int {var v simd.Uint32s;return v.Len()}
+func _() int {var v simd.Uint32s;return v.Len()}
+type Number int
+func (Number) _() int {var v simd.Uint32s;return v.Len()}
+func (Number) _() int {var v simd.Uint32s;return v.Len()}
+func Width() int {var v simd.Uint32s;return v.Len()}
+`, true)
+	for _, width := range widths {
+		if pkg.Scope().Lookup("Number"+suffix(width)) != nil {
+			t.Fatal("blank method created unnecessary receiver variants")
+		}
 	}
 }
