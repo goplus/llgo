@@ -2,6 +2,7 @@ package build
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/optlevel"
@@ -26,7 +27,7 @@ func TestCVariadicPromotedMethod(t *testing.T) {
 				if _, err := Do([]string{fixture.path}, conf); err != nil {
 					t.Fatal(err)
 				}
-				if got := runBinary(t, bin); got != fixture.want {
+				if got := strings.ReplaceAll(runBinary(t, bin), "\r\n", "\n"); got != fixture.want {
 					t.Fatalf("output = %q, want %q", got, fixture.want)
 				}
 			})
