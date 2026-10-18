@@ -46,13 +46,36 @@ silently measuring a different commit.
 
 `linux_runner` and `linux_large_runner` contain JSON runner labels. The upstream
 `xgo-dev` repository uses its qiniu runners; workflows running in forks use
-GitHub-hosted Ubuntu 24.04. Consume them with `fromJSON(...)`. Public-network
-link checks and release packaging keep their explicitly selected hosted runners.
-Windows and macOS platform matrices remain in their owning workflows.
+GitHub-hosted Ubuntu 24.04. Consume them with `fromJSON(...)`.
 
-PR updates share a concurrency group and cancel superseded runs. Main and tag
-runs use `github.run_id` in their group so later commits neither cancel running
-checks nor replace pending checks. Workflow-level concurrency cannot consume
+Prepare and the independent CI policy check select their runner directly from
+the workflow repository owner: they cannot wait for prepare outputs. These are
+the only bootstrap exceptions to centralized runner selection, and the contract
+tests check that their labels match the policy. CI gates use `linux_runner`,
+with a hosted fallback if preparation fails before producing outputs. This
+keeps ordinary PR startup and completion jobs out of the hosted runner queue.
+
+The amd64 Mise/Pixi environment checks, release artifact verification, Linux
+sysroot generation, snapshot cross-build, package/container validation, and
+installer distro containers use `linux_large_runner`. WinGet manifest
+preparation uses `linux_runner`. The sysroot job first verifies Docker daemon
+access and a privileged container's mount capability, even on cache hits;
+cache misses also exercise QEMU/binfmt registration before cross-building.
+Native ARM64, Windows and macOS coverage keeps its existing architecture and
+runner selection. Public-network link checks and tag publishing keep their
+explicitly selected hosted runners.
+
+Release artifact tests explicitly install Clang on Linux for the native
+assembly shared-library fixture; `install-llvm: false` does not provide it on
+minimal runners. The main Linux LLGo test job uses a private LLDB launcher that
+skips initialization files and clears the debuginfod server list. Ubuntu's
+system LLDB initialization file otherwise enables its symbol server even when
+`DEBUGINFOD_URLS` is empty. Tests retain local symbol lookup without waiting
+for external symbol servers.
+
+PR updates share a concurrency group and cancel superseded runs. Main pushes
+use a separate main group and also cancel superseded runs. Tags and other
+events use `github.run_id` to keep their runs independent. Workflow-level concurrency cannot consume
 prepare outputs; `test_ci_workflows.py` enforces the common expression instead.
 The reusable prepare workflow has no concurrency group of its own.
 
