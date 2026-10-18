@@ -67,8 +67,11 @@ explicitly selected hosted runners.
 
 Release artifact tests explicitly install Clang on Linux for the native
 assembly shared-library fixture; `install-llvm: false` does not provide it on
-minimal runners. The main LLGo test job clears `DEBUGINFOD_URLS` so debugger
-tests use local symbols without waiting for external symbol servers.
+minimal runners. The main Linux LLGo test job uses a private LLDB launcher that
+skips initialization files and clears the debuginfod server list. Ubuntu's
+system LLDB initialization file otherwise enables its symbol server even when
+`DEBUGINFOD_URLS` is empty. Tests retain local symbol lookup without waiting
+for external symbol servers.
 
 PR updates share a concurrency group and cancel superseded runs. Main pushes
 use a separate main group and also cancel superseded runs. Tags and other

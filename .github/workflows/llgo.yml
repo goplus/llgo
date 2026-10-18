@@ -99,10 +99,6 @@ jobs:
     needs: prepare
     name: llgo + test (${{ matrix.os }}${{ matrix.windows_abi && format(', {0}', matrix.windows_abi) || '' }}${{ matrix.windows_arch && format(', {0}', matrix.windows_arch) || '' }}, LLVM ${{ matrix.llvm }}, Go 1.27)
     timeout-minutes: 60
-    env:
-      # Debugger fixtures use local symbols. External debuginfod requests can
-      # stall each target/library lookup for 90 seconds on isolated runners.
-      DEBUGINFOD_URLS: ""
     strategy:
       fail-fast: false
       matrix:
@@ -431,7 +427,20 @@ jobs:
 
       - name: Install LLDB for integration tests
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install -y lldb-${{matrix.llvm}} gdb
+        run: |
+          sudo apt-get install -y lldb-${{matrix.llvm}} gdb
+          # Ubuntu's /etc/lldb/lldbinit enables its symbol server even when
+          # DEBUGINFOD_URLS is empty. Keep this job's debugger tests offline
+          # without changing the runner's shared initialization files.
+          wrapper="$RUNNER_TEMP/llgo-ci-lldb"
+          cat > "$wrapper" <<'EOF'
+          #!/usr/bin/env bash
+          exec /usr/bin/lldb-${{ matrix.llvm }} --no-lldbinit \
+            -O 'settings clear plugin.symbol-locator.debuginfod.server-urls' "$@"
+          EOF
+          chmod +x "$wrapper"
+          "$wrapper" --batch -o 'settings show plugin.symbol-locator.debuginfod.server-urls'
+          echo "LLGO_LLDB=$wrapper" >> "$GITHUB_ENV"
 
       - name: GDB values, registry and complete worker unwind (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
