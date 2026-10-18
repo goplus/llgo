@@ -1463,15 +1463,9 @@ func computeRuntimeCallerBaseSetFromAnalysis(analysis *runtimeCallerAnalysis) ma
 		return nil
 	}
 	out := make(map[*ssa.Function]bool)
-	for {
-		ntrack := len(analysis.trackable)
-		for fn := range analysis.trackable {
-			if analysis.fnMayReachRuntimeCaller(fn) {
-				out[fn] = true
-			}
-		}
-		if len(analysis.trackable) == ntrack {
-			break
+	for fn := range analysis.trackable {
+		if analysis.fnMayReachRuntimeCaller(fn) {
+			out[fn] = true
 		}
 	}
 	if len(out) == 0 {
@@ -1751,20 +1745,6 @@ func (a *runtimeCallerAnalysis) computeReachability() {
 	for i := 0; i < len(pending); i++ {
 		for _, caller := range callers[pending[i]] {
 			mark(caller)
-		}
-	}
-	// Promote anonymous functions that reach a runtime caller when their
-	// enclosing function is trackable, including nested closures.
-	pending = pending[:0]
-	for fn := range a.trackable {
-		pending = append(pending, fn)
-	}
-	for i := 0; i < len(pending); i++ {
-		for _, anon := range pending[i].AnonFuncs {
-			if a.memo[anon] && !a.trackable[anon] {
-				a.trackable[anon] = true
-				pending = append(pending, anon)
-			}
 		}
 	}
 }
