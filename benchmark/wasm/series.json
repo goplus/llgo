@@ -2537,10 +2537,10 @@
       "label": "Branch zhouguangyuan0718/llgo:codex/simd-integer-conversions-20261017",
       "path": "series/branch/48878f9f8ee98bb0/summary.json",
       "configPath": "series/branch/48878f9f8ee98bb0/config.json",
-      "commitPath": "commits/d6b893b66729fb2233b5bbae085d32b8dc5c9b34.json",
-      "sha": "d6b893b66729fb2233b5bbae085d32b8dc5c9b34",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d6b893b66729fb2233b5bbae085d32b8dc5c9b34",
-      "updatedAt": "2026-10-17T10:59:45.545Z"
+      "commitPath": "commits/accd991490d3bb8a1b6e663b54226c2106719c49.json",
+      "sha": "accd991490d3bb8a1b6e663b54226c2106719c49",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/accd991490d3bb8a1b6e663b54226c2106719c49",
+      "updatedAt": "2026-10-18T09:58:13.546Z"
     },
     {
       "kind": "branch",
@@ -5342,10 +5342,10 @@
       "label": "PR #2839",
       "path": "series/pull/2839/summary.json",
       "configPath": "series/pull/2839/config.json",
-      "commitPath": "commits/d6b893b66729fb2233b5bbae085d32b8dc5c9b34.json",
-      "sha": "d6b893b66729fb2233b5bbae085d32b8dc5c9b34",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d6b893b66729fb2233b5bbae085d32b8dc5c9b34",
-      "updatedAt": "2026-10-17T10:59:45.458Z"
+      "commitPath": "commits/accd991490d3bb8a1b6e663b54226c2106719c49.json",
+      "sha": "accd991490d3bb8a1b6e663b54226c2106719c49",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/accd991490d3bb8a1b6e663b54226c2106719c49",
+      "updatedAt": "2026-10-18T09:58:13.460Z"
     },
     {
       "kind": "pull",
