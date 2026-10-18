@@ -690,10 +690,13 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		// Bound methods and thunks can be emitted in the consuming package.
 		// Preserve the receiver's package when imported types share a name.
 		if strings.HasSuffix(name, "$bound") || strings.HasSuffix(name, "$thunk") {
-			if named := recvNamedOk(recv.Type()); named != nil && named.Obj().Pkg() != nil && llssa.PathOf(named.Obj().Pkg()) != llssa.PathOf(pkg) {
-				prefix := llssa.PathOf(named.Obj().Pkg()) + "."
-				if !strings.HasPrefix(fnName, prefix) {
-					fnName = prefix + fnName
+			if named := recvNamedOk(recv.Type()); named != nil && named.Obj().Pkg() != nil {
+				recvPath := llssa.PathOf(named.Obj().Pkg())
+				if recvPath != llssa.PathOf(pkg) {
+					prefix := recvPath + "."
+					if !strings.HasPrefix(fnName, prefix) {
+						fnName = prefix + fnName
+					}
 				}
 			}
 		}
