@@ -786,7 +786,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 			return llssa.Expr{}, false
 		}
 		typ := p.type_(field.X.Type(), llssa.GoDecl)
-		return p.prog.Val(int(p.prog.OffsetOf(typ, field.Field))), true
+		return p.prog.IntVal(p.prog.OffsetOf(typ, field.Field), p.prog.Uintptr()), true
 	}
 	load, ok := arg.(*ssa.UnOp)
 	if !ok || load.Op != token.MUL {
@@ -800,7 +800,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	return p.prog.Val(offset), true
+	return p.prog.IntVal(uint64(offset), p.prog.Uintptr()), true
 }
 
 func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
