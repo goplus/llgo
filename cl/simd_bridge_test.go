@@ -156,3 +156,25 @@ func bridge128Signature(sig *types.Signature, sizes types.Sizes) bool {
 	}
 	return has128 && !hasWide
 }
+
+func TestSIMDFMVBridgeRequiresArchsimdPeer(t *testing.T) {
+	// A bridge-looking name is insufficient: its package must import the
+	// canonical vector, and the peer must be a type with matching storage.
+	for _, tc := range []struct {
+		name    string
+		imports []*types.Package
+	}{
+		{"no imports", nil},
+		{"unrelated import", []*types.Package{types.NewPackage("example/archsimd", "archsimd")}},
+		{"missing peer", []*types.Package{types.NewPackage("simd/archsimd", "archsimd")}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bridge := types.NewPackage("simd/internal/bridge", "bridge")
+			bridge.SetImports(tc.imports)
+			vector := types.NewNamed(types.NewTypeName(token.NoPos, bridge, "Uint32x4", nil), types.NewStruct(nil, nil), nil)
+			if simdFMVVector(vector) {
+				t.Fatal("accepted bridge without canonical archsimd peer")
+			}
+		})
+	}
+}
