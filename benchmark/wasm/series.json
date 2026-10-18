@@ -2258,6 +2258,17 @@
     },
     {
       "kind": "branch",
+      "id": "47541a83c2492587",
+      "label": "Branch xushiwei/llgo:libs",
+      "path": "series/branch/47541a83c2492587/summary.json",
+      "configPath": "series/branch/47541a83c2492587/config.json",
+      "commitPath": "commits/39823a4774b9377a8a7a829b343d2028a30d869a.json",
+      "sha": "39823a4774b9377a8a7a829b343d2028a30d869a",
+      "sourceUrl": "https://github.com/xushiwei/llgo/commit/39823a4774b9377a8a7a829b343d2028a30d869a",
+      "updatedAt": "2026-10-18T19:42:03.245Z"
+    },
+    {
+      "kind": "branch",
       "id": "1904528fe61ebf58",
       "label": "Branch zhouguangyuan0718/llgo:codex/allocator-function-nonnull-20260905",
       "path": "series/branch/1904528fe61ebf58/summary.json",
@@ -5500,6 +5511,17 @@
       "sha": "d47cc30c79df5c9b8d4364b1bd741023b5787845",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/d47cc30c79df5c9b8d4364b1bd741023b5787845",
       "updatedAt": "2026-10-18T17:48:43.093Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2859",
+      "label": "PR #2859",
+      "path": "series/pull/2859/summary.json",
+      "configPath": "series/pull/2859/config.json",
+      "commitPath": "commits/39823a4774b9377a8a7a829b343d2028a30d869a.json",
+      "sha": "39823a4774b9377a8a7a829b343d2028a30d869a",
+      "sourceUrl": "https://github.com/xushiwei/llgo/commit/39823a4774b9377a8a7a829b343d2028a30d869a",
+      "updatedAt": "2026-10-18T19:42:03.123Z"
     }
   ]
 }
