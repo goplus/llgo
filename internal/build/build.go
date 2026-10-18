@@ -2555,6 +2555,7 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 	}
 	linkArgs = append(linkArgs, debuggerABIRootArgs(ctx)...)
 	linkArgs = append(linkArgs, cSharedExportArgs(ctx, linkedOrder)...)
+	linkArgs = append(linkArgs, linuxCExportArgs(ctx, cExports)...)
 	darwinSymbols := planDarwinSizeSymbols(ctx, linkedOrder, linkArgs)
 	linkArgs = append(linkArgs, darwinSymbols.linkerArgs...)
 
@@ -2753,6 +2754,9 @@ func linkedCExports(ctx *context, pkgs []Package) ([]cExport, error) {
 		}
 		for _, export := range packageCExports(pkg) {
 			goName, cName := export.goName, export.cName
+			if cName == "" {
+				return nil, fmt.Errorf("C export implementation %q has an empty export name", goName)
+			}
 			if previous, ok := seen[cName]; ok {
 				if previous != goName {
 					return nil, fmt.Errorf("C export %q is provided by both %q and %q", cName, previous, goName)
@@ -3083,7 +3087,33 @@ func needsLinuxNoPIE(ctx *context, linkArgs []string) bool {
 }
 
 func needsLinuxExportDynamic(ctx *context) bool {
-	return ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" && effectivePCLNMode(ctx.buildConf) != PCLNNone
+	// Entry sites (including the prebuilt table derived from them) resolve Go
+	// PCs without dynamic symbols. Exporting every main-package definition
+	// otherwise roots unused methods and their reflection dependencies in LTO.
+	// Keep the legacy dlsym fallback only when entry sites are unavailable.
+	return ctx != nil && ctx.buildConf != nil &&
+		ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" &&
+		ctx.buildConf.BuildMode == BuildModeExe &&
+		effectivePCLNMode(ctx.buildConf) != PCLNNone && !shouldEmitRuntimeEntrySites(ctx)
+}
+
+// linuxCExportArgs publishes the validated public C entries, not their qualified
+// Go implementations. These names are an ABI contract independent of PCLN.
+// linkedCExports supplies sorted, unique, non-empty names and excludes
+// runtime-owned implementation callbacks. --undefined retains entries even
+// when their only callers use dlopen/dlsym; --export-dynamic-symbol makes those
+// entries discoverable in the dynamic symbol table.
+func linuxCExportArgs(ctx *context, exports []cExport) []string {
+	if len(exports) == 0 || ctx == nil || ctx.buildConf == nil || ctx.buildConf.Target != "" ||
+		ctx.buildConf.Goos != "linux" || ctx.buildConf.BuildMode != BuildModeExe {
+		return nil
+	}
+	args := make([]string, 0, 2*len(exports))
+	for _, export := range exports {
+		args = append(args, "-Wl,--undefined="+export.cName,
+			"-Wl,--export-dynamic-symbol="+export.cName)
+	}
+	return args
 }
 
 func linuxExportDynamicArgs(ctx *context) []string {

@@ -1368,13 +1368,24 @@ func TestBaremetalRuntimeKeepsSchedulerFreeLifecycleStubs(t *testing.T) {
 
 func TestNeedsLinuxExportDynamic(t *testing.T) {
 	t.Setenv(llgoFuncInfo, "")
-	ctx := &context{buildConf: &Config{Goos: "linux"}}
+	ctx := &context{buildConf: &Config{Goos: "linux", BuildMode: BuildModeExe}}
 	if !needsLinuxExportDynamic(ctx) {
 		t.Fatal("linux funcinfo executable should export dynamic symbols")
 	}
 	if got := linuxExportDynamicArgs(ctx); strings.Join(got, " ") != "-Wl,--export-dynamic-symbol=main.* -Wl,--export-dynamic-symbol=command-line-arguments.*" {
 		t.Fatalf("linuxExportDynamicArgs = %v", got)
 	}
+	sites := true
+	ctx.linkRuntimeSites = &sites
+	if got := linuxExportDynamicArgs(ctx); got != nil {
+		t.Fatalf("entry sites should not need dynamic exports: %v", got)
+	}
+	ctx.buildConf.PCLNMode = PCLNExternal
+	if needsLinuxExportDynamic(ctx) {
+		t.Fatal("external PCLN should not need dynamic exports")
+	}
+	ctx.buildConf.PCLNMode = PCLNEmbedded
+	sites = false
 	t.Setenv(llgoFuncInfo, "0")
 	if needsLinuxExportDynamic(ctx) {
 		t.Fatal("LLGO_FUNCINFO=0 should disable dynamic symbol export")
@@ -1391,6 +1402,13 @@ func TestNeedsLinuxExportDynamic(t *testing.T) {
 	ctx.buildConf.Target = "wasi"
 	if needsLinuxExportDynamic(ctx) {
 		t.Fatal("named targets should not force host linux dynamic symbol export")
+	}
+	ctx.buildConf.Target = ""
+	for _, mode := range []BuildMode{BuildModeCShared, BuildModeCArchive} {
+		ctx.buildConf.BuildMode = mode
+		if needsLinuxExportDynamic(ctx) {
+			t.Fatalf("%s should not use executable export policy", mode)
+		}
 	}
 }
 
@@ -3291,6 +3309,9 @@ func TestLinkExecutionKeepsSitePolicyAfterBackendDisposal(t *testing.T) {
 				wantEntrySites := enabled && test.entrySites
 				if got := shouldEmitRuntimeEntrySites(linkCtx); got != wantEntrySites {
 					t.Fatalf("entry sites = %v, want %v", got, wantEntrySites)
+				}
+				if got, want := needsLinuxExportDynamic(linkCtx), test.goos == "linux" && !enabled; got != want {
+					t.Fatalf("legacy dynamic exports after backend disposal = %v, want %v", got, want)
 				}
 				// A missing output must reach the rewriter when entry sites are enabled.
 				// Checking the diagnostic also catches silently skipping the rewrite
