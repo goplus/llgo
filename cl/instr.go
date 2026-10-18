@@ -2835,6 +2835,9 @@ func (p *context) forwardCVariadicWrapper(call *ssa.CallCommon) bool {
 	// call. Wasm does not support variadic tail calls. Explicit -target
 	// profiles (including custom native profiles) remain excluded because
 	// their backend and storage ABI may not support this forwarding path.
+	// Excluded variadic wrappers keep their existing lowering, which can
+	// silently drop the incoming ellipsis. Correct forwarding or diagnostics
+	// for these forms is tracked in #2855.
 	target := p.prog.Target()
 	if target.GOARCH == "wasm" || target.Target != "" {
 		return false

@@ -90,7 +90,7 @@ func use(w *Wrapper) { w.Check(7, 1.5, new(int8), int32(42)) }
 	}
 }
 
-func TestCVariadicValueReceiverWrapper(t *testing.T) {
+func TestCVariadicValueReceiverWrapperIR(t *testing.T) {
 	const source = `package foo
 type T int32
 //llgo:link T.Check C.check
@@ -107,19 +107,24 @@ func use(w *Wrapper) int32 { return w.Check(int32(42)) }
 	}
 	// Loading a scalar receiver changes the fixed ABI from ptr to i32. Such
 	// wrappers cannot use LLVM's variadic musttail forwarding mechanism.
+	// This checks only valid IR and exclusion from the forwarding path; the
+	// ordinary call can still lose incoming arguments through an interface.
+	// Correct forwarding or diagnostics is tracked in #2855.
 	fn := mustNamedFunction(t, pkg.Module(), "foo.(*Wrapper).Check")
 	if text := fn.String(); !strings.Contains(text, "call i32 (i32, ...) @check(") || strings.Contains(text, "musttail") {
-		t.Fatalf("incompatible receiver ABI must retain a regular C call:\n%s", text)
+		t.Fatalf("excluded receiver ABI unexpectedly changed lowering:\n%s", text)
 	}
 	if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestCVariadicIncompatibleSignature(t *testing.T) {
+func TestCVariadicIncompatibleSignatureIR(t *testing.T) {
 	// Ordinary methods have no ellipsis to forward. Aggregate signatures need
 	// instructions or ABI rewrites that cannot retain a musttail call followed
-	// immediately by its return. Keep the existing lowering for both cases.
+	// immediately by its return. These checks establish valid IR with the
+	// existing lowering, not correct ellipsis forwarding for excluded variadic
+	// signatures. Execution coverage and diagnostics are tracked in #2855.
 	for _, tc := range []struct {
 		name, declaration, use string
 	}{
@@ -150,7 +155,7 @@ func TestCVariadicIncompatibleSignature(t *testing.T) {
 			mod := pkg.Module()
 			fn := mustNamedFunction(t, mod, "foo.(*Wrapper).Check")
 			if text := fn.String(); !strings.Contains(text, "@check(") || strings.Contains(text, "musttail") {
-				t.Fatalf("incompatible wrapper must retain a regular C call:\n%s", text)
+				t.Fatalf("excluded wrapper unexpectedly changed lowering:\n%s", text)
 			}
 			if !fn.GetStringAttributeAtIndex(-1, "thunk").IsNil() {
 				t.Fatal("incompatible wrapper must not be marked as a forwarding thunk")
