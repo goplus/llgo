@@ -2427,10 +2427,10 @@
       "label": "Branch zhouguangyuan0718/llgo:codex/midway-fmv-followup-20261017",
       "path": "series/branch/6b312a58e64adf7b/summary.json",
       "configPath": "series/branch/6b312a58e64adf7b/config.json",
-      "commitPath": "commits/0e0e784a57ad3380bbf904f64835faa79642cb08.json",
-      "sha": "0e0e784a57ad3380bbf904f64835faa79642cb08",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/0e0e784a57ad3380bbf904f64835faa79642cb08",
-      "updatedAt": "2026-10-18T10:45:37.306Z"
+      "commitPath": "commits/9a9b771bd237a18e433485a168e27f5ebb71c5de.json",
+      "sha": "9a9b771bd237a18e433485a168e27f5ebb71c5de",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/9a9b771bd237a18e433485a168e27f5ebb71c5de",
+      "updatedAt": "2026-10-18T13:23:10.504Z"
     },
     {
       "kind": "branch",
@@ -5342,10 +5342,10 @@
       "label": "PR #2835",
       "path": "series/pull/2835/summary.json",
       "configPath": "series/pull/2835/config.json",
-      "commitPath": "commits/0e0e784a57ad3380bbf904f64835faa79642cb08.json",
-      "sha": "0e0e784a57ad3380bbf904f64835faa79642cb08",
-      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/0e0e784a57ad3380bbf904f64835faa79642cb08",
-      "updatedAt": "2026-10-18T10:45:37.188Z"
+      "commitPath": "commits/9a9b771bd237a18e433485a168e27f5ebb71c5de.json",
+      "sha": "9a9b771bd237a18e433485a168e27f5ebb71c5de",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/9a9b771bd237a18e433485a168e27f5ebb71c5de",
+      "updatedAt": "2026-10-18T13:23:10.330Z"
     },
     {
       "kind": "pull",
