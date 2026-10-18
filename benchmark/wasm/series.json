@@ -1697,6 +1697,17 @@
     },
     {
       "kind": "branch",
+      "id": "e789c8a53b87858c",
+      "label": "Branch cpunion/llgo:fix/bound-method-package-identity",
+      "path": "series/branch/e789c8a53b87858c/summary.json",
+      "configPath": "series/branch/e789c8a53b87858c/config.json",
+      "commitPath": "commits/4fb2fabe367f42550d277f61b9d82fa9b5709480.json",
+      "sha": "4fb2fabe367f42550d277f61b9d82fa9b5709480",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/4fb2fabe367f42550d277f61b9d82fa9b5709480",
+      "updatedAt": "2026-10-18T08:10:40.206Z"
+    },
+    {
+      "kind": "branch",
       "id": "f4f901c1d3a5899e",
       "label": "Branch cpunion/llgo:fix/cgo-export-foreign-threads",
       "path": "series/branch/f4f901c1d3a5899e/summary.json",
@@ -5401,6 +5412,17 @@
       "sha": "c814c78763f7e4e8d879636a7b477b404f469ffd",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/c814c78763f7e4e8d879636a7b477b404f469ffd",
       "updatedAt": "2026-10-18T03:10:36.303Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2851",
+      "label": "PR #2851",
+      "path": "series/pull/2851/summary.json",
+      "configPath": "series/pull/2851/config.json",
+      "commitPath": "commits/4fb2fabe367f42550d277f61b9d82fa9b5709480.json",
+      "sha": "4fb2fabe367f42550d277f61b9d82fa9b5709480",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/4fb2fabe367f42550d277f61b9d82fa9b5709480",
+      "updatedAt": "2026-10-18T08:10:40.064Z"
     },
     {
       "kind": "pull",
