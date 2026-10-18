@@ -14,9 +14,13 @@ permissions:
   contents: read
 
 jobs:
+  prepare:
+    uses: ./.github/workflows/ci-prepare.yml
+
   devenv:
     name: Mise (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    needs: prepare
+    runs-on: ${{ matrix.os == 'ubuntu-24.04' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     timeout-minutes: 30
     defaults:
       run:
@@ -31,6 +35,17 @@ jobs:
           - macos-15-intel
           - windows-2025
     steps:
+      - name: Inspect qiniu Docker capabilities
+        if: matrix.os == 'ubuntu-24.04' && github.repository_owner == 'xgo-dev'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          if command -v docker >/dev/null 2>&1; then
+            docker version --format 'Docker client={{.Client.Version}} server={{if .Server}}{{.Server.Version}}{{end}}' || true
+            docker info --format 'Docker server={{.ServerVersion}} driver={{.Driver}} os={{.OperatingSystem}} arch={{.Architecture}}' || true
+          else
+            echo 'Docker is not installed on this runner'
+          fi
       - uses: actions/checkout@v7
         with:
           # Exercise activation and builds from a checkout path containing spaces.

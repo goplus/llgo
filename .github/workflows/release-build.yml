@@ -29,7 +29,7 @@ jobs:
     name: CI gate (Release build)
     needs: prepare
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner || '["ubuntu-24.04"]') }}
     steps:
       - name: Verify CI preparation succeeded
         run: test "${{ needs.prepare.result }}" = "success"
@@ -347,7 +347,7 @@ jobs:
   prepare-winget:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, test-windows-artifacts]
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -402,7 +402,7 @@ jobs:
             goos: linux
             goarch: arm64
             go-mod-version: "1.27"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - name: Install dependencies
