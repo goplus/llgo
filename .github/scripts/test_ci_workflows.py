@@ -326,6 +326,32 @@ else:
                  if entry["goos"] == "linux"}
         self.assertEqual(linux, {("ubuntu-latest", "amd64"), ("ubuntu-24.04-arm", "arm64")})
 
+    def test_linux_container_jobs_use_large_runners_and_check_privileges(self):
+        jobs = load("release-build.yml")["jobs"]
+        for name in ("populate-linux-sysroot", "build"):
+            self.assertEqual(jobs[name]["runs-on"],
+                             "${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}")
+            self.assertIn("prepare", needs(jobs[name]))
+        probe = jobs["populate-linux-sysroot"]["steps"][0]
+        self.assertNotIn("if", probe)  # A sysroot cache hit must still check the new runner.
+        self.assertIn("docker run --rm --privileged", probe["run"])
+        self.assertIn("mount -t tmpfs", probe["run"])
+        self.assertNotIn("|| true", probe["run"])
+        self.assertEqual(jobs["test-linux-distributions"]["runs-on"],
+                         "${{ matrix.goarch == 'amd64' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
+        self.assertEqual(jobs["test-linux-distributions"]["strategy"]["matrix"]["include"],
+                         [{"os": "ubuntu-24.04", "goarch": "amd64"}, {"os": "ubuntu-24.04-arm", "goarch": "arm64"}])
+        self.assertEqual(jobs["release"]["runs-on"], "ubuntu-latest")
+        workflow = load("installer-shells.yml")
+        self.assertEqual(workflow["jobs"]["prepare"]["uses"], PREPARE)
+        installer = workflow["jobs"]["installer-shells"]
+        self.assertIn("prepare", needs(installer))
+        self.assertNotIn("if", installer)
+        self.assertEqual(installer["runs-on"],
+                         "${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}")
+        self.assertCountEqual(installer["strategy"]["matrix"]["image"],
+                              ["ubuntu:24.04", "debian:12", "fedora:latest", "archlinux:latest", "alpine:latest", "opensuse/tumbleweed:latest"])
+
     def test_prepare_exports_each_decision_and_has_no_caller_concurrency(self):
         workflow = load("ci-prepare.yml")
         self.assertNotIn("concurrency", workflow)
