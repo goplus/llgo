@@ -99,6 +99,10 @@ jobs:
     needs: prepare
     name: llgo + test (${{ matrix.os }}${{ matrix.windows_abi && format(', {0}', matrix.windows_abi) || '' }}${{ matrix.windows_arch && format(', {0}', matrix.windows_arch) || '' }}, LLVM ${{ matrix.llvm }}, Go 1.27)
     timeout-minutes: 60
+    env:
+      # Debugger fixtures use local symbols. External debuginfod requests can
+      # stall each target/library lookup for 90 seconds on isolated runners.
+      DEBUGINFOD_URLS: ""
     strategy:
       fail-fast: false
       matrix:

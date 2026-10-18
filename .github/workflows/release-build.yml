@@ -451,6 +451,13 @@ jobs:
         with:
           mod-version: ${{ matrix.go-mod-version }}
 
+      - name: Install native assembly test compiler
+        if: runner.os == 'Linux'
+        run: |
+          # install-llvm=false above leaves minimal runners without clang.
+          sudo timeout --kill-after=30s 10m apt-get install -y clang
+          clang --version
+
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
 
