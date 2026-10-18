@@ -4161,6 +4161,17 @@
     },
     {
       "kind": "branch",
+      "id": "0fca85b32eaa08d0",
+      "label": "Branch zhouguangyuan0718/llgo:codex/linux-explicit-exports",
+      "path": "series/branch/0fca85b32eaa08d0/summary.json",
+      "configPath": "series/branch/0fca85b32eaa08d0/config.json",
+      "commitPath": "commits/778269a4b20da668c69d76cb7fa4d7e696cd8552.json",
+      "sha": "778269a4b20da668c69d76cb7fa4d7e696cd8552",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/778269a4b20da668c69d76cb7fa4d7e696cd8552",
+      "updatedAt": "2026-10-18T18:00:17.239Z"
+    },
+    {
+      "kind": "branch",
       "id": "ba743d201cc5fa4d",
       "label": "Branch zhouguangyuan0718/llgo:codex/llvm21-upgrade",
       "path": "series/branch/ba743d201cc5fa4d/summary.json",
@@ -9372,6 +9383,17 @@
       "sha": "63ff4048681b36fd57087c9093699e3e0de1a2fd",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/63ff4048681b36fd57087c9093699e3e0de1a2fd",
       "updatedAt": "2026-10-18T15:42:59.562Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2852",
+      "label": "PR #2852",
+      "path": "series/pull/2852/summary.json",
+      "configPath": "series/pull/2852/config.json",
+      "commitPath": "commits/778269a4b20da668c69d76cb7fa4d7e696cd8552.json",
+      "sha": "778269a4b20da668c69d76cb7fa4d7e696cd8552",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/778269a4b20da668c69d76cb7fa4d7e696cd8552",
+      "updatedAt": "2026-10-18T18:00:16.156Z"
     },
     {
       "kind": "pull",
