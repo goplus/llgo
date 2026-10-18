@@ -396,12 +396,13 @@ func (p Package) NewEnvFunc(
 func (p Package) newFunc(
 	name string, sig *types.Signature, cc CallConv, env *types.Var, instantiated bool,
 ) Function {
+	isLLVMName := strings.HasPrefix(name, "llvm.")
 	var cached Function
 	if v, ok := p.fns[name]; ok {
 		if v.NeedsEnv() != (env != nil) {
 			panic("ssa: conflicting closure environment ABI for " + name)
 		}
-		if !strings.HasPrefix(name, "llvm.") || v.impl.IntrinsicID() == 0 {
+		if !isLLVMName || v.impl.IntrinsicID() == 0 {
 			return v
 		}
 		cached = v
@@ -420,13 +421,26 @@ func (p Package) newFunc(
 		t = entry
 	}
 	dbgInstrln("NewFunc", name, t.raw.Type, "needsEnv:", envType != nil)
-	if strings.HasPrefix(name, "llvm.") {
+	if isLLVMName {
 		fn := p.mod.NamedFunction(name)
 		if !fn.IsNil() && fn.IntrinsicID() != 0 {
 			// LLVM's intrinsic builder bypasses p.fns. Keep its canonical symbol
 			// and attributes: AddFunction would rename it to e.g. llvm.trap.1.
-			if cc != CDecl || env != nil || instantiated || fn.GlobalValueType().C != t.ll.C || fn.FunctionCallConv() != llvm.CCallConv {
-				panic("ssa: conflicting LLVM intrinsic declaration for " + name)
+			var conflict string
+			switch {
+			case cc != CDecl:
+				conflict = "calling convention must be CDecl"
+			case env != nil:
+				conflict = "closure environment"
+			case instantiated:
+				conflict = "instantiation"
+			case fn.GlobalValueType().C != t.ll.C:
+				conflict = "function type"
+			case fn.FunctionCallConv() != llvm.CCallConv:
+				conflict = "LLVM calling convention must be C"
+			}
+			if conflict != "" {
+				panic("ssa: conflicting LLVM intrinsic declaration for " + name + ": " + conflict)
 			}
 			if cached != nil {
 				return cached

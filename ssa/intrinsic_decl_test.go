@@ -47,9 +47,9 @@ func TestLLVMIntrinsicDeclarationOrder(t *testing.T) {
 		for _, llvmFirst := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s/LLVM-first=%v", target.name, llvmFirst), func(t *testing.T) {
 				pkg := intrinsicDeclarationPackage(t, target.arch)
-				var function Function
+				var predeclared Function
 				if !llvmFirst {
-					function = pkg.NewFunc("llvm.trap", NoArgsNoRet, CDecl)
+					predeclared = pkg.NewFunc("llvm.trap", NoArgsNoRet, CDecl)
 				}
 				buildIntrinsicTrapCaller(pkg, "first", nil)
 				existing := pkg.Module().NamedFunction("llvm.trap")
@@ -67,7 +67,7 @@ func TestLLVMIntrinsicDeclarationOrder(t *testing.T) {
 				if wrapped.impl.C != existing.C || pkg.FuncOf("llvm.trap") != wrapped {
 					t.Fatal("package did not adopt the exact intrinsic declaration")
 				}
-				if function != nil && wrapped != function {
+				if predeclared != nil && wrapped != predeclared {
 					t.Fatal("repeat declaration replaced the package function")
 				}
 				if llvmFirst && before != existing.String() {
@@ -96,8 +96,10 @@ func TestLLVMIntrinsicDeclarationConflicts(t *testing.T) {
 				}
 				existing := pkg.Module().NamedFunction("llvm.trap")
 				invoke := func() { pkg.NewFunc("llvm.trap", NoArgsNoRet, CDecl) }
+				wantConflict := "calling convention"
 				switch kind {
 				case "parameter", "result":
+					wantConflict = "function type"
 					values := types.NewTuple(types.NewParam(0, nil, "", types.Typ[types.Uint32]))
 					var params, results *types.Tuple
 					if kind == "parameter" {
@@ -114,20 +116,24 @@ func TestLLVMIntrinsicDeclarationConflicts(t *testing.T) {
 				case "LLVM convention":
 					existing.SetFunctionCallConv(llvm.FastCallConv)
 				case "instantiated":
+					wantConflict = "instantiation"
 					invoke = func() { pkg.NewFuncEx("llvm.trap", NoArgsNoRet, CDecl, false, true) }
 				case "environment":
+					wantConflict = "environment"
 					env := types.NewParam(0, nil, "env", types.Typ[types.Uintptr])
 					invoke = func() { pkg.NewEnvFunc("llvm.trap", NoArgsNoRet, CDecl, env, false) }
 				}
 				func() {
 					defer func() {
-						if got := fmt.Sprint(recover()); !strings.Contains(got, "conflicting") {
-							t.Errorf("incompatible intrinsic declaration panic = %q", got)
+						if got := fmt.Sprint(recover()); !strings.Contains(got, "conflicting") || !strings.Contains(got, wantConflict) {
+							t.Errorf("incompatible intrinsic declaration panic = %q, want conflict about %s", got, wantConflict)
 						}
 					}()
 					invoke()
 				}()
-				existing.SetFunctionCallConv(llvm.CCallConv)
+				if kind == "LLVM convention" {
+					existing.SetFunctionCallConv(llvm.CCallConv)
+				}
 				if !pkg.Module().NamedFunction("llvm.trap.1").IsNil() {
 					t.Fatal("rejected declaration created a renamed intrinsic")
 				}
