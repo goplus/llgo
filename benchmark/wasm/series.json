@@ -1129,10 +1129,10 @@
       "label": "Branch cpunion/llgo:codex/native-dwarf-zlib-20261018",
       "path": "series/branch/e4ce1eeda7da09b1/summary.json",
       "configPath": "series/branch/e4ce1eeda7da09b1/config.json",
-      "commitPath": "commits/888eb68a895443e881eb2fcc7935b2267516bcb3.json",
-      "sha": "888eb68a895443e881eb2fcc7935b2267516bcb3",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/888eb68a895443e881eb2fcc7935b2267516bcb3",
-      "updatedAt": "2026-10-18T07:35:48.953Z"
+      "commitPath": "commits/0da3ea75da07bd7de1b5badacaa91ecc36f064ae.json",
+      "sha": "0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
+      "updatedAt": "2026-10-18T15:50:11.760Z"
     },
     {
       "kind": "branch",
@@ -5474,10 +5474,10 @@
       "label": "PR #2853",
       "path": "series/pull/2853/summary.json",
       "configPath": "series/pull/2853/config.json",
-      "commitPath": "commits/888eb68a895443e881eb2fcc7935b2267516bcb3.json",
-      "sha": "888eb68a895443e881eb2fcc7935b2267516bcb3",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/888eb68a895443e881eb2fcc7935b2267516bcb3",
-      "updatedAt": "2026-10-18T07:35:48.808Z"
+      "commitPath": "commits/0da3ea75da07bd7de1b5badacaa91ecc36f064ae.json",
+      "sha": "0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
+      "updatedAt": "2026-10-18T15:50:11.619Z"
     }
   ]
 }
