@@ -96,16 +96,20 @@ func simdFMVVector(t types.Type) bool {
 	if !ok || named.Obj().Pkg() == nil || named.Obj().Pkg().Path() != "simd/internal/bridge" {
 		return false
 	}
+	var arch *types.Package
 	for _, pkg := range named.Obj().Pkg().Imports() {
-		if pkg.Path() != "simd/archsimd" {
-			continue
+		if pkg.Path() == "simd/archsimd" {
+			arch = pkg
+			break
 		}
-		obj, ok := pkg.Scope().Lookup(named.Obj().Name()).(*types.TypeName)
-		if !ok {
-			return false
-		}
-		_, vector := llssa.SIMDVectorShape(obj.Type())
-		return vector && types.Identical(named.Underlying(), obj.Type().Underlying())
 	}
-	return false
+	if arch == nil {
+		return false
+	}
+	obj, ok := arch.Scope().Lookup(named.Obj().Name()).(*types.TypeName)
+	if !ok {
+		return false
+	}
+	_, vector := llssa.SIMDVectorShape(obj.Type())
+	return vector && types.Identical(named.Underlying(), obj.Type().Underlying())
 }
