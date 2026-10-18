@@ -1906,6 +1906,17 @@
     },
     {
       "kind": "branch",
+      "id": "b5958fecbac2fb9e",
+      "label": "Branch cpunion/llgo:codex/runtime-compiler-2545-20261018",
+      "path": "series/branch/b5958fecbac2fb9e/summary.json",
+      "configPath": "series/branch/b5958fecbac2fb9e/config.json",
+      "commitPath": "commits/b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2.json",
+      "sha": "b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2",
+      "updatedAt": "2026-10-18T01:16:29.296Z"
+    },
+    {
+      "kind": "branch",
       "id": "dffdcbbb1c9e143b",
       "label": "Branch cpunion/llgo:codex/runtime-finalizer-assignability-20260811",
       "path": "series/branch/dffdcbbb1c9e143b/summary.json",
@@ -9229,6 +9240,17 @@
       "sha": "e74de73f3aeb273a0670da137ab3d2d940c25dda",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/e74de73f3aeb273a0670da137ab3d2d940c25dda",
       "updatedAt": "2026-10-17T22:37:08.775Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2847",
+      "label": "PR #2847",
+      "path": "series/pull/2847/summary.json",
+      "configPath": "series/pull/2847/config.json",
+      "commitPath": "commits/b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2.json",
+      "sha": "b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b31b94e7f32f3f9bdb17adc7de4f4c68cf8267e2",
+      "updatedAt": "2026-10-18T01:16:27.593Z"
     }
   ]
 }
