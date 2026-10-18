@@ -311,6 +311,17 @@
     },
     {
       "kind": "branch",
+      "id": "8ad7ed74229d8edd",
+      "label": "Branch cpunion/llgo:codex/ci-linux-qiniu-20261018",
+      "path": "series/branch/8ad7ed74229d8edd/summary.json",
+      "configPath": "series/branch/8ad7ed74229d8edd/config.json",
+      "commitPath": "commits/d47cc30c79df5c9b8d4364b1bd741023b5787845.json",
+      "sha": "d47cc30c79df5c9b8d4364b1bd741023b5787845",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/d47cc30c79df5c9b8d4364b1bd741023b5787845",
+      "updatedAt": "2026-10-18T17:48:43.238Z"
+    },
+    {
+      "kind": "branch",
       "id": "ff93e93c010c1131",
       "label": "Branch cpunion/llgo:codex/ci-llvm-key-ipv4-20260915",
       "path": "series/branch/ff93e93c010c1131/summary.json",
@@ -5478,6 +5489,17 @@
       "sha": "0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/0da3ea75da07bd7de1b5badacaa91ecc36f064ae",
       "updatedAt": "2026-10-18T15:50:11.619Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2854",
+      "label": "PR #2854",
+      "path": "series/pull/2854/summary.json",
+      "configPath": "series/pull/2854/config.json",
+      "commitPath": "commits/d47cc30c79df5c9b8d4364b1bd741023b5787845.json",
+      "sha": "d47cc30c79df5c9b8d4364b1bd741023b5787845",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/d47cc30c79df5c9b8d4364b1bd741023b5787845",
+      "updatedAt": "2026-10-18T17:48:43.093Z"
     }
   ]
 }
