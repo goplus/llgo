@@ -262,8 +262,8 @@ func (d simdOperation) matches(sig *types.Signature, vector types.Type) bool {
 		if !ok {
 			return false
 		}
-		from := lanes.Elem().(*types.Basic).Info()
-		to := shape.Elem().(*types.Basic).Info()
+		from := lanes.Elem().Underlying().(*types.Basic).Info()
+		to := shape.Elem().Underlying().(*types.Basic).Info()
 		if to&types.IsInteger == 0 {
 			return false
 		}

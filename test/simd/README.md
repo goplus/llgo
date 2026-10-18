@@ -22,7 +22,8 @@ architecture.
   low-half multiplication, and carryless multiplication.
 - Integer low/high-lane extension, saturating narrowing with zero-filled upper
   lanes, and AMD64 concatenating saturation. Sign/zero extension and signed or
-  unsigned saturation follow each architecture's official declarations.
+  unsigned saturation follow each architecture's official declarations. The
+  current WASM API provides extension methods but no saturating narrowing methods.
 - Numeric bitcasts, signedness conversions, and SIMD128 numeric conversions,
   with defined results for NaN and out-of-range floating inputs.
 - Four mask shapes, comparisons, mask bitmaps where provided, and the official

@@ -11,7 +11,7 @@ import (
 // optional instructions (in particular AVX512 narrowing on amd64).
 func (b Builder) simdIntegerResize(op SIMDOp, result Type, args []Expr) Expr {
 	x := args[0]
-	unsigned := simdLanes(x.RawType()).Elem().(*types.Basic).Info()&types.IsUnsigned != 0
+	unsigned := simdLanes(x.RawType()).Elem().Underlying().(*types.Basic).Info()&types.IsUnsigned != 0
 	if op == SIMDExtendLo || op == SIMDExtendHi {
 		mask := make([]llvm.Value, result.ll.VectorSize())
 		offset := 0
@@ -30,12 +30,13 @@ func (b Builder) simdIntegerResize(op SIMDOp, result Type, args []Expr) Expr {
 		return Expr{v, result}
 	}
 
-	toUnsigned := simdLanes(result.RawType()).Elem().(*types.Basic).Info()&types.IsUnsigned != 0
+	toUnsigned := simdLanes(result.RawType()).Elem().Underlying().(*types.Basic).Info()&types.IsUnsigned != 0
 	bits := result.ll.ElementType().IntTypeWidth()
 	upper := uint64(1)<<bits - 1
 	lower := uint64(0)
 	if !toUnsigned {
 		upper >>= 1
+		// ConstInt truncates this two's-complement bound to the source lane width.
 		lower = ^upper
 	}
 	narrow := func(v llvm.Value) llvm.Value {
