@@ -160,8 +160,6 @@ func newRuntimeCallerAnalysis(pkg *gossa.Package) *runtimeCallerAnalysis {
 		funcs:     funcs,
 		trackable: trackable,
 		callsites: collectRuntimeCallerCallsites(funcs),
-		memo:      make(map[*gossa.Function]bool),
-		visiting:  make(map[*gossa.Function]bool),
 	}
 }
 
