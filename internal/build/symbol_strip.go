@@ -133,6 +133,11 @@ func stripNativeSymbolsWithIO(ctx *context, out *OutFmtDetails, darwinExports []
 			if err := run("dsymutil", out.Out, "-o", stagedDSYM); err != nil {
 				return err
 			}
+			if ctx.buildConf.LinkOptions.DWARFCompression == DWARFCompressionEnabled {
+				if err := compressDSYMBundle(stagedDSYM, filepath.Base(out.Out)); err != nil {
+					return err
+				}
+			}
 			// LLDB does not expose all non-DWARF globals from a dSYM's
 			// symbol table. Retain the adapter's discovery names in the image.
 			keep := filepath.Join(dir, "debugger-symbols")

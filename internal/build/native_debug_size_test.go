@@ -247,7 +247,7 @@ func TestLinuxDWARFCompressionArgs(t *testing.T) {
 	}{
 		{"default", Config{Goos: "linux", BuildMode: BuildModeExe}, true},
 		{"shared", Config{Goos: "linux", BuildMode: BuildModeCShared, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, true},
-		{"disabled", Config{Goos: "linux", LinkOptions: LinkOptions{DisableDWARFCompression: true}}, false},
+		{"disabled", Config{Goos: "linux", LinkOptions: LinkOptions{DWARFCompression: DWARFCompressionDisabled}}, false},
 		{"omit", Config{Goos: "linux", LinkOptions: LinkOptions{DWARF: DWARFOmit}}, false},
 		{"archive", Config{Goos: "linux", BuildMode: BuildModeCArchive}, false},
 		{"fixed-target", Config{Goos: "linux", Target: "esp32c3", LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, false},
@@ -269,7 +269,11 @@ func TestLinuxCompressedDWARF(t *testing.T) {
 	for _, disabled := range []bool{false, true} {
 		t.Run(strconv.FormatBool(disabled), func(t *testing.T) {
 			bin := filepath.Join(t.TempDir(), "compressed-dwarf")
-			conf := &Config{Mode: ModeBuild, OutFile: bin, LinkOptions: LinkOptions{DWARF: DWARFPreserve, DisableDWARFCompression: disabled}}
+			compression := DWARFCompressionDefault
+			if disabled {
+				compression = DWARFCompressionDisabled
+			}
+			conf := &Config{Mode: ModeBuild, OutFile: bin, LinkOptions: LinkOptions{DWARF: DWARFPreserve, DWARFCompression: compression}}
 			if _, err := Do([]string{"./testdata/ldflagsstrip"}, conf); err != nil {
 				t.Fatal(err)
 			}

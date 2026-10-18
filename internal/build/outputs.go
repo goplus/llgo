@@ -277,9 +277,11 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 	if conf.DebugArtifactMode == DebugArtifactExternal {
 		details.DWARF = dwarfSidecarPath(debugWasmModulePath(conf, details.Out))
 	}
-	if conf.Goos == "darwin" && shouldStripNativeSymbols(conf, crossCompile) && shouldEmitDebugInfo(conf, crossCompile) {
-		// stripNativeSymbolsWith requires this adjacent bundle before it can
-		// discard the executable's debug map while preserving DWARF.
+	compressDSYM := conf.Target == "" && conf.Mode != ModeGen && conf.BuildMode != BuildModeCArchive &&
+		conf.LinkOptions.DWARFCompression == DWARFCompressionEnabled && crossCompile.Toolchain.ObjectFormat == crosscompile.ObjectFormatMachO
+	if conf.Goos == "darwin" && (shouldStripNativeSymbols(conf, crossCompile) || compressDSYM) && shouldEmitDebugInfo(conf, crossCompile) {
+		// Stripping with retained DWARF and explicit native compression both
+		// publish an adjacent bundle that cleanup and artifact reports own.
 		details.DSYM = details.Out + ".dSYM"
 	}
 
