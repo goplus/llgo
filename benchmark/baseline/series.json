@@ -443,6 +443,17 @@
     },
     {
       "kind": "branch",
+      "id": "2438d9d5c0b85a44",
+      "label": "Branch cpunion/llgo:codex/caller-reachability-2320-20261018",
+      "path": "series/branch/2438d9d5c0b85a44/summary.json",
+      "configPath": "series/branch/2438d9d5c0b85a44/config.json",
+      "commitPath": "commits/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c.json",
+      "sha": "2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
+      "updatedAt": "2026-10-18T11:21:31.875Z"
+    },
+    {
+      "kind": "branch",
       "id": "7d7d9e101f2c64a3",
       "label": "Branch cpunion/llgo:codex/canonicalize-generic-basic-aliases",
       "path": "series/branch/7d7d9e101f2c64a3/summary.json",
@@ -9328,6 +9339,17 @@
       "sha": "c814c78763f7e4e8d879636a7b477b404f469ffd",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/c814c78763f7e4e8d879636a7b477b404f469ffd",
       "updatedAt": "2026-10-18T03:00:11.797Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2849",
+      "label": "PR #2849",
+      "path": "series/pull/2849/summary.json",
+      "configPath": "series/pull/2849/config.json",
+      "commitPath": "commits/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c.json",
+      "sha": "2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
+      "updatedAt": "2026-10-18T11:21:29.060Z"
     },
     {
       "kind": "pull",
