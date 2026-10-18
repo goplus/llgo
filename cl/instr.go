@@ -1753,8 +1753,8 @@ func (a *runtimeCallerAnalysis) computeReachability() {
 			mark(caller)
 		}
 	}
-	// Keep anonymous functions trackable when their enclosing function is
-	// trackable, including nested closures discovered by the analysis.
+	// Promote anonymous functions that reach a runtime caller when their
+	// enclosing function is trackable, including nested closures.
 	pending = pending[:0]
 	for fn := range a.trackable {
 		pending = append(pending, fn)
