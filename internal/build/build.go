@@ -2538,6 +2538,7 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 	}
 	linkArgs = append(linkArgs, debuggerABIRootArgs(ctx)...)
 	linkArgs = append(linkArgs, cSharedExportArgs(ctx, linkedOrder)...)
+	linkArgs = append(linkArgs, linuxCExportArgs(ctx, cExports)...)
 	darwinSymbols := planDarwinSizeSymbols(ctx, linkedOrder, linkArgs)
 	linkArgs = append(linkArgs, darwinSymbols.linkerArgs...)
 
@@ -3048,7 +3049,32 @@ func needsLinuxNoPIE(ctx *context, linkArgs []string) bool {
 }
 
 func needsLinuxExportDynamic(ctx *context) bool {
-	return ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" && effectivePCLNMode(ctx.buildConf) != PCLNNone
+	// Entry sites (including the prebuilt table derived from them) resolve Go
+	// PCs without dynamic symbols. Exporting every main-package definition
+	// otherwise roots unused methods and their reflection dependencies in LTO.
+	// Keep the legacy dlsym fallback only when entry sites are unavailable.
+	return ctx != nil && ctx.buildConf != nil &&
+		ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" &&
+		ctx.buildConf.BuildMode == BuildModeExe &&
+		effectivePCLNMode(ctx.buildConf) != PCLNNone && !shouldEmitRuntimeEntrySites(ctx)
+}
+
+// linuxCExportArgs publishes the validated public C entries, not their qualified
+// Go implementations. These names are an ABI contract independent of PCLN.
+// linkedCExports supplies a sorted, deduplicated list and excludes runtime-owned
+// implementation callbacks. Root entries used only by dlopen/dlsym as well as
+// those referenced by C objects linked into the executable.
+func linuxCExportArgs(ctx *context, exports []cExport) []string {
+	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Target != "" ||
+		ctx.buildConf.Goos != "linux" || ctx.buildConf.BuildMode != BuildModeExe {
+		return nil
+	}
+	var args []string
+	for _, export := range exports {
+		args = append(args, "-Wl,--undefined="+export.cName,
+			"-Wl,--export-dynamic-symbol="+export.cName)
+	}
+	return args
 }
 
 func linuxExportDynamicArgs(ctx *context) []string {
