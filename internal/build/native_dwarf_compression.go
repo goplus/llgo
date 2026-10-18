@@ -86,28 +86,7 @@ func compressNativeArtifact(path string) (err error) {
 	if err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".zlib-*")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if err := tmp.Chmod(st.Mode()); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if _, err := tmp.Write(compressed); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmpPath, path)
+	return writeDebugArtifactFile(path, compressed, st.Mode())
 }
 
 func compressDarwinDSYM(ctx *context, output string, verbose bool) (err error) {

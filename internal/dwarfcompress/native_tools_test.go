@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -94,6 +95,15 @@ func TestNativeToolchainArtifacts(t *testing.T) {
 				}
 				if !reflect.DeepEqual(dwarfEntries(t, a), dwarfEntries(t, b)) {
 					t.Fatal("native PE DWARF changed")
+				}
+				if runtime.GOOS == "windows" && (target.name == "PE-"+runtime.GOARCH || runtime.GOARCH == "amd64" && target.name == "PE-386") {
+					for name, data := range map[string][]byte{"original": raw, "compressed": out} {
+						executable := filepath.Join(dir, name+".exe")
+						if err := os.WriteFile(executable, data, 0o755); err != nil {
+							t.Fatal(err)
+						}
+						runTool(t, executable)
+					}
 				}
 			} else {
 				a, err := macho.NewFile(bytes.NewReader(raw))

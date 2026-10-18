@@ -8,7 +8,6 @@ import (
 	"debug/macho"
 	"encoding/binary"
 	"fmt"
-	"math"
 	"strings"
 )
 
@@ -46,10 +45,7 @@ func compressMachO(raw []byte) ([]byte, error) {
 		if s.Nreloc != 0 || !inFile(raw, uint64(s.Offset), s.Size) || uint64(s.Offset) < 32+uint64(cmdsize) {
 			return nil, fmt.Errorf("invalid or unrelocated Mach-O DWARF section %s", s.Name)
 		}
-		data, err := compressed(raw[uint64(s.Offset) : uint64(s.Offset)+s.Size])
-		if err != nil {
-			return nil, err
-		}
+		data := compressed(raw[uint64(s.Offset) : uint64(s.Offset)+s.Size])
 		if data == nil {
 			names[s.Seg+"/"+s.Name] = true
 			continue
@@ -88,19 +84,12 @@ func compressMachO(raw []byte) ([]byte, error) {
 		return raw, nil
 	}
 	for pos, i := 32, uint32(0); i < ncmds; i++ {
+		// validateMachORanges already checked the unchanged command sizes,
+		// segment extents, section counts, and symbol-table command layouts.
 		kind, size := binary.LittleEndian.Uint32(out[pos:]), int(binary.LittleEndian.Uint32(out[pos+4:]))
-		if size < 8 || pos+size > 32+int(cmdsize) {
-			return nil, fmt.Errorf("invalid Mach-O load command size")
-		}
 		switch kind {
 		case 0x19: // LC_SEGMENT_64
-			if size < 72 {
-				return nil, fmt.Errorf("truncated Mach-O segment")
-			}
 			oldOff, oldSize := binary.LittleEndian.Uint64(out[pos+40:]), binary.LittleEndian.Uint64(out[pos+48:])
-			if !inFile(raw, oldOff, oldSize) {
-				return nil, fmt.Errorf("invalid Mach-O segment file range")
-			}
 			newOff, err := l.offset(oldOff)
 			if err != nil {
 				return nil, err
@@ -120,9 +109,6 @@ func compressMachO(raw []byte) ([]byte, error) {
 				binary.LittleEndian.PutUint64(out[pos+32:], vmSize-(oldSize-newSize))
 			}
 			nsect := binary.LittleEndian.Uint32(out[pos+64:])
-			if uint64(nsect)*80 > uint64(size-72) {
-				return nil, fmt.Errorf("truncated Mach-O section headers")
-			}
 			for j := uint32(0); j < nsect; j++ {
 				p := pos + 72 + int(j)*80
 				off := binary.LittleEndian.Uint32(out[p+48:])
@@ -152,18 +138,12 @@ func compressMachO(raw []byte) ([]byte, error) {
 				}
 			}
 		case 0x2: // LC_SYMTAB
-			if size != 24 {
-				return nil, fmt.Errorf("invalid Mach-O symbol table command")
-			}
 			for _, field := range []int{8, 16} {
 				if err := l.pointer32(out, pos+field); err != nil {
 					return nil, err
 				}
 			}
 		case 0xb: // LC_DYSYMTAB
-			if size != 80 {
-				return nil, fmt.Errorf("invalid Mach-O dynamic symbol table command")
-			}
 			for _, field := range []int{32, 40, 48, 56, 64, 72} {
 				if err := l.pointer32(out, pos+field); err != nil {
 					return nil, err
@@ -189,9 +169,6 @@ func compressMachO(raw []byte) ([]byte, error) {
 			return nil, fmt.Errorf("unsupported Mach-O dSYM load command %#x", kind)
 		}
 		pos += size
-	}
-	if len(out) > math.MaxUint32 {
-		return nil, fmt.Errorf("compressed Mach-O exceeds section file offsets")
 	}
 	if _, err := macho.NewFile(bytes.NewReader(out)); err != nil {
 		return nil, fmt.Errorf("invalid compressed Mach-O: %w", err)

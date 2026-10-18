@@ -57,11 +57,6 @@ func compressPE(raw []byte) ([]byte, error) {
 	if !inFile(raw, symoff, nsym*18) {
 		return nil, fmt.Errorf("invalid PE symbol table")
 	}
-	f, err := pe.NewFile(bytes.NewReader(raw))
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
 	stringOff := symoff + nsym*18
 	var stringsData []byte
 	if symoff != 0 {
@@ -74,6 +69,12 @@ func compressPE(raw []byte) ([]byte, error) {
 		}
 		stringsData = bytes.Clone(raw[stringOff : stringOff+size])
 	}
+	// Bound the symbol/string allocations before invoking debug/pe.
+	f, err := pe.NewFile(bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
 	type compressedSection struct {
 		index      int
 		size       uint32
@@ -108,10 +109,7 @@ func compressPE(raw []byte) ([]byte, error) {
 		if size > s.Size {
 			return nil, fmt.Errorf("PE DWARF section %s has a virtual tail", s.Name)
 		}
-		data, err := compressed(raw[uint64(s.Offset) : uint64(s.Offset)+uint64(size)])
-		if err != nil {
-			return nil, err
-		}
+		data := compressed(raw[uint64(s.Offset) : uint64(s.Offset)+uint64(size)])
 		if data == nil {
 			continue
 		}
@@ -180,7 +178,13 @@ func compressPE(raw []byte) ([]byte, error) {
 			}
 			clear(out[pos : pos+8])
 			copy(out[pos:pos+8], c.name)
-			binary.LittleEndian.PutUint32(out[pos+8:], c.size)
+			// Keep the mapped extent and all RVAs unchanged. Shrinking
+			// VirtualSize would leave address-space gaps before later sections,
+			// which the Windows image loader rejects. The smaller raw payload
+			// is zero-extended to the original virtual size by the loader.
+			if s.VirtualSize == 0 {
+				binary.LittleEndian.PutUint32(out[pos+8:], s.Size)
+			}
 			stored := align(uint64(c.size), fileAlign)
 			binary.LittleEndian.PutUint32(out[pos+16:], uint32(stored))
 			if s.Characteristics&pe.IMAGE_SCN_CNT_INITIALIZED_DATA != 0 {
@@ -198,10 +202,7 @@ func compressPE(raw []byte) ([]byte, error) {
 	}
 	// Resolved PE image symbols do not participate in linking again. Preserve
 	// their values and names; update section-definition names and lengths.
-	newSymoff, err := l.offset(symoff)
-	if err != nil {
-		return nil, err
-	}
+	newSymoff := uint64(binary.LittleEndian.Uint32(out[coff+8:]))
 	for i := uint64(0); i < nsym; {
 		pos := int(newSymoff + i*18)
 		aux := uint64(out[pos+17])

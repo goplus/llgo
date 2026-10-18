@@ -8,19 +8,107 @@ import (
 	"debug/dwarf"
 	"debug/macho"
 	"debug/pe"
+	"encoding/binary"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 	"github.com/xgo-dev/llgo/internal/lto"
 )
 
+func TestNativeDWARFCompressionIOErrors(t *testing.T) {
+	root := t.TempDir()
+	if err := compressNativeArtifact(filepath.Join(root, "missing")); !os.IsNotExist(err) {
+		t.Fatalf("missing input: %v", err)
+	}
+	output := filepath.Join(root, "program")
+	if err := os.MkdirAll(dsymMarkerPath(nativeDSYMPath(output)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := removeGeneratedDSYM(output); err == nil {
+		t.Fatal("unreadable ownership marker was ignored")
+	}
+	ctx := &context{commands: commandEnv{environ: os.Environ()}}
+	if err := compressDarwinDSYM(ctx, filepath.Join(root, "missing-parent", "program"), false); err == nil {
+		t.Fatal("invalid staging directory was accepted")
+	}
+	// A linked image without DWARF is a no-op, including its modification time.
+	raw := make([]byte, 512)
+	copy(raw, "MZ")
+	binary.LittleEndian.PutUint32(raw[60:], 0x80)
+	copy(raw[0x80:], "PE\x00\x00")
+	binary.LittleEndian.PutUint16(raw[0x84:], 0x8664)
+	binary.LittleEndian.PutUint16(raw[0x84+16:], 240)
+	binary.LittleEndian.PutUint16(raw[0x98:], 0x20b)
+	binary.LittleEndian.PutUint32(raw[0x98+36:], 512)
+	binary.LittleEndian.PutUint32(raw[0x98+108:], 16)
+	if err := os.WriteFile(output, raw, 0o751); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Unix(1_600_000_000, 0)
+	if err := os.Chtimes(output, stamp, stamp); err != nil {
+		t.Fatal(err)
+	}
+	if err := compressNativeArtifact(output); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(output)
+	if err != nil || !info.ModTime().Equal(stamp) {
+		t.Fatalf("no-op compression replaced the file: %v", err)
+	}
+}
+
+func TestRejectMissingDSYMDWARF(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "debug.dwarf")
+	for _, contents := range [][]byte{[]byte("not Mach-O"), emptyDSYMFixture(false), emptyDSYMFixture(true)} {
+		if err := os.WriteFile(path, contents, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := validateDSYMDWARF(path); err == nil {
+			t.Fatal("missing or empty DWARF was accepted")
+		}
+	}
+}
+
+func emptyDSYMFixture(emptyUnit bool) []byte {
+	// A minimal dSYM with either no sections or one header-only compilation unit.
+	raw := make([]byte, 32)
+	binary.LittleEndian.PutUint32(raw, 0xfeedfacf)
+	binary.LittleEndian.PutUint32(raw[4:], 0x100000c)
+	binary.LittleEndian.PutUint32(raw[12:], 0xa)
+	if !emptyUnit {
+		return raw
+	}
+	const commandSize = 72 + 2*80
+	raw = append(raw, make([]byte, commandSize+12)...)
+	u32 := func(p int, v uint32) { binary.LittleEndian.PutUint32(raw[p:], v) }
+	u64 := func(p int, v uint64) { binary.LittleEndian.PutUint64(raw[p:], v) }
+	u32(16, 1)
+	u32(20, commandSize)
+	u32(32, 0x19)
+	u32(36, commandSize)
+	copy(raw[40:], "__DWARF")
+	u64(32+40, 32+commandSize)
+	u64(32+48, 12)
+	u32(32+64, 2)
+	for i, name := range []string{"__debug_abbrev", "__debug_info"} {
+		p := 32 + 72 + i*80
+		copy(raw[p:p+16], name)
+		copy(raw[p+16:p+32], "__DWARF")
+		u64(p+40, uint64(1+10*i))
+		u32(p+48, uint32(32+commandSize+i))
+	}
+	copy(raw[32+commandSize+1:], []byte{7, 0, 0, 0, 4, 0, 0, 0, 0, 0, 8})
+	return raw
+}
+
 func TestNativeDWARFCompressionPolicy(t *testing.T) {
-	for _, name := range []string{"default", "disabled", "omit", "archive", "named-target", "ELF"} {
+	for _, name := range []string{"default", "disabled", "disabled PE", "missing PE", "omit", "archive", "named-target", "ELF"} {
 		t.Run(name, func(t *testing.T) {
 			conf := Config{Goos: "darwin", LinkOptions: LinkOptions{DWARF: DWARFPreserve, DWARFCompression: DWARFCompressionEnabled}}
 			target := configurableDebugInfo()
@@ -30,6 +118,11 @@ func TestNativeDWARFCompressionPolicy(t *testing.T) {
 				conf.LinkOptions.DWARFCompression = DWARFCompressionDefault
 			case "disabled":
 				conf.LinkOptions.DWARFCompression = DWARFCompressionDisabled
+			case "disabled PE":
+				conf.LinkOptions.DWARFCompression = DWARFCompressionDisabled
+				target.Toolchain.ObjectFormat = crosscompile.ObjectFormatCOFF
+			case "missing PE":
+				target.Toolchain.ObjectFormat = crosscompile.ObjectFormatCOFF
 			case "omit":
 				conf.LinkOptions.DWARF = DWARFOmit
 			case "archive":
@@ -40,10 +133,70 @@ func TestNativeDWARFCompressionPolicy(t *testing.T) {
 				target.Toolchain.ObjectFormat = crosscompile.ObjectFormatELF
 			}
 			// A skipped policy must not open the missing artifact or run dsymutil.
-			if err := finalizeNativeDWARFCompression(&context{buildConf: &conf, crossCompile: target}, filepath.Join(t.TempDir(), "missing"), false); err != nil {
+			err := finalizeNativeDWARFCompression(&context{buildConf: &conf, crossCompile: target}, filepath.Join(t.TempDir(), "missing"), false)
+			if name == "missing PE" {
+				if !os.IsNotExist(err) {
+					t.Fatalf("missing PE image: %v", err)
+				}
+			} else if err != nil {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestDarwinDSYMRejectsInvalidPublication(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("requires native Mach-O dsymutil")
+	}
+	root := t.TempDir()
+	source, output := filepath.Join(root, "probe.c"), filepath.Join(root, "probe")
+	if err := os.WriteFile(source, []byte("int main(void) { return 0; }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	object := filepath.Join(root, "probe.o")
+	if data, err := exec.Command("clang", "-g", "-c", source, "-o", object).CombinedOutput(); err != nil {
+		t.Fatalf("build debug fixture: %v: %s", err, data)
+	}
+	if data, err := exec.Command("clang", object, "-o", output).CombinedOutput(); err != nil {
+		t.Fatalf("link debug fixture: %v: %s", err, data)
+	}
+	destination := nativeDSYMPath(output)
+	if err := os.WriteFile(destination, []byte("occupied"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &context{commands: commandEnv{environ: os.Environ()}}
+	if err := compressDarwinDSYM(ctx, output, true); err == nil || !strings.Contains(err.Error(), "non-directory") {
+		t.Fatalf("occupied publication path: %v", err)
+	}
+	plain := filepath.Join(root, "plain.dwarf")
+	if data, err := exec.Command("dsymutil", "-f", "-o", plain, output).CombinedOutput(); err != nil {
+		t.Fatalf("generate debug fixture: %v: %s", err, data)
+	}
+	raw, err := os.ReadFile(plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Valid DWARF in an executable is not an acceptable compressible dSYM.
+	binary.LittleEndian.PutUint32(raw[12:], uint32(macho.TypeExec))
+	if err := os.WriteFile(plain, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	fakeBin := filepath.Join(root, "tools")
+	if err := os.Mkdir(fakeBin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\nmkdir -p \"$3/Contents/Resources/DWARF\"\ncp \"$LLGO_TEST_DSYM\" \"$3/Contents/Resources/DWARF/${1##*/}\"\n"
+	if err := os.WriteFile(filepath.Join(fakeBin, "dsymutil"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	ctx.commands.environ = append(os.Environ(), "LLGO_TEST_DSYM="+plain)
+	if err := compressDarwinDSYM(ctx, output, false); err == nil || !strings.Contains(err.Error(), "requires a dSYM") {
+		t.Fatalf("invalid staged dSYM: %v", err)
+	}
+	if data, err := os.ReadFile(destination); err != nil || string(data) != "occupied" {
+		t.Fatalf("failed publication replaced the destination: %q, %v", data, err)
 	}
 }
 

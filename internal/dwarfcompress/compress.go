@@ -29,23 +29,20 @@ func Compress(raw []byte) ([]byte, error) {
 	return nil, fmt.Errorf("DWARF compression requires a PE image or a thin 64-bit Mach-O dSYM")
 }
 
-func compressed(data []byte) ([]byte, error) {
+func compressed(data []byte) []byte {
 	var out bytes.Buffer
 	out.WriteString("ZLIB")
 	var size [8]byte
 	binary.BigEndian.PutUint64(size[:], uint64(len(data)))
 	out.Write(size[:])
 	w := zlib.NewWriter(&out)
-	if _, err := w.Write(data); err != nil {
-		return nil, err
-	}
-	if err := w.Close(); err != nil {
-		return nil, err
-	}
+	// bytes.Buffer cannot fail writes, including zlib's final flush.
+	_, _ = w.Write(data)
+	_ = w.Close()
 	if out.Len() >= len(data) {
-		return nil, nil
+		return nil
 	}
-	return out.Bytes(), nil
+	return out.Bytes()
 }
 
 func inFile(raw []byte, off, size uint64) bool {

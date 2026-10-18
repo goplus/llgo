@@ -5,10 +5,12 @@ package dwarfcompress
 
 import (
 	"bytes"
+	"compress/zlib"
 	"debug/dwarf"
 	"debug/macho"
 	"debug/pe"
 	"encoding/binary"
+	"io"
 	"reflect"
 	"strings"
 	"testing"
@@ -106,8 +108,8 @@ func TestPECompression(t *testing.T) {
 			}
 			for i, old := range before.Sections {
 				next := after.Sections[i]
-				if old.VirtualAddress != next.VirtualAddress {
-					t.Fatalf("compression moved section %s RVA", old.Name)
+				if old.VirtualAddress != next.VirtualAddress || old.VirtualSize != next.VirtualSize {
+					t.Fatalf("compression changed section %s memory layout", old.Name)
 				}
 				if !strings.HasPrefix(old.Name, ".debug_") && old.Name != ".rdata" {
 					a, _ := old.Data()
@@ -193,7 +195,20 @@ func TestPESectionDefinitionSymbol(t *testing.T) {
 		t.Fatalf("section-definition symbol did not follow renamed section: %v", f.Symbols)
 	}
 	newOff := int(binary.LittleEndian.Uint32(out[coff+8:]))
-	if size := binary.LittleEndian.Uint32(out[newOff+18:]); size != f.Section(".zdebug_info").VirtualSize {
+	data, err := f.Section(".zdebug_info").Data()
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := bytes.NewReader(data[12:])
+	z, err := zlib.NewReader(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(io.Discard, z); err != nil {
+		t.Fatal(err)
+	}
+	z.Close()
+	if size := binary.LittleEndian.Uint32(out[newOff+18:]); size != uint32(len(data)-payload.Len()) {
 		t.Fatal("section-definition auxiliary length was not updated")
 	}
 }
