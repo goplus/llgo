@@ -2733,6 +2733,9 @@ func linkedCExports(ctx *context, pkgs []Package) ([]cExport, error) {
 		}
 		for _, export := range packageCExports(pkg) {
 			goName, cName := export.goName, export.cName
+			if cName == "" {
+				return nil, fmt.Errorf("C export implementation %q has an empty export name", goName)
+			}
 			if previous, ok := seen[cName]; ok {
 				if previous != goName {
 					return nil, fmt.Errorf("C export %q is provided by both %q and %q", cName, previous, goName)
@@ -3061,15 +3064,16 @@ func needsLinuxExportDynamic(ctx *context) bool {
 
 // linuxCExportArgs publishes the validated public C entries, not their qualified
 // Go implementations. These names are an ABI contract independent of PCLN.
-// linkedCExports supplies a sorted, deduplicated list and excludes runtime-owned
-// implementation callbacks. Root entries used only by dlopen/dlsym as well as
-// those referenced by C objects linked into the executable.
+// linkedCExports supplies sorted, unique, non-empty names and excludes
+// runtime-owned implementation callbacks. --undefined retains entries even
+// when their only callers use dlopen/dlsym; --export-dynamic-symbol makes those
+// entries discoverable in the dynamic symbol table.
 func linuxCExportArgs(ctx *context, exports []cExport) []string {
-	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Target != "" ||
+	if len(exports) == 0 || ctx == nil || ctx.buildConf == nil || ctx.buildConf.Target != "" ||
 		ctx.buildConf.Goos != "linux" || ctx.buildConf.BuildMode != BuildModeExe {
 		return nil
 	}
-	var args []string
+	args := make([]string, 0, 2*len(exports))
 	for _, export := range exports {
 		args = append(args, "-Wl,--undefined="+export.cName,
 			"-Wl,--export-dynamic-symbol="+export.cName)
