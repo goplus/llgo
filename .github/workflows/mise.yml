@@ -44,7 +44,7 @@ jobs:
         run: |
           LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
           install_macos_lld
-      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
         with:
           version: 2026.10.7
           install_args: --locked
