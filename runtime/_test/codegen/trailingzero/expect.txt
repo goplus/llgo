@@ -11,3 +11,4 @@ nested write 10 77 30
 call 1 hi
 natural call true true
 native value 2
+native call true

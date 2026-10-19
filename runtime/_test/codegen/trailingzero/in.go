@@ -16,6 +16,7 @@ import (
 // ARM64-DAG: %main.naturalTail = type { double, float, {} }
 // CHECK-DAG: %main.outer = type { %main.tail, i32, i32 }
 // CHECK-DAG: %main.nativeTail = type { i32, [0 x i32] }
+// CHECK-DAG: %main.nativeFloatTail = type { double, {} }
 // CHECK-LABEL: define void @main.main()
 
 type tail struct {
@@ -49,6 +50,12 @@ type outer struct {
 type nativeTail struct {
 	Count int32
 	End   [0]int32
+}
+
+//llgo:cdecl
+type nativeFloatTail struct {
+	Value float64
+	End   struct{}
 }
 
 var nativeItems = [2]nativeTail{{Count: 1}, {Count: 2}}
@@ -102,4 +109,16 @@ func main() {
 	got := out[0].Interface().(naturalTail)
 	println("natural call", got.D == want.D, got.F == want.F)
 	println("native value", nativeItems[1].Count)
+
+	// The native descriptor must not introduce Go tail storage into the FFI
+	// argument description and shift the scalar argument that follows it.
+	nativeCall := func(value nativeFloatTail, marker uint64) float64 {
+		if marker != 37 {
+			panic("incorrect argument after native struct")
+		}
+		return value.Value
+	}
+	native := nativeFloatTail{Value: 1.25}
+	result := reflect.ValueOf(nativeCall).Call([]reflect.Value{reflect.ValueOf(native), reflect.ValueOf(uint64(37))})
+	println("native call", result[0].Float() == native.Value)
 }
