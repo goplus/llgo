@@ -424,6 +424,9 @@ Homebrew's versioned LLVM 22 formula does not ship LLDB and there is no `lldb@22
 
 ### on Linux
 
+The APT/YUM configurations below accept packages without GPG signature verification
+(`trusted=yes` / `gpgcheck=0`); downloads use HTTPS.
+
 #### Debian/Ubuntu
 
 Install the latest stable release for amd64 or arm64 from the APT repository:
@@ -468,7 +471,7 @@ Install the latest stable release for amd64 or arm64 from the YUM/DNF repository
 ```sh
 sudo tee /etc/yum.repos.d/fury.repo > /dev/null <<'EOF'
 [fury]
-name=Gemfury Private Repo
+name=goplus (Gemfury)
 baseurl=https://pkgs.goplus.org/yum/
 enabled=1
 gpgcheck=0
