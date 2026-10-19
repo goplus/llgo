@@ -3061,6 +3061,17 @@
     },
     {
       "kind": "branch",
+      "id": "f6e8d141067add7b",
+      "label": "Branch dependabot/github_actions/jdx/mise-action-5.2.0",
+      "path": "series/branch/f6e8d141067add7b/summary.json",
+      "configPath": "series/branch/f6e8d141067add7b/config.json",
+      "commitPath": "commits/1f6de70858369a813fbc02f442f6aafaa452ba12.json",
+      "sha": "1f6de70858369a813fbc02f442f6aafaa452ba12",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f6de70858369a813fbc02f442f6aafaa452ba12",
+      "updatedAt": "2026-10-19T06:54:45.635Z"
+    },
+    {
+      "kind": "branch",
       "id": "03eafe0e0b45c6f2",
       "label": "Branch dependabot/github_actions/prefix-dev/setup-pixi-0.11.2",
       "path": "series/branch/03eafe0e0b45c6f2/summary.json",
@@ -9471,6 +9482,17 @@
       "sha": "259c0194dc3f42b07d13a7af90a64ef497c71a58",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/259c0194dc3f42b07d13a7af90a64ef497c71a58",
       "updatedAt": "2026-10-18T20:10:29.285Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2861",
+      "label": "PR #2861",
+      "path": "series/pull/2861/summary.json",
+      "configPath": "series/pull/2861/config.json",
+      "commitPath": "commits/1f6de70858369a813fbc02f442f6aafaa452ba12.json",
+      "sha": "1f6de70858369a813fbc02f442f6aafaa452ba12",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f6de70858369a813fbc02f442f6aafaa452ba12",
+      "updatedAt": "2026-10-19T06:54:43.103Z"
     },
     {
       "kind": "pull",
