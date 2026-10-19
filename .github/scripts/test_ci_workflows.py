@@ -20,7 +20,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 18, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 23, "doc.yml": 6, "fmt.yml": 1,
 }
 BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
 
@@ -190,6 +190,23 @@ else:
                         if name not in {"prepare", "ci-gate", "release"})
             with self.subTest(workflow=filename):
                 self.assertEqual(count, expected)
+
+    def test_windows_release_covers_all_architectures_with_native_x86_toolchains(self):
+        jobs = load("release-build.yml")["jobs"]
+        for name in ("build-windows", "test-windows-artifacts"):
+            matrix = jobs[name]["strategy"]["matrix"]
+            self.assertCountEqual(matrix["abi"], ["msvc", "mingw"])
+            self.assertCountEqual(matrix["goarch"], ["386", "amd64", "arm64"])
+            self.assertIn({"goarch": "386", "os": "windows-2022"}, matrix["include"])
+        self.assertIn("build-windows-x86-toolchains", needs(jobs["build-windows"]))
+        producer = jobs["build-windows-x86-toolchains"]
+        artifact = next(step for step in producer["steps"]
+                        if step.get("uses", "").startswith("actions/upload-artifact@"))
+        self.assertEqual(artifact["with"]["name"], "windows-x86-native-toolchains")
+        consumer = next(step for step in jobs["build-windows"]["steps"]
+                        if step.get("name") == "Download native x86 toolchains")
+        self.assertEqual(consumer["if"], "matrix.goarch == '386'")
+        self.assertEqual(consumer["with"]["name"], artifact["with"]["name"])
 
     def test_release_artifact_dependencies_and_tag_guard_are_preserved(self):
         jobs = load("release-build.yml")["jobs"]
