@@ -677,10 +677,8 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		fnName = fn.Name()
 	}
 	if recv != nil {
-		// funcName's pkg is the receiver named type's package for wrappers.
-		// Keep it identical to the receiver package passed by abiUncommonMethods
-		// when it declares the itab target, or definition and reference symbols
-		// will diverge for promoted unexported methods.
+		// Keep ordinary methods and interface metadata on the same symbol,
+		// including the declaring package of promoted unexported methods.
 		if method, ok := fn.Object().(*types.Func); ok {
 			fnName = llssa.MethodSymbolName(pkg, method, fnName)
 			if genmethod.SupportsGenericMethods && genmethod.IsGenericMethod(method.Type()) {
@@ -689,9 +687,19 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 				}
 			}
 		}
-		// Synthesized $thunk/$bound functions have no Object. Their references
-		// are produced through this same funcName path, so the wrapper name is
-		// already internally consistent and needs no declaring-package suffix.
+		// Bound methods and thunks can be emitted in the consuming package.
+		// Preserve the receiver's package when imported types share a name.
+		if strings.HasSuffix(name, "$bound") || strings.HasSuffix(name, "$thunk") {
+			if named := recvNamedOk(recv.Type()); named != nil && named.Obj().Pkg() != nil {
+				recvPath := llssa.PathOf(named.Obj().Pkg())
+				if recvPath != llssa.PathOf(pkg) {
+					prefix := recvPath + "."
+					if !strings.HasPrefix(fnName, prefix) {
+						fnName = prefix + fnName
+					}
+				}
+			}
+		}
 	}
 	return llssa.FuncName(pkg, fnName, recv, org)
 }
