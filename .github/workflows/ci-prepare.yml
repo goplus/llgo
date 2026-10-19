@@ -28,7 +28,8 @@ permissions:
 # Do not use the caller's concurrency group here: it would cancel the caller.
 jobs:
   prepare:
-    runs-on: ubuntu-24.04
+    # Bootstrap cannot consume its own outputs. Forks keep a hosted runner.
+    runs-on: ${{ fromJSON(github.repository_owner == 'xgo-dev' && '["qiniu", "ubuntu-24.04"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     outputs:
       run_code_ci: ${{ steps.policy.outputs.run_code_ci }}
