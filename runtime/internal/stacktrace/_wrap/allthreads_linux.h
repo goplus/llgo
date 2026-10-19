@@ -80,6 +80,21 @@ static void allcall_wait(unsigned phase)
     }
 }
 
+static uint64_t allcall_time(void)
+{
+    struct timespec now;
+    uintptr_t args[6] = {CLOCK_MONOTONIC, (uintptr_t)&now};
+    if (kernel_syscall(SYS_clock_gettime, args).error) return UINT64_MAX;
+    return (uint64_t)now.tv_sec * 1000000000u + now.tv_nsec;
+}
+
+static void allcall_pause(void)
+{
+    const struct timespec pause = {0, 100000};
+    uintptr_t args[6] = {(uintptr_t)&pause};
+    kernel_syscall(SYS_nanosleep, args);
+}
+
 static int handle_allthreads(thread_node *node)
 {
     unsigned expected = ALL_ARMED;
@@ -227,7 +242,11 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
     for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         if (!n->owned) goto finish;
         unsigned state = __atomic_load_n(&n->allcall_state, __ATOMIC_ACQUIRE);
-        if (!n->attached || (state != ALL_IDLE && state != ALL_RELEASED && state != ALL_FAILED)) {
+        /* Teardown publishes dead before waiting for registry_lock. Do not
+         * repeatedly interrupt an exiting thread while it tries to acquire
+         * this lock; let unregister complete before starting a new cohort. */
+        if (!n->attached || __atomic_load_n(&n->state, __ATOMIC_ACQUIRE) == 6 ||
+            (state != ALL_IDLE && state != ALL_RELEASED && state != ALL_FAILED)) {
             call->error = EAGAIN; goto finish;
         }
     }
@@ -236,13 +255,19 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
     allcall_trap = call->trap;
     memcpy(allcall_args, call->args, sizeof(allcall_args));
     __atomic_store_n(&allcall_phase, PHASE_PREPARE, __ATOMIC_RELEASE);
+    uintptr_t pidargs[6] = {0};
+    uintptr_t pid = kernel_syscall(SYS_getpid, pidargs).r1;
     for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         __atomic_store_n(&n->allcall_state, n == current ? ALL_IDLE : ALL_ARMED, __ATOMIC_RELEASE);
-        if (n != current && pthread_kill(n->thread, SIGURG)) {
+        /* pthread_kill can take libc's target exit lock, which a parked
+         * participant may hold. The locked registry already owns each TID;
+         * use the raw transport without acquiring another thread's locks. */
+        uintptr_t signalargs[6] = {pid, n->debugger_thread_id, SIGURG};
+        if (n != current && kernel_syscall(SYS_tgkill, signalargs).error) {
             call->error = EAGAIN; allcall_cancel(); goto finish;
         }
     }
-    uint64_t deadline = nanotime()+1000000000u;
+    uint64_t deadline = allcall_time()+1000000000u;
     for (;;) {
         int ready = 1;
         for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
@@ -252,8 +277,8 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
             if (state != ALL_READY) ready = 0;
         }
         if (ready) break;
-        if (nanotime() > deadline) { call->error = EAGAIN; allcall_cancel(); goto finish; }
-        const struct timespec pause = {0, 100000}; nanosleep(&pause, 0);
+        if (allcall_time() > deadline) { call->error = EAGAIN; allcall_cancel(); goto finish; }
+        allcall_pause();
     }
     call->error = allcall_complete_cohort();
     if (call->error) { allcall_cancel(); goto finish; }
@@ -267,12 +292,12 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
     }
     __atomic_store_n(&allcall_phase, PHASE_RUN, __ATOMIC_RELEASE);
     allcall_wake();
-    deadline = nanotime()+5000000000u;
+    deadline = allcall_time()+5000000000u;
     for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         if (n == current) continue;
         while (__atomic_load_n(&n->allcall_state, __ATOMIC_ACQUIRE) != ALL_DONE) {
-            if (nanotime() > deadline) allcall_fatal();
-            const struct timespec pause = {0, 100000}; nanosleep(&pause, 0);
+            if (allcall_time() > deadline) allcall_fatal();
+            allcall_pause();
         }
         if (n->allcall_r1 != result.r1 || n->allcall_r2 != result.r2 || n->allcall_error != result.error)
             allcall_fatal();
@@ -283,8 +308,8 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
     for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         if (n == current) continue;
         while (__atomic_load_n(&n->allcall_state, __ATOMIC_ACQUIRE) != ALL_RELEASED) {
-            if (nanotime() > deadline) allcall_fatal();
-            const struct timespec pause = {0, 100000}; nanosleep(&pause, 0);
+            if (allcall_time() > deadline) allcall_fatal();
+            allcall_pause();
         }
     }
 finish:
