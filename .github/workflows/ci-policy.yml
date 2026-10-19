@@ -16,7 +16,8 @@ concurrency:
 # This independent check must never be gated by the policy it tests.
 jobs:
   policy:
-    runs-on: ubuntu-24.04
+    # Validate the policy independently, without waiting for prepare outputs.
+    runs-on: ${{ fromJSON(github.repository_owner == 'xgo-dev' && '["qiniu", "ubuntu-24.04"]' || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7

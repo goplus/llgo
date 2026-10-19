@@ -22,7 +22,7 @@ jobs:
     name: CI gate (LLGo)
     needs: prepare
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner || '["ubuntu-24.04"]') }}
     steps:
       - name: Verify CI preparation succeeded
         run: test "${{ needs.prepare.result }}" = "success"
@@ -427,7 +427,20 @@ jobs:
 
       - name: Install LLDB for integration tests
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install -y lldb-${{matrix.llvm}} gdb
+        run: |
+          sudo apt-get install -y lldb-${{matrix.llvm}} gdb
+          # Ubuntu's /etc/lldb/lldbinit enables its symbol server even when
+          # DEBUGINFOD_URLS is empty. Keep this job's debugger tests offline
+          # without changing the runner's shared initialization files.
+          wrapper="$RUNNER_TEMP/llgo-ci-lldb"
+          cat > "$wrapper" <<'EOF'
+          #!/usr/bin/env bash
+          exec /usr/bin/lldb-${{ matrix.llvm }} --no-lldbinit \
+            -O 'settings clear plugin.symbol-locator.debuginfod.server-urls' "$@"
+          EOF
+          chmod +x "$wrapper"
+          "$wrapper" --batch -o 'settings show plugin.symbol-locator.debuginfod.server-urls'
+          echo "LLGO_LLDB=$wrapper" >> "$GITHUB_ENV"
 
       - name: GDB values, registry and complete worker unwind (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
