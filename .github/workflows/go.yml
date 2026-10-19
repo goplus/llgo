@@ -37,7 +37,9 @@ jobs:
     # macOS coverage alone can take 52 minutes; Windows has taken 56 minutes.
     # Allow setup, emulator tests, and coverage upload to finish as well.
     # Individual Go test packages retain their existing timeout limits.
-    timeout-minutes: ${{ startsWith(matrix.os, 'ubuntu') && 60 || 90 }}
+    # Native PCLN integration can relink each fixture; retain room for the
+    # serial coverage suites and their upload on a cold Linux cache.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
