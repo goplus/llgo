@@ -87,7 +87,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 	if ctx.buildConf.Goos == "linux" && ctx.buildConf.Target == "" && ctx.buildConf.BuildMode == BuildModeExe {
 		mode := llvm.AddGlobal(mainPkg.Module(), mainPkg.Module().Context().Int32Type(), "__llgo_allthreads_executable")
 		mode.SetInitializer(llvm.ConstInt(mode.GlobalValueType(), 1, false))
-		mode.SetGlobalConstant(true)
+		// Match the weak C int overridden by this executable-only definition.
 		mode.SetVisibility(llvm.HiddenVisibility)
 	}
 

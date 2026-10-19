@@ -63,9 +63,10 @@ func sync_runtime_notifyListNotifyAll(l *notifyList) {
 	if atomic.LoadUint32(&l.notify) == wait {
 		return
 	}
-	atomic.StoreUint32(&l.notify, wait)
 	key := uintptr(unsafe.Pointer(l))
 	q := notifyQueues[key]
+	q.checkWake()
+	atomic.StoreUint32(&l.notify, wait)
 	if q == nil {
 		return
 	}
@@ -86,13 +87,15 @@ func sync_runtime_notifyListNotifyOne(l *notifyList) {
 	if notify == atomic.LoadUint32(&l.wait) {
 		return
 	}
-	atomic.StoreUint32(&l.notify, notify+1)
 	key := uintptr(unsafe.Pointer(l))
 	q := notifyQueues[key]
 	if q == nil {
+		atomic.StoreUint32(&l.notify, notify+1)
 		return
 	}
-	if w := q.removeTicket(notify); w != nil {
+	w := q.removeTicket(notify)
+	atomic.StoreUint32(&l.notify, notify+1)
+	if w != nil {
 		if q.head == nil {
 			delete(notifyQueues, key)
 		}

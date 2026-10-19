@@ -181,28 +181,29 @@ func sync_runtime_notifyListWait(l *notifyList, t uint32) {
 func sync_runtime_notifyListNotifyAll(l *notifyList) {
 	st := getNotifyState(l)
 	st.mu.Lock()
+	defer st.mu.Unlock()
+	for _, w := range st.waiters {
+		w.CheckWake()
+	}
 	for _, w := range st.waiters {
 		w.Wake()
 	}
 	latomic.StoreUint32(&l.notify, latomic.LoadUint32(&l.wait))
 	st.cond.Broadcast()
-	st.mu.Unlock()
 }
 
 //go:linkname sync_runtime_notifyListNotifyOne sync.runtime_notifyListNotifyOne
 func sync_runtime_notifyListNotifyOne(l *notifyList) {
 	st := getNotifyState(l)
 	st.mu.Lock()
-	if latomic.LoadUint32(&l.notify) != latomic.LoadUint32(&l.wait) {
-		n := latomic.AddUint32(&l.notify, 1)
-		for ticket, w := range st.waiters {
-			if int32(ticket-n) < 0 {
-				w.Wake()
-			}
-		}
+	defer st.mu.Unlock()
+	if n := latomic.LoadUint32(&l.notify); n != latomic.LoadUint32(&l.wait) {
+		st.waiters[n].Wake()
+		latomic.StoreUint32(&l.notify, n+1)
+		// The shared pthread condition cannot target a ticket. Signal could
+		// wake a different waiter, so broadcast and recheck tickets in Wait.
 		st.cond.Broadcast()
 	}
-	st.mu.Unlock()
 }
 
 //go:linkname sync_runtime_notifyListCheck sync.runtime_notifyListCheck

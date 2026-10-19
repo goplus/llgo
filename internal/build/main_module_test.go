@@ -42,7 +42,7 @@ func TestGenMainModuleExecutable(t *testing.T) {
 	}
 	ir := mod.LPkg.String()
 	checks := []string{
-		"@__llgo_allthreads_executable = hidden constant i32 1",
+		"@__llgo_allthreads_executable = hidden global i32 1",
 		"define i32 @" + processEntrySymbol + "(",
 		"define void @runtime.main()",
 		".pushsection llgo_funcinfo_entry",

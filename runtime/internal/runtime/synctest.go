@@ -1,6 +1,16 @@
 package runtime
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/xgo-dev/llgo/runtime/internal/sync/atomic"
+)
+
+var synctestRunning uint32
+
+// SynctestActive keeps ordinary semaphore releases on their native path again
+// after the last bubble finishes, including concurrently running bubbles.
+func SynctestActive() bool { return atomic.Load(&synctestRunning) != 0 }
 
 // SynctestBubble implements the Go 1.27 internal/synctest contract on LLGo's
 // native threads and cooperative fibers. Only durable object waits reduce
@@ -91,20 +101,28 @@ func (w *SynctestWaiter) Block() {
 	b.event.unlock()
 }
 
-func (w *SynctestWaiter) Wake() {
+// CheckWake validates ownership before a multi-waiter operation changes any
+// accounting or publishes a wake. The object's lock must still be held.
+func (w *SynctestWaiter) CheckWake() { w.wake(false) }
+
+func (w *SynctestWaiter) Wake() { w.wake(true) }
+
+func (w *SynctestWaiter) wake(ready bool) {
 	if w == nil {
 		return
 	}
 	b := w.gp.bubble
-	if b != CurrentSynctestBubble() {
-		panic("synctest: wake from outside bubble")
-	}
 	b.event.lock()
+	defer b.event.unlock()
 	if w.gp.bubbleBlocked {
-		w.gp.bubbleBlocked = false
-		b.running++
+		if b != CurrentSynctestBubble() {
+			panic("synctest: wake from outside bubble")
+		}
+		if ready {
+			w.gp.bubbleBlocked = false
+			b.running++
+		}
 	}
-	b.event.unlock()
 }
 
 func SynctestRun(f func()) {
@@ -113,11 +131,14 @@ func SynctestRun(f func()) {
 	}
 	b := &SynctestBubble{total: 1, running: 1, now: 946684800000000000}
 	b.event.init()
+	atomic.Add(&synctestRunning, 1)
+	completed := false
 	defer func() {
 		clearSynctestAssociations(b)
-		if b.total == 0 {
+		if completed {
 			b.event.destroy()
 		}
+		atomic.Sub(&synctestRunning, 1)
 	}()
 	// Reserve root membership before spawning. Otherwise the controller could
 	// observe an empty bubble before the new native thread/fiber starts.
@@ -139,6 +160,7 @@ func SynctestRun(f func()) {
 		}
 		if b.total == 0 {
 			b.closed = true
+			completed = true
 			b.event.unlock()
 			return
 		}

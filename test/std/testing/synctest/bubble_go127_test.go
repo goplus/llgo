@@ -200,3 +200,22 @@ func TestTimerOutsideBubble(t *testing.T) {
 		t.Fatalf("outside timer timestamp=%v", got)
 	}
 }
+
+func TestWaitGroupAfterHeapGrowth(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// WASI may grow into disjoint GC arenas after its initial 1 MiB arena.
+		// Put the WaitGroup beyond that range in one escaped allocation.
+		object := new(struct {
+			padding [2 << 20]byte
+			wg      sync.WaitGroup
+		})
+		start := time.Now()
+		object.wg.Add(1)
+		go func() { time.Sleep(time.Hour); object.wg.Done() }()
+		object.wg.Wait()
+		if elapsed := time.Since(start); elapsed != time.Hour {
+			t.Fatalf("large-allocation WaitGroup elapsed = %v", elapsed)
+		}
+		runtime.KeepAlive(object)
+	})
+}

@@ -1,9 +1,10 @@
 #define _GNU_SOURCE 1
 #include <stdint.h>
 
-/* internal/synctest only passes escaped objects. Static Go variables remain
- * unbubbled, matching Go's heap-only association records. No allocation or
- * object layout change is needed for the WaitGroup side table. */
+/* Exclude module globals from WaitGroup association. This is not a GC heap
+ * membership test: dynamic objects may be on stacks, in C allocations, or in
+ * later disjoint WASI GC arenas. __heap_base excludes Wasm module data without
+ * coupling this predicate to an allocator or to the first GC arena. */
 #if defined(__wasm__)
 extern unsigned char __heap_base;
 _Bool llgo_synctest_can_associate(void *p) {

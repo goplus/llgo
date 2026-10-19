@@ -11,7 +11,6 @@ import (
 var synctestSemaOnce psync.Once
 var synctestSemaMu psync.Mutex
 var synctestSemaWaiters map[*uint32][]*rt.SynctestWaiter
-var synctestSemaUsed uint32
 
 func initSynctestSema() {
 	synctestSemaMu.Init(nil)
@@ -24,7 +23,6 @@ func semaAcquireWaitGroup(addr *uint32, durable bool) {
 		return
 	}
 	synctestSemaOnce.Do(initSynctestSema)
-	atomic.StoreUint32(&synctestSemaUsed, 1)
 	synctestSemaMu.Lock()
 	for {
 		n := atomic.LoadUint32(addr)
@@ -59,17 +57,20 @@ func semaAcquireWaitGroup(addr *uint32, durable bool) {
 }
 
 func semaRelease(addr *uint32) {
-	if atomic.LoadUint32(&synctestSemaUsed) == 0 && rt.CurrentSynctestBubble() == nil {
+	if rt.CurrentSynctestBubble() == nil && !rt.SynctestActive() {
 		semaReleaseNative(addr)
 		return
 	}
 	synctestSemaOnce.Do(initSynctestSema)
 	synctestSemaMu.Lock()
+	defer synctestSemaMu.Unlock()
+	for _, w := range synctestSemaWaiters[addr] {
+		w.CheckWake()
+	}
 	for _, w := range synctestSemaWaiters[addr] {
 		w.Wake()
 	}
 	// Keep publication under the registration lock: a waiter must either
 	// consume an existing token, or be made active before a new token appears.
 	semaReleaseNative(addr)
-	synctestSemaMu.Unlock()
 }

@@ -305,6 +305,7 @@ void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
     call->r1 = result.r1; call->r2 = result.r2; call->error = result.error;
     __atomic_store_n(&allcall_phase, PHASE_RELEASE, __ATOMIC_RELEASE);
     allcall_wake();
+    deadline = allcall_time()+5000000000u;
     for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         if (n == current) continue;
         while (__atomic_load_n(&n->allcall_state, __ATOMIC_ACQUIRE) != ALL_RELEASED) {

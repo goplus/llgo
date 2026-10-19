@@ -69,6 +69,7 @@ func (q *wasmWaitQueue) pop() *wasmWaiter {
 	if w == nil {
 		return nil
 	}
+	w.synctest.CheckWake()
 	q.head = w.next
 	if q.head == nil {
 		q.tail = nil
@@ -81,6 +82,7 @@ func (q *wasmWaitQueue) removeTicket(ticket uint32) *wasmWaiter {
 	var prev *wasmWaiter
 	for w := q.head; w != nil; w = w.next {
 		if w.ticket == ticket {
+			w.synctest.CheckWake()
 			if prev == nil {
 				q.head = w.next
 			} else {
@@ -95,6 +97,14 @@ func (q *wasmWaitQueue) removeTicket(ticket uint32) *wasmWaiter {
 		prev = w
 	}
 	return nil
+}
+
+func (q *wasmWaitQueue) checkWake() {
+	if q != nil {
+		for w := q.head; w != nil; w = w.next {
+			w.synctest.CheckWake()
+		}
+	}
 }
 
 var semaQueues map[uintptr]*wasmWaitQueue

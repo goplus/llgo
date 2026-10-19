@@ -6,7 +6,7 @@ Synchronous C calls preserve the current G, its bubble, and the physical unwind
 chain. A callback on the same thread reuses that context; a newly adopted C
 thread starts outside any bubble.
 
-The two libc ABIs are explicit:
+These call ABIs are explicit:
 
 | Entry | Target signature | Result |
 | --- | --- | --- |
