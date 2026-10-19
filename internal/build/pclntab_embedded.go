@@ -69,10 +69,31 @@ func linkedPCLNData(original pclnmap.Data, analysis pclnpost.ExternalAnalysis) (
 // the removed bytes and relocate every reference, including LTO constants and
 // Mach-O chained fixups. Runtime table formats and lookup costs stay unchanged.
 func pruneEmbeddedPCLN(ctx *context, plan *mainLinkPlan, output string, verbose bool) error {
+	return pruneEmbeddedPCLNWith(plan, output, verbose, embeddedPCLNLinker{
+		analyze: pclnpost.AnalyzeExternal,
+		compile: func(ir, object string) error { return compileEmbeddedEntry(ctx, plan, ir, object) },
+		link: func(candidate string, inputs []string) error {
+			return linkObjFiles(ctx, candidate, inputs, plan.linkArgs, verbose)
+		},
+		publish: os.Rename,
+	})
+}
+
+// The staged linker keeps publication separate from fallible compilation and
+// verification. Failure tests can exercise this transaction without invoking a
+// native linker or modifying a valid output.
+type embeddedPCLNLinker struct {
+	analyze func(string) (pclnpost.ExternalAnalysis, error)
+	compile func(ir, object string) error
+	link    func(candidate string, inputs []string) error
+	publish func(candidate, output string) error
+}
+
+func pruneEmbeddedPCLNWith(plan *mainLinkPlan, output string, verbose bool, linker embeddedPCLNLinker) error {
 	if plan.embeddedPCLN == nil {
 		return nil
 	}
-	analysis, err := pclnpost.AnalyzeExternal(output)
+	analysis, err := linker.analyze(output)
 	if err != nil {
 		return fmt.Errorf("analyze embedded pclntab: %w", err)
 	}
@@ -97,16 +118,16 @@ func pruneEmbeddedPCLN(ctx *context, plan *mainLinkPlan, output string, verbose 
 		return err
 	}
 	object := filepath.Join(dir, "entry.o")
-	if err := compileEmbeddedEntry(ctx, plan, ir, object); err != nil {
+	if err := linker.compile(ir, object); err != nil {
 		return fmt.Errorf("compile compact embedded pclntab: %w", err)
 	}
 	inputs := slices.Clone(plan.linkInputs)
 	inputs[0] = object
 	candidate := filepath.Join(dir, filepath.Base(output))
-	if err := linkObjFiles(ctx, candidate, inputs, plan.linkArgs, verbose); err != nil {
+	if err := linker.link(candidate, inputs); err != nil {
 		return fmt.Errorf("link compact embedded pclntab: %w", err)
 	}
-	final, err := pclnpost.AnalyzeExternal(candidate)
+	final, err := linker.analyze(candidate)
 	if err != nil {
 		return fmt.Errorf("verify compact embedded pclntab: %w", err)
 	}
@@ -119,7 +140,7 @@ func pruneEmbeddedPCLN(ctx *context, plan *mainLinkPlan, output string, verbose 
 	if !reflect.DeepEqual(pruned.Table, verified.Table) || !reflect.DeepEqual(pruned.SymbolIndex, verified.SymbolIndex) {
 		return fmt.Errorf("embedded pclntab liveness changed during metadata relink")
 	}
-	if err := os.Rename(candidate, output); err != nil {
+	if err := linker.publish(candidate, output); err != nil {
 		return fmt.Errorf("publish compact embedded pclntab: %w", err)
 	}
 	if verbose {
