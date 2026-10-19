@@ -282,10 +282,10 @@
       "label": "Branch cpunion/llgo:codex/caller-reachability-2320-20261018",
       "path": "series/branch/2438d9d5c0b85a44/summary.json",
       "configPath": "series/branch/2438d9d5c0b85a44/config.json",
-      "commitPath": "commits/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c.json",
-      "sha": "2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
-      "updatedAt": "2026-10-18T11:26:31.737Z"
+      "commitPath": "commits/38529ef47a8672d6cd12109ae5ddea0c86c0a1ec.json",
+      "sha": "38529ef47a8672d6cd12109ae5ddea0c86c0a1ec",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/38529ef47a8672d6cd12109ae5ddea0c86c0a1ec",
+      "updatedAt": "2026-10-19T10:29:34.719Z"
     },
     {
       "kind": "branch",
@@ -5507,10 +5507,10 @@
       "label": "PR #2849",
       "path": "series/pull/2849/summary.json",
       "configPath": "series/pull/2849/config.json",
-      "commitPath": "commits/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c.json",
-      "sha": "2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/2cc3c5bbc0e6fd31b06e5f6e800a8ecbd762ac1c",
-      "updatedAt": "2026-10-18T11:26:31.590Z"
+      "commitPath": "commits/38529ef47a8672d6cd12109ae5ddea0c86c0a1ec.json",
+      "sha": "38529ef47a8672d6cd12109ae5ddea0c86c0a1ec",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/38529ef47a8672d6cd12109ae5ddea0c86c0a1ec",
+      "updatedAt": "2026-10-19T10:29:34.567Z"
     },
     {
       "kind": "pull",
