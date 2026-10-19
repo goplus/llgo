@@ -213,6 +213,25 @@ function Assert-ReleaseESPPayload {
   Write-Host "Validated native ESP tools and DLLs for windows/$GoArch"
 }
 
+function Assert-ReleaseCompilerArtifact {
+  param([string]$Root, $Metadata, [string]$GoArch, [string]$LLVMVersion)
+  $compiler = Get-Content -Raw -LiteralPath (Join-Path $Root 'compiler.json') | ConvertFrom-Json
+  $date = ([DateTimeOffset]$Metadata.date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+  $compilerDate = ([DateTimeOffset]$compiler.date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+  if ($compiler.version -ne $Metadata.version -or $compiler.commit -ne $Metadata.commit -or
+      $compilerDate -ne $date -or $compiler.goarch -ne $GoArch -or $compiler.llvm_version -ne $LLVMVersion) {
+    throw 'The host compiler artifact does not describe this release'
+  }
+  $path = Join-Path $Root 'bin/llgo.exe'
+  if ($compiler.compiler_sha256 -notmatch '^[0-9a-f]{64}$' -or
+      (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant() -ne $compiler.compiler_sha256) {
+    throw 'The host compiler artifact checksum does not match'
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $Root 'licenses') -PathType Container)) {
+    throw 'The host compiler artifact is missing its license directory'
+  }
+}
+
 function Expand-ReleaseLocalXz {
   param([string]$Archive, [string]$Destination)
   $file = Get-Item -LiteralPath $Archive

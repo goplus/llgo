@@ -20,7 +20,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 23, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 26, "doc.yml": 6, "fmt.yml": 1,
 }
 BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
 
@@ -199,6 +199,18 @@ else:
             self.assertCountEqual(matrix["goarch"], ["386", "amd64", "arm64"])
             self.assertIn({"goarch": "386", "os": "windows-2022"}, matrix["include"])
         self.assertIn("build-windows-x86-toolchains", needs(jobs["build-windows"]))
+        self.assertIn("build-windows-compiler", needs(jobs["build-windows"]))
+        compiler = jobs["build-windows-compiler"]
+        self.assertCountEqual(compiler["strategy"]["matrix"]["goarch"], ["386", "amd64", "arm64"])
+        self.assertNotIn("abi", compiler["strategy"]["matrix"])
+        host = next(step for step in compiler["steps"]
+                    if step.get("uses") == "./.github/actions/setup-deps")
+        self.assertEqual(host["with"]["windows-abi"], "msvc")
+        upload = next(step for step in compiler["steps"]
+                      if step.get("name") == "Upload shared host compiler")
+        download = next(step for step in jobs["build-windows"]["steps"]
+                        if step.get("name") == "Download shared host compiler")
+        self.assertEqual(upload["with"]["name"], download["with"]["name"])
         producer = jobs["build-windows-x86-toolchains"]
         artifact = next(step for step in producer["steps"]
                         if step.get("uses", "").startswith("actions/upload-artifact@"))

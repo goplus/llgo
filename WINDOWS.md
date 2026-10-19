@@ -2,6 +2,8 @@
 
 Choose the release matching your host architecture (`386`, `amd64` or `arm64`) and native ABI (`msvc` or `mingw`). The release workflow produces a ZIP for each variant; check the [release assets](https://github.com/xgo-dev/llgo/releases) for the formats available in your version. Extract the entire archive and add its `bin` directory to PATH.
 
+For each architecture, the two ABI archives contain the same `llgo.exe`. The native C/C++ toolchain selects the ABI used by generated programs.
+
 The integrated package contains LLGo, its own DLL dependencies, `runtime`, `targets`, licenses, and the ESP Clang under `crosscompile/clang`. Native Windows development tools are installed separately.
 
 The `386` archives contain a PE32 LLGo compiler and PE32 ESP tools, validated

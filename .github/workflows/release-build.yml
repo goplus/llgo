@@ -232,14 +232,13 @@ jobs:
           compression-level: 0
           retention-days: 3
 
-  build-windows:
+  build-windows-compiler:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build, build-windows-x86-toolchains]
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        abi: [msvc, mingw]
         goarch: [amd64, arm64, '386']
         include:
           - goarch: '386'
@@ -254,7 +253,7 @@ jobs:
       - name: Install build dependencies
         uses: ./.github/actions/setup-deps
         with:
-          windows-abi: ${{ matrix.abi }}
+          windows-abi: msvc
           windows-arch: ${{ matrix.goarch }}
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -262,17 +261,11 @@ jobs:
           # On windows-11-arm, both MinGW and MSVC build natively.
           architecture: ${{ matrix.os == 'windows-11-arm' && 'arm64' || 'x64' }}
       - name: Cache ARM64 MSVC release SDK archive
-        if: matrix.abi == 'msvc' && matrix.goarch == 'arm64'
+        if: matrix.goarch == 'arm64'
         uses: actions/cache@v6
         with:
           path: ${{ runner.tool_cache }}/llgo-release-downloads/llvm-arm64
           key: llgo-release-llvm-archive-v1-de718c58ebbc5f61d58c17b90457fcf42983bc2c4a4aba3e010d108713bfd7f1
-      - name: Cache ESP release archive
-        uses: actions/cache@v6
-        with:
-          path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
-          key: llgo-release-esp-archive-v2-${{ matrix.goarch }}-${{ hashFiles('.github/windows/build-release.ps1') }}
-          enableCrossOsArchive: true
       - name: Download release metadata
         uses: actions/download-artifact@v8
         with:
@@ -296,11 +289,73 @@ jobs:
         with:
           name: windows-x86-native-toolchains
           path: .windows-x86-toolchains
+      - name: Build the shared host compiler
+        shell: pwsh
+        run: >-
+          ./.github/windows/build-compiler.ps1
+          -GoArch '${{ matrix.goarch }}'
+          -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
+          -OutputDirectory '${{ runner.temp }}/llgo-windows-compiler'
+      - name: Upload shared host compiler
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-host-compiler-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/llgo-windows-compiler
+          if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 0
+          retention-days: 3
+
+  build-windows:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build, build-windows-compiler, build-windows-x86-toolchains]
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: [amd64, arm64, '386']
+        include:
+          - goarch: '386'
+            os: windows-2022
+          - goarch: amd64
+            os: windows-2022
+          - goarch: arm64
+            os: windows-11-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Cache ESP release archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
+          key: llgo-release-esp-archive-v2-${{ matrix.goarch }}-${{ hashFiles('.github/windows/build-release.ps1') }}
+          enableCrossOsArchive: true
+      - name: Download release metadata
+        uses: actions/download-artifact@v8
+        with:
+          name: llgo-release-metadata
+          path: .windows-dist
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Download shared host compiler
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-host-compiler-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/llgo-windows-compiler
+      - name: Download native x86 toolchains
+        if: matrix.goarch == '386'
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-x86-native-toolchains
+          path: .windows-x86-toolchains
       - name: Build integrated Windows archive
         shell: pwsh
         run: >-
           ./.github/windows/build-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
+          -HostCompilerDirectory '${{ runner.temp }}/llgo-windows-compiler'
           -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
       - name: Upload Windows archive
         uses: actions/upload-artifact@v7
