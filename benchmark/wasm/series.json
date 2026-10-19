@@ -1063,10 +1063,10 @@
       "label": "Branch cpunion/llgo:codex/intrinsic-declarations-2832-20261018",
       "path": "series/branch/4babcc3b4ac15105/summary.json",
       "configPath": "series/branch/4babcc3b4ac15105/config.json",
-      "commitPath": "commits/c814c78763f7e4e8d879636a7b477b404f469ffd.json",
-      "sha": "c814c78763f7e4e8d879636a7b477b404f469ffd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/c814c78763f7e4e8d879636a7b477b404f469ffd",
-      "updatedAt": "2026-10-18T03:10:36.439Z"
+      "commitPath": "commits/19679f1cb329849d7bf1cd6968da3f62c03ab5ba.json",
+      "sha": "19679f1cb329849d7bf1cd6968da3f62c03ab5ba",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/19679f1cb329849d7bf1cd6968da3f62c03ab5ba",
+      "updatedAt": "2026-10-19T06:59:44.783Z"
     },
     {
       "kind": "branch",
@@ -5485,10 +5485,10 @@
       "label": "PR #2848",
       "path": "series/pull/2848/summary.json",
       "configPath": "series/pull/2848/config.json",
-      "commitPath": "commits/c814c78763f7e4e8d879636a7b477b404f469ffd.json",
-      "sha": "c814c78763f7e4e8d879636a7b477b404f469ffd",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/c814c78763f7e4e8d879636a7b477b404f469ffd",
-      "updatedAt": "2026-10-18T03:10:36.303Z"
+      "commitPath": "commits/19679f1cb329849d7bf1cd6968da3f62c03ab5ba.json",
+      "sha": "19679f1cb329849d7bf1cd6968da3f62c03ab5ba",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/19679f1cb329849d7bf1cd6968da3f62c03ab5ba",
+      "updatedAt": "2026-10-19T06:59:44.639Z"
     },
     {
       "kind": "pull",
