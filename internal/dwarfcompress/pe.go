@@ -13,51 +13,101 @@ import (
 	"strings"
 )
 
+// Sizes and byte offsets within the PE/COFF on-disk headers.
+const (
+	peDOSHeaderSize      = 64
+	peHeaderPointer      = 60 // IMAGE_DOS_HEADER.e_lfanew
+	peSignatureSize      = 4
+	peCOFFHeaderSize     = 20
+	peOptionalMagic32    = 0x10b
+	peOptionalMagic64    = 0x20b
+	peSectionHeaderSize  = 40
+	peSectionNameSize    = 8
+	peDirectoryEntrySize = 8
+	peDirectorySizeField = 4
+
+	// IMAGE_FILE_HEADER
+	coffSectionCount       = 2
+	coffSymbolTable        = 8
+	coffSymbolCount        = 12
+	coffOptionalHeaderSize = 16
+
+	// IMAGE_OPTIONAL_HEADER32 / IMAGE_OPTIONAL_HEADER64
+	optionalInitializedData = 8
+	optionalFileAlignment   = 36
+	optionalChecksum        = 64
+	optional32Directories   = 96
+	optional64Directories   = 112
+
+	// IMAGE_SECTION_HEADER
+	sectionVirtualSize = 8
+	sectionRawSize     = 16
+	sectionRawData     = 20
+	sectionRelocations = 24
+	sectionLineNumbers = 28
+
+	// IMAGE_SYMBOL
+	symbolNameOffset   = 4
+	symbolValue        = 8
+	symbolSection      = 12
+	symbolType         = 14
+	symbolStorageClass = 16
+	symbolAuxCount     = 17
+	symbolClassStatic  = 3 // IMAGE_SYM_CLASS_STATIC
+
+	// IMAGE_DEBUG_DIRECTORY
+	peDebugDirectorySize  = 28
+	debugDirectoryRawData = 24 // PointerToRawData
+)
+
 func compressPE(raw []byte) ([]byte, error) {
-	if len(raw) < 64 {
+	if len(raw) < peDOSHeaderSize {
 		return nil, fmt.Errorf("truncated PE DOS header")
 	}
-	header := uint64(binary.LittleEndian.Uint32(raw[60:]))
-	if !inFile(raw, header, 24) || string(raw[header:header+4]) != "PE\x00\x00" {
+	header := uint64(binary.LittleEndian.Uint32(raw[peHeaderPointer:]))
+	if !inFile(raw, header, peSignatureSize+peCOFFHeaderSize) || string(raw[header:header+peSignatureSize]) != "PE\x00\x00" {
 		return nil, fmt.Errorf("invalid PE signature")
 	}
-	coff := int(header) + 4
-	nsect := int(binary.LittleEndian.Uint16(raw[coff+2:]))
-	optionalSize := int(binary.LittleEndian.Uint16(raw[coff+16:]))
-	optional := coff + 20
+	coff := int(header) + peSignatureSize
+	nsect := int(binary.LittleEndian.Uint16(raw[coff+coffSectionCount:]))
+	optionalSize := int(binary.LittleEndian.Uint16(raw[coff+coffOptionalHeaderSize:]))
+	optional := coff + peCOFFHeaderSize
 	sections := optional + optionalSize
-	if optionalSize < 96 || !inFile(raw, uint64(optional), uint64(optionalSize+nsect*40)) {
+	if optionalSize < optional32Directories || !inFile(raw, uint64(optional), uint64(optionalSize+nsect*peSectionHeaderSize)) {
 		return nil, fmt.Errorf("truncated PE optional/section headers")
 	}
 	var directoryOffset int
 	switch binary.LittleEndian.Uint16(raw[optional:]) {
-	case 0x10b:
-		directoryOffset = 96
-	case 0x20b:
-		directoryOffset = 112
+	case peOptionalMagic32:
+		directoryOffset = optional32Directories
+	case peOptionalMagic64:
+		directoryOffset = optional64Directories
 	default:
 		return nil, fmt.Errorf("unsupported PE optional header")
 	}
 	if optionalSize < directoryOffset {
 		return nil, fmt.Errorf("truncated PE data directories")
 	}
-	ndirs := int(binary.LittleEndian.Uint32(raw[optional+directoryOffset-4:]))
-	if ndirs > (optionalSize-directoryOffset)/8 {
+	ndirs := int(binary.LittleEndian.Uint32(raw[optional+directoryOffset-peDirectorySizeField:]))
+	if ndirs > (optionalSize-directoryOffset)/peDirectoryEntrySize {
 		return nil, fmt.Errorf("truncated PE data directories")
 	}
-	if ndirs > 4 && binary.LittleEndian.Uint32(raw[optional+directoryOffset+4*8+4:]) != 0 {
-		return nil, fmt.Errorf("cannot rewrite an Authenticode-signed PE image")
+	if ndirs > pe.IMAGE_DIRECTORY_ENTRY_SECURITY {
+		certificate := optional + directoryOffset + pe.IMAGE_DIRECTORY_ENTRY_SECURITY*peDirectoryEntrySize
+		if binary.LittleEndian.Uint32(raw[certificate+peDirectorySizeField:]) != 0 {
+			return nil, fmt.Errorf("cannot rewrite an Authenticode-signed PE image")
+		}
 	}
-	fileAlign := uint64(binary.LittleEndian.Uint32(raw[optional+36:]))
+	fileAlign := uint64(binary.LittleEndian.Uint32(raw[optional+optionalFileAlignment:]))
 	if fileAlign == 0 || fileAlign > 65536 || fileAlign&(fileAlign-1) != 0 {
 		return nil, fmt.Errorf("invalid PE file alignment")
 	}
-	symoff := uint64(binary.LittleEndian.Uint32(raw[coff+8:]))
-	nsym := uint64(binary.LittleEndian.Uint32(raw[coff+12:]))
-	if !inFile(raw, symoff, nsym*18) {
+	symoff := uint64(binary.LittleEndian.Uint32(raw[coff+coffSymbolTable:]))
+	nsym := uint64(binary.LittleEndian.Uint32(raw[coff+coffSymbolCount:]))
+	if !inFile(raw, symoff, nsym*pe.COFFSymbolSize) {
 		return nil, fmt.Errorf("invalid PE symbol table")
 	}
-	stringOff := symoff + nsym*18
+	stringOff := symoff + nsym*pe.COFFSymbolSize
 	var stringsData []byte
 	if symoff != 0 {
 		if !inFile(raw, stringOff, 4) {
@@ -92,7 +142,7 @@ func compressPE(raw []byte) ([]byte, error) {
 		if s.Size == 0 {
 			continue
 		}
-		if !inFile(raw, uint64(s.Offset), uint64(s.Size)) || int(s.Offset) < sections+nsect*40 {
+		if !inFile(raw, uint64(s.Offset), uint64(s.Size)) || int(s.Offset) < sections+nsect*peSectionHeaderSize {
 			return nil, fmt.Errorf("invalid PE section %s", s.Name)
 		}
 		spans = append(spans, edit{start: int(s.Offset), end: int(uint64(s.Offset) + uint64(s.Size))})
@@ -166,8 +216,8 @@ func compressPE(raw []byte) ([]byte, error) {
 	}
 	var saved uint64
 	for i, s := range f.Sections {
-		pos := sections + i*40
-		for _, field := range []int{20, 24, 28} {
+		pos := sections + i*peSectionHeaderSize
+		for _, field := range []int{sectionRawData, sectionRelocations, sectionLineNumbers} {
 			if err := l.pointer32(out, pos+field); err != nil {
 				return nil, err
 			}
@@ -176,46 +226,46 @@ func compressPE(raw []byte) ([]byte, error) {
 			if c.index != i {
 				continue
 			}
-			clear(out[pos : pos+8])
-			copy(out[pos:pos+8], c.name)
+			clear(out[pos : pos+peSectionNameSize])
+			copy(out[pos:pos+peSectionNameSize], c.name)
 			// Keep the mapped extent and all RVAs unchanged. Shrinking
 			// VirtualSize would leave address-space gaps before later sections,
 			// which the Windows image loader rejects. The smaller raw payload
 			// is zero-extended to the original virtual size by the loader.
 			if s.VirtualSize == 0 {
-				binary.LittleEndian.PutUint32(out[pos+8:], s.Size)
+				binary.LittleEndian.PutUint32(out[pos+sectionVirtualSize:], s.Size)
 			}
 			stored := align(uint64(c.size), fileAlign)
-			binary.LittleEndian.PutUint32(out[pos+16:], uint32(stored))
+			binary.LittleEndian.PutUint32(out[pos+sectionRawSize:], uint32(stored))
 			if s.Characteristics&pe.IMAGE_SCN_CNT_INITIALIZED_DATA != 0 {
 				saved += uint64(s.Size) - stored
 			}
 		}
 	}
-	initialized := uint64(binary.LittleEndian.Uint32(out[optional+8:]))
+	initialized := uint64(binary.LittleEndian.Uint32(out[optional+optionalInitializedData:]))
 	if saved > initialized {
 		return nil, fmt.Errorf("PE initialized-data size underflows")
 	}
-	binary.LittleEndian.PutUint32(out[optional+8:], uint32(initialized-saved))
+	binary.LittleEndian.PutUint32(out[optional+optionalInitializedData:], uint32(initialized-saved))
 	if err := remapPEDebugDirectory(raw, out, f, l, optional+directoryOffset, ndirs); err != nil {
 		return nil, err
 	}
 	// Resolved PE image symbols do not participate in linking again. Preserve
 	// their values and names; update section-definition names and lengths.
-	newSymoff := uint64(binary.LittleEndian.Uint32(out[coff+8:]))
+	newSymoff := uint64(binary.LittleEndian.Uint32(out[coff+coffSymbolTable:]))
 	for i := uint64(0); i < nsym; {
-		pos := int(newSymoff + i*18)
-		aux := uint64(out[pos+17])
+		pos := int(newSymoff + i*pe.COFFSymbolSize)
+		aux := uint64(out[pos+symbolAuxCount])
 		if i+aux >= nsym {
 			return nil, fmt.Errorf("invalid PE auxiliary symbol count")
 		}
-		sect := int(int16(binary.LittleEndian.Uint16(out[pos+12:])))
+		sect := int(int16(binary.LittleEndian.Uint16(out[pos+symbolSection:])))
 		for _, c := range compressedSections {
 			if sect == c.index+1 {
-				if aux != 0 && out[pos+16] == 3 && binary.LittleEndian.Uint16(out[pos+14:]) == 0 && binary.LittleEndian.Uint32(out[pos+8:]) == 0 {
-					clear(out[pos : pos+4])
-					binary.LittleEndian.PutUint32(out[pos+4:], c.nameOffset)
-					binary.LittleEndian.PutUint32(out[pos+18:], c.size)
+				if aux != 0 && out[pos+symbolStorageClass] == symbolClassStatic && binary.LittleEndian.Uint16(out[pos+symbolType:]) == 0 && binary.LittleEndian.Uint32(out[pos+symbolValue:]) == 0 {
+					clear(out[pos : pos+symbolNameOffset])
+					binary.LittleEndian.PutUint32(out[pos+symbolNameOffset:], c.nameOffset)
+					binary.LittleEndian.PutUint32(out[pos+pe.COFFSymbolSize:], c.size)
 				} else {
 					return nil, fmt.Errorf("PE symbol refers into a rewritten debug section")
 				}
@@ -223,7 +273,7 @@ func compressPE(raw []byte) ([]byte, error) {
 		}
 		i += 1 + aux
 	}
-	binary.LittleEndian.PutUint32(out[optional+64:], peChecksum(out, optional+64))
+	binary.LittleEndian.PutUint32(out[optional+optionalChecksum:], peChecksum(out, optional+optionalChecksum))
 	if _, err := pe.NewFile(bytes.NewReader(out)); err != nil {
 		return nil, fmt.Errorf("invalid compressed PE: %w", err)
 	}
@@ -231,15 +281,16 @@ func compressPE(raw []byte) ([]byte, error) {
 }
 
 func remapPEDebugDirectory(raw, out []byte, f *pe.File, l *layout, directory, count int) error {
-	if count <= 6 {
+	if count <= pe.IMAGE_DIRECTORY_ENTRY_DEBUG {
 		return nil
 	}
-	rva := uint64(binary.LittleEndian.Uint32(raw[directory+6*8:]))
-	size := uint64(binary.LittleEndian.Uint32(raw[directory+6*8+4:]))
+	entry := directory + pe.IMAGE_DIRECTORY_ENTRY_DEBUG*peDirectoryEntrySize
+	rva := uint64(binary.LittleEndian.Uint32(raw[entry:]))
+	size := uint64(binary.LittleEndian.Uint32(raw[entry+peDirectorySizeField:]))
 	if size == 0 {
 		return nil
 	}
-	if size%28 != 0 {
+	if size%peDebugDirectorySize != 0 {
 		return fmt.Errorf("invalid PE debug directory size")
 	}
 	for _, s := range f.Sections {
@@ -251,8 +302,8 @@ func remapPEDebugDirectory(raw, out []byte, f *pe.File, l *layout, directory, co
 		if err != nil || !inFile(out, next, size) {
 			return fmt.Errorf("invalid PE debug directory file range")
 		}
-		for pos := next; pos < next+size; pos += 28 {
-			if err := l.pointer32(out, int(pos)+24); err != nil {
+		for pos := next; pos < next+size; pos += peDebugDirectorySize {
+			if err := l.pointer32(out, int(pos)+debugDirectoryRawData); err != nil {
 				return err
 			}
 		}

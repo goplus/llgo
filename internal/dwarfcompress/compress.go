@@ -29,6 +29,8 @@ func Compress(raw []byte) ([]byte, error) {
 	return nil, fmt.Errorf("DWARF compression requires a PE image or a thin 64-bit Mach-O dSYM")
 }
 
+// compressed returns GNU-wrapped zlib data, or nil when it would not be smaller
+// than the input.
 func compressed(data []byte) []byte {
 	var out bytes.Buffer
 	out.WriteString("ZLIB")

@@ -28,8 +28,9 @@ has already been discarded. Treat the compressed dSYM as a storage/reader experi
 the debugger supports it. Successful DWARF decoding does not establish
 compatibility with other debuggers.
 
-Rebuilding with compression disabled removes an earlier LLGo-generated
-compressed bundle so it cannot mask the new image's debug map. This rebuild
+Rebuilding without explicit compression (the default), with compression
+disabled, or with DWARF omitted removes an earlier LLGo-generated compressed
+bundle so it cannot mask the new image's debug map. This rebuild
 cleanup leaves manually generated bundles alone. `llgo clean` removes the
 default output's adjacent dSYM bundle, and temporary
 `run`/`test` outputs reclaim generated bundles automatically. When using a

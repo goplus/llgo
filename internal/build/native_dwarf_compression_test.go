@@ -9,6 +9,7 @@ import (
 	"debug/macho"
 	"debug/pe"
 	"encoding/binary"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -271,6 +272,40 @@ func TestDarwinDSYMFailurePreservesPrevious(t *testing.T) {
 	files, err := os.ReadDir(root)
 	if err != nil || len(files) != 1 {
 		t.Fatalf("failed generation leaked staging files: %v, %v", files, err)
+	}
+}
+
+func TestDarwinDSYMLeadingDashOutput(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("requires native Mach-O dsymutil")
+	}
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile("main.c", []byte("int main(void) { return 0; }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"-g", "-c", "main.c", "-o", "main.o"}, {"main.o", "-o", "-program"}} {
+		if data, err := exec.Command("clang", args...).CombinedOutput(); err != nil {
+			t.Fatalf("compile debug fixture: %v: %s", err, data)
+		}
+	}
+	ctx := &context{commands: commandEnv{environ: os.Environ()}}
+	if err := compressDarwinDSYM(ctx, "-program", false); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateDSYMDWARF(filepath.Join("-program.dSYM", "Contents", "Resources", "DWARF", "-program")); err != nil {
+		t.Fatal(err)
+	}
+	// The stripping path must pass the same safe relative input to dsymutil.
+	ctx.buildConf = &Config{Goos: "darwin", LinkOptions: LinkOptions{DWARF: DWARFPreserve}}
+	stop := errors.New("stop after checking dsymutil input")
+	err := stripNativeSymbolsWith(ctx, &OutFmtDetails{Out: "-program", DSYM: "-program.dSYM"}, nil, false, func(name string, args ...string) error {
+		if name != "dsymutil" || len(args) == 0 || args[0] != "./-program" {
+			t.Fatalf("unsafe dsymutil invocation: %s %q", name, args)
+		}
+		return stop
+	})
+	if !errors.Is(err, stop) {
+		t.Fatalf("unexpected stripping result: %v", err)
 	}
 }
 

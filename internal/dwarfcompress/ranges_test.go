@@ -6,6 +6,7 @@ package dwarfcompress
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"testing"
 )
@@ -92,6 +93,33 @@ func appendMachOCommand(raw []byte, kind uint32, size int) int {
 	binary.LittleEndian.PutUint32(raw[p:], kind)
 	binary.LittleEndian.PutUint32(raw[p+4:], uint32(size))
 	return p
+}
+
+func TestMachOLinkeditCommands(t *testing.T) {
+	// Use the on-disk values independently of the rewriter's named constants.
+	// The two dyld commands include LC_REQ_DYLD in their command IDs.
+	for _, kind := range []uint32{0x1e, 0x26, 0x29, 0x2b, 0x2e, 0x80000033, 0x80000034} {
+		t.Run(fmt.Sprintf("%#x", kind), func(t *testing.T) {
+			raw := machoFixture(t)
+			const symtab = 32 + 72 + 3*80 + 72
+			offset := binary.LittleEndian.Uint32(raw[symtab+8:])
+			command := appendMachOCommand(raw, kind, 16)
+			binary.LittleEndian.PutUint32(raw[command+8:], offset)
+			binary.LittleEndian.PutUint32(raw[command+12:], 8)
+			payload := bytes.Clone(raw[offset : offset+8])
+			out, err := Compress(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			next := binary.LittleEndian.Uint32(out[command+8:])
+			if next >= offset || !bytes.Equal(out[next:next+8], payload) {
+				t.Fatal("linkedit command lost its payload during compression")
+			}
+			if binary.LittleEndian.Uint32(out[command:]) != kind || binary.LittleEndian.Uint32(out[command+12:]) != 8 {
+				t.Fatal("linkedit command kind or payload size changed")
+			}
+		})
+	}
 }
 
 func TestMachOMetadataOffsets(t *testing.T) {

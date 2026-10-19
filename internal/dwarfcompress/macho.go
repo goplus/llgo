@@ -11,13 +11,85 @@ import (
 	"strings"
 )
 
+// Load-command values from <mach-o/loader.h> not exported by debug/macho.
+const (
+	lcUUID                   macho.LoadCmd = 0x1b       // LC_UUID
+	lcSegmentSplitInfo       macho.LoadCmd = 0x1e       // LC_SEGMENT_SPLIT_INFO
+	lcVersionMinMacOSX       macho.LoadCmd = 0x24       // LC_VERSION_MIN_MACOSX
+	lcVersionMinIPhoneOS     macho.LoadCmd = 0x25       // LC_VERSION_MIN_IPHONEOS
+	lcFunctionStarts         macho.LoadCmd = 0x26       // LC_FUNCTION_STARTS
+	lcDataInCode             macho.LoadCmd = 0x29       // LC_DATA_IN_CODE
+	lcSourceVersion          macho.LoadCmd = 0x2a       // LC_SOURCE_VERSION
+	lcDylibCodeSignDRs       macho.LoadCmd = 0x2b       // LC_DYLIB_CODE_SIGN_DRS
+	lcLinkerOptimizationHint macho.LoadCmd = 0x2e       // LC_LINKER_OPTIMIZATION_HINT
+	lcVersionMinTVOS         macho.LoadCmd = 0x2f       // LC_VERSION_MIN_TVOS
+	lcVersionMinWatchOS      macho.LoadCmd = 0x30       // LC_VERSION_MIN_WATCHOS
+	lcNote                   macho.LoadCmd = 0x31       // LC_NOTE
+	lcBuildVersion           macho.LoadCmd = 0x32       // LC_BUILD_VERSION
+	lcDyldExportsTrie        macho.LoadCmd = 0x80000033 // LC_DYLD_EXPORTS_TRIE | LC_REQ_DYLD
+	lcDyldChainedFixups      macho.LoadCmd = 0x80000034 // LC_DYLD_CHAINED_FIXUPS | LC_REQ_DYLD
+)
+
+// Sizes and byte offsets within the on-disk structures in <mach-o/loader.h>.
+const (
+	machoHeader64Size      = 32
+	machoTypeDSYM          = 0xa // MH_DSYM
+	machoFileType          = 12
+	machoCommandCount      = 16
+	machoCommandsSize      = 20
+	machoNameSize          = 16
+	machoCommandHeaderSize = 8
+	machoCommandSize       = 4
+	machoSymbol64Size      = 16 // struct nlist_64 in <mach-o/nlist.h>
+	machoRelocationSize    = 8  // struct relocation_info
+
+	// struct segment_command_64
+	segment64Size         = 72
+	segment64Name         = 8
+	segment64VMSize       = 32
+	segment64FileOffset   = 40
+	segment64FileSize     = 48
+	segment64SectionCount = 64
+
+	// struct section_64
+	section64Size            = 80
+	section64Address         = 32
+	section64DataSize        = 40
+	section64FileOffset      = 48
+	section64Alignment       = 52
+	section64Relocations     = 56
+	section64RelocationCount = 60
+
+	// struct symtab_command
+	symtabCommandSize = 24
+	symtabSymbols     = 8
+	symtabSymbolCount = 12
+	symtabStrings     = 16
+	symtabStringsSize = 20
+
+	// struct dysymtab_command
+	dysymtabCommandSize      = 80
+	dysymTOC                 = 32
+	dysymModules             = 40
+	dysymExternalRefs        = 48
+	dysymIndirectSymbols     = 56
+	dysymIndirectSymbolCount = 60
+	dysymExternalRelocs      = 64
+	dysymLocalRelocs         = 72
+
+	// struct linkedit_data_command and struct note_command
+	linkeditCommandSize = 16
+	linkeditDataOffset  = 8
+	noteCommandSize     = 40
+	noteDataOffset      = 24
+)
+
 func compressMachO(raw []byte) ([]byte, error) {
-	const mhDSYM = 0xa
-	if len(raw) < 32 || binary.LittleEndian.Uint32(raw[12:]) != mhDSYM {
+	if len(raw) < machoHeader64Size || binary.LittleEndian.Uint32(raw[machoFileType:]) != machoTypeDSYM {
 		return nil, fmt.Errorf("Mach-O DWARF compression requires a dSYM, not an executable or relocatable object")
 	}
-	ncmds, cmdsize := binary.LittleEndian.Uint32(raw[16:]), binary.LittleEndian.Uint32(raw[20:])
-	if !inFile(raw, 32, uint64(cmdsize)) || uint64(ncmds)*8 > uint64(cmdsize) {
+	ncmds, cmdsize := binary.LittleEndian.Uint32(raw[machoCommandCount:]), binary.LittleEndian.Uint32(raw[machoCommandsSize:])
+	if !inFile(raw, machoHeader64Size, uint64(cmdsize)) || uint64(ncmds)*machoCommandHeaderSize > uint64(cmdsize) {
 		return nil, fmt.Errorf("invalid Mach-O load commands")
 	}
 	if err := validateMachORanges(raw, ncmds, cmdsize); err != nil {
@@ -42,7 +114,7 @@ func compressMachO(raw []byte) ([]byte, error) {
 			names[s.Seg+"/"+s.Name] = true
 			continue
 		}
-		if s.Nreloc != 0 || !inFile(raw, uint64(s.Offset), s.Size) || uint64(s.Offset) < 32+uint64(cmdsize) {
+		if s.Nreloc != 0 || !inFile(raw, uint64(s.Offset), s.Size) || uint64(s.Offset) < machoHeader64Size+uint64(cmdsize) {
 			return nil, fmt.Errorf("invalid or unrelocated Mach-O DWARF section %s", s.Name)
 		}
 		data := compressed(raw[uint64(s.Offset) : uint64(s.Offset)+s.Size])
@@ -51,8 +123,8 @@ func compressMachO(raw []byte) ([]byte, error) {
 			continue
 		}
 		name := "__zdebug_" + strings.TrimPrefix(s.Name, "__debug_")
-		if len(name) > 16 {
-			name = name[:16]
+		if len(name) > machoNameSize {
+			name = name[:machoNameSize]
 		}
 		if names[s.Seg+"/"+name] {
 			return nil, fmt.Errorf("duplicate compressed Mach-O section %s", name)
@@ -83,13 +155,13 @@ func compressMachO(raw []byte) ([]byte, error) {
 	if len(out) >= len(raw) {
 		return raw, nil
 	}
-	for pos, i := 32, uint32(0); i < ncmds; i++ {
+	for pos, i := machoHeader64Size, uint32(0); i < ncmds; i++ {
 		// validateMachORanges already checked the unchanged command sizes,
 		// segment extents, section counts, and symbol-table command layouts.
-		kind, size := binary.LittleEndian.Uint32(out[pos:]), int(binary.LittleEndian.Uint32(out[pos+4:]))
+		kind, size := macho.LoadCmd(binary.LittleEndian.Uint32(out[pos:])), int(binary.LittleEndian.Uint32(out[pos+machoCommandSize:]))
 		switch kind {
-		case 0x19: // LC_SEGMENT_64
-			oldOff, oldSize := binary.LittleEndian.Uint64(out[pos+40:]), binary.LittleEndian.Uint64(out[pos+48:])
+		case macho.LoadCmdSegment64:
+			oldOff, oldSize := binary.LittleEndian.Uint64(out[pos+segment64FileOffset:]), binary.LittleEndian.Uint64(out[pos+segment64FileSize:])
 			newOff, err := l.offset(oldOff)
 			if err != nil {
 				return nil, err
@@ -99,74 +171,74 @@ func compressMachO(raw []byte) ([]byte, error) {
 				return nil, fmt.Errorf("invalid Mach-O segment file range")
 			}
 			newSize := end - newOff
-			binary.LittleEndian.PutUint64(out[pos+40:], newOff)
-			binary.LittleEndian.PutUint64(out[pos+48:], newSize)
-			if string(bytes.TrimRight(out[pos+8:pos+24], "\x00")) == "__DWARF" {
-				vmSize := binary.LittleEndian.Uint64(out[pos+32:])
+			binary.LittleEndian.PutUint64(out[pos+segment64FileOffset:], newOff)
+			binary.LittleEndian.PutUint64(out[pos+segment64FileSize:], newSize)
+			if string(bytes.TrimRight(out[pos+segment64Name:pos+segment64Name+machoNameSize], "\x00")) == "__DWARF" {
+				vmSize := binary.LittleEndian.Uint64(out[pos+segment64VMSize:])
 				if oldSize-newSize > vmSize {
 					return nil, fmt.Errorf("Mach-O debug segment virtual size underflows")
 				}
-				binary.LittleEndian.PutUint64(out[pos+32:], vmSize-(oldSize-newSize))
+				binary.LittleEndian.PutUint64(out[pos+segment64VMSize:], vmSize-(oldSize-newSize))
 			}
-			nsect := binary.LittleEndian.Uint32(out[pos+64:])
+			nsect := binary.LittleEndian.Uint32(out[pos+segment64SectionCount:])
 			for j := uint32(0); j < nsect; j++ {
-				p := pos + 72 + int(j)*80
-				off := binary.LittleEndian.Uint32(out[p+48:])
+				p := pos + segment64Size + int(j)*section64Size
+				off := binary.LittleEndian.Uint32(out[p+section64FileOffset:])
 				if off != 0 {
 					next, err := l.offset(uint64(off))
 					if err != nil {
 						return nil, err
 					}
-					if string(bytes.TrimRight(out[p+16:p+32], "\x00")) == "__DWARF" {
-						addr := binary.LittleEndian.Uint64(out[p+32:])
+					if string(bytes.TrimRight(out[p+machoNameSize:p+2*machoNameSize], "\x00")) == "__DWARF" {
+						addr := binary.LittleEndian.Uint64(out[p+section64Address:])
 						shift := uint64(off) - next - (oldOff - newOff)
 						if shift > addr {
 							return nil, fmt.Errorf("Mach-O debug section address underflows")
 						}
-						binary.LittleEndian.PutUint64(out[p+32:], addr-shift)
+						binary.LittleEndian.PutUint64(out[p+section64Address:], addr-shift)
 					}
-					binary.LittleEndian.PutUint32(out[p+48:], uint32(next))
+					binary.LittleEndian.PutUint32(out[p+section64FileOffset:], uint32(next))
 				}
 				if compressedSize, ok := sizes[off]; ok {
-					name := "__zdebug_" + strings.TrimPrefix(string(bytes.TrimRight(out[p:p+16], "\x00")), "__debug_")
-					clear(out[p : p+16])
-					copy(out[p:p+16], name)
-					binary.LittleEndian.PutUint64(out[p+40:], compressedSize)
+					name := "__zdebug_" + strings.TrimPrefix(string(bytes.TrimRight(out[p:p+machoNameSize], "\x00")), "__debug_")
+					clear(out[p : p+machoNameSize])
+					copy(out[p:p+machoNameSize], name)
+					binary.LittleEndian.PutUint64(out[p+section64DataSize:], compressedSize)
 				}
-				if err := l.pointer32(out, p+56); err != nil {
+				if err := l.pointer32(out, p+section64Relocations); err != nil {
 					return nil, err
 				}
 			}
-		case 0x2: // LC_SYMTAB
-			for _, field := range []int{8, 16} {
+		case macho.LoadCmdSymtab:
+			for _, field := range []int{symtabSymbols, symtabStrings} {
 				if err := l.pointer32(out, pos+field); err != nil {
 					return nil, err
 				}
 			}
-		case 0xb: // LC_DYSYMTAB
-			for _, field := range []int{32, 40, 48, 56, 64, 72} {
+		case macho.LoadCmdDysymtab:
+			for _, field := range []int{dysymTOC, dysymModules, dysymExternalRefs, dysymIndirectSymbols, dysymExternalRelocs, dysymLocalRelocs} {
 				if err := l.pointer32(out, pos+field); err != nil {
 					return nil, err
 				}
 			}
-		case 0x26, 0x29, 0x1e, 0x2b, 0x2e, 0x33, 0x34: // linkedit_data_command
-			if size != 16 {
+		case lcSegmentSplitInfo, lcFunctionStarts, lcDataInCode, lcDylibCodeSignDRs, lcLinkerOptimizationHint, lcDyldExportsTrie, lcDyldChainedFixups:
+			if size != linkeditCommandSize {
 				return nil, fmt.Errorf("invalid Mach-O linkedit data command")
 			}
-			if err := l.pointer32(out, pos+8); err != nil {
+			if err := l.pointer32(out, pos+linkeditDataOffset); err != nil {
 				return nil, err
 			}
-		case 0x31: // LC_NOTE
-			if size != 40 {
+		case lcNote:
+			if size != noteCommandSize {
 				return nil, fmt.Errorf("invalid Mach-O note command")
 			}
-			if err := l.pointer64(out, pos+24); err != nil {
+			if err := l.pointer64(out, pos+noteDataOffset); err != nil {
 				return nil, err
 			}
-		case 0x1b, 0x32, 0x24, 0x25, 0x2f, 0x30, 0x2a: // UUID, build/minimum/source versions
+		case lcUUID, lcVersionMinMacOSX, lcVersionMinIPhoneOS, lcSourceVersion, lcVersionMinTVOS, lcVersionMinWatchOS, lcBuildVersion:
 			// These commands have no file offsets; preserve them verbatim.
 		default:
-			return nil, fmt.Errorf("unsupported Mach-O dSYM load command %#x", kind)
+			return nil, fmt.Errorf("unsupported Mach-O dSYM load command %#x", uint32(kind))
 		}
 		pos += size
 	}
@@ -180,35 +252,35 @@ func compressMachO(raw []byte) ([]byte, error) {
 // File-backed sections must be disjoint, including sections we do not rewrite.
 func validateMachORanges(raw []byte, ncmds, cmdsize uint32) error {
 	var spans []edit
-	pos, end := 32, 32+int(cmdsize)
+	pos, end := machoHeader64Size, machoHeader64Size+int(cmdsize)
 	for i := uint32(0); i < ncmds; i++ {
-		if pos > end-8 {
+		if pos > end-machoCommandHeaderSize {
 			return fmt.Errorf("truncated Mach-O load command")
 		}
-		kind, size := binary.LittleEndian.Uint32(raw[pos:]), uint64(binary.LittleEndian.Uint32(raw[pos+4:]))
-		if size < 8 || size > uint64(end-pos) {
+		kind, size := macho.LoadCmd(binary.LittleEndian.Uint32(raw[pos:])), uint64(binary.LittleEndian.Uint32(raw[pos+machoCommandSize:]))
+		if size < machoCommandHeaderSize || size > uint64(end-pos) {
 			return fmt.Errorf("invalid Mach-O load command size")
 		}
 		switch kind {
-		case 0x19:
-			if size < 72 || uint64(binary.LittleEndian.Uint32(raw[pos+64:]))*80 > size-72 {
+		case macho.LoadCmdSegment64:
+			if size < segment64Size || uint64(binary.LittleEndian.Uint32(raw[pos+segment64SectionCount:]))*section64Size > size-segment64Size {
 				return fmt.Errorf("truncated Mach-O segment sections")
 			}
-			segOff, segSize := binary.LittleEndian.Uint64(raw[pos+40:]), binary.LittleEndian.Uint64(raw[pos+48:])
+			segOff, segSize := binary.LittleEndian.Uint64(raw[pos+segment64FileOffset:]), binary.LittleEndian.Uint64(raw[pos+segment64FileSize:])
 			if !inFile(raw, segOff, segSize) {
 				return fmt.Errorf("invalid Mach-O segment range")
 			}
-			for j := uint32(0); j < binary.LittleEndian.Uint32(raw[pos+64:]); j++ {
-				p := pos + 72 + int(j)*80
-				off, length := uint64(binary.LittleEndian.Uint32(raw[p+48:])), binary.LittleEndian.Uint64(raw[p+40:])
-				reloff, nreloc := uint64(binary.LittleEndian.Uint32(raw[p+56:])), uint64(binary.LittleEndian.Uint32(raw[p+60:]))
-				if !inFile(raw, reloff, nreloc*8) {
+			for j := uint32(0); j < binary.LittleEndian.Uint32(raw[pos+segment64SectionCount:]); j++ {
+				p := pos + segment64Size + int(j)*section64Size
+				off, length := uint64(binary.LittleEndian.Uint32(raw[p+section64FileOffset:])), binary.LittleEndian.Uint64(raw[p+section64DataSize:])
+				reloff, nreloc := uint64(binary.LittleEndian.Uint32(raw[p+section64Relocations:])), uint64(binary.LittleEndian.Uint32(raw[p+section64RelocationCount:]))
+				if !inFile(raw, reloff, nreloc*machoRelocationSize) {
 					return fmt.Errorf("invalid Mach-O relocation range")
 				}
 				if off == 0 || length == 0 {
 					continue // dSYM code sections describe virtual addresses only.
 				}
-				if binary.LittleEndian.Uint32(raw[p+52:]) > 14 {
+				if binary.LittleEndian.Uint32(raw[p+section64Alignment:]) > 14 {
 					return fmt.Errorf("unsupported Mach-O section alignment above 16 KiB")
 				}
 				if off < uint64(end) || !inFile(raw, off, length) || off < segOff || length > segSize || off-segOff > segSize-length {
@@ -216,12 +288,12 @@ func validateMachORanges(raw []byte, ncmds, cmdsize uint32) error {
 				}
 				spans = append(spans, edit{start: int(off), end: int(off + length)})
 			}
-		case 0x2:
-			if size != 24 || !inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+8:])), uint64(binary.LittleEndian.Uint32(raw[pos+12:]))*16) ||
-				!inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+16:])), uint64(binary.LittleEndian.Uint32(raw[pos+20:]))) {
+		case macho.LoadCmdSymtab:
+			if size != symtabCommandSize || !inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+symtabSymbols:])), uint64(binary.LittleEndian.Uint32(raw[pos+symtabSymbolCount:]))*machoSymbol64Size) ||
+				!inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+symtabStrings:])), uint64(binary.LittleEndian.Uint32(raw[pos+symtabStringsSize:]))) {
 				return fmt.Errorf("invalid Mach-O symbol table range")
 			}
-			for _, field := range []struct{ off, count, unit int }{{8, 12, 16}, {16, 20, 1}} {
+			for _, field := range []struct{ off, count, unit int }{{symtabSymbols, symtabSymbolCount, machoSymbol64Size}, {symtabStrings, symtabStringsSize, 1}} {
 				off := uint64(binary.LittleEndian.Uint32(raw[pos+field.off:]))
 				length := uint64(binary.LittleEndian.Uint32(raw[pos+field.count:])) * uint64(field.unit)
 				if length != 0 {
@@ -231,11 +303,11 @@ func validateMachORanges(raw []byte, ncmds, cmdsize uint32) error {
 					spans = append(spans, edit{start: int(off), end: int(off + length)})
 				}
 			}
-		case 0xb:
-			if size != 80 || !inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+56:])), uint64(binary.LittleEndian.Uint32(raw[pos+60:]))*4) {
+		case macho.LoadCmdDysymtab:
+			if size != dysymtabCommandSize || !inFile(raw, uint64(binary.LittleEndian.Uint32(raw[pos+dysymIndirectSymbols:])), uint64(binary.LittleEndian.Uint32(raw[pos+dysymIndirectSymbolCount:]))*4) {
 				return fmt.Errorf("invalid Mach-O indirect symbol table range")
 			}
-		case 0x1: // 32-bit segment commands do not belong in this layout.
+		case macho.LoadCmdSegment: // 32-bit segment commands do not belong in this layout.
 			return fmt.Errorf("unsupported 32-bit Mach-O segment")
 		}
 		pos += int(size)

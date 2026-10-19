@@ -94,14 +94,14 @@ func compressDarwinDSYM(ctx *context, output string, verbose bool) (err error) {
 	if err != nil {
 		return err
 	}
-	keepBackup := false
+	publication := dsymPublication{destination: nativeDSYMPath(output), files: symbolStripOSFileOps()}
 	defer func() {
-		if !keepBackup {
+		if !publication.keepBackup {
 			err = errors.Join(err, os.RemoveAll(root))
 		}
 	}()
 	bundle := filepath.Join(root, filepath.Base(output)+".dSYM")
-	cmd := ctx.commands.configure(exec.Command("dsymutil", output, "-o", bundle))
+	cmd := ctx.commands.configure(exec.Command("dsymutil", dsymutilInput(output), "-o", bundle))
 	if verbose {
 		fmt.Fprintln(os.Stderr, cmd)
 	}
@@ -111,30 +111,7 @@ func compressDarwinDSYM(ctx *context, output string, verbose bool) (err error) {
 	if err := compressDSYMBundle(bundle, filepath.Base(output)); err != nil {
 		return err
 	}
-	destination := nativeDSYMPath(output)
-	backup := filepath.Join(root, "previous.dSYM")
-	previous := false
-	if st, err := os.Lstat(destination); err == nil {
-		if !st.IsDir() {
-			return fmt.Errorf("dSYM output %s is occupied by a non-directory", destination)
-		}
-		if err := os.Rename(destination, backup); err != nil {
-			return err
-		}
-		previous = true
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	if err := os.Rename(bundle, destination); err != nil {
-		if previous {
-			if restoreErr := os.Rename(backup, destination); restoreErr != nil {
-				keepBackup = true
-				return errors.Join(err, fmt.Errorf("restore previous dSYM (retained at %s): %w", backup, restoreErr))
-			}
-		}
-		return err
-	}
-	return nil
+	return publication.publish(bundle, filepath.Join(root, "previous.dSYM"))
 }
 
 func compressDSYMBundle(bundle, imageName string) error {
