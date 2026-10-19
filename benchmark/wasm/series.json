@@ -2324,6 +2324,17 @@
     },
     {
       "kind": "branch",
+      "id": "1a5a8c75c2ecb89c",
+      "label": "Branch zhouguangyuan0718/llgo:codex/compact-runtime-metadata",
+      "path": "series/branch/1a5a8c75c2ecb89c/summary.json",
+      "configPath": "series/branch/1a5a8c75c2ecb89c/config.json",
+      "commitPath": "commits/2f554f221f9f4d27750b28b1add3b127f58e0fda.json",
+      "sha": "2f554f221f9f4d27750b28b1add3b127f58e0fda",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/2f554f221f9f4d27750b28b1add3b127f58e0fda",
+      "updatedAt": "2026-10-19T11:54:22.901Z"
+    },
+    {
+      "kind": "branch",
       "id": "fa2229a5d2e36970",
       "label": "Branch zhouguangyuan0718/llgo:codex/compat-runtime-20260914",
       "path": "series/branch/fa2229a5d2e36970/summary.json",
@@ -5588,6 +5599,17 @@
       "sha": "af13b3d1e11eff26dee4055962b05f54975f5dcf",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/af13b3d1e11eff26dee4055962b05f54975f5dcf",
       "updatedAt": "2026-10-19T07:32:19.373Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2868",
+      "label": "PR #2868",
+      "path": "series/pull/2868/summary.json",
+      "configPath": "series/pull/2868/config.json",
+      "commitPath": "commits/2f554f221f9f4d27750b28b1add3b127f58e0fda.json",
+      "sha": "2f554f221f9f4d27750b28b1add3b127f58e0fda",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/2f554f221f9f4d27750b28b1add3b127f58e0fda",
+      "updatedAt": "2026-10-19T11:54:22.749Z"
     }
   ]
 }
