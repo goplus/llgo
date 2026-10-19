@@ -137,11 +137,11 @@ values, and pointers qualify.
 
 Value receivers, aggregate fixed parameters or results, multiple results,
 Wasm, and explicit `-target` profiles (including custom native profiles) remain
-outside this support. Their existing wrapper lowering can silently drop the
-incoming ellipsis; for example, a promoted value-receiver method called through
-an interface still loses arguments at O0. Valid LLVM IR for an excluded wrapper
-does not establish correct argument forwarding. Support and clear diagnostics
-for these forms are tracked in [#2855](https://github.com/xgo-dev/llgo/issues/2855).
+outside this support. Selecting an unsupported forwarding wrapper through an
+interface conversion, method expression, or bound method produces a compiler
+error naming the method, target, and unsupported ABI. Call the C-linked method
+or function directly with explicit C-compatible arguments when forwarding is
+unavailable. Unused synthetic wrappers do not prevent those direct calls.
 
 #### Windows API
 
