@@ -6,6 +6,12 @@ function Get-ReleaseTemporaryRoot {
   return [IO.Path]::GetTempPath()
 }
 
+function Get-ReleaseSystemDirectory {
+  param([string]$GoArch)
+  $folder = if ($GoArch -eq '386' -and [Environment]::Is64BitOperatingSystem) { 'SysWOW64' } else { 'System32' }
+  return Join-Path $env:SystemRoot $folder
+}
+
 function Get-ReleasePE {
   param([string]$ReadObj, [string]$Path)
 
@@ -48,8 +54,7 @@ function Copy-ReleaseDLLs {
   )
 
   if (-not $SystemDirectory) {
-    $systemFolder = if ($GoArch -eq '386' -and [Environment]::Is64BitOperatingSystem) { 'SysWOW64' } else { 'System32' }
-    $SystemDirectory = Join-Path $env:SystemRoot $systemFolder
+    $SystemDirectory = Get-ReleaseSystemDirectory -GoArch $GoArch
   }
   $destination = Split-Path $Executable
   $queue = [Collections.Generic.Queue[string]]::new()
@@ -175,6 +180,7 @@ function Assert-ReleaseESPPayload {
   if (-not $Version -or $manifest -notcontains "payload_version=$Version") {
     throw "The ESP payload manifest does not match version $Version"
   }
+  $systemDirectory = Get-ReleaseSystemDirectory -GoArch $GoArch
   $bin = Join-Path $Root 'bin'
   $readObj = Join-Path $bin 'llvm-readobj.exe'
   $binaries = @(Get-ChildItem -LiteralPath $bin -File |
@@ -190,14 +196,14 @@ function Assert-ReleaseESPPayload {
     foreach ($dll in $pe.Imports) {
       if ($dll -match '^(api-ms-|ext-ms-)') { continue }
       if (-not (Test-Path -LiteralPath (Join-Path $bin $dll)) -and
-          -not (Test-Path -LiteralPath (Join-Path $env:SystemRoot "System32/$dll"))) {
+          -not (Test-Path -LiteralPath (Join-Path $systemDirectory $dll))) {
         throw "$($binary.Name) imports $dll, which is absent from the ESP payload and Windows"
       }
     }
   }
   $savedPath = $env:PATH
   try {
-    $env:PATH = "$bin;$env:SystemRoot/System32;$env:SystemRoot"
+    $env:PATH = "$bin;$systemDirectory;$env:SystemRoot"
     foreach ($tool in @('clang', 'clang++', 'ld.lld', 'llc', 'opt', 'llvm-config')) {
       $null = Invoke-ReleaseCapture (Join-Path $bin "$tool.exe") @('--version')
     }
