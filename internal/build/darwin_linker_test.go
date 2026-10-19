@@ -88,7 +88,8 @@ func TestResolveDarwinLLD(t *testing.T) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
 	writeTestDarwinLLD(t, linker, "LLD 23.1.2")
-	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil ||
+		!strings.Contains(err.Error(), linker) || !strings.Contains(err.Error(), `reports "LLD 23.1.2"; want LLD 23.x`) {
 		t.Fatalf("old linker: %v", err)
 	}
 	if err := os.Remove(linker); err != nil {
@@ -146,16 +147,18 @@ func TestDarwinLLDHomebrewFormulas(t *testing.T) {
 	t.Setenv("CCFLAGS", "")
 	t.Setenv("LDFLAGS", "")
 	for _, tt := range []struct {
-		name, versioned, unversioned, want string
+		name, versioned, unversioned, want, wantError string
 	}{
-		{"current formula", "", "LLD 23.1.3", "lld"},
-		{"versioned formula", "LLD 23.1.4", "", "lld@23"},
-		{"prefer pinned major", "LLD 23.1.3", "LLD 23.1.4", "lld@23"},
-		{"new unversioned major", "LLD 23.1.3", "LLD 24.1.0", "lld@23"},
-		{"outdated versioned formula", "LLD 23.1.2", "LLD 23.1.3", "lld"},
-		{"outdated unversioned formula", "", "LLD 23.1.2", ""},
-		{"unsupported major", "", "LLD 24.1.0", ""},
-		{"missing formulas", "", "", ""},
+		{"current formula", "", "LLD 23.1.3", "lld", ""},
+		{"versioned formula", "LLD 23.1.4", "", "lld@23", ""},
+		{"prefer pinned major", "LLD 23.1.3", "LLD 23.1.4", "lld@23", ""},
+		{"new unversioned major", "LLD 23.1.3", "LLD 24.1.0", "lld@23", ""},
+		{"outdated versioned formula", "LLD 23.1.2", "LLD 23.1.3", "lld", ""},
+		{"outdated versioned only", "LLD 23.1.2", "", "lld@23", `reports "LLD 23.1.2"`},
+		{"both incompatible", "LLD 23.1.2", "LLD 24.1.0", "lld@23", `reports "LLD 23.1.2"`},
+		{"outdated unversioned formula", "", "LLD 23.1.2", "lld", `reports "LLD 23.1.2"`},
+		{"unsupported major", "", "LLD 24.1.0", "lld", `reports "LLD 24.1.0"`},
+		{"missing formulas", "", "", "lld", "probe LLD"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			prefix := filepath.Join(t.TempDir(), "brew with spaces")
@@ -166,17 +169,40 @@ func TestDarwinLLDHomebrewFormulas(t *testing.T) {
 			}
 			export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
 			err := configureDarwinLLD(commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}, &export)
-			if tt.want == "" {
-				if err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld") {
-					t.Fatalf("invalid installation: %v", err)
+			path := filepath.Join(prefix, "opt", tt.want, "bin", "ld64.lld")
+			if tt.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), tt.wantError) {
+					t.Fatalf("error = %v; want %q and %q", err, path, tt.wantError)
 				}
 				return
 			}
-			want := "-fuse-ld=" + filepath.Join(prefix, "opt", tt.want, "bin", "ld64.lld")
+			want := "-fuse-ld=" + path
 			if err != nil || export.LDFLAGS[0] != want || !compatibleDarwinLLD(export.LinkerIdentity) {
 				t.Fatalf("linker = %+v, %v; want %q", export, err, want)
 			}
 		})
+	}
+}
+
+func TestDarwinLLDHomebrewProbeFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable fixtures use /bin/sh")
+	}
+	t.Setenv("CCFLAGS", "")
+	t.Setenv("LDFLAGS", "")
+	prefix := t.TempDir()
+	broken := filepath.Join(prefix, "opt", "lld@23", "bin", "ld64.lld")
+	writeTestDarwinFile(t, broken, "#!/bin/sh\necho 'cannot load linker library' >&2\nexit 1\n", 0755)
+	commands := commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}
+	export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
+	if _, _, err := resolveDarwinLLD(commands, &export); err == nil ||
+		!strings.Contains(err.Error(), broken) || !strings.Contains(err.Error(), "cannot load linker library") {
+		t.Fatalf("broken installed linker: %v", err)
+	}
+	working := filepath.Join(prefix, "opt", "lld", "bin", "ld64.lld")
+	writeTestDarwinLLD(t, working, "LLD 23.1.3")
+	if err := configureDarwinLLD(commands, &export); err != nil || export.LDFLAGS[0] != "-fuse-ld="+working {
+		t.Fatalf("broken pinned linker blocked the working fallback: %+v, %v", export, err)
 	}
 }
 

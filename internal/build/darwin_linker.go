@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -132,14 +133,23 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 // Prefer a compatible versioned installation when available, but do not require
 // that formula to exist. An explicit --ld-path still overrides this default.
 func homebrewDarwinLLD(commands commandEnv, prefix string) string {
+	var fallback string
 	for _, formula := range []string{"lld@23", "lld"} {
 		path := prefix + string(os.PathSeparator) + filepath.Join("opt", formula, "bin", "ld64.lld")
 		out, err := commands.configure(exec.Command(path, "--version")).Output()
 		if err == nil && compatibleDarwinLLD(strings.TrimSpace(string(out))) {
 			return path
 		}
+		if fallback == "" && !errors.Is(err, os.ErrNotExist) {
+			fallback = path
+		}
 	}
-	// Keep the normal probe diagnostic when neither installation is usable.
+	// Report the actual installed linker's version or probe failure when no
+	// compatible candidate exists, rather than naming a missing installation.
+	if fallback != "" {
+		return fallback
+	}
+	// Neither installation exists; retain the normal missing-linker diagnostic.
 	return prefix + string(os.PathSeparator) + filepath.Join("opt", "lld", "bin", "ld64.lld")
 }
 
