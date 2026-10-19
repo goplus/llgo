@@ -3463,6 +3463,7 @@ func lowerMainCExportModule(ctx *context, pkg llssa.Package, exports []cExport) 
 		return false, nil
 	}
 	ctx.cTransformer.LowerWindowsVectorParams(mod)
+	ctx.cTransformer.LowerWideVectorCalls(mod)
 	ctx.cTransformer.TransformModule(pkg.Path(), mod)
 	if ctx.buildConf.Goarch != "wasm" {
 		return true, nil
@@ -3512,6 +3513,7 @@ func compilePackageModule(ctx *context, aPkg *aPackage, externs []string, verbos
 	// They must forward the caller's ABI storage, not materialize aggregates
 	// in a forwarding frame that a tail transfer immediately releases.
 	lowerLargeAggregates(ctx.prog, ret.Module())
+	ctx.cTransformer.LowerWideVectorCalls(ret.Module())
 	ctx.cTransformer.LowerWindowsVectorParams(ret.Module())
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 	ctx.cTransformer.SetSkipFuncs(nil)
