@@ -62,7 +62,7 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	if prefix == "" {
 		prefix = "/opt/homebrew"
 	}
-	path := prefix + string(os.PathSeparator) + filepath.Join("opt", "lld@23", "bin", "ld64.lld")
+	path := homebrewDarwinLLD(commands, prefix)
 	// Use Clang's flag merger so the last --ld-path follows the
 	// actual link command (CCFLAGS, LDFLAGS, then configured flags).
 	// Like the actual link command, it reads flags from the process environment,
@@ -119,13 +119,28 @@ func resolveDarwinLLD(commands commandEnv, export *crosscompile.Export) (string,
 	out, err := cmd.Output()
 	if err != nil {
 		diagnostic := strings.TrimSpace(string(out) + stderr.String())
-		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install --skip-link lld@23", path, err, diagnostic)
+		return "", "", fmt.Errorf("probe LLD %q: %w: %s; install with brew install --skip-link lld (or lld@23 when available)", path, err, diagnostic)
 	}
 	version := strings.TrimSpace(string(out))
 	if !compatibleDarwinLLD(version) {
-		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew update and brew install --skip-link lld@23", path, version)
+		return "", "", fmt.Errorf("LLD %q reports %q; want LLD 23.x >= 23.1.3; run brew update and brew install --skip-link lld (or lld@23 when available)", path, version)
 	}
 	return path, version, nil
+}
+
+// Homebrew uses the unversioned formula until the next LLVM major is released.
+// Prefer a compatible versioned installation when available, but do not require
+// that formula to exist. An explicit --ld-path still overrides this default.
+func homebrewDarwinLLD(commands commandEnv, prefix string) string {
+	for _, formula := range []string{"lld@23", "lld"} {
+		path := prefix + string(os.PathSeparator) + filepath.Join("opt", formula, "bin", "ld64.lld")
+		out, err := commands.configure(exec.Command(path, "--version")).Output()
+		if err == nil && compatibleDarwinLLD(strings.TrimSpace(string(out))) {
+			return path
+		}
+	}
+	// Keep the normal probe diagnostic when neither installation is usable.
+	return prefix + string(os.PathSeparator) + filepath.Join("opt", "lld", "bin", "ld64.lld")
 }
 
 // Clang's -### command lines start with a space and a quoted executable.

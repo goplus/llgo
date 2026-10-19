@@ -184,23 +184,35 @@ macos_lld_is_compatible() {
     (( BASH_REMATCH[2] > 1 || (BASH_REMATCH[2] == 1 && BASH_REMATCH[3] >= 3) ))
 }
 
+macos_lld_path() {
+    local formula prefix linker
+    for formula in lld@23 lld; do
+        prefix="$(brew --prefix "$formula" 2>/dev/null)" || continue
+        linker="$prefix/bin/ld64.lld"
+        if macos_lld_is_compatible "$linker" 2>/dev/null; then
+            printf '%s\n' "$linker"
+            return
+        fi
+    done
+    return 1
+}
+
 install_macos_lld() {
-    # LLD 23.1.2 still rejects SDK 27's arm64e.x1 stubs. Keep the supported
-    # major pinned even after Homebrew's unversioned formula moves to LLVM 24.
-    local formula=lld@23
-    local linker
-    linker="$(brew --prefix "$formula")/bin/ld64.lld"
-    if macos_lld_is_compatible "$linker" 2>/dev/null; then
+    if macos_lld_path >/dev/null; then
         return
     fi
     # Runner images can disable auto-update and retain an older 23.x formula.
     brew update
+    # The versioned formula only exists after Homebrew moves to a newer major.
+    local formula=lld
+    if brew info --formula lld@23 >/dev/null 2>&1; then
+        formula=lld@23
+    fi
     # install also upgrades an outdated formula, while --skip-link keeps the
     # matching LLD 22 drivers on PATH. brew upgrade has no --skip-link option.
     HOMEBREW_NO_INSTALL_UPGRADE='' brew install --skip-link "$formula"
-    linker="$(brew --prefix "$formula")/bin/ld64.lld"
-    macos_lld_is_compatible "$linker" ||
-        die "LLD 23.x >= 23.1.3 is required for macOS arm64; update Homebrew and install lld@23 with --skip-link"
+    macos_lld_path >/dev/null ||
+        die "LLD 23.x >= 23.1.3 is required for macOS arm64; install a compatible lld or lld@23 with --skip-link, or set --ld-path explicitly"
 }
 
 install_macos_dependencies() {

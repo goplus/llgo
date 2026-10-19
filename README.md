@@ -367,10 +367,11 @@ llgo run .
 - [zlib 1.2+](https://github.com/madler/zlib)
 - [Python 3.12+](https://www.python.org) (optional, for [github.com/goplus/lib/py](https://pkg.go.dev/github.com/goplus/lib/py))
 
-On macOS arm64, the installer installs or upgrades Homebrew `lld@23`
-(including its LLVM 23 library dependencies). Native links use
-`$HOMEBREW_PREFIX/opt/lld@23/bin/ld64.lld`, defaulting to `/opt/homebrew`.
-LLD 23.1.3 is required for macOS 27 SDK stubs; LLGo and ESP Clang remain on
+On macOS arm64, the installer installs or upgrades Homebrew `lld` (or `lld@23`
+when that versioned formula is available), including its LLVM 23 dependencies.
+Native links select a compatible installation under `$HOMEBREW_PREFIX/opt`,
+preferring `lld@23` to `lld`; the prefix defaults to `/opt/homebrew`.
+LLD 23.x >= 23.1.3 is required for macOS 27 SDK stubs; LLGo and ESP Clang remain on
 LLVM 22. No separate linker is bundled. An explicit Clang `--ld-path` retains
 precedence, including when supplied through an `@response-file`.
 Keep the matching LLVM 22 and LLD 22 tools on PATH for WASI and other
@@ -416,7 +417,7 @@ brew update
 brew install llvm@22 lld@22 bdw-gc openssl cjson libffi libuv pkg-config
 brew install python@3.12 # optional
 brew link --force --overwrite llvm@22 lld@22 libffi
-# install.sh also provisions lld@23 for native macOS arm64 links.
+# install.sh also provisions LLD 23 for native macOS arm64 links.
 ./install.sh
 ```
 

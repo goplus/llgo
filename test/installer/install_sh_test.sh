@@ -65,7 +65,8 @@ EOF
     # shellcheck disable=SC2329 # install_macos_lld invokes this mock.
     brew() {
         case "$1" in
-            --prefix) assert_equal "$2" lld@23; printf '%s\n' "$lld_prefix" ;;
+            --prefix) [[ "$2" == lld@23 ]] || return 1; printf '%s\n' "$lld_prefix" ;;
+            info) assert_equal "$*" 'info --formula lld@23' ;;
             update) refreshed=$((refreshed + 1)) ;;
             install)
                 assert_equal "$refreshed" 1
@@ -89,18 +90,19 @@ EOF
     fi
 )
 
-# A fresh runner must refresh stale metadata before its first LLD install.
+# A fresh runner has only the unversioned formula until the next LLVM major.
 (
     fresh_prefix="$temporary/fresh-lld"
     fresh_updates=0
     # shellcheck disable=SC2329 # install_macos_lld invokes this mock.
     brew() {
         case "$1" in
-            --prefix) printf '%s\n' "$fresh_prefix" ;;
+            --prefix) [[ "$2" == lld ]] || return 1; printf '%s\n' "$fresh_prefix" ;;
+            info) assert_equal "$*" 'info --formula lld@23'; return 1 ;;
             update) fresh_updates=$((fresh_updates + 1)) ;;
             install)
                 assert_equal "$fresh_updates" 1
-                assert_equal "$*" 'install --skip-link lld@23'
+                assert_equal "$*" 'install --skip-link lld'
                 mkdir -p "$fresh_prefix/bin"
                 printf '#!/bin/sh\necho "LLD 23.1.3"\n' >"$fresh_prefix/bin/ld64.lld"
                 chmod +x "$fresh_prefix/bin/ld64.lld"
@@ -111,6 +113,29 @@ EOF
     install_macos_lld
     install_macos_lld
     assert_equal "$fresh_updates" 1
+    assert_equal "$(macos_lld_path)" "$fresh_prefix/bin/ld64.lld"
+)
+
+# Discovery must fall back from an outdated pinned installation and must never
+# silently accept the unversioned formula after it moves to LLVM 24.
+(
+    formula_root="$temporary/formulas with spaces"
+    mkdir -p "$formula_root/lld@23/bin" "$formula_root/lld/bin"
+    # shellcheck disable=SC2329 # macos_lld_path invokes this mock.
+    brew() {
+        assert_equal "$1" --prefix
+        printf '%s\n' "$formula_root/$2"
+    }
+    printf '#!/bin/sh\necho "LLD 23.1.2"\n' >"$formula_root/lld@23/bin/ld64.lld"
+    printf '#!/bin/sh\necho "LLD 23.1.3"\n' >"$formula_root/lld/bin/ld64.lld"
+    chmod +x "$formula_root/"*/bin/ld64.lld
+    assert_equal "$(macos_lld_path)" "$formula_root/lld/bin/ld64.lld"
+    printf '#!/bin/sh\necho "LLD 24.1.0"\n' >"$formula_root/lld/bin/ld64.lld"
+    if macos_lld_path; then
+        fail 'unsupported unversioned major accepted'
+    fi
+    printf '#!/bin/sh\necho "LLD 23.1.4"\n' >"$formula_root/lld@23/bin/ld64.lld"
+    assert_equal "$(macos_lld_path)" "$formula_root/lld@23/bin/ld64.lld"
 )
 
 # An existing installation must not skip the newly required dependency.

@@ -46,8 +46,9 @@ Both environments are checked in CI on these platforms:
 | Windows | x86-64, native PowerShell/CMD |
 
 macOS requires the Xcode Command Line Tools (`xcode-select --install`).
-On macOS ARM64, also install Homebrew `lld@23` (`brew install lld@23`);
-native links require LLD 23.x >= 23.1.3 while the compiler remains on LLVM 22. Windows
+On macOS ARM64, also install Homebrew `lld` (`brew install --skip-link lld`),
+or `lld@23` when available. Native links require LLD 23.x >= 23.1.3 while
+the compiler remains on LLVM 22. Windows
 requires the Visual Studio C++ Build Tools with the Windows SDK and the
 x86-64 C++ toolchain. Python, LLDB, cJSON, and cross-compilers are optional and
 are not included in either environment.

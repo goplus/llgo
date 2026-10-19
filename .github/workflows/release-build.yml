@@ -467,7 +467,8 @@ jobs:
           REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
         run: |
           set -euo pipefail
-          linker="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/lld@23/bin/ld64.lld"
+          LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
+          linker="$(macos_lld_path)"
           "$linker" --version
           sdk_version=$(xcrun --sdk macosx --show-sdk-version)
           echo "Testing external LLD with SDK $sdk_version"

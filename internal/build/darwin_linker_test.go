@@ -88,7 +88,7 @@ func TestResolveDarwinLLD(t *testing.T) {
 		t.Fatalf("unexpected linker configuration: %+v", export)
 	}
 	writeTestDarwinLLD(t, linker, "LLD 23.1.2")
-	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld") {
 		t.Fatalf("old linker: %v", err)
 	}
 	if err := os.Remove(linker); err != nil {
@@ -97,7 +97,7 @@ func TestResolveDarwinLLD(t *testing.T) {
 	if err := configureDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "no -fuse-ld=lld default") {
 		t.Fatalf("missing default linker flag must fail before probing: %v", err)
 	}
-	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld@23") {
+	if _, _, err := resolveDarwinLLD(commands, &crosscompile.Export{}); err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld") {
 		t.Fatalf("missing linker: %v", err)
 	}
 }
@@ -136,6 +136,76 @@ func TestDarwinLLDProbeOutput(t *testing.T) {
 				t.Fatalf("linker identity = %q, want stdout %q", export.LinkerIdentity, tt.stdout)
 			}
 		})
+	}
+}
+
+func TestDarwinLLDHomebrewFormulas(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("executable fixtures use /bin/sh")
+	}
+	t.Setenv("CCFLAGS", "")
+	t.Setenv("LDFLAGS", "")
+	for _, tt := range []struct {
+		name, versioned, unversioned, want string
+	}{
+		{"current formula", "", "LLD 23.1.3", "lld"},
+		{"versioned formula", "LLD 23.1.4", "", "lld@23"},
+		{"prefer pinned major", "LLD 23.1.3", "LLD 23.1.4", "lld@23"},
+		{"new unversioned major", "LLD 23.1.3", "LLD 24.1.0", "lld@23"},
+		{"outdated versioned formula", "LLD 23.1.2", "LLD 23.1.3", "lld"},
+		{"outdated unversioned formula", "", "LLD 23.1.2", ""},
+		{"unsupported major", "", "LLD 24.1.0", ""},
+		{"missing formulas", "", "", ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			prefix := filepath.Join(t.TempDir(), "brew with spaces")
+			for formula, version := range map[string]string{"lld@23": tt.versioned, "lld": tt.unversioned} {
+				if version != "" {
+					writeTestDarwinLLD(t, filepath.Join(prefix, "opt", formula, "bin", "ld64.lld"), version)
+				}
+			}
+			export := crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}}
+			err := configureDarwinLLD(commandEnv{environ: []string{"HOMEBREW_PREFIX=" + prefix}}, &export)
+			if tt.want == "" {
+				if err == nil || !strings.Contains(err.Error(), "brew install --skip-link lld") {
+					t.Fatalf("invalid installation: %v", err)
+				}
+				return
+			}
+			want := "-fuse-ld=" + filepath.Join(prefix, "opt", tt.want, "bin", "ld64.lld")
+			if err != nil || export.LDFLAGS[0] != want || !compatibleDarwinLLD(export.LinkerIdentity) {
+				t.Fatalf("linker = %+v, %v; want %q", export, err, want)
+			}
+		})
+	}
+}
+
+func TestDarwinLLDUnversionedBuild(t *testing.T) {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		t.Skip("native macOS arm64 linker selection")
+	}
+	t.Setenv("CCFLAGS", "")
+	t.Setenv("LDFLAGS", "")
+	linker, _, err := resolveDarwinLLD(commandEnv{}, &crosscompile.Export{LDFLAGS: []string{"-fuse-ld=lld"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix := t.TempDir()
+	unversioned := filepath.Join(prefix, "opt", "lld", "bin", "ld64.lld")
+	if err := os.MkdirAll(filepath.Dir(unversioned), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(linker, unversioned); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOMEBREW_PREFIX", prefix)
+	conf := NewDefaultConf(ModeBuild)
+	conf.OutFile = filepath.Join(prefix, "large-array-return")
+	if _, err := Do([]string{"./testdata/largearrayreturn"}, conf); err != nil {
+		t.Fatalf("build with only the unversioned Homebrew linker: %v", err)
+	}
+	if out := runBinary(t, conf.OutFile); !strings.HasSuffix(strings.TrimSpace(out), "99 0 0 0 98 98 6 1\n97") {
+		t.Fatalf("unexpected native output: %q", out)
 	}
 }
 
