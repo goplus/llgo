@@ -602,7 +602,7 @@ jobs:
         if: steps.release-type.outputs.stable == 'true'
         env:
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
-          FURY_ACCOUNT: ${{ vars.FURY_ACCOUNT || github.repository_owner }}
+          FURY_ACCOUNT: ${{ vars.FURY_ACCOUNT || (github.repository_owner == 'xgo-dev' && 'goplus') || github.repository_owner }}
         run: |
           set -euo pipefail
           : "${FURY_TOKEN:?Set the FURY_TOKEN Actions secret to a Gemfury Push token}"
