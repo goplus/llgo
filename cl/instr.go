@@ -786,7 +786,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 			return llssa.Expr{}, false
 		}
 		typ := p.type_(field.X.Type(), llssa.GoDecl)
-		return p.prog.Val(int(p.prog.OffsetOf(typ, field.Field))), true
+		return p.prog.IntVal(p.prog.OffsetOf(typ, field.Field), p.prog.Uintptr()), true
 	}
 	load, ok := arg.(*ssa.UnOp)
 	if !ok || load.Op != token.MUL {
@@ -800,7 +800,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	return p.prog.Val(offset), true
+	return p.prog.IntVal(uint64(offset), p.prog.Uintptr()), true
 }
 
 func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
@@ -1352,8 +1352,6 @@ func analyzeCallerTrackingPackage(pkg *ssa.Package, methods []*ssa.Function) cal
 		funcs:     funcs,
 		trackable: trackable,
 		callsites: collectRuntimeCallerCallsites(funcs),
-		memo:      make(map[*ssa.Function]bool),
-		visiting:  make(map[*ssa.Function]bool),
 	}
 	return callerTrackingPackageAnalysis{
 		funcs:     funcs,
@@ -1465,15 +1463,9 @@ func computeRuntimeCallerBaseSetFromAnalysis(analysis *runtimeCallerAnalysis) ma
 		return nil
 	}
 	out := make(map[*ssa.Function]bool)
-	for {
-		ntrack := len(analysis.trackable)
-		for fn := range analysis.trackable {
-			if analysis.fnMayReachRuntimeCaller(fn) {
-				out[fn] = true
-			}
-		}
-		if len(analysis.trackable) == ntrack {
-			break
+	for fn := range analysis.trackable {
+		if analysis.fnMayReachRuntimeCaller(fn) {
+			out[fn] = true
 		}
 	}
 	if len(out) == 0 {
@@ -1487,8 +1479,8 @@ type runtimeCallerAnalysis struct {
 	funcs     map[*ssa.Function]bool
 	trackable map[*ssa.Function]bool
 	callsites map[*ssa.Function][]*ssa.CallCommon
-	memo      map[*ssa.Function]bool
-	visiting  map[*ssa.Function]bool
+	// nil until reachability has been solved for the whole package.
+	memo map[*ssa.Function]bool
 }
 
 func collectRuntimeCallerFunctions(pkg *ssa.Package) (funcs, trackable map[*ssa.Function]bool) {
@@ -1696,57 +1688,65 @@ func (a *runtimeCallerAnalysis) fnMayReachRuntimeCaller(fn *ssa.Function) bool {
 	if !a.funcs[fn] {
 		return false
 	}
-	if ok, done := a.memo[fn]; done {
-		return ok
+	if a.memo == nil {
+		a.computeReachability()
 	}
-	if a.visiting[fn] {
-		return false
-	}
-	a.visiting[fn] = true
-	defer delete(a.visiting, fn)
-	reaches := false
-	forEachCall(fn, func(call *ssa.CallCommon) {
-		if reaches {
-			return
-		}
-		callee := call.StaticCallee()
-		switch {
-		case isRuntimeCallerFrameFunc(callee):
-			reaches = true
-		case callee != nil:
-			reaches = a.fnMayReachRuntimeCaller(callee)
-		case call.Method != nil:
-			reaches = a.interfaceInvokeMayReachRuntimeCaller(fn, call)
-		default:
-			reaches = a.functionValueCallMayReachRuntimeCaller(fn, call.Value)
-		}
-	})
-	if !reaches {
-		for _, anon := range fn.AnonFuncs {
-			if a.fnMayReachRuntimeCaller(anon) {
-				if a.trackable[fn] {
-					a.trackable[anon] = true
-				}
-				reaches = true
-				break
-			}
-		}
-	}
-	a.memo[fn] = reaches
-	return reaches
+	return a.memo[fn]
 }
 
-func (a *runtimeCallerAnalysis) functionValueCallMayReachRuntimeCaller(fn *ssa.Function, value ssa.Value) bool {
-	targets, ok := a.functionValueTargets(fn, value)
-	if !ok {
-		return true
-	}
-	for target := range targets {
-		if a.fnMayReachRuntimeCaller(target) {
-			return true
+// computeReachability propagates positives through the reverse call graph.
+// Recursive DFS cannot cache a negative on a back-edge: another member of the
+// cycle may reach a runtime caller consumer later in the traversal.
+func (a *runtimeCallerAnalysis) computeReachability() {
+	a.memo = make(map[*ssa.Function]bool)
+	callers := make(map[*ssa.Function][]*ssa.Function)
+	var pending []*ssa.Function
+	mark := func(fn *ssa.Function) {
+		if !a.memo[fn] {
+			a.memo[fn] = true
+			pending = append(pending, fn)
 		}
 	}
-	return false
+	addTarget := func(fn, callee *ssa.Function) {
+		if isRuntimeCallerFrameFunc(callee) {
+			mark(fn)
+		} else if a.funcs[callee] {
+			callers[callee] = append(callers[callee], fn)
+		}
+	}
+	for fn := range a.funcs {
+		if isRuntimeCallerFrameFunc(fn) {
+			mark(fn)
+		}
+		forEachCall(fn, func(call *ssa.CallCommon) {
+			if callee := call.StaticCallee(); callee != nil {
+				addTarget(fn, callee)
+				return
+			}
+			var targets map[*ssa.Function]bool
+			var ok bool
+			if call.Method != nil {
+				targets, ok = a.interfaceMethodTargets(fn, call.Value, call.Method)
+			} else {
+				targets, ok = a.functionValueTargets(fn, call.Value)
+			}
+			if !ok {
+				// Preserve conservative tracking for unresolved dispatch.
+				mark(fn)
+			}
+			for callee := range targets {
+				addTarget(fn, callee)
+			}
+		})
+		for _, anon := range fn.AnonFuncs {
+			addTarget(fn, anon)
+		}
+	}
+	for i := 0; i < len(pending); i++ {
+		for _, caller := range callers[pending[i]] {
+			mark(caller)
+		}
+	}
 }
 
 func (a *runtimeCallerAnalysis) functionValueTargets(fn *ssa.Function, value ssa.Value) (map[*ssa.Function]bool, bool) {
@@ -1796,19 +1796,6 @@ func staticFunctionTargets(value ssa.Value) (map[*ssa.Function]bool, bool) {
 		}
 	}
 	return nil, false
-}
-
-func (a *runtimeCallerAnalysis) interfaceInvokeMayReachRuntimeCaller(fn *ssa.Function, call *ssa.CallCommon) bool {
-	targets, ok := a.interfaceMethodTargets(fn, call.Value, call.Method)
-	if !ok {
-		return true
-	}
-	for target := range targets {
-		if a.fnMayReachRuntimeCaller(target) {
-			return true
-		}
-	}
-	return false
 }
 
 func (a *runtimeCallerAnalysis) interfaceMethodTargets(fn *ssa.Function, value ssa.Value, method *types.Func) (map[*ssa.Function]bool, bool) {

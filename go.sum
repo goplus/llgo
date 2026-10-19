@@ -1,3 +1,5 @@
+github.com/cpunion/tools v0.48.1-0.20261019010317-d793c18ac89b h1:YdRXrwHMwoWhMBU5/OotFhKQ5goLyxwbcHYgGs/t77k=
+github.com/cpunion/tools v0.48.1-0.20261019010317-d793c18ac89b/go.mod h1:9eEncMayCV6zRMGhR5eZEC2iBx98qWcF1HZ9Z7wJOoA=
 github.com/creack/goselect v0.1.2 h1:2DNy14+JPjRBgPzAd1thbQp4BSIihxcBf0IXhQXDRa0=
 github.com/creack/goselect v0.1.2/go.mod h1:a/NhLweNvqIYMuxcMOuWY516Cimucms3DglDzQP3hKY=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
