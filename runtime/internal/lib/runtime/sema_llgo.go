@@ -7,6 +7,7 @@ import (
 
 	latomic "sync/atomic"
 
+	rt "github.com/xgo-dev/llgo/runtime/internal/runtime"
 	psync "github.com/xgo-dev/llgo/runtime/internal/sync"
 )
 
@@ -40,8 +41,8 @@ func sync_runtime_SemacquireRWMutex(addr *uint32, _ bool, _ int) {
 }
 
 //go:linkname sync_runtime_SemacquireWaitGroup sync.runtime_SemacquireWaitGroup
-func sync_runtime_SemacquireWaitGroup(addr *uint32, _ bool) {
-	semaAcquire(addr)
+func sync_runtime_SemacquireWaitGroup(addr *uint32, durable bool) {
+	semaAcquireWaitGroup(addr, durable)
 }
 
 // runtime_SemacquireMutex is used by internal/sync via linkname.
@@ -120,8 +121,9 @@ type notifyList struct {
 }
 
 type notifyState struct {
-	mu   psync.Mutex
-	cond psync.Cond
+	waiters map[uint32]*rt.SynctestWaiter
+	mu      psync.Mutex
+	cond    psync.Cond
 }
 
 var notifyOnce psync.Once
@@ -157,9 +159,21 @@ func sync_runtime_notifyListAdd(l *notifyList) uint32 {
 func sync_runtime_notifyListWait(l *notifyList, t uint32) {
 	st := getNotifyState(l)
 	st.mu.Lock()
-	for latomic.LoadUint32(&l.notify) == t {
+	var waiter *rt.SynctestWaiter
+	if int32(t-latomic.LoadUint32(&l.notify)) >= 0 {
+		waiter = rt.NewSynctestWaiter()
+		if waiter != nil {
+			if st.waiters == nil {
+				st.waiters = make(map[uint32]*rt.SynctestWaiter)
+			}
+			st.waiters[t] = waiter
+		}
+	}
+	for int32(t-latomic.LoadUint32(&l.notify)) >= 0 {
+		waiter.Block()
 		st.cond.Wait(&st.mu)
 	}
+	delete(st.waiters, t)
 	st.mu.Unlock()
 }
 
@@ -167,6 +181,9 @@ func sync_runtime_notifyListWait(l *notifyList, t uint32) {
 func sync_runtime_notifyListNotifyAll(l *notifyList) {
 	st := getNotifyState(l)
 	st.mu.Lock()
+	for _, w := range st.waiters {
+		w.Wake()
+	}
 	latomic.StoreUint32(&l.notify, latomic.LoadUint32(&l.wait))
 	st.cond.Broadcast()
 	st.mu.Unlock()
@@ -177,8 +194,13 @@ func sync_runtime_notifyListNotifyOne(l *notifyList) {
 	st := getNotifyState(l)
 	st.mu.Lock()
 	if latomic.LoadUint32(&l.notify) != latomic.LoadUint32(&l.wait) {
-		latomic.AddUint32(&l.notify, 1)
-		st.cond.Signal()
+		n := latomic.AddUint32(&l.notify, 1)
+		for ticket, w := range st.waiters {
+			if int32(ticket-n) < 0 {
+				w.Wake()
+			}
+		}
+		st.cond.Broadcast()
 	}
 	st.mu.Unlock()
 }

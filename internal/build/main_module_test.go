@@ -42,6 +42,7 @@ func TestGenMainModuleExecutable(t *testing.T) {
 	}
 	ir := mod.LPkg.String()
 	checks := []string{
+		"@__llgo_allthreads_executable = hidden constant i32 1",
 		"define i32 @" + processEntrySymbol + "(",
 		"define void @runtime.main()",
 		".pushsection llgo_funcinfo_entry",
@@ -527,6 +528,9 @@ func TestGenMainModuleLibrary(t *testing.T) {
 	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
 	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{})
 	ir := mod.LPkg.String()
+	if strings.Contains(ir, "__llgo_allthreads_executable") {
+		t.Fatal("C archive must not enable standalone all-thread ownership")
+	}
 	if strings.Contains(ir, "define i32 @main") {
 		t.Fatalf("library mode should not emit main function:\n%s", ir)
 	}

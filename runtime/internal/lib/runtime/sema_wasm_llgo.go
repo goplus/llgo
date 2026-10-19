@@ -10,9 +10,10 @@ import (
 )
 
 type wasmWaiter struct {
-	next   *wasmWaiter
-	waiter llruntime.SchedulerWaiter
-	ticket uint32
+	synctest *llruntime.SynctestWaiter
+	next     *wasmWaiter
+	waiter   llruntime.SchedulerWaiter
+	ticket   uint32
 }
 
 type wasmWaitQueue struct {
@@ -39,6 +40,7 @@ func acquireWasmWaiter(ticket uint32) *wasmWaiter {
 }
 
 func releaseWasmWaiter(w *wasmWaiter) {
+	w.synctest = nil
 	w.waiter = llruntime.SchedulerWaiter{}
 	w.ticket = 0
 	w.next = wasmWaiterFree
@@ -135,8 +137,8 @@ func sync_runtime_SemacquireRWMutex(addr *uint32, lifo bool, _ int) {
 	semaAcquire(addr, lifo)
 }
 
-func syncWaitGroupAcquire(addr *uint32) {
-	semaAcquire(addr, false)
+func syncWaitGroupAcquire(addr *uint32, durable bool) {
+	semaAcquireInternal(addr, false, durable)
 }
 
 func runtime_SemacquireMutex(addr *uint32, lifo bool, _ int) {

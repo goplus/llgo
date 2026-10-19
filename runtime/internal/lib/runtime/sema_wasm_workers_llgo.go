@@ -26,7 +26,9 @@ func (m *wasmSemaMutex) Unlock() {
 	m.mutex.Unlock()
 }
 
-func semaAcquire(addr *uint32, lifo bool) {
+func semaAcquire(addr *uint32, lifo bool) { semaAcquireInternal(addr, lifo, false) }
+
+func semaAcquireInternal(addr *uint32, lifo, durable bool) {
 	value := atomic.LoadUint32(addr)
 	if value != 0 && atomic.CompareAndSwapUint32(addr, value, value-1) {
 		return
@@ -38,7 +40,11 @@ func semaAcquire(addr *uint32, lifo bool) {
 		return
 	}
 	w := acquireWasmWaiter(0)
+	if durable {
+		w.synctest = llruntime.NewSynctestWaiter()
+	}
 	semaQueue(addr).push(w, lifo)
+	w.synctest.Block()
 	wasmWaitQueuesLock.Unlock()
 	w.waiter.Park()
 	wasmWaitQueuesLock.Lock()
@@ -55,6 +61,7 @@ func semaRelease(addr *uint32, handoff bool) {
 				delete(semaQueues, key)
 			}
 			wasmWaitQueuesLock.Unlock()
+			w.synctest.Wake()
 			w.waiter.Ready()
 			if handoff {
 				llruntime.Gosched()
@@ -77,7 +84,9 @@ func sync_runtime_notifyListWait(l *notifyList, ticket uint32) {
 		return
 	}
 	w := acquireWasmWaiter(ticket)
+	w.synctest = llruntime.NewSynctestWaiter()
 	notifyQueue(l).push(w, false)
+	w.synctest.Block()
 	wasmWaitQueuesLock.Unlock()
 	w.waiter.Park()
 	wasmWaitQueuesLock.Lock()
@@ -107,6 +116,7 @@ func sync_runtime_notifyListNotifyAll(l *notifyList) {
 		if w == nil {
 			return
 		}
+		w.synctest.Wake()
 		w.waiter.Ready()
 	}
 }
@@ -132,6 +142,7 @@ func sync_runtime_notifyListNotifyOne(l *notifyList) {
 	}
 	wasmWaitQueuesLock.Unlock()
 	if w != nil {
+		w.synctest.Wake()
 		w.waiter.Ready()
 	}
 }
