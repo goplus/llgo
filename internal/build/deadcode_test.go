@@ -151,6 +151,24 @@ func TestLinkedCExportsValidation(t *testing.T) {
 		}
 	}
 
+	t.Run("empty C name", func(t *testing.T) {
+		_, err := linkedCExports(ctx, []Package{
+			newExport("main", "main.Exported", "", llssa.NoArgsNoRet, true),
+		})
+		if err == nil || !strings.Contains(err.Error(), "empty export name") {
+			t.Fatalf("linkedCExports() error = %v, want empty export name", err)
+		}
+	})
+
+	t.Run("Unicode C name", func(t *testing.T) {
+		exports, err := linkedCExports(ctx, []Package{
+			newExport("main", "main.函数", "函数", llssa.NoArgsNoRet, true),
+		})
+		if err != nil || len(exports) != 1 || exports[0].cName != "函数" {
+			t.Fatalf("linkedCExports() = (%+v, %v), want Unicode name preserved", exports, err)
+		}
+	})
+
 	t.Run("duplicate C name", func(t *testing.T) {
 		_, err := linkedCExports(ctx, []Package{
 			newExport("first", "first.Exported", "Exported", llssa.NoArgsNoRet, true),

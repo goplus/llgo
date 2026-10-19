@@ -2076,6 +2076,14 @@ func (p *context) recordCallerLocationForCall(b llssa.Builder, call *ssa.CallCom
 	p.recordPanicLocation(b, call.Pos())
 }
 
+// pcLinePosition is the runtime-visible identity of a source location. Columns
+// do not participate: the runtime line table does not expose them.
+type pcLinePosition struct {
+	symbol string
+	file   string
+	line   int
+}
+
 func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 	if p == nil || p.pkg == nil || p.fn == nil || !p.prog.FuncInfoSitesEnabled() || !p.shouldTrackCallerFrames() {
 		return
@@ -2103,8 +2111,20 @@ func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 	}
 	p.lastPCLineFile = position.Filename
 	p.lastPCLineLine = position.Line
-	p.pcLineSeq++
-	id := pcLineID(p.fn.Name(), p.pcLineSeq)
+	// Distinct machine-code ranges can describe the same source line (branch
+	// arms, cold nil checks, and repeated stores). They still need independent
+	// DCE-associated anchors, but can share one address-free line-table row.
+	positionKey := pcLinePosition{p.fn.Name(), position.Filename, position.Line}
+	id, recorded := p.pcLineIDs[positionKey]
+	if !recorded {
+		if p.pcLineIDs == nil {
+			p.pcLineIDs = make(map[pcLinePosition]uint64)
+		}
+		p.pcLineSeq++
+		id = pcLineID(p.fn.Name(), p.pcLineSeq)
+		p.pcLineIDs[positionKey] = id
+		p.pkg.EmitPCLineInfo(id, p.fn.Name(), position.Filename, position.Line, position.Column)
+	}
 	label := pcLineLabelName(id)
 	if target.GOOS == "darwin" {
 		// Mach-O subsections-via-symbols treats every non-local symbol as an
@@ -2156,7 +2176,6 @@ func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 			".quad " + uint64Hex(id) + "\n" +
 			".popsection",
 	)
-	p.pkg.EmitPCLineInfo(id, p.fn.Name(), position.Filename, position.Line, position.Column)
 }
 
 func canEmitPCLineLabelsForTarget(target *llssa.Target) bool {
@@ -2665,7 +2684,13 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			if act == llssa.Call && p.forwardCVariadicWrapper(call) && b.CanForwardVarargs(aFn.Expr) {
+				// A tail transfer removes the synthetic frame itself, so no
+				// recover-frame alias may surround it (or run after the call).
+				ret = b.CallForwardVarargs(aFn.Expr, args...)
+			} else {
+				ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			}
 		case goFunc:
 			args := p.compileValues(b, args, kind)
 			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
@@ -2818,6 +2843,61 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 		ret = p.emitDo(b, act, ds, mayRecover, fn, llssa.Builder.Call, args...)
 	}
 	return
+}
+
+func (p *context) forwardCVariadicWrapper(call *ssa.CallCommon) bool {
+	fn := p.goFn
+	callee := call.Signature()
+	// Promoted pointer methods adjust the receiver and return the C call's
+	// result. compileValues omits the incoming ellipsis marker: the wrapper
+	// must forward the unknown register/stack arguments with a mandatory tail
+	// call. Wasm does not support variadic tail calls. Explicit -target
+	// profiles (including custom native profiles) remain excluded because
+	// their backend and storage ABI may not support this forwarding path.
+	// Excluded variadic wrappers keep their existing lowering, which can
+	// silently drop the incoming ellipsis. Correct forwarding or diagnostics
+	// for these forms is tracked in #2855.
+	target := p.prog.Target()
+	if target.GOARCH == "wasm" || target.Target != "" {
+		return false
+	}
+	if fn == nil || fn.Synthetic == "" {
+		return false
+	}
+	// Value receivers do not have LLVM's required matching fixed prototype.
+	if fn.Signature.Recv() == nil || !isPointerGoType(fn.Signature.Recv().Type()) ||
+		callee.Recv() == nil || !isPointerGoType(callee.Recv().Type()) {
+		return false
+	}
+	if !llssa.HasNameValist(fn.Signature) || !llssa.HasNameValist(callee) ||
+		len(call.Args) == 0 || len(fn.Params) == 0 {
+		return false
+	}
+	// Tuple returns need extract/insert instructions after the call, while
+	// aggregate ABI lowering can replace the call and lose its tail marker.
+	// Neither path can preserve the immediate return required by musttail.
+	results := callee.Results()
+	if results.Len() > 1 || results.Len() == 1 && !isCVariadicForwardScalar(results.At(0).Type()) {
+		return false
+	}
+	params := callee.Params()
+	for i := 0; i < params.Len()-1; i++ {
+		if !isCVariadicForwardScalar(params.At(i).Type()) {
+			return false
+		}
+	}
+	param, ok := call.Args[len(call.Args)-1].(*ssa.Parameter)
+	return ok && param == fn.Params[len(fn.Params)-1]
+}
+
+func isCVariadicForwardScalar(t types.Type) bool {
+	switch t := t.Underlying().(type) {
+	case *types.Pointer:
+		return true
+	case *types.Basic:
+		return t.Info()&(types.IsBoolean|types.IsInteger|types.IsFloat) != 0 || t.Kind() == types.UnsafePointer
+	}
+	return false
 }
 
 func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon, hasVArg int) []llssa.Expr {
