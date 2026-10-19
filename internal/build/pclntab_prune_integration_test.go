@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"encoding/binary"
 	"os"
 	"path/filepath"
@@ -9,6 +10,59 @@ import (
 	"github.com/xgo-dev/llgo/internal/lto"
 	"github.com/xgo-dev/llgo/internal/pclnmap"
 )
+
+func TestPCLNEmbeddedPruningIntegration(t *testing.T) {
+	requireNativePCLNSidecars(t)
+	setPCLNIntegrationEnv(t)
+	t.Setenv("LLGO_PCLNPOST", "1")
+	for _, mode := range []lto.Mode{lto.Off, lto.Full} {
+		t.Run(mode.String(), func(t *testing.T) {
+			for _, pureC := range []bool{true, false} {
+				name, source := "runtime", pclntabModesFixture
+				if pureC {
+					name, source = "pure-c", pclntabPureCLibraryFixture
+				}
+				t.Run(name, func(t *testing.T) {
+					// This compiled declaration has no live body after section GC.
+					// Inspect the actual image, not the in-memory prune result.
+					source += "\n//go:noinline\nfunc deadMetadataOwner2420() uintptr { return 2420 }\n"
+					bin := filepath.Join(t.TempDir(), "embedded-pcln")
+					conf := &Config{
+						Mode: ModeBuild, BuildMode: BuildModeExe, OutFile: bin, LTO: mode,
+						PCLNMode: PCLNEmbedded, PCLNModeSet: true,
+						LinkOptions: LinkOptions{DWARF: DWARFOmit},
+					}
+					if _, err := Do([]string{writePCLNIntegrationSource(t, source)}, conf); err != nil {
+						t.Fatal(err)
+					}
+					verifyPCLNIntegrationSignature(t, bin)
+					raw, err := os.ReadFile(bin)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if bytes.Contains(raw, []byte("deadMetadataOwner2420")) {
+						t.Fatal("linked image retains dead function metadata")
+					}
+					if pureC {
+						if got := runPCLNIntegrationBinary(t, bin); got != "pure-c-pclntab\n" {
+							t.Fatalf("pure C output = %q", got)
+						}
+						if pclnIntegrationHasLLGoRuntime(t, bin) {
+							t.Fatal("pruning retained an unused LLGo runtime")
+						}
+					} else {
+						if got := runPCLNIntegrationBinary(t, bin, "apis"); got != "caller=FULL frames=FULL func=FULL\n" {
+							t.Fatalf("runtime API states = %q", got)
+						}
+						if got := runPCLNIntegrationBinary(t, bin, "closure"); got != "target=FULL funcval=FULL same-entry=true\n" {
+							t.Fatalf("function-value metadata = %q", got)
+						}
+					}
+				})
+			}
+		})
+	}
+}
 
 func TestPCLNExternalPruningIntegration(t *testing.T) {
 	requireNativePCLNSidecars(t)
