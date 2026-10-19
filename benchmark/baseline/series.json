@@ -2995,6 +2995,17 @@
     },
     {
       "kind": "branch",
+      "id": "f7dc9916b27de5bf",
+      "label": "Branch cpunion/llgo:fix/darwin-homebrew-lld-discovery",
+      "path": "series/branch/f7dc9916b27de5bf/summary.json",
+      "configPath": "series/branch/f7dc9916b27de5bf/config.json",
+      "commitPath": "commits/56e5c60b7451631aecf01422593d5c3002623172.json",
+      "sha": "56e5c60b7451631aecf01422593d5c3002623172",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/56e5c60b7451631aecf01422593d5c3002623172",
+      "updatedAt": "2026-10-19T18:02:17.968Z"
+    },
+    {
+      "kind": "branch",
       "id": "7b97809b4fe57c11",
       "label": "Branch cpunion/llgo:fix/debug-native-function-pointers",
       "path": "series/branch/7b97809b4fe57c11/summary.json",
@@ -9603,6 +9614,17 @@
       "sha": "2f554f221f9f4d27750b28b1add3b127f58e0fda",
       "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/2f554f221f9f4d27750b28b1add3b127f58e0fda",
       "updatedAt": "2026-10-19T12:59:27.725Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2871",
+      "label": "PR #2871",
+      "path": "series/pull/2871/summary.json",
+      "configPath": "series/pull/2871/config.json",
+      "commitPath": "commits/56e5c60b7451631aecf01422593d5c3002623172.json",
+      "sha": "56e5c60b7451631aecf01422593d5c3002623172",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/56e5c60b7451631aecf01422593d5c3002623172",
+      "updatedAt": "2026-10-19T18:02:16.842Z"
     }
   ]
 }
