@@ -42,6 +42,7 @@ func TestRuntimeCompilerPackageCache(t *testing.T) {
 		{"llgo", "llgo-branch", false},
 		{"llgo", "llgo-branch", true},
 		{"llgo-cache", "other-branch", false},
+		{"llgo-cache", "other-branch", true},
 		{"llgo", "llgo-branch", true},
 	} {
 		t.Run(fmt.Sprintf("%d-%s", phase, tc.name), func(t *testing.T) {
