@@ -598,15 +598,15 @@ jobs:
           pattern: llgo-windows-*
           merge-multiple: true
           path: .windows-dist
-      - name: Verify all four Windows ZIPs
+      - name: Verify all six Windows ZIPs
         shell: bash
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           cd .windows-dist
           archives=(llgo*.windows-*.zip)
-          test "${#archives[@]}" = 4
-          for arch in amd64 arm64; do
+          test "${#archives[@]}" = 6
+          for arch in 386 amd64 arm64; do
             for abi in msvc mingw; do
               archive="llgo${version}.windows-${arch}-${abi}.zip"
               test -s "$archive"
