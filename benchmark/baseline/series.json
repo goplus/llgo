@@ -4601,6 +4601,17 @@
     },
     {
       "kind": "branch",
+      "id": "df0edd30ae4a9023",
+      "label": "Branch zhouguangyuan0718/llgo:codex/simd256-foundation-20261019",
+      "path": "series/branch/df0edd30ae4a9023/summary.json",
+      "configPath": "series/branch/df0edd30ae4a9023/config.json",
+      "commitPath": "commits/d353d0257862b1188fac87c0ff37c655398ca0fb.json",
+      "sha": "d353d0257862b1188fac87c0ff37c655398ca0fb",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d353d0257862b1188fac87c0ff37c655398ca0fb",
+      "updatedAt": "2026-10-19T19:33:21.495Z"
+    },
+    {
+      "kind": "branch",
       "id": "99f3af40b08e32e3",
       "label": "Branch zhouguangyuan0718/llgo:codex/source-contracts-20260912",
       "path": "series/branch/99f3af40b08e32e3/summary.json",
@@ -9625,6 +9636,17 @@
       "sha": "56e5c60b7451631aecf01422593d5c3002623172",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/56e5c60b7451631aecf01422593d5c3002623172",
       "updatedAt": "2026-10-19T18:02:16.842Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2875",
+      "label": "PR #2875",
+      "path": "series/pull/2875/summary.json",
+      "configPath": "series/pull/2875/config.json",
+      "commitPath": "commits/d353d0257862b1188fac87c0ff37c655398ca0fb.json",
+      "sha": "d353d0257862b1188fac87c0ff37c655398ca0fb",
+      "sourceUrl": "https://github.com/zhouguangyuan0718/llgo/commit/d353d0257862b1188fac87c0ff37c655398ca0fb",
+      "updatedAt": "2026-10-19T19:33:20.433Z"
     }
   ]
 }
