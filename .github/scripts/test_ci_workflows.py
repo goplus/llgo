@@ -13,6 +13,8 @@ from unittest import mock
 
 import yaml
 
+import ci_policy
+
 
 WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
@@ -20,6 +22,7 @@ CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 18, "doc.yml": 6, "fmt.yml": 1,
 }
+BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
 
 
 def load(name):
@@ -282,10 +285,72 @@ else:
             for name, job in workflow["jobs"].items():
                 with self.subTest(workflow=path.name, job=name):
                     runner = str(job.get("runs-on", ""))
-                    self.assertNotIn("qiniu", runner)
-                    self.assertNotIn("github.repository_owner", runner)
+                    if (path.name, name) not in BOOTSTRAP_RUNNER_JOBS:
+                        self.assertNotIn("qiniu", runner)
+                        self.assertNotIn("github.repository_owner", runner)
                     if "needs.prepare" in runner:
                         self.assertIn("prepare", needs(job))
+
+    def test_bootstrap_runners_match_the_policy_without_waiting_for_outputs(self):
+        upstream = ci_policy.runners("xgo-dev")["linux_runner"]
+        fork = ci_policy.runners("cpunion")["linux_runner"]
+        expected = ("${{ fromJSON(github.repository_owner == 'xgo-dev' && '" +
+                    upstream + "' || '" + fork + "') }}")
+        for filename, name in BOOTSTRAP_RUNNER_JOBS:
+            with self.subTest(workflow=filename, job=name):
+                job = load(filename)["jobs"][name]
+                self.assertEqual(job["runs-on"], expected)
+                self.assertNotIn("needs", job)
+
+    def test_linux_environment_checks_keep_native_arm64_and_fork_fallbacks(self):
+        for filename in ("mise.yml", "pixi.yml"):
+            workflow = load(filename)
+            job = workflow["jobs"]["devenv"]
+            with self.subTest(workflow=filename):
+                self.assertEqual(workflow["jobs"]["prepare"]["uses"], PREPARE)
+                self.assertIn("prepare", needs(job))
+                self.assertNotIn("if", job)  # These checks still run for docs-only PRs.
+                self.assertEqual(job["runs-on"],
+                                 "${{ matrix.os == 'ubuntu-24.04' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
+                self.assertCountEqual(job["strategy"]["matrix"]["os"],
+                                      ["ubuntu-24.04", "ubuntu-24.04-arm", "macos-15", "macos-15-intel", "windows-2025"])
+
+    def test_release_artifact_runner_migration_keeps_native_architectures(self):
+        jobs = load("release-build.yml")["jobs"]
+        self.assertEqual(jobs["prepare-winget"]["runs-on"],
+                         "${{ fromJSON(needs.prepare.outputs.linux_runner) }}")
+        job = jobs["test-artifacts"]
+        self.assertEqual(job["runs-on"],
+                         "${{ matrix.os == 'ubuntu-latest' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
+        linux = {(entry["os"], entry["goarch"]) for entry in job["strategy"]["matrix"]["include"]
+                 if entry["goos"] == "linux"}
+        self.assertEqual(linux, {("ubuntu-latest", "amd64"), ("ubuntu-24.04-arm", "arm64")})
+
+    def test_linux_container_jobs_use_large_runners_and_check_privileges(self):
+        jobs = load("release-build.yml")["jobs"]
+        for name in ("populate-linux-sysroot", "build"):
+            self.assertEqual(jobs[name]["runs-on"],
+                             "${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}")
+            self.assertIn("prepare", needs(jobs[name]))
+        probe = jobs["populate-linux-sysroot"]["steps"][0]
+        self.assertNotIn("if", probe)  # A sysroot cache hit must still check the new runner.
+        self.assertIn("docker run --rm --privileged", probe["run"])
+        self.assertIn("mount -t tmpfs", probe["run"])
+        self.assertNotIn("|| true", probe["run"])
+        self.assertEqual(jobs["test-linux-distributions"]["runs-on"],
+                         "${{ matrix.goarch == 'amd64' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
+        self.assertEqual(jobs["test-linux-distributions"]["strategy"]["matrix"]["include"],
+                         [{"os": "ubuntu-24.04", "goarch": "amd64"}, {"os": "ubuntu-24.04-arm", "goarch": "arm64"}])
+        self.assertEqual(jobs["release"]["runs-on"], "ubuntu-latest")
+        workflow = load("installer-shells.yml")
+        self.assertEqual(workflow["jobs"]["prepare"]["uses"], PREPARE)
+        installer = workflow["jobs"]["installer-shells"]
+        self.assertIn("prepare", needs(installer))
+        self.assertNotIn("if", installer)
+        self.assertEqual(installer["runs-on"],
+                         "${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}")
+        self.assertCountEqual(installer["strategy"]["matrix"]["image"],
+                              ["ubuntu:24.04", "debian:12", "fedora:latest", "archlinux:latest", "alpine:latest", "opensuse/tumbleweed:latest"])
 
     def test_prepare_exports_each_decision_and_has_no_caller_concurrency(self):
         workflow = load("ci-prepare.yml")
@@ -371,6 +436,10 @@ else:
                 names.add(gate["name"])
                 self.assertEqual(needs(gate), ["prepare"])
                 self.assertEqual(gate["if"], "always()")
+                # On success the gate shares the qiniu pool. A failed prepare
+                # has no runner output, so keep its diagnostic job schedulable.
+                self.assertEqual(gate["runs-on"],
+                                 "${{ fromJSON(needs.prepare.outputs.linux_runner || '[\"ubuntu-24.04\"]') }}")
                 self.assertIn("needs.prepare.result", gate["steps"][0]["run"])
                 self.assertIn('= "success"', gate["steps"][0]["run"])
 

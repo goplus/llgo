@@ -124,6 +124,7 @@ type OutFmts struct {
 type OutFmtDetails struct {
 	Out   string // Base output file path
 	DWARF string // External debugger-owned DWARF container (.debug.wasm)
+	DSYM  string // Native Darwin debugger-owned .dSYM bundle
 	PCLN  string // PCLN sidecar output file path (.pclntab)
 	Bin   string // Binary output file path (.bin)
 	Hex   string // Intel hex output file path (.hex)
@@ -158,10 +159,12 @@ type Config struct {
 	OutFile            string  // output file, or directory for ModeBuild package executables
 	OutFmts            OutFmts // Output format specifications (only for Target != "")
 	CompileOnly        bool    // compile test binary but do not run it (only valid for ModeTest)
+	RetainTestBinary   bool    // profiling keeps the test executable in the invocation directory
 	Emulator           bool    // run in emulator mode
 	Port               string  // target port for flashing
 	BaudRate           int     // baudrate for serial communication
 	RunArgs            []string
+	Exec               []string      // Explicit execution wrapper, before the artifact and RunArgs.
 	RunnerTimeout      time.Duration // Host execution limit; zero disables it.
 	Mode               Mode
 	BuildMode          BuildMode // Build mode: exe, c-archive, c-shared
@@ -285,6 +288,7 @@ func (c *Config) clone() *Config {
 		cloned.Coverage = &options
 	}
 	cloned.RunArgs = slices.Clone(c.RunArgs)
+	cloned.Exec = slices.Clone(c.Exec)
 	cloned.GoBuildFlags = slices.Clone(c.GoBuildFlags)
 	cloned.toolTags = slices.Clone(c.toolTags)
 	cloned.Overlay = cloneOverlay(c.Overlay)
@@ -854,6 +858,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 	if mode == ModeTest {
 		configureTestOutput(conf, inv.Args, initial)
+		if conf.RetainTestBinary && testPackageCount(initial) > 1 {
+			return nil, fmt.Errorf("cannot use profiling flags with multiple test packages")
+		}
 		initial, err = filterTestPackages(initial, conf.OutFile)
 		if err != nil {
 			return nil, err
@@ -1285,7 +1292,10 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 		if err := finalizeDebugArtifact(link.conf, link.outFmts, verbose); err != nil {
 			return err
 		}
-		return finalizeDarwinSizeExecutable(linkCtx, link.outFmts.Out, verbose)
+		if err := finalizeDarwinSizeExecutable(linkCtx, link.outFmts.Out, verbose); err != nil {
+			return err
+		}
+		return finalizeNativeSymbols(linkCtx, link.outFmts, verbose)
 	}()
 	if err != nil {
 		return nil, err
@@ -1314,7 +1324,14 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 			return nil, flash.FlashDevice(linkCtx.crossCompile.Device, envMap, linkCtx.buildConf.Port, verbose)
 		}
 	case ModeRun, ModeTest, ModeCmpTest:
-		if link.conf.Mode == ModeTest && (link.conf.Target == "" || namedTargetUsesEmulatorPath(link.conf) && !link.conf.CompileOnly) {
+		if link.conf.Mode == ModeCmpTest && link.pkg.PkgPath == "command-line-arguments" {
+			// The reference must compile the same selected files. The synthetic
+			// package name is not importable, and using the directory would also
+			// compile files the caller deliberately omitted.
+			cmpTest(linkCtx.commands, link.pkg.Dir, link.pkg.PkgPath, link.outFmts.Out, link.conf.GenExpect, link.conf.RunArgs, link.pkg.GoFiles...)
+			return nil, nil
+		}
+		if link.conf.Mode == ModeTest && (len(link.conf.Exec) != 0 || link.conf.Target == "" || namedTargetUsesEmulatorPath(link.conf) && !link.conf.CompileOnly) {
 			runner := goCompatibleWasmRunner(link.conf)
 			if link.conf.Target != "" {
 				runner = linkCtx.crossCompile.Emulator
@@ -1333,6 +1350,11 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 				cleanupTemp = false // runNativeTest now owns the temporary output.
 			}
 			return program, nil
+		}
+		if link.conf.Mode == ModeRun && len(link.conf.Exec) != 0 {
+			return nil, runWithExec(linkCtx.commands, link.outFmts.Out, link.conf,
+				runnerDetails{phase: "run", target: link.conf.Target, artifact: link.outFmts.Out, packageName: link.pkg.PkgPath, timeout: link.conf.RunnerTimeout},
+				os.Stdout, os.Stderr)
 		}
 		if link.conf.Target == "" {
 			runner := goCompatibleWasmRunner(link.conf)
@@ -1381,6 +1403,7 @@ func newLinkExecutionContext(ctx *context, plan *mainLinkPlan) *context {
 		pclnExternal:         plan.pclnExternal,
 		linkRuntimeSites:     &plan.runtimeSites,
 		stripDarwinLTOLocals: plan.stripDarwinLTOLocals,
+		darwinHiddenGlobals:  plan.darwinHiddenGlobals,
 		goVersion:            ctx.goVersion,
 	}
 }
@@ -1403,6 +1426,12 @@ func removeOutFmts(outFmts *OutFmtDetails) {
 		// intermediate sidecars as well as the final test executable.
 		_ = os.RemoveAll(outFmts.tempDir)
 		return
+	}
+	if outFmts.Out != "" {
+		_ = os.RemoveAll(darwinLTOObjectDir(outFmts.Out))
+	}
+	if outFmts.DSYM != "" {
+		_ = os.RemoveAll(outFmts.DSYM)
 	}
 	for _, output := range []string{
 		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex,
@@ -1776,6 +1805,10 @@ type context struct {
 	// already internalized ordinary Go symbols, but pclnpost still needs them
 	// until the runtime tables have been rewritten.
 	stripDarwinLTOLocals bool
+
+	// A non-nil list hides data/type globals while preserving function
+	// exports needed by the DWARF runtime dlsym path.
+	darwinHiddenGlobals []string
 
 	// linkRuntimeSites snapshots the backend-dependent site policy for linking.
 	linkRuntimeSites *bool
@@ -2391,6 +2424,7 @@ type mainLinkPlan struct {
 	linkArgs             []string
 	pclnExternal         *pclnmap.Data
 	stripDarwinLTOLocals bool
+	darwinHiddenGlobals  []string
 }
 
 // mainLinkPreparation separates shared package inspection from entry-module
@@ -2407,6 +2441,7 @@ type mainLinkPreparation struct {
 	linkArgs             []string
 	gen                  genConfig
 	stripDarwinLTOLocals bool
+	darwinHiddenGlobals  []string
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
@@ -2538,6 +2573,7 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 	}
 	linkArgs = append(linkArgs, debuggerABIRootArgs(ctx)...)
 	linkArgs = append(linkArgs, cSharedExportArgs(ctx, linkedOrder)...)
+	linkArgs = append(linkArgs, linuxCExportArgs(ctx, cExports)...)
 	darwinSymbols := planDarwinSizeSymbols(ctx, linkedOrder, linkArgs)
 	linkArgs = append(linkArgs, darwinSymbols.linkerArgs...)
 
@@ -2547,6 +2583,7 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 		linkArgs:             linkArgs,
 		gen:                  gen,
 		stripDarwinLTOLocals: darwinSymbols.stripLTOLocals,
+		darwinHiddenGlobals:  darwinSymbols.hiddenGlobals,
 	}, nil
 }
 
@@ -2558,6 +2595,7 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 	}
 	ctx.pclnExternal = nil
 	ctx.stripDarwinLTOLocals = false
+	ctx.darwinHiddenGlobals = nil
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &preparation.gen)
 	cExports := preparation.gen.cExports
 	if _, err := lowerMainCExportModule(ctx, entryPkg.LPkg, cExports); err != nil {
@@ -2582,6 +2620,7 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 	linkInputs = append(linkInputs, extraObjFiles...)
 	linkInputs = append(linkInputs, preparation.archiveInputs...)
 	ctx.stripDarwinLTOLocals = preparation.stripDarwinLTOLocals
+	ctx.darwinHiddenGlobals = preparation.darwinHiddenGlobals
 
 	return &mainLinkPlan{
 		runtimeSites:         shouldEmitRuntimeSites(ctx),
@@ -2590,6 +2629,7 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 		linkArgs:             preparation.linkArgs,
 		pclnExternal:         ctx.pclnExternal,
 		stripDarwinLTOLocals: preparation.stripDarwinLTOLocals,
+		darwinHiddenGlobals:  preparation.darwinHiddenGlobals,
 	}, nil
 }
 
@@ -2732,6 +2772,9 @@ func linkedCExports(ctx *context, pkgs []Package) ([]cExport, error) {
 		}
 		for _, export := range packageCExports(pkg) {
 			goName, cName := export.goName, export.cName
+			if cName == "" {
+				return nil, fmt.Errorf("C export implementation %q has an empty export name", goName)
+			}
 			if previous, ok := seen[cName]; ok {
 				if previous != goName {
 					return nil, fmt.Errorf("C export %q is provided by both %q and %q", cName, previous, goName)
@@ -2840,14 +2883,23 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	linkOutput := app
 	moveExactWindowsOutput := false
 	if ctx.crossCompile.Toolchain.ObjectFormat == crosscompile.ObjectFormatCOFF &&
-		ctx.buildConf.Target == "" && ctx.buildConf.BuildMode == BuildModeExe &&
-		filepath.Ext(app) == "" {
-		// Clang's Windows driver appends .exe when -o has no extension, while
-		// cmd/go treats an explicit -o name as exact. Link to the conventional
-		// driver name, then publish the requested name after a successful link.
-		// Implicit outputs already carry Config.AppExt.
-		linkOutput = app + ".exe"
-		moveExactWindowsOutput = true
+		ctx.buildConf.Target == "" && filepath.Ext(app) == "" {
+		switch ctx.buildConf.BuildMode {
+		case BuildModeExe:
+			// Clang's Windows driver appends .exe when -o has no extension,
+			// while cmd/go treats an explicit -o name as exact. Implicit
+			// outputs already carry Config.AppExt.
+			linkOutput = app + ".exe"
+			moveExactWindowsOutput = true
+		case BuildModeCShared:
+			if ctx.crossCompile.Toolchain.ABI == crosscompile.PlatformABIGNU {
+				// MinGW's driver appends .exe even for -shared. Like cmd/link,
+				// suppress that suffix with a trailing dot. Windows resolves
+				// it to the requested name; cross-host links need a rename.
+				linkOutput = app + "."
+				moveExactWindowsOutput = runtime.GOOS != "windows"
+			}
+		}
 	}
 	buildArgs := []string{"-o", linkOutput}
 	buildArgs = append(buildArgs, linkArgs...)
@@ -2857,6 +2909,12 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	}
 	defer cleanupSiteLayout()
 	buildArgs = append(buildArgs, siteLayoutArgs...)
+	hiddenGlobalArgs, cleanupHiddenGlobals, err := darwinHiddenGlobalArgs(app, ctx.darwinHiddenGlobals)
+	if err != nil {
+		return err
+	}
+	defer cleanupHiddenGlobals()
+	buildArgs = append(buildArgs, hiddenGlobalArgs...)
 	buildArgs = append(buildArgs, debugInfoLinkerArgs(ctx.buildConf, &ctx.crossCompile)...)
 	ltoPluginFlags, err := ctx.buildConf.LTOPlugin.LinkerFlags(ctx.buildConf.Goos)
 	if err != nil {
@@ -2900,18 +2958,26 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		objFiles = compiledObjFiles
 	}
 
+	cmd := ctx.linker()
+	ltoObjectArgs, err := darwinLTOObjectArgs(ctx, app, cmd, buildArgs)
+	if err != nil {
+		return fmt.Errorf("retain Darwin LTO debug object: %w", err)
+	}
+	buildArgs = append(buildArgs, ltoObjectArgs...)
 	buildArgs = append(buildArgs, objFiles...)
 
-	cmd := ctx.linker()
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
 	if err := cmd.Link(buildArgs...); err != nil {
+		if len(ltoObjectArgs) != 0 {
+			_ = os.RemoveAll(filepath.Dir(ltoObjectArgs[len(ltoObjectArgs)-1]))
+		}
 		return err
 	}
 	if !moveExactWindowsOutput {
 		return nil
 	}
-	if ctx.mode == ModeTest && !ctx.buildConf.CompileOnly {
+	if ctx.buildConf.BuildMode == BuildModeExe && ctx.mode == ModeTest && !ctx.buildConf.CompileOnly {
 		// Keep the .exe sibling so os/exec's Windows PATHEXT lookup can run an
 		// extensionless explicit test output, while also publishing the exact
 		// file requested by -o.
@@ -3048,7 +3114,33 @@ func needsLinuxNoPIE(ctx *context, linkArgs []string) bool {
 }
 
 func needsLinuxExportDynamic(ctx *context) bool {
-	return ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" && effectivePCLNMode(ctx.buildConf) != PCLNNone
+	// Entry sites (including the prebuilt table derived from them) resolve Go
+	// PCs without dynamic symbols. Exporting every main-package definition
+	// otherwise roots unused methods and their reflection dependencies in LTO.
+	// Keep the legacy dlsym fallback only when entry sites are unavailable.
+	return ctx != nil && ctx.buildConf != nil &&
+		ctx.buildConf.Target == "" && ctx.buildConf.Goos == "linux" &&
+		ctx.buildConf.BuildMode == BuildModeExe &&
+		effectivePCLNMode(ctx.buildConf) != PCLNNone && !shouldEmitRuntimeEntrySites(ctx)
+}
+
+// linuxCExportArgs publishes the validated public C entries, not their qualified
+// Go implementations. These names are an ABI contract independent of PCLN.
+// linkedCExports supplies sorted, unique, non-empty names and excludes
+// runtime-owned implementation callbacks. --undefined retains entries even
+// when their only callers use dlopen/dlsym; --export-dynamic-symbol makes those
+// entries discoverable in the dynamic symbol table.
+func linuxCExportArgs(ctx *context, exports []cExport) []string {
+	if len(exports) == 0 || ctx == nil || ctx.buildConf == nil || ctx.buildConf.Target != "" ||
+		ctx.buildConf.Goos != "linux" || ctx.buildConf.BuildMode != BuildModeExe {
+		return nil
+	}
+	args := make([]string, 0, 2*len(exports))
+	for _, export := range exports {
+		args = append(args, "-Wl,--undefined="+export.cName,
+			"-Wl,--export-dynamic-symbol="+export.cName)
+	}
+	return args
 }
 
 func linuxExportDynamicArgs(ctx *context) []string {

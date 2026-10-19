@@ -29,7 +29,7 @@ jobs:
     name: CI gate (Release build)
     needs: prepare
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner || '["ubuntu-24.04"]') }}
     steps:
       - name: Verify CI preparation succeeded
         run: test "${{ needs.prepare.result }}" = "success"
@@ -37,9 +37,18 @@ jobs:
   populate-linux-sysroot:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     timeout-minutes: 30
     steps:
+      - name: Verify Docker and privileged containers
+        run: |
+          docker info --format 'Docker server={{.ServerVersion}} driver={{.Driver}} arch={{.Architecture}}'
+          docker run --rm --privileged busybox:1.37.0 sh -eu -c '
+            mkdir /privileged-probe
+            mount -t tmpfs -o size=1m tmpfs /privileged-probe
+            umount /privileged-probe
+            echo PRIVILEGED_CONTAINER_OK
+          '
       - name: Check out code
         uses: actions/checkout@v7
       - name: Calculate cache keys
@@ -86,7 +95,7 @@ jobs:
           retention-days: 3
   build:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     needs: [prepare, populate-linux-sysroot]
     steps:
       - name: Check out code
@@ -347,7 +356,7 @@ jobs:
   prepare-winget:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, test-windows-artifacts]
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -402,7 +411,7 @@ jobs:
             goos: linux
             goarch: arm64
             go-mod-version: "1.27"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - name: Install dependencies
@@ -442,6 +451,13 @@ jobs:
         with:
           mod-version: ${{ matrix.go-mod-version }}
 
+      - name: Install native assembly test compiler
+        if: runner.os == 'Linux'
+        run: |
+          # install-llvm=false above leaves minimal runners without clang.
+          sudo timeout --kill-after=30s 10m apt-get install -y clang
+          clang --version
+
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
 
@@ -479,7 +495,7 @@ jobs:
             goarch: amd64
           - os: ubuntu-24.04-arm
             goarch: arm64
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.goarch == 'amd64' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
