@@ -62,29 +62,32 @@ func c_setresgid(*cgoArgset)
 //go:linkname c_setgroups C.llgo_cgo_setgroups
 func c_setgroups(*cgoArgset)
 
-//go:linkname cgoSetuid syscall.cgo_libc_setuid
+// Own the credential pointers in runtime so programs that do not import syscall
+// also link correctly. The syscall source patch aliases these definitions.
+//
+//go:linkname cgoSetuid go:llgo.cgo_setuid
 var cgoSetuid = c.Func(c_setuid)
 
-//go:linkname cgoSeteuid syscall.cgo_libc_seteuid
+//go:linkname cgoSeteuid go:llgo.cgo_seteuid
 var cgoSeteuid = c.Func(c_seteuid)
 
-//go:linkname cgoSetgid syscall.cgo_libc_setgid
+//go:linkname cgoSetgid go:llgo.cgo_setgid
 var cgoSetgid = c.Func(c_setgid)
 
-//go:linkname cgoSetegid syscall.cgo_libc_setegid
+//go:linkname cgoSetegid go:llgo.cgo_setegid
 var cgoSetegid = c.Func(c_setegid)
 
-//go:linkname cgoSetreuid syscall.cgo_libc_setreuid
+//go:linkname cgoSetreuid go:llgo.cgo_setreuid
 var cgoSetreuid = c.Func(c_setreuid)
 
-//go:linkname cgoSetregid syscall.cgo_libc_setregid
+//go:linkname cgoSetregid go:llgo.cgo_setregid
 var cgoSetregid = c.Func(c_setregid)
 
-//go:linkname cgoSetresuid syscall.cgo_libc_setresuid
+//go:linkname cgoSetresuid go:llgo.cgo_setresuid
 var cgoSetresuid = c.Func(c_setresuid)
 
-//go:linkname cgoSetresgid syscall.cgo_libc_setresgid
+//go:linkname cgoSetresgid go:llgo.cgo_setresgid
 var cgoSetresgid = c.Func(c_setresgid)
 
-//go:linkname cgoSetgroups syscall.cgo_libc_setgroups
+//go:linkname cgoSetgroups go:llgo.cgo_setgroups
 var cgoSetgroups = c.Func(c_setgroups)
