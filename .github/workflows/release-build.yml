@@ -480,7 +480,11 @@ jobs:
             if [[ "$mode" != native ]]; then flags+=("-lto=$mode"); fi
             output="$RUNNER_TEMP/llgo-lld-$mode"
             (cd _demo/c && llgo build "${flags[@]}" -o "$output" ./hello) 2>&1 | tee "$output.log"
-            grep -F -- "-fuse-ld=$linker" "$output.log"
+            # Homebrew aliases may spell the same linker as opt/lld or
+            # opt/lld@23. Compare executable identity, keeping default discovery.
+            link_command=$(grep -F -- '-fuse-ld=' "$output.log")
+            [[ "$link_command" =~ -fuse-ld=([^[:space:]]+) ]]
+            [[ "${BASH_REMATCH[1]}" -ef "$linker" ]]
             "$output"
           done
 
