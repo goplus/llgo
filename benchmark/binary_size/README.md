@@ -23,6 +23,22 @@ linker/PCLN variant at the same output path: DWARF records paths, so changing
 the output path can otherwise make byte counts look different even when two
 flag combinations have equivalent code-generation semantics.
 
+External PCLN is built from the final linked entry and PC-line sites. Dead
+function and PC-line records are removed together with unused strings, and
+function indexes and hash tables are rebuilt before writing the sidecar. To
+check this optimization, compare normal and Full-LTO `cprintf` and `fmtprintf`
+builds with `-pclntab=external -ldflags=-w`, recording the sidecar's function,
+PC-line and site counts as well as its bytes. The executable's text bytes must
+remain unchanged.
+
+Embedded native executables use the same final-site liveness and ownership
+checks. When records can be removed, the build regenerates only the synthetic
+entry object's metadata and relinks, then verifies the live set against the
+original catalog. This reclaims the actual bytes without changing runtime
+table formats or adding a runtime decoder. It adds one link when pruning is
+needed. Builds without entry sites, library modes and named targets retain
+their existing policy; the Go global DCE dev gate is unchanged.
+
 This initial matrix applies to native Darwin/Linux executable builds;
 generation, archive/shared, and fixed-target policies are outside this
 benchmark.

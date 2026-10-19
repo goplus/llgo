@@ -1800,6 +1800,7 @@ type context struct {
 	// pclnExternal is populated while generating the synthetic main module
 	// and completed with final linked PCs by the post-link externalizer.
 	pclnExternal *pclnmap.Data
+	pclnEmbedded *pclnmap.Data
 
 	// stripDarwinLTOLocals is set by the final executable link plan. LTO has
 	// already internalized ordinary Go symbols, but pclnpost still needs them
@@ -2423,6 +2424,9 @@ type mainLinkPlan struct {
 	linkInputs           []string
 	linkArgs             []string
 	pclnExternal         *pclnmap.Data
+	embeddedPCLN         *pclnmap.Data
+	entryIR              string
+	entryTarget          llssa.Target
 	stripDarwinLTOLocals bool
 	darwinHiddenGlobals  []string
 }
@@ -2594,6 +2598,7 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 		return nil, errors.New("missing main link preparation")
 	}
 	ctx.pclnExternal = nil
+	ctx.pclnEmbedded = nil
 	ctx.stripDarwinLTOLocals = false
 	ctx.darwinHiddenGlobals = nil
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &preparation.gen)
@@ -2605,6 +2610,13 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 		if err := applyDeadcodeDropOverrides(preparation.linkedOrder, entryPkg, preparation.gen.rtInit, verbose); err != nil {
 			return nil, err
 		}
+	}
+	var entryIR string
+	if ctx.pclnEmbedded != nil {
+		// Retain Go-owned IR, never an LLVM module: native builds release their
+		// backend before linking, and test DAG links run concurrently.
+		applySizeOptimizationAttributes(entryPkg.LPkg.Module(), ctx.buildConf.OptLevel)
+		entryIR = entryPkg.LPkg.String()
 	}
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryPkg.LPkg)
 	if err != nil {
@@ -2628,6 +2640,9 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 		linkInputs:           linkInputs,
 		linkArgs:             preparation.linkArgs,
 		pclnExternal:         ctx.pclnExternal,
+		embeddedPCLN:         ctx.pclnEmbedded,
+		entryIR:              entryIR,
+		entryTarget:          *ctx.prog.Target(),
 		stripDarwinLTOLocals: preparation.stripDarwinLTOLocals,
 		darwinHiddenGlobals:  preparation.darwinHiddenGlobals,
 	}, nil
@@ -2644,6 +2659,9 @@ func executeMainLink(ctx *context, plan *mainLinkPlan, verbose bool) error {
 	}
 	defer cleanupWasmLinkOutput(linkOutput, driverOut)
 	if err := linkObjFiles(ctx, linkOutput, plan.linkInputs, plan.linkArgs, verbose); err != nil {
+		return err
+	}
+	if err := pruneEmbeddedPCLN(ctx, plan, linkOutput, verbose); err != nil {
 		return err
 	}
 	if err := publishWasmLinkOutput(ctx, linkOutput, driverOut, verbose); err != nil {
