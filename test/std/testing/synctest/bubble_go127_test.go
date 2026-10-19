@@ -188,3 +188,15 @@ func TestGlobalWaitGroupRemainsUnbubbled(t *testing.T) {
 	})
 	<-outsideDone
 }
+
+// WebAssembly timer polling can run on a scheduler context with no current G.
+// Its sendTime callback must retain ordinary clock behavior outside a bubble.
+func TestTimerOutsideBubble(t *testing.T) {
+	before := time.Now()
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+	got := <-timer.C
+	if got.Before(before) || got.After(time.Now()) {
+		t.Fatalf("outside timer timestamp=%v", got)
+	}
+}

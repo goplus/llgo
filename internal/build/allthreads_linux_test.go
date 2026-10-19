@@ -1,7 +1,7 @@
 package build
 
 import (
-	"context"
+	stdcontext "context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,7 +39,9 @@ func main() {
 	if _, err := Do([]string{source}, conf); err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command(conf.OutFile)
+	ctx, cancel := stdcontext.WithTimeout(stdcontext.Background(), time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, conf.OutFile)
 	cmd.Env = append(os.Environ(), "GC_MARKERS=1")
 	if out, err := cmd.CombinedOutput(); err != nil || !strings.Contains(string(out), "allthreads-exe-ok") {
 		t.Fatalf("owned executable: %v\n%s", err, out)
@@ -70,7 +72,7 @@ func TestAllThreadsNativeProtocol(t *testing.T) {
 			if out, err := exec.Command("cc", args...).CombinedOutput(); err != nil {
 				t.Fatalf("compile: %v\n%s", err, out)
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			ctx, cancel := stdcontext.WithTimeout(stdcontext.Background(), time.Minute)
 			defer cancel()
 			out, err := exec.CommandContext(ctx, binary).CombinedOutput()
 			if err != nil || !strings.Contains(string(out), "allthreads-ok") {

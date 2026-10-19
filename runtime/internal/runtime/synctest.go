@@ -25,7 +25,14 @@ type synctestWait struct {
 	ready  bool
 }
 
-func CurrentSynctestBubble() *SynctestBubble { return getg().bubble }
+func CurrentSynctestBubble() *SynctestBubble {
+	// Worker scheduler timer callbacks run without a current G. They use the
+	// ordinary clock; reading through a nil G also reads linear memory on Wasm.
+	if gp := getg(); gp != nil {
+		return gp.bubble
+	}
+	return nil
+}
 
 func inheritSynctest(gp, parent *g) {
 	if parent == nil || parent.bubble == nil {
@@ -64,7 +71,7 @@ type SynctestWaiter struct{ gp *g }
 
 func NewSynctestWaiter() *SynctestWaiter {
 	gp := getg()
-	if gp.bubble == nil {
+	if gp == nil || gp.bubble == nil {
 		return nil
 	}
 	return &SynctestWaiter{gp: gp}
@@ -195,7 +202,7 @@ func SynctestRun(f func()) {
 
 func SynctestWait() {
 	gp := getg()
-	b := gp.bubble
+	b := CurrentSynctestBubble()
 	if b == nil {
 		panic("goroutine is not in a bubble")
 	}
@@ -390,6 +397,10 @@ func clearSynctestAssociations(b *SynctestBubble) {
 // or G membership. The calling G remains active while its init handshake runs.
 func SynctestOutside(f func()) {
 	gp := getg()
+	if gp == nil {
+		f()
+		return
+	}
 	b := gp.bubble
 	gp.bubble = nil
 	defer func() { gp.bubble = b }()
