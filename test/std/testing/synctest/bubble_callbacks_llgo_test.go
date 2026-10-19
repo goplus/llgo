@@ -49,7 +49,7 @@ func TestCallbackMembershipAndLifetime(t *testing.T) {
 						panic("missing nested panic")
 					}
 				}()
-				result <- isInBubble() && time.Now().Year() == 2000
+				result <- isInBubble() && time.Now().UTC().Year() == 2000
 				panic("callback cleanup")
 			})
 		}

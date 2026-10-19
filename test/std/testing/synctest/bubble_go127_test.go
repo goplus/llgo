@@ -59,7 +59,7 @@ func TestTimerStopResetAndTicker(t *testing.T) {
 		}
 		fired := make(chan struct{})
 		time.AfterFunc(time.Hour, func() {
-			if time.Now().Year() != 2000 {
+			if time.Now().UTC().Year() != 2000 {
 				panic("timer callback lost bubble")
 			}
 			close(fired)
