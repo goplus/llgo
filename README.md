@@ -125,6 +125,24 @@ func main() {
 
 Because calls into C compile to native calls against the C ABI, there is no Go-to-C stack or scheduler transition, so frequent C calls stay cheap.
 
+#### Promoted C variadic methods
+
+Forwarding an incoming C ellipsis through a promoted-method wrapper, including
+an interface call, is currently supported only on hosted native targets without
+an explicit `-target` profile. The underlying C method must have a pointer
+receiver. The wrapper and callee must have matching fixed LLVM prototypes and
+calling conventions, with no result conversion. Fixed parameters must be
+scalars, with zero or one scalar result: booleans, integers, floating-point
+values, and pointers qualify.
+
+Value receivers, aggregate fixed parameters or results, multiple results,
+Wasm, and explicit `-target` profiles (including custom native profiles) remain
+outside this support. Their existing wrapper lowering can silently drop the
+incoming ellipsis; for example, a promoted value-receiver method called through
+an interface still loses arguments at O0. Valid LLVM IR for an excluded wrapper
+does not establish correct argument forwarding. Support and clear diagnostics
+for these forms are tracked in [#2855](https://github.com/xgo-dev/llgo/issues/2855).
+
 #### Windows API
 
 On Windows, bind APIs declared with `WINAPI` or `__stdcall` through the `stdcall.` namespace. The convention is distinct on 386; Windows amd64 and arm64 use their unified native C ABI. An explicitly decorated 386 name such as `_MessageBoxW@16` is also accepted and is normalized to `MessageBoxW` on 64-bit targets.
