@@ -30,12 +30,14 @@ import (
 	"github.com/xgo-dev/llvm"
 )
 
+// canPruneEmbeddedPCLN selects the metadata relink path. ELF carrier
+// compaction performs its own pruning after the single final link.
 func canPruneEmbeddedPCLN(ctx *context) bool {
 	conf := ctx.buildConf
 	return conf.PCLNMode == PCLNEmbedded && conf.Target == "" &&
 		conf.BuildMode == BuildModeExe && (conf.Goos == "linux" || conf.Goos == "darwin") &&
 		(conf.Goarch == "amd64" || conf.Goarch == "arm64") &&
-		shouldEmitRuntimeEntrySites(ctx) && os.Getenv("LLGO_PCLNPOST") != "0"
+		shouldEmitRuntimeEntrySites(ctx) && !shouldCompactFuncInfo(ctx) && os.Getenv("LLGO_PCLNPOST") != "0"
 }
 
 // linkedPCLNData joins metadata to ownership-checked final sites. Both packing

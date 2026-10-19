@@ -2418,6 +2418,9 @@ func rewritePrebuiltFuncTab(ctx *context, out string, verbose bool) {
 	if verbose {
 		fmt.Fprintf(os.Stderr, "llgo: prebuilt functab: %d entries (%d LTO inline copies removed), %d buckets, %d carrier bytes removed\n",
 			st.FtabEntries, st.InlineCopies, st.Buckets, st.CarrierBytesRemoved)
+		if st.MetadataRecordsBefore != 0 {
+			fmt.Fprintf(os.Stderr, "llgo: compact funcinfo: %d -> %d records\n", st.MetadataRecordsBefore, st.MetadataRecordsAfter)
+		}
 	}
 }
 
@@ -3037,7 +3040,11 @@ func funcInfoSiteLayoutArgs(ctx *context, outputPath string) ([]string, func(), 
 	cleanup = func() { _ = os.Remove(name) }
 	const script = `SECTIONS
 {
-  llgo_funcinfo_entry : { *(llgo_funcinfo_entry) }
+  llgo_funcinfo_entry : {
+    *(llgo_funcinfo_entry)
+    __llgo_funcinfo_sites_end = .;
+    *(.llgo_funcinfo_payload)
+  }
 }
 INSERT BEFORE .bss;
 `

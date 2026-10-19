@@ -33,7 +33,9 @@ type Stats struct {
 	// CarrierBytesRemoved is the number of bytes cut from the metadata carrier
 	// before an existing Mach-O code signature is regenerated. It is not the
 	// signed output file's net size change.
-	CarrierBytesRemoved uint64
+	CarrierBytesRemoved   uint64
+	MetadataRecordsBefore int
+	MetadataRecordsAfter  int
 }
 
 // Rewrite parses the linked binary's funcinfo site sections, deduplicates
@@ -64,7 +66,16 @@ func Rewrite(path string) (Stats, error) {
 	if len(kept) == 0 {
 		return st, fmt.Errorf("no records survived dedup")
 	}
-	ftab, buckets, removed, err := writeBack(path, info, kept)
+	var metadata *compactMetadata
+	if info.metadata != nil {
+		metadata, err = info.metadata.compact(kept, parseRecords(info, info.pcLineSec))
+		if err != nil {
+			return st, err
+		}
+		st.MetadataRecordsBefore = len(info.metadata.table.Records)
+		st.MetadataRecordsAfter = len(metadata.table.Records)
+	}
+	ftab, buckets, removed, err := writeBack(path, info, kept, metadata)
 	if err != nil {
 		return st, err
 	}

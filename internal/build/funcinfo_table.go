@@ -552,6 +552,7 @@ func emitFuncInfoTable(ctx *context, pkg llssa.Package, records []funcInfoRecord
 		}))
 		symbolIndexCount.SetInitializer(llvm.ConstInt(countType, uint64(len(symbolIndexValues)), false))
 	}
+	prepareCompactFuncInfo(ctx, mod)
 }
 
 type externalFuncInfoGlobals struct {

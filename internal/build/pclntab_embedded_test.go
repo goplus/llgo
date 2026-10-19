@@ -25,7 +25,8 @@ func TestEmbeddedPCLNPruningScope(t *testing.T) {
 		buildMode            BuildMode
 		sites, want          bool
 	}{
-		{"linux", "linux", "amd64", "", PCLNEmbedded, BuildModeExe, true, true},
+		{"linux single link", "linux", "amd64", "", PCLNEmbedded, BuildModeExe, true, false},
+		{"linux arm64 single link", "linux", "arm64", "", PCLNEmbedded, BuildModeExe, true, false},
 		{"darwin", "darwin", "arm64", "", PCLNEmbedded, BuildModeExe, true, true},
 		{"external", "linux", "amd64", "", PCLNExternal, BuildModeExe, true, false},
 		{"none", "linux", "amd64", "", PCLNNone, BuildModeExe, true, false},
@@ -100,7 +101,8 @@ func embeddedPCLNFixture(t *testing.T) (string, pclnmap.Data) {
 	pkg := prog.NewPackage("main", "main")
 	defer pkg.Module().Dispose()
 	ctx := &context{prog: prog, buildConf: &Config{
-		Goos: "linux", Goarch: "amd64", BuildMode: BuildModeExe, PCLNMode: PCLNEmbedded,
+		Goos: "darwin", Goarch: "arm64", BuildMode: BuildModeExe, PCLNMode: PCLNEmbedded,
+		LinkOptions: LinkOptions{DWARF: DWARFOmit},
 	}}
 	emitFuncInfoTable(ctx, pkg, []funcInfoRecord{
 		{symbol: "main.dead", name: "main.DeadOnly2420", file: "/dead/file.go", line: 10},

@@ -275,7 +275,7 @@ func TestFuncInfoTableMaterializesEntrySites(t *testing.T) {
 	ir := entry.LPkg.String()
 	for _, want := range []string{
 		"@__llgo_funcinfo_entry_start = global ptr @__start_llgo_funcinfo_entry",
-		"@__llgo_funcinfo_entry_end = global ptr @__stop_llgo_funcinfo_entry",
+		"@__llgo_funcinfo_entry_end = externally_initialized global ptr @__llgo_funcinfo_sites_end",
 		"module asm \".section llgo_funcinfo_entry",
 	} {
 		if !strings.Contains(ir, want) {
@@ -299,7 +299,7 @@ func TestFuncInfoTableMaterializesEntrySites(t *testing.T) {
 	ltoIR := ltoEntry.LPkg.String()
 	for _, want := range []string{
 		"@__llgo_funcinfo_entry_start = global ptr @__start_llgo_funcinfo_entry",
-		"@__llgo_funcinfo_entry_end = global ptr @__stop_llgo_funcinfo_entry",
+		"@__llgo_funcinfo_entry_end = externally_initialized global ptr @__llgo_funcinfo_sites_end",
 		"module asm \".section llgo_funcinfo_entry",
 	} {
 		if !strings.Contains(ltoIR, want) {

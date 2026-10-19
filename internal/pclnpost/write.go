@@ -52,10 +52,13 @@ type symIndexEntry struct {
 
 // writeBack rewrites the entry-site prefix with the prebuilt table, removes
 // the unused physical carrier tail, and publishes the staged image atomically.
-func writeBack(path string, info *binaryInfo, kept []siteRecord) (ftabCount, bucketCount int, bytesRemoved uint64, err error) {
+func writeBack(path string, info *binaryInfo, kept []siteRecord, metadata *compactMetadata) (ftabCount, bucketCount int, bytesRemoved uint64, err error) {
 	symIdx, err := loadSymbolIndex(path, info)
 	if err != nil {
 		return 0, 0, 0, err
+	}
+	if metadata != nil {
+		symIdx = metadata.index
 	}
 	sort.Slice(kept, func(i, j int) bool { return kept[i].pc < kept[j].pc })
 	type row struct {
@@ -137,6 +140,20 @@ func writeBack(path string, info *binaryInfo, kept []siteRecord) (ftabCount, buc
 
 	raw := make([]byte, len(info.raw))
 	copy(raw, info.raw)
+	var metadataValues [metadataGlobalCount]uint64
+	if metadata != nil {
+		blob, metadataValues, err = metadata.appendPayload(blob, info.entryVMAddr)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		need = len(blob)
+		if uint64(need) > info.entryVMSize {
+			return 0, 0, 0, fmt.Errorf("compacted metadata exceeds carrier")
+		}
+		if err := patchMetadataGlobals(raw, info, metadata, metadataValues); err != nil {
+			return 0, 0, 0, err
+		}
+	}
 	var pending []pendingWrite
 	if info.format == "macho" {
 		// Remove the rewritten section's pointer slots from dyld's chained
@@ -179,6 +196,21 @@ func writeBack(path string, info *binaryInfo, kept []siteRecord) (ftabCount, buc
 		}
 		if got := binary.LittleEndian.Uint64(stagedInfo.entrySec); got != prebuiltMagic {
 			return fmt.Errorf("compact entry magic %#x, want %#x", got, prebuiltMagic)
+		}
+		if metadata != nil {
+			for i, addr := range metadata.globals {
+				data, err := checkedVM(stagedInfo, addr, 8)
+				if err != nil {
+					return err
+				}
+				if binary.LittleEndian.Uint64(data) != metadataValues[i] {
+					return fmt.Errorf("compacted metadata ABI global %d changed", i)
+				}
+			}
+			var decoded compactMetadata
+			if err := decoded.decode(stagedInfo, metadataValues); err != nil {
+				return fmt.Errorf("verify compact metadata: %w", err)
+			}
 		}
 		return nil
 	}

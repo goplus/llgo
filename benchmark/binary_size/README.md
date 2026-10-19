@@ -31,13 +31,20 @@ builds with `-pclntab=external -ldflags=-w`, recording the sidecar's function,
 PC-line and site counts as well as its bytes. The executable's text bytes must
 remain unchanged.
 
-Embedded native executables use the same final-site liveness and ownership
-checks. When records can be removed, the build regenerates only the synthetic
-entry object's metadata and relinks, then verifies the live set against the
-original catalog. This reclaims the actual bytes without changing runtime
-table formats or adding a runtime decoder. It adds one link when pruning is
-needed. Builds without entry sites, library modes and named targets retain
-their existing policy; the Go global DCE dev gate is unchanged.
+Embedded native executables share the metadata pruner with external mode.
+Darwin regenerates the synthetic entry object's metadata and relinks, verifying
+liveness against the original catalog before publication. Linux ELF64 embedded
+executables instead put the payload in the reclaimable entry carrier and patch
+its table pointers/counts after the single final link. This avoids a second LTO
+link; surviving physical PC-line sites also keep their inline owners. Physical
+compaction requires non-PIE ELF64, and a rejected rewrite leaves the runnable
+original image unchanged. Builds without entry sites, library modes and named
+targets retain their existing policy; the Go global DCE dev gate is unchanged.
+
+Compare the Linux carrier path with the relink baseline for both size and link
+time. Mutable metadata pointers/counts can prevent some LTO constant folding,
+so a single-link build is not necessarily smaller than a relinked build. Record
+that tradeoff separately from the reduction relative to unpruned metadata.
 
 This initial matrix applies to native Darwin/Linux executable builds;
 generation, archive/shared, and fixed-target policies are outside this

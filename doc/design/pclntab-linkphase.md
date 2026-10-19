@@ -88,6 +88,51 @@ not PCLN properties and must not introduce function-class-specific sections.
      An unfamiliar segment shape, overlapping relocation/fixup range, signing
      failure, or verification failure leaves the original executable intact.
 
+### Embedded runtime metadata compaction on Linux
+
+Native Linux amd64 and arm64 embedded executables use this single-link path
+instead of the embedded metadata relink introduced by PR #2846. Darwin keeps
+the relink path, and external mode keeps its compact sidecar path. The three
+paths share `pclnmap.Prune` for record/index remapping and string/hash rebuilding.
+The Linux carrier path retains all physically surviving PC-line IDs because
+the runtime still consumes those sites, including anchors from inlined bodies.
+
+These Linux executables place the six funcinfo
+payload arrays in this carrier. The linker script orders the raw entry sites
+first, defines `__llgo_funcinfo_sites_end`, then appends the function records,
+PC-line records, string pool, string offsets, hash table and symbol index.
+Runtime entry scanning uses the sites-end boundary, rather than the end of
+the complete output section. The linked, unrewritten image therefore remains
+usable if postprocessing fails or `LLGO_PCLNPOST=0` disables it.
+
+A discovery record references a versioned header containing addresses of the
+runtime table-pointer and count globals. Those globals are LLVM
+`externally_initialized`: the linker finalizer may replace their values before
+program startup, so LTO must not propagate the original addresses or counts
+into machine code. Discovery uses relocations rather than symbol names and
+continues to work after LTO internalization.
+
+The finalizer keeps the union of:
+
+- Function records referenced by surviving, deduplicated entry sites.
+- Function records owning any surviving PC-line site, including inlinees
+  whose standalone function bodies have disappeared.
+
+It rebuilds the string pool, string offsets, name hash and symbol index from
+that union, remaps every function index, and retains only PC-line records with
+live sites. The rebuilt arrays follow the prebuilt ftab/findfunctab in the same
+carrier. Their runtime globals are patched in the staged image before the
+existing physical suffix compaction and atomic publication. Code and other
+allocated virtual addresses do not move; no second compilation or LTO link is
+needed. Malformed references, missing live PC-line records or insufficient
+carrier capacity reject the entire rewrite without modifying the executable.
+
+This layout currently applies to native Linux ELF64 embedded executables.
+Postprocessing requires ET_EXEC; PIE images retain the unrewritten fallback.
+Other object formats, external/disabled PCLN and library build modes keep their
+existing emission paths. Normal symbol stripping still runs after PCLN
+finalization, when the ordinary symbol table is no longer needed for dedup.
+
 ### Parallel executable publication on Linux
 
 The test DAG waits for linking and postprocessing before executing each image,

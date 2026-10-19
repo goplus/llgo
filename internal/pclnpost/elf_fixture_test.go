@@ -415,27 +415,27 @@ func TestWriteBackRejectsInvalidInputs(t *testing.T) {
 	t.Run("missing symbol index", func(t *testing.T) {
 		bad := *info
 		bad.entrySec = nil
-		if _, _, _, err := writeBack(path, &bad, kept); err == nil {
+		if _, _, _, err := writeBack(path, &bad, kept, nil); err == nil {
 			t.Fatal("writeBack accepted a missing symbol index")
 		}
 	})
 	t.Run("no resolvable rows", func(t *testing.T) {
 		records := []siteRecord{{pc: 0, symbolID: 1}, {pc: info.textStart + 4, symbolID: 0xdeadbeef}}
-		if _, _, _, err := writeBack(path, info, records); err == nil || !strings.Contains(err.Error(), "no resolvable") {
+		if _, _, _, err := writeBack(path, info, records, nil); err == nil || !strings.Contains(err.Error(), "no resolvable") {
 			t.Fatalf("writeBack error = %v", err)
 		}
 	})
 	t.Run("table exceeds carrier", func(t *testing.T) {
 		bad := *info
 		bad.entryVMSize = 64
-		if _, _, _, err := writeBack(path, &bad, kept); err == nil || !strings.Contains(err.Error(), "prebuilt blob") {
+		if _, _, _, err := writeBack(path, &bad, kept, nil); err == nil || !strings.Contains(err.Error(), "prebuilt blob") {
 			t.Fatalf("writeBack error = %v", err)
 		}
 	})
 	t.Run("unsupported compaction format", func(t *testing.T) {
 		bad := *info
 		bad.format = "unknown"
-		if _, _, _, err := writeBack(path, &bad, kept); err == nil || !strings.Contains(err.Error(), "unsupported binary format") {
+		if _, _, _, err := writeBack(path, &bad, kept, nil); err == nil || !strings.Contains(err.Error(), "unsupported binary format") {
 			t.Fatalf("writeBack error = %v", err)
 		}
 	})
@@ -466,7 +466,7 @@ func TestWriteBackRejectsMachOWithoutFixupCarrier(t *testing.T) {
 		t.Fatal("fixture has no chained-fixups command")
 	}
 	kept := []siteRecord{{pc: info.textStart + 0x14, symbolID: fnv64("example.com/p.A")}}
-	if _, _, _, err := writeBack(path, &bad, kept); err == nil || !strings.Contains(err.Error(), "chained fixups") {
+	if _, _, _, err := writeBack(path, &bad, kept, nil); err == nil || !strings.Contains(err.Error(), "chained fixups") {
 		t.Fatalf("writeBack error = %v", err)
 	}
 }

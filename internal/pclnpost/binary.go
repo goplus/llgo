@@ -68,6 +68,7 @@ type binaryInfo struct {
 	// slots are emitted as BIND nodes even when they bind to this image, so
 	// record decoding needs the imports table, not just rebase decoding.
 	bindTargets []uint64
+	metadata    *compactMetadata
 
 	entryVMAddr, entryVMSize, entryFileOff uint64
 	pcLineVMSize, pcLineFileOff            uint64
@@ -226,6 +227,12 @@ func load(path string) (*binaryInfo, error) {
 		}
 	}
 	finish(info)
+	if err := discoverCompactMetadata(info); err != nil {
+		return nil, err
+	}
+	if info.metadata != nil && ef.Type != elf.ET_EXEC {
+		return nil, fmt.Errorf("compact runtime metadata requires a non-PIE ELF executable")
+	}
 	return info, nil
 }
 
