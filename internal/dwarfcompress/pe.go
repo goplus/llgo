@@ -104,12 +104,17 @@ func compressPE(raw []byte) ([]byte, error) {
 	}
 	symoff := uint64(binary.LittleEndian.Uint32(raw[coff+coffSymbolTable:]))
 	nsym := uint64(binary.LittleEndian.Uint32(raw[coff+coffSymbolCount:]))
+	if symoff == 0 && nsym != 0 {
+		return nil, fmt.Errorf("PE symbol count without a symbol table")
+	}
 	if !inFile(raw, symoff, nsym*pe.COFFSymbolSize) {
 		return nil, fmt.Errorf("invalid PE symbol table")
 	}
-	stringOff := symoff + nsym*pe.COFFSymbolSize
+	var stringOff uint64
+	var originalStringsSize int
 	var stringsData []byte
 	if symoff != 0 {
+		stringOff = symoff + nsym*pe.COFFSymbolSize
 		if !inFile(raw, stringOff, 4) {
 			return nil, fmt.Errorf("truncated PE string table")
 		}
@@ -117,6 +122,7 @@ func compressPE(raw []byte) ([]byte, error) {
 		if size < 4 || !inFile(raw, stringOff, size) {
 			return nil, fmt.Errorf("invalid PE string table")
 		}
+		originalStringsSize = int(size)
 		stringsData = bytes.Clone(raw[stringOff : stringOff+size])
 	}
 	// Bound the symbol/string allocations before invoking debug/pe.
@@ -197,7 +203,6 @@ func compressPE(raw []byte) ([]byte, error) {
 			return nil, fmt.Errorf("PE symbol/string table precedes section data")
 		}
 	}
-	originalStringsSize := int(binary.LittleEndian.Uint32(raw[stringOff:]))
 	// Keep later overlay data's alignment when extending the string table.
 	growth := align(uint64(len(stringsData)-originalStringsSize), fileAlign)
 	stringsData = append(stringsData, make([]byte, originalStringsSize+int(growth)-len(stringsData))...)

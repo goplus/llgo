@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"debug/pe"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"testing"
 )
@@ -30,6 +31,53 @@ func renamePESection(raw []byte, index int, name string) []byte {
 	return raw
 }
 
+func TestPEWithoutSymbolTable(t *testing.T) {
+	for _, bits := range []int{32, 64} {
+		for _, tt := range []struct {
+			name    string
+			repeats int
+			dwarf   bool
+			nsym    uint32
+			wantErr string
+		}{
+			{"no DWARF", 8000, false, 0, ""},
+			{"no compression gain", 0, true, 0, ""},
+			{"compressed names need a table", 8000, true, 0, "PE DWARF section names require a COFF string table"},
+			{"symbol count without table", 8000, false, 1, "PE symbol count without a symbol table"},
+		} {
+			t.Run(fmt.Sprintf("PE%d/%s", bits, tt.name), func(t *testing.T) {
+				raw := peFixtureSize(t, bits, tt.repeats)
+				// Use inline names, then remove the table entirely. Even the
+				// original .debug_* names must not depend on a string table.
+				sections := fixturePEOptional + int(binary.LittleEndian.Uint16(raw[fixtureCOFF+16:]))
+				for i, name := range []string{".text", ".debug_a", ".debug_i", ".debug_s", ".rdata"} {
+					if !tt.dwarf && i > 0 && i < 4 {
+						name = fmt.Sprintf(".data%d", i)
+					}
+					p := sections + i*40
+					clear(raw[p : p+8])
+					copy(raw[p:p+8], name)
+				}
+				raw = raw[:binary.LittleEndian.Uint32(raw[fixtureCOFF+8:])]
+				binary.LittleEndian.PutUint32(raw[fixtureCOFF+8:], 0)
+				binary.LittleEndian.PutUint32(raw[fixtureCOFF+12:], tt.nsym)
+				original := bytes.Clone(raw)
+				out, err := Compress(raw)
+				if tt.wantErr != "" {
+					if err == nil || err.Error() != tt.wantErr || out != nil {
+						t.Fatalf("got output length %d, error %v; want %q without output", len(out), err, tt.wantErr)
+					}
+				} else if err != nil || !bytes.Equal(out, raw) {
+					t.Fatalf("image without a COFF table should remain unchanged: %v", err)
+				}
+				if !bytes.Equal(raw, original) {
+					t.Fatal("compression modified the input without a COFF table")
+				}
+			})
+		}
+	}
+}
+
 func TestPEMetadataRanges(t *testing.T) {
 	u32 := binary.LittleEndian.PutUint32
 	u16 := binary.LittleEndian.PutUint16
@@ -37,13 +85,6 @@ func TestPEMetadataRanges(t *testing.T) {
 		name string
 		edit func([]byte) []byte
 	}{
-		{"missing name table", func(b []byte) []byte {
-			for i, name := range []string{".text", ".debug_a", ".debug_i", ".debug_s", ".rdata"} {
-				b = renamePESection(b, i, name)
-			}
-			u32(b[fixtureCOFF+8:], 0)
-			return b
-		}},
 		{"duplicate compressed section", func(b []byte) []byte { return renamePESection(b, 3, ".zdebug_info") }},
 		{"unrepresentable name offset", func(b []byte) []byte {
 			str := binary.LittleEndian.Uint32(b[fixtureCOFF+8:])

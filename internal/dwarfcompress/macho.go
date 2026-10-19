@@ -46,6 +46,7 @@ const (
 	// struct segment_command_64
 	segment64Size         = 72
 	segment64Name         = 8
+	segment64VMAddress    = 24
 	segment64VMSize       = 32
 	segment64FileOffset   = 40
 	segment64FileSize     = 48
@@ -170,16 +171,10 @@ func compressMachO(raw []byte) ([]byte, error) {
 			if err != nil || end < newOff || end-newOff > oldSize {
 				return nil, fmt.Errorf("invalid Mach-O segment file range")
 			}
-			newSize := end - newOff
 			binary.LittleEndian.PutUint64(out[pos+segment64FileOffset:], newOff)
-			binary.LittleEndian.PutUint64(out[pos+segment64FileSize:], newSize)
-			if string(bytes.TrimRight(out[pos+segment64Name:pos+segment64Name+machoNameSize], "\x00")) == "__DWARF" {
-				vmSize := binary.LittleEndian.Uint64(out[pos+segment64VMSize:])
-				if oldSize-newSize > vmSize {
-					return nil, fmt.Errorf("Mach-O debug segment virtual size underflows")
-				}
-				binary.LittleEndian.PutUint64(out[pos+segment64VMSize:], vmSize-(oldSize-newSize))
-			}
+			binary.LittleEndian.PutUint64(out[pos+segment64FileSize:], end-newOff)
+			// File compaction does not change virtual addresses or vmsize.
+			// Virtual gaps and section order can differ from the file layout.
 			nsect := binary.LittleEndian.Uint32(out[pos+segment64SectionCount:])
 			for j := uint32(0); j < nsect; j++ {
 				p := pos + segment64Size + int(j)*section64Size
@@ -188,14 +183,6 @@ func compressMachO(raw []byte) ([]byte, error) {
 					next, err := l.offset(uint64(off))
 					if err != nil {
 						return nil, err
-					}
-					if string(bytes.TrimRight(out[p+machoNameSize:p+2*machoNameSize], "\x00")) == "__DWARF" {
-						addr := binary.LittleEndian.Uint64(out[p+section64Address:])
-						shift := uint64(off) - next - (oldOff - newOff)
-						if shift > addr {
-							return nil, fmt.Errorf("Mach-O debug section address underflows")
-						}
-						binary.LittleEndian.PutUint64(out[p+section64Address:], addr-shift)
 					}
 					binary.LittleEndian.PutUint32(out[p+section64FileOffset:], uint32(next))
 				}
@@ -270,9 +257,18 @@ func validateMachORanges(raw []byte, ncmds, cmdsize uint32) error {
 			if !inFile(raw, segOff, segSize) {
 				return fmt.Errorf("invalid Mach-O segment range")
 			}
+			isDWARF := string(bytes.TrimRight(raw[pos+segment64Name:pos+segment64Name+machoNameSize], "\x00")) == "__DWARF"
+			vmAddr, vmSize := binary.LittleEndian.Uint64(raw[pos+segment64VMAddress:]), binary.LittleEndian.Uint64(raw[pos+segment64VMSize:])
+			if isDWARF && vmAddr+vmSize < vmAddr {
+				return fmt.Errorf("invalid Mach-O debug segment virtual range")
+			}
 			for j := uint32(0); j < binary.LittleEndian.Uint32(raw[pos+segment64SectionCount:]); j++ {
 				p := pos + segment64Size + int(j)*section64Size
 				off, length := uint64(binary.LittleEndian.Uint32(raw[p+section64FileOffset:])), binary.LittleEndian.Uint64(raw[p+section64DataSize:])
+				addr := binary.LittleEndian.Uint64(raw[p+section64Address:])
+				if isDWARF && length != 0 && (addr < vmAddr || length > vmSize || addr-vmAddr > vmSize-length) {
+					return fmt.Errorf("invalid Mach-O debug section virtual range")
+				}
 				reloff, nreloc := uint64(binary.LittleEndian.Uint32(raw[p+section64Relocations:])), uint64(binary.LittleEndian.Uint32(raw[p+section64RelocationCount:]))
 				if !inFile(raw, reloff, nreloc*machoRelocationSize) {
 					return fmt.Errorf("invalid Mach-O relocation range")

@@ -5,11 +5,81 @@ package dwarfcompress
 
 import (
 	"bytes"
+	"debug/macho"
 	"encoding/binary"
 	"fmt"
 	"math"
+	"reflect"
 	"testing"
 )
+
+func TestMachOVirtualLayout(t *testing.T) {
+	const page = uint64(16384)
+	for _, tt := range []struct {
+		name    string
+		order   []int
+		gap     uint64
+		padding uint64
+	}{
+		{"virtual padding", []int{0, 1, 2}, 0, 2 * page},
+		{"aligned virtual gaps", []int{0, 1, 2}, page, page},
+		{"independent virtual order", []int{2, 0, 1}, page, page},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := machoFixture(t)
+			const segment = 32
+			const sections = segment + 72
+			const linkedit = sections + 3*80
+			base := binary.LittleEndian.Uint64(raw[segment+24:])
+			next := base
+			for _, i := range tt.order {
+				p := sections + i*80
+				next = align(next, page)
+				binary.LittleEndian.PutUint64(raw[p+32:], next)
+				next += binary.LittleEndian.Uint64(raw[p+40:]) + tt.gap
+			}
+			memsz := align(next-base, page) + tt.padding
+			binary.LittleEndian.PutUint64(raw[segment+32:], memsz)
+			binary.LittleEndian.PutUint64(raw[linkedit+24:], base+memsz)
+			before, err := macho.NewFile(bytes.NewReader(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if before.Segment("__DWARF").Memsz <= before.Segment("__DWARF").Filesz {
+				t.Fatal("fixture needs independent file and virtual extents")
+			}
+			original := bytes.Clone(raw)
+			out, err := Compress(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(out) >= len(raw) || !bytes.Equal(raw, original) {
+				t.Fatal("compression did not shrink the file or modified the input")
+			}
+			after, err := macho.NewFile(bytes.NewReader(out))
+			if err != nil {
+				t.Fatal(err)
+			}
+			seg := after.Segment("__DWARF")
+			for _, s := range after.Sections {
+				if s.Seg == "__DWARF" && (s.Addr < seg.Addr || s.Size > seg.Memsz || s.Addr-seg.Addr > seg.Memsz-s.Size) {
+					t.Errorf("section %s [%#x, %#x) lies outside segment [%#x, %#x)", s.Name, s.Addr, s.Addr+s.Size, seg.Addr, seg.Addr+seg.Memsz)
+				}
+			}
+			if seg.Addr != before.Segment("__DWARF").Addr || seg.Memsz != memsz {
+				t.Error("file compression changed the virtual segment range")
+			}
+			for i, s := range after.Sections {
+				if s.Addr != before.Sections[i].Addr {
+					t.Errorf("file compression moved section %s's virtual address", s.Name)
+				}
+			}
+			if !reflect.DeepEqual(dwarfEntries(t, before), dwarfEntries(t, after)) {
+				t.Fatal("virtual gaps changed the decoded DWARF")
+			}
+		})
+	}
+}
 
 func TestMalformedNativeRanges(t *testing.T) {
 	mach := machoFixture(t)
@@ -41,8 +111,10 @@ func TestMalformedNativeRanges(t *testing.T) {
 		{"Mach-O invalid symbol name", mach, func(b []byte) { u32(b[binary.LittleEndian.Uint32(b[symtab+8:]):], math.MaxUint32) }},
 		{"Mach-O debug symbol", mach, func(b []byte) { p := binary.LittleEndian.Uint32(b[symtab+8:]); b[p+5] = 1 }},
 		{"Mach-O duplicate compressed name", mach, func(b []byte) { clear(b[section+2*80 : section+2*80+16]); copy(b[section+2*80:], "__zdebug_info") }},
-		{"Mach-O virtual size underflow", mach, func(b []byte) { u64(b[32+32:], 0) }},
-		{"Mach-O section address underflow", mach, func(b []byte) { u64(b[section+2*80+32:], 0) }},
+		{"Mach-O empty virtual segment", mach, func(b []byte) { u64(b[32+32:], 0) }},
+		{"Mach-O virtual segment overflow", mach, func(b []byte) { u64(b[32+24:], math.MaxUint64) }},
+		{"Mach-O section below virtual segment", mach, func(b []byte) { u64(b[section+2*80+32:], 0) }},
+		{"Mach-O section above virtual segment", mach, func(b []byte) { u64(b[section+2*80+32:], math.MaxUint64) }},
 		{"Mach-O segment begins inside edit", mach, func(b []byte) { u64(b[segment+40:], uint64(binary.LittleEndian.Uint32(b[section+80+48:]))+1) }},
 		{"Mach-O segment ends inside edit", mach, func(b []byte) { u64(b[32+48:], 4096) }},
 		{"Mach-O linkedit ends inside edit", mach, func(b []byte) {
