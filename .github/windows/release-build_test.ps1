@@ -49,6 +49,29 @@ try {
   } finally {
     Pop-Location
   }
+  # The per-run x86 artifact has the same integrity boundary as a pinned
+  # download. Inspect its bytes and filename before delegating extraction.
+  $localArchive = Join-Path $temporary 'sdk.tar.xz'
+  [IO.File]::WriteAllText($localArchive, 'local source-built archive')
+  $localHash = (Get-FileHash -Algorithm SHA256 $localArchive).Hash.ToLowerInvariant()
+  "$localHash  sdk.tar.xz" | Set-Content -Encoding ascii ($localArchive + '.sha256')
+  $script:localExtraction = $null
+  function Expand-ReleaseXz {
+    param([string]$URL, [string]$SHA256, [string]$CacheDirectory, [string]$Destination)
+    $script:localExtraction = @{ URL = $URL; Hash = $SHA256; Destination = $Destination }
+  }
+  Expand-ReleaseLocalXz -Archive $localArchive -Destination (Join-Path $temporary 'extracted')
+  if ($script:localExtraction.Hash -ne $localHash -or -not ([Uri]$script:localExtraction.URL).IsFile) {
+    throw 'Local x86 extraction did not preserve the hash/file boundary'
+  }
+  [IO.File]::WriteAllText($localArchive, 'corrupted archive')
+  $rejected = $false
+  try { Expand-ReleaseLocalXz -Archive $localArchive -Destination 'unused' } catch { $rejected = $true }
+  if (-not $rejected) { throw 'A corrupted source-built x86 archive was accepted' }
+  "$localHash  other-name.tar.xz" | Set-Content -Encoding ascii ($localArchive + '.sha256')
+  $rejected = $false
+  try { Expand-ReleaseLocalXz -Archive $localArchive -Destination 'unused' } catch { $rejected = $true }
+  if (-not $rejected) { throw 'A source-built archive with a mismatched checksum filename was accepted' }
   Write-Host 'Passed cached archive integrity and CGO linker argument checks'
 } finally {
   foreach ($name in $savedEnvironment.Keys) {

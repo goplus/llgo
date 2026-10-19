@@ -27,12 +27,12 @@ function Expect-Failure([scriptblock]$Operation, [string]$Pattern) {
 try {
   $systemDirectory = Join-Path $temporary 'system'
   New-Item -ItemType Directory $systemDirectory | Out-Null
-  foreach ($goArch in @('amd64', 'arm64')) {
+  foreach ($goArch in @('amd64', 'arm64', '386')) {
     $source = Join-Path $temporary $goArch
     $stage = Join-Path $temporary "$goArch stage"
     New-Item -ItemType Directory $source, $stage | Out-Null
-    $arch = @{ amd64 = 'x86_64'; arm64 = 'aarch64' }[$goArch]
-    $machine = @{ amd64 = 'x64'; arm64 = 'arm64' }[$goArch]
+    $arch = @{ amd64 = 'x86_64'; arm64 = 'aarch64'; '386' = 'i686' }[$goArch]
+    $machine = @{ amd64 = 'x64'; arm64 = 'arm64'; '386' = 'x86' }[$goArch]
     Set-Content (Join-Path $source 'leaf.c') '__declspec(dllexport) int leaf(void) { return 42; }'
     Set-Content (Join-Path $source 'middle.c') '__declspec(dllimport) int leaf(void); __declspec(dllexport) int middle(void) { return leaf(); }'
     Set-Content (Join-Path $source 'main.c') '__declspec(dllimport) int middle(void); int entry(void) { return middle(); }'

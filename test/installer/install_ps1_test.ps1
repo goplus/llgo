@@ -13,6 +13,20 @@ Assert-Equal (ConvertTo-LLGoArchitecture 'X64') 'amd64'
 Assert-Equal (ConvertTo-LLGoArchitecture 'AMD64') 'amd64'
 Assert-Equal (ConvertTo-LLGoArchitecture 'Arm64') 'arm64'
 Assert-Equal (ConvertTo-LLGoArchitecture 'x86') '386'
+$savedInstallArch = $env:LLGO_ARCH
+try {
+  foreach ($arch in @('386', 'amd64', 'arm64')) {
+    $env:LLGO_ARCH = $arch
+    Assert-Equal (Resolve-LLGoInstallArchitecture) $arch
+  }
+  $env:LLGO_ARCH = $null
+  Assert-Equal (Resolve-LLGoInstallArchitecture) (Get-LLGoNativeArchitecture)
+  $env:LLGO_ARCH = 'mips'
+  $invalidRejected = $false
+  try { $null = Resolve-LLGoInstallArchitecture } catch { $invalidRejected = $true }
+  if (-not $invalidRejected) { throw 'An unsupported installer host architecture was accepted' }
+} finally { $env:LLGO_ARCH = $savedInstallArch }
+
 Assert-Equal (ConvertTo-LLGoVersion 'v1.2.3-rc.1') '1.2.3-rc.1'
 Assert-Equal (ConvertTo-LLGoGoVersion 'go1.27rc1').ToString() '1.27.0'
 Assert-Equal (ConvertTo-LLGoGoVersion 'devel go1.28-abcdef').ToString() '1.28.0'

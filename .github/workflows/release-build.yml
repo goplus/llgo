@@ -196,16 +196,54 @@ jobs:
           retention-days: 3
           include-hidden-files: true
 
+  build-windows-x86-toolchains:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: prepare
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+      - name: Restore pinned Windows x86 toolchains
+        id: x86-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .windows-x86-toolchains
+          key: llgo-windows-x86-toolchains-v1-${{ hashFiles('.github/windows/build-x86-toolchains.sh') }}
+      - name: Build native x86 SDK and ESP tools
+        if: steps.x86-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build ccache
+          .github/windows/build-x86-toolchains.sh
+      - name: Verify cached or built archives
+        run: cd .windows-x86-toolchains && sha256sum -c ./*.sha256
+      - name: Save source-built x86 toolchains
+        if: steps.x86-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .windows-x86-toolchains
+          key: llgo-windows-x86-toolchains-v1-${{ hashFiles('.github/windows/build-x86-toolchains.sh') }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-x86-native-toolchains
+          path: .windows-x86-toolchains
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+
   build-windows:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, build]
+    needs: [prepare, build, build-windows-x86-toolchains]
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         abi: [msvc, mingw]
-        goarch: [amd64, arm64]
+        goarch: [amd64, arm64, '386']
         include:
+          - goarch: '386'
+            os: windows-2022
           - goarch: amd64
             os: windows-2022
           - goarch: arm64
@@ -252,11 +290,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'WinGet manifest tests failed' }
           ./.github/windows/release-lib_test.ps1
           ./.github/windows/release-build_test.ps1
+      - name: Download native x86 toolchains
+        if: matrix.goarch == '386'
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-x86-native-toolchains
+          path: .windows-x86-toolchains
       - name: Build integrated Windows archive
         shell: pwsh
         run: >-
           ./.github/windows/build-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
+          -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
       - name: Upload Windows archive
         uses: actions/upload-artifact@v7
         with:
@@ -277,8 +322,10 @@ jobs:
       fail-fast: false
       matrix:
         abi: [msvc, mingw]
-        goarch: [amd64, arm64]
+        goarch: [amd64, arm64, '386']
         include:
+          - goarch: '386'
+            os: windows-2022
           - goarch: amd64
             os: windows-2022
           - goarch: arm64
@@ -302,6 +349,7 @@ jobs:
             throw 'Could not determine the LLGo version from the Windows archive'
           }
           $env:LLGO_VERSION = $Matches[1]
+          $env:LLGO_ARCH = '${{ matrix.goarch }}'
           $env:LLGO_ABI = '${{ matrix.abi }}'
           $env:LLGO_ARCHIVE_PATH = $archive.FullName
           $env:LLGO_INSTALL_ROOT = Join-Path $env:RUNNER_TEMP 'llgo-release-install'

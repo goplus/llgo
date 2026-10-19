@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('msvc', 'mingw')][string]$Profile,
   [Parameter(Mandatory = $true)]
-  [ValidateSet('amd64', 'arm64')][string]$GoArch,
+  [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
   [switch]$CheckOnly
 )
 
@@ -98,7 +98,7 @@ func main() {
   if ($LASTEXITCODE -ne 0) { throw 'Preparing the native release smoke test failed' }
   $program = Join-Path $work 'hello.exe'
   $trace = Invoke-ReleaseCapture $llgo @('build', '-x', '-o', $program, '.')
-  $arch = @{ amd64 = 'x86_64'; arm64 = 'aarch64' }[$GoArch]
+  $arch = @{ amd64 = 'x86_64'; arm64 = 'aarch64'; '386' = 'i686' }[$GoArch]
   $triple = if ($Profile -eq 'msvc') { "$arch-pc-windows-msvc" } else { "$arch-w64-windows-gnu" }
   if (-not $trace.Contains($triple)) { throw "Release smoke test did not select $triple`n$trace" }
   $null = Assert-ReleasePE -ReadObj $readObj -Path $program -GoArch $GoArch -Profile $Profile

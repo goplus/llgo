@@ -1,4 +1,4 @@
-"""Prepare reviewable WinGet manifests from four checksummed Windows release ZIPs.
+"""Prepare reviewable WinGet manifests from six checksummed Windows release ZIPs.
 
 This never uploads release assets or submits to winget-pkgs.
 """
@@ -10,7 +10,7 @@ import re
 import zipfile
 
 PROFILES = {'msvc': 'MSVC', 'mingw': 'MinGW'}
-ARCHITECTURES = {'amd64': 'x64', 'arm64': 'arm64'}
+ARCHITECTURES = {'amd64': 'x64', 'arm64': 'arm64', '386': 'x86'}
 SCHEMA = '1.9.0'
 REPOSITORY = 'https://github.com/xgo-dev/llgo'
 
@@ -50,7 +50,7 @@ def prepare(artifacts, output, version):
     # hash instead of a numeric tag, while paths must remain single components.
     if not re.fullmatch(r'[0-9A-Za-z][0-9A-Za-z.+-]*', version):
         raise ValueError('Invalid release version (omit the leading v)')
-    # Verify all four inputs before emitting anything; ABI/architecture mixing
+    # Verify all six inputs before emitting anything; ABI/architecture mixing
     # and stale hashes must fail before a candidate can reach winget-pkgs.
     releases = {(p, a): release_info(artifacts, version, a, p)
                 for p in PROFILES for a in ARCHITECTURES}

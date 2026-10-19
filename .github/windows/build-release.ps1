@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('msvc', 'mingw')][string]$Profile,
   [Parameter(Mandatory = $true)]
-  [ValidateSet('amd64', 'arm64')][string]$GoArch
+  [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
+  [string]$X86ToolchainDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -48,6 +49,20 @@ if ($Profile -eq 'msvc' -and $GoArch -eq 'arm64') {
   }
 }
 
+if ($GoArch -eq '386') {
+  if (-not $X86ToolchainDirectory) { throw 'The Windows x86 SDK/ESP artifact is required' }
+  $parent = Join-Path $env:RUNNER_TEMP 'llgo-release-x86-sdk'
+  if (Test-Path $parent) { Remove-Item -Recurse -Force $parent }
+  Expand-ReleaseLocalXz -Archive (Join-Path $X86ToolchainDirectory 'llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz') -Destination $parent
+  $llvmRoot = Join-Path $parent 'llvm-sdk'
+  $manifest = Get-Content (Join-Path $llvmRoot 'LLGO-LLVM-MANIFEST.txt')
+  if ($manifest -notcontains 'host_target=i686-w64-mingw32' -or $manifest -notcontains 'llvm_version=22.1.8' -or
+      $manifest -notcontains 'source_revision=ca7933e47d3a3451d81e72ac174dcb5aa28b59d1' -or
+      $manifest -notcontains 'link_mode=static') {
+    throw 'The LLVM development SDK is not Windows x86/LLVM 22.1.8'
+  }
+  $null = Assert-ReleasePE -ReadObj $readObj -Path (Join-Path $llvmRoot 'bin/llvm-config.exe') -GoArch '386' -Profile 'mingw'
+}
 $llvmConfig = Join-Path $llvmRoot 'bin/llvm-config.exe'
 if ((Invoke-ReleaseCapture $llvmConfig @('--version')).Trim() -ne $llvmVersion) {
   throw "The release compiler requires LLVM $llvmVersion"
@@ -57,7 +72,15 @@ $env:GOOS = 'windows'
 $env:GOARCH = $GoArch
 $env:CGO_CPPFLAGS = (Invoke-ReleaseCapture $llvmConfig @('--cflags')).Trim().Replace('\', '/').Replace("`n", ' ')
 $env:CGO_CXXFLAGS = '-std=c++17'
-if ($Profile -eq 'msvc') {
+if ($GoArch -eq '386') {
+  $bootstrap = Get-ReleaseX86Bootstrap
+  $env:CC = '"' + (Join-Path $bootstrap 'bin/i686-w64-mingw32-clang.exe').Replace('\', '/') + '"'
+  $env:CXX = '"' + (Join-Path $bootstrap 'bin/i686-w64-mingw32-clang++.exe').Replace('\', '/') + '"'
+  $flags = (Invoke-ReleaseCapture $llvmConfig @('--link-static', '--ldflags', '--libs', 'all', '--system-libs')).Trim()
+  # The host compiler is independent of the C ABI selected for user programs.
+  # Static C++/unwind keeps both profiles' x86 llgo.exe free of toolchain DLLs.
+  $env:CGO_LDFLAGS = $flags.Replace('\', '/').Replace("`n", ' ') + ' -static -lc++ -lunwind'
+} elseif ($Profile -eq 'msvc') {
   . (Join-Path $PSScriptRoot 'msvc-target.ps1')
   $target = Enter-LLGoVisualStudio -GoArch $GoArch
   # Keep the bootstrap driver from setup-deps; the developer shell can put a
@@ -95,7 +118,10 @@ Copy-ReleaseDLLs -ReadObj $readObj -Executable $executable -GoArch $GoArch -Prof
 foreach ($entry in @('LICENSE', 'LICENSES', 'README.md', 'WINDOWS.md', 'THIRD_PARTY_NOTICES.md', 'runtime', 'targets')) {
   Copy-Item -LiteralPath (Join-Path $root $entry) -Destination $stage -Recurse
 }
-if ($Profile -eq 'mingw') {
+if ($GoArch -eq '386') {
+  Copy-Item -LiteralPath (Join-Path $llvmRoot 'third-party-licenses') `
+    -Destination (Join-Path $stage 'LICENSES/windows-runtime') -Recurse
+} elseif ($Profile -eq 'mingw') {
   # Preserve the MSYS2 component licenses alongside redistributed LLVM/C++
   # and transitive DLLs. Nothing from MSYS2's POSIX /usr/bin is packaged.
   Copy-Item -LiteralPath (Join-Path $llvmRoot 'share/licenses') `
@@ -104,21 +130,28 @@ if ($Profile -eq 'mingw') {
 
 # ESP tools match the LLGo host architecture for both MSVC and MinGW packages.
 $espVersion = '22.1.4_20260912'
-$espTarget = @{ amd64 = 'x86_64-w64-mingw32'; arm64 = 'aarch64-w64-mingw32' }[$GoArch]
+$espTarget = @{ amd64 = 'x86_64-w64-mingw32'; arm64 = 'aarch64-w64-mingw32'; '386' = 'i686-w64-mingw32' }[$GoArch]
 $espChecksums = @{
   amd64 = '49ba5159967f1f3cdc11b51d902595baaf0f94bf6c73fb4b880940f30a2d6f4f'
   arm64 = '02521d03911dadbd84ecfb27903e59dae1d9f12c45245982caea7dad6e6d4188'
 }
-$espChecksum = $espChecksums[$GoArch]
+$espChecksum = if ($GoArch -eq '386') {
+  $sourceArchive = Join-Path $X86ToolchainDirectory "clang-esp-$espVersion-$espTarget.tar.xz"
+  (Get-FileHash -Algorithm SHA256 $sourceArchive).Hash.ToLowerInvariant()
+} else { $espChecksums[$GoArch] }
 if (-not $espChecksum) { throw "Missing pinned ESP Clang checksum for windows/$GoArch" }
 $espAsset = "clang-esp-$espVersion-$espTarget.tar.xz"
 $espParent = Join-Path $env:RUNNER_TEMP ('llgo-release-esp-' + [Guid]::NewGuid())
 try {
-  Expand-ReleaseXz `
-    -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$espVersion/$espAsset" `
-    -SHA256 $espChecksum `
-    -CacheDirectory (Join-Path $env:RUNNER_TOOL_CACHE 'llgo-release-downloads/esp') `
-    -Destination $espParent
+  if ($GoArch -eq '386') {
+    Expand-ReleaseLocalXz -Archive $sourceArchive -Destination $espParent
+  } else {
+    Expand-ReleaseXz `
+      -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$espVersion/$espAsset" `
+      -SHA256 $espChecksum `
+      -CacheDirectory (Join-Path $env:RUNNER_TOOL_CACHE 'llgo-release-downloads/esp') `
+      -Destination $espParent
+  }
   $crosscompile = Join-Path $stage 'crosscompile'
   New-Item -ItemType Directory $crosscompile | Out-Null
   Move-Item -LiteralPath (Join-Path $espParent 'esp-clang') -Destination (Join-Path $crosscompile 'clang')

@@ -1,8 +1,23 @@
 # Using LLGo Windows releases
 
-Choose the release matching your host architecture (`amd64` or `arm64`) and native ABI (`msvc` or `mingw`). The release workflow produces a ZIP for each variant; check the [release assets](https://github.com/xgo-dev/llgo/releases) for the formats available in your version. Extract the entire archive and add its `bin` directory to PATH.
+Choose the release matching your host architecture (`386`, `amd64` or `arm64`) and native ABI (`msvc` or `mingw`). The release workflow produces a ZIP for each variant; check the [release assets](https://github.com/xgo-dev/llgo/releases) for the formats available in your version. Extract the entire archive and add its `bin` directory to PATH.
 
 The integrated package contains LLGo, its own DLL dependencies, `runtime`, `targets`, licenses, and the ESP Clang under `crosscompile/clang`. Native Windows development tools are installed separately.
+
+The `386` archives contain a PE32 LLGo compiler and PE32 ESP tools, validated
+under WoW64. Release CI builds their LLVM 22.1.8 SDK from pinned sources; that
+SDK is a build input, not an end-user dependency. The compiler host's static
+MinGW runtime does not select the ABI of user programs: the activated native
+MSVC/MinGW toolchain does.
+
+The installer uses the OS architecture by default. Set `LLGO_ARCH=386` to
+select the x86 archive on x64 Windows. Automatic development-dependency setup
+for x86 is unavailable; its installer defaults to `LLGO_INSTALL_DEPS=0`.
+Configure Go, a maintained i686 C/C++ toolchain and matching native libraries
+separately. The CI target setup in `.github/actions/setup-llvm-mingw`
+records the pinned MinGW dependency recipe; it does not require a discontinued
+MSYS2 CLANG32 installation.
+
 
 The PowerShell installer prepends LLGo's `bin` directory and, when it installs
 dependencies, Go, native LLVM, and vcpkg or MSYS2 tool directories to the
