@@ -1,7 +1,6 @@
 """Guard the integration contract so workflow edits cannot silently bypass policy."""
 
 import json
-import hashlib
 import os
 from pathlib import Path
 import runpy
@@ -21,7 +20,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 26, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
 }
 BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
 
@@ -203,7 +202,6 @@ else:
             self.assertEqual(x86["goarch"], ["386"])
             self.assertEqual(x86["os"], ["windows-2022"])
             self.assertEqual(jobs[name]["steps"], jobs[name + "-x86"]["steps"])
-        self.assertIn("build-windows-x86-toolchains", needs(jobs["build-windows-x86"]))
         self.assertIn("build-windows-compiler", needs(jobs["build-windows"]))
         self.assertIn("build-windows-compiler-x86", needs(jobs["build-windows-x86"]))
         compiler = jobs["build-windows-compiler"]
@@ -219,69 +217,38 @@ else:
         download = next(step for step in jobs["build-windows"]["steps"]
                         if step.get("name") == "Download shared host compiler")
         self.assertEqual(upload["with"]["name"], download["with"]["name"])
-        producer = jobs["build-windows-x86-toolchains"]
-        artifact = next(step for step in producer["steps"]
-                        if step.get("uses", "").startswith("actions/upload-artifact@"))
-        self.assertEqual(artifact["with"]["name"], "windows-x86-native-toolchains")
-        consumer = next(step for step in jobs["build-windows"]["steps"]
-                        if step.get("name") == "Download native x86 toolchains")
-        self.assertEqual(consumer["if"], "matrix.goarch == '386'")
-        self.assertEqual(consumer["with"]["name"], artifact["with"]["name"])
-
-    def test_windows_native_release_does_not_wait_for_x86(self):
+    def test_windows_release_uses_checksum_pinned_official_toolchains(self):
         jobs = load("release-build.yml")["jobs"]
-
-        def ancestors(name):
-            result = set(needs(jobs[name]))
-            for dependency in list(result):
-                result.update(ancestors(dependency))
-            return result
-
-        for name in ("build-windows-compiler", "build-windows", "test-windows-artifacts"):
-            self.assertNotIn("build-windows-x86-toolchains", ancestors(name))
-        self.assertIn("build-windows-x86-toolchains", ancestors("test-windows-artifacts-x86"))
-        cache = next(step for step in jobs["build-windows"]["steps"]
-                     if step.get("name") == "Cache ESP release archive")
-        self.assertEqual(cache["if"], "matrix.goarch != '386'")
-
-    def test_x86_release_trusts_fresh_producer_hashes_not_cached_sidecars(self):
-        jobs = load("release-build.yml")["jobs"]
-        producer = jobs["build-windows-x86-toolchains"]
-        build = next(step for step in producer["steps"] if step.get("id") == "build-x86")
-        self.assertNotIn("if", build)
-        caches = [step for step in producer["steps"] if step.get("uses", "").startswith("actions/cache")]
-        self.assertEqual(len(caches), 1)
-        self.assertEqual(caches[0]["with"]["path"], ".windows-x86-downloads")
-        self.assertIn("534b92e067b22a6b4441f48ae9240a3341b17825d04d577eab0cf85c44b4deda", caches[0]["with"]["key"])
-        for kind, consumer, variable in (("sdk", "build-windows-compiler-x86", "LLGO_X86_SDK_SHA256"),
-                                         ("esp", "build-windows-x86", "LLGO_X86_ESP_SHA256")):
-            self.assertEqual(producer["outputs"][kind + "-sha256"],
-                             "${{ steps.build-x86.outputs." + kind + "-sha256 }}")
-            self.assertEqual(jobs[consumer]["env"][variable],
-                             "${{ needs.build-windows-x86-toolchains.outputs." + kind + "-sha256 }}")
-
-    def test_x86_producer_verifies_archives_before_exporting_hashes(self):
-        script = (WORKFLOWS.parent / "windows/build-x86-toolchains.sh").read_text()
-        code = script.split("<<'PYTHON'\n", 1)[1].split("\nPYTHON", 1)[0]
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            output = root / "job-output"
-            expected = {}
-            for kind, name in (("sdk", "llvm-sdk-test.tar.xz"), ("esp", "clang-esp-test.tar.xz")):
-                archive = root / name
-                archive.write_bytes((kind * 100).encode())
-                digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-                expected[kind + "-sha256"] = digest
-                (root / (name + ".sha256")).write_text(f"{digest}  /old/runner/{name}\n")
-            env = dict(os.environ, GITHUB_OUTPUT=str(output))
-            subprocess.run([sys.executable, "-c", code, str(root)], env=env, check=True)
-            self.assertEqual(dict(line.split("=", 1) for line in output.read_text().splitlines()), expected)
-            for sidecar in root.glob("*.sha256"):
-                self.assertEqual(sidecar.read_text().split()[1], sidecar.name.removesuffix(".sha256"))
-            (root / "llvm-sdk-test.tar.xz").write_bytes(b"corrupted source-built archive")
-            result = subprocess.run([sys.executable, "-c", code, str(root)], env=env, capture_output=True)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn(b"Invalid source-built archive checksum", result.stderr)
+        self.assertNotIn("build-windows-x86-toolchains", jobs)
+        self.assertFalse((WORKFLOWS.parent / "windows/build-x86-toolchains.sh").exists())
+        pins = json.loads((WORKFLOWS.parent / "windows/espressif-toolchain.json").read_text())
+        self.assertRegex(pins["release"], r"^22\.1\.4_\d{8}$")
+        self.assertRegex(pins["producer_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(pins["sdk"]["version"], "22.1.8")
+        self.assertEqual(pins["sdk"]["asset"], "llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz")
+        self.assertRegex(pins["sdk"]["sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(set(pins["payloads"]), {"386", "amd64", "arm64"})
+        for arch, target in (("386", "i686"), ("amd64", "x86_64"), ("arm64", "aarch64")):
+            pin = pins["payloads"][arch]
+            self.assertEqual(pin["asset"], f"clang-esp-{pins['release']}-{target}-w64-mingw32.tar.xz")
+            self.assertRegex(pin["sha256"], r"^[0-9a-f]{64}$")
+        for name in ("build-windows-compiler", "build-windows-compiler-x86"):
+            step = next(step for step in jobs[name]["steps"]
+                        if step.get("name") == "Cache Windows x86 LLVM SDK archive")
+            self.assertEqual(step["if"], "matrix.goarch == '386'")
+            self.assertIn("espressif-toolchain.json", step["with"]["key"])
+            self.assertEqual(step["with"]["path"], "${{ runner.tool_cache }}/llgo-release-downloads/llvm-x86")
+        for name in ("build-windows", "build-windows-x86"):
+            step = next(step for step in jobs[name]["steps"]
+                        if step.get("name") == "Cache ESP release archive")
+            self.assertNotIn("if", step)
+            self.assertIn("espressif-toolchain.json", step["with"]["key"])
+        for filename in ("build-compiler.ps1", "build-release.ps1"):
+            script = (WORKFLOWS.parent / "windows" / filename).read_text()
+            self.assertIn("espressif-toolchain.json", script)
+            self.assertIn("https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/", script)
+            self.assertNotIn("Expand-ReleaseLocalXz", script)
+            self.assertNotIn("cpunion/espressif", script)
 
     def test_release_artifact_dependencies_and_tag_guard_are_preserved(self):
         jobs = load("release-build.yml")["jobs"]

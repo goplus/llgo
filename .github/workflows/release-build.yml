@@ -196,45 +196,9 @@ jobs:
           retention-days: 3
           include-hidden-files: true
 
-  build-windows-x86-toolchains:
-    if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: prepare
-    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
-    timeout-minutes: 240
-    outputs:
-      sdk-sha256: ${{ steps.build-x86.outputs.sdk-sha256 }}
-      esp-sha256: ${{ steps.build-x86.outputs.esp-sha256 }}
-    steps:
-      - uses: actions/checkout@v7
-      # Cache only a download with an independent SHA-256 pin. Source-built
-      # archives are produced afresh; their sidecars are not trust anchors.
-      - name: Cache pinned Windows x86 bootstrap download
-        uses: actions/cache@v6
-        with:
-          path: .windows-x86-downloads
-          key: llgo-windows-x86-bootstrap-v1-534b92e067b22a6b4441f48ae9240a3341b17825d04d577eab0cf85c44b4deda
-      - name: Build native x86 SDK and ESP tools
-        id: build-x86
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build ccache
-          .github/windows/build-x86-toolchains.sh
-      - name: Verify source-built archives
-        run: cd .windows-x86-toolchains && sha256sum -c ./*.sha256
-      - uses: actions/upload-artifact@v7
-        with:
-          name: windows-x86-native-toolchains
-          path: .windows-x86-toolchains
-          include-hidden-files: true
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 3
-
   build-windows-compiler:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build]
-    env:
-      LLGO_X86_SDK_SHA256: ''
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -264,6 +228,12 @@ jobs:
         with:
           path: ${{ runner.tool_cache }}/llgo-release-downloads/llvm-arm64
           key: llgo-release-llvm-archive-v1-de718c58ebbc5f61d58c17b90457fcf42983bc2c4a4aba3e010d108713bfd7f1
+      - name: Cache Windows x86 LLVM SDK archive
+        if: matrix.goarch == '386'
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.tool_cache }}/llgo-release-downloads/llvm-x86
+          key: llgo-release-llvm-x86-v1-${{ hashFiles('.github/windows/espressif-toolchain.json') }}
       - name: Download release metadata
         uses: actions/download-artifact@v8
         with:
@@ -281,19 +251,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'WinGet manifest tests failed' }
           ./.github/windows/release-lib_test.ps1
           ./.github/windows/release-build_test.ps1
-      - name: Download native x86 toolchains
-        if: matrix.goarch == '386'
-        uses: actions/download-artifact@v8
-        with:
-          name: windows-x86-native-toolchains
-          path: .windows-x86-toolchains
       - name: Build the shared host compiler
         shell: pwsh
         run: >-
           ./.github/windows/build-compiler.ps1
           -GoArch '${{ matrix.goarch }}'
-          -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
-          -X86SDKChecksum '${{ env.LLGO_X86_SDK_SHA256 }}'
           -OutputDirectory '${{ runner.temp }}/llgo-windows-compiler'
       - name: Upload shared host compiler
         uses: actions/upload-artifact@v7
@@ -305,13 +267,10 @@ jobs:
           compression-level: 0
           retention-days: 3
 
-  # Keep x86's source-build dependency off the amd64/arm64 critical path.
-  # Shared step aliases keep validation and packaging identical across hosts.
+  # Keep x86 host qualification separate while sharing compiler/packaging steps.
   build-windows-compiler-x86:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, build, build-windows-x86-toolchains]
-    env:
-      LLGO_X86_SDK_SHA256: ${{ needs.build-windows-x86-toolchains.outputs.sdk-sha256 }}
+    needs: [prepare, build]
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -324,8 +283,6 @@ jobs:
   build-windows:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build, build-windows-compiler]
-    env:
-      LLGO_X86_ESP_SHA256: ''
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -341,11 +298,10 @@ jobs:
     steps: &windows-package-steps
       - uses: actions/checkout@v7
       - name: Cache ESP release archive
-        if: matrix.goarch != '386'
         uses: actions/cache@v6
         with:
           path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
-          key: llgo-release-esp-archive-v2-${{ matrix.goarch }}-${{ hashFiles('.github/windows/build-release.ps1') }}
+          key: llgo-release-esp-archive-v3-${{ matrix.goarch }}-${{ hashFiles('.github/windows/espressif-toolchain.json') }}
           enableCrossOsArchive: true
       - name: Download release metadata
         uses: actions/download-artifact@v8
@@ -360,20 +316,12 @@ jobs:
         with:
           name: windows-host-compiler-${{ matrix.goarch }}
           path: ${{ runner.temp }}/llgo-windows-compiler
-      - name: Download native x86 toolchains
-        if: matrix.goarch == '386'
-        uses: actions/download-artifact@v8
-        with:
-          name: windows-x86-native-toolchains
-          path: .windows-x86-toolchains
       - name: Build integrated Windows archive
         shell: pwsh
         run: >-
           ./.github/windows/build-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
           -HostCompilerDirectory '${{ runner.temp }}/llgo-windows-compiler'
-          -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
-          -X86ESPChecksum '${{ env.LLGO_X86_ESP_SHA256 }}'
       - name: Upload Windows archive
         uses: actions/upload-artifact@v7
         with:
@@ -388,9 +336,7 @@ jobs:
 
   build-windows-x86:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, build, build-windows-compiler-x86, build-windows-x86-toolchains]
-    env:
-      LLGO_X86_ESP_SHA256: ${{ needs.build-windows-x86-toolchains.outputs.esp-sha256 }}
+    needs: [prepare, build, build-windows-compiler-x86]
     timeout-minutes: 90
     strategy:
       fail-fast: false

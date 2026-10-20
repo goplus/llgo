@@ -1,8 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
-  [string]$X86ToolchainDirectory,
-  [string]$X86SDKChecksum,
   [Parameter(Mandatory = $true)][string]$OutputDirectory
 )
 
@@ -46,10 +44,15 @@ if ($GoArch -eq 'arm64') {
 }
 
 if ($GoArch -eq '386') {
-  if (-not $X86ToolchainDirectory) { throw 'The Windows x86 SDK/ESP artifact is required' }
+  $toolchain = Get-Content -Raw (Join-Path $PSScriptRoot 'espressif-toolchain.json') | ConvertFrom-Json
+  if ($toolchain.sdk.version -ne $llvmVersion) { throw 'The x86 SDK pin does not match the host LLVM version' }
   $parent = Join-Path $env:RUNNER_TEMP 'llgo-release-x86-sdk'
   if (Test-Path $parent) { Remove-Item -Recurse -Force $parent }
-  Expand-ReleaseLocalXz -Archive (Join-Path $X86ToolchainDirectory 'llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz') -SHA256 $X86SDKChecksum -Destination $parent
+  Expand-ReleaseXz `
+    -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$($toolchain.release)/$($toolchain.sdk.asset)" `
+    -SHA256 $toolchain.sdk.sha256 `
+    -CacheDirectory (Join-Path $env:RUNNER_TOOL_CACHE 'llgo-release-downloads/llvm-x86') `
+    -Destination $parent
   $llvmRoot = Join-Path $parent 'llvm-sdk'
   $manifest = Get-Content (Join-Path $llvmRoot 'LLGO-LLVM-MANIFEST.txt')
   if ($manifest -notcontains 'host_target=i686-w64-mingw32' -or $manifest -notcontains 'llvm_version=22.1.8' -or

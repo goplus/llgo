@@ -3,9 +3,7 @@ param(
   [ValidateSet('msvc', 'mingw')][string]$Profile,
   [Parameter(Mandatory = $true)]
   [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
-  [Parameter(Mandatory = $true)][string]$HostCompilerDirectory,
-  [string]$X86ToolchainDirectory,
-  [string]$X86ESPChecksum
+  [Parameter(Mandatory = $true)][string]$HostCompilerDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,29 +33,20 @@ Copy-Item -LiteralPath (Join-Path $HostCompilerDirectory 'licenses') `
   -Destination (Join-Path $stage 'LICENSES/windows-runtime') -Recurse
 
 # ESP tools match the LLGo host architecture for both MSVC and MinGW packages.
-$espVersion = '22.1.4_20260912'
+$toolchain = Get-Content -Raw (Join-Path $PSScriptRoot 'espressif-toolchain.json') | ConvertFrom-Json
+$espVersion = $toolchain.release
 $espTarget = @{ amd64 = 'x86_64-w64-mingw32'; arm64 = 'aarch64-w64-mingw32'; '386' = 'i686-w64-mingw32' }[$GoArch]
-$espChecksums = @{
-  amd64 = '49ba5159967f1f3cdc11b51d902595baaf0f94bf6c73fb4b880940f30a2d6f4f'
-  arm64 = '02521d03911dadbd84ecfb27903e59dae1d9f12c45245982caea7dad6e6d4188'
-}
-$espChecksum = if ($GoArch -eq '386') {
-  $sourceArchive = Join-Path $X86ToolchainDirectory "clang-esp-$espVersion-$espTarget.tar.xz"
-  $X86ESPChecksum
-} else { $espChecksums[$GoArch] }
+$espChecksum = $toolchain.payloads.$GoArch.sha256
 if (-not $espChecksum) { throw "Missing pinned ESP Clang checksum for windows/$GoArch" }
 $espAsset = "clang-esp-$espVersion-$espTarget.tar.xz"
+if ($toolchain.payloads.$GoArch.asset -ne $espAsset) { throw 'The pinned ESP asset does not match the release architecture' }
 $espParent = Join-Path $env:RUNNER_TEMP ('llgo-release-esp-' + [Guid]::NewGuid())
 try {
-  if ($GoArch -eq '386') {
-    Expand-ReleaseLocalXz -Archive $sourceArchive -SHA256 $espChecksum -Destination $espParent
-  } else {
-    Expand-ReleaseXz `
-      -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$espVersion/$espAsset" `
-      -SHA256 $espChecksum `
-      -CacheDirectory (Join-Path $env:RUNNER_TOOL_CACHE 'llgo-release-downloads/esp') `
-      -Destination $espParent
-  }
+  Expand-ReleaseXz `
+    -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$espVersion/$espAsset" `
+    -SHA256 $espChecksum `
+    -CacheDirectory (Join-Path $env:RUNNER_TOOL_CACHE 'llgo-release-downloads/esp') `
+    -Destination $espParent
   $crosscompile = Join-Path $stage 'crosscompile'
   New-Item -ItemType Directory $crosscompile | Out-Null
   Move-Item -LiteralPath (Join-Path $espParent 'esp-clang') -Destination (Join-Path $crosscompile 'clang')
