@@ -86,6 +86,22 @@ func TestWorkerGroupStepWhileResumeIsInFlight(t *testing.T) {
 	}
 }
 
+func TestWorkerGroupContinueWhilePauseIsInFlight(t *testing.T) {
+	g := workerGroup{targets: make(map[string]*controlledTarget), ready: true}
+	g.attach("page", false)
+	g.attach("worker", false)
+	g.event("Debugger.paused", "worker")
+	g.event("Debugger.resumed", "worker")
+	commands := g.event("Debugger.paused", "page")
+	if len(commands) != 1 || commands[0].Method != "Debugger.resume" || g.stopping {
+		t.Fatalf("late auxiliary pause restarted the group stop: %+v", commands)
+	}
+	g.event("Debugger.resumed", "page")
+	if g.snapshot().Paused || g.stopping {
+		t.Fatal("continue left the group stopped")
+	}
+}
+
 func TestCDPReplyAndEvents(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, nil)

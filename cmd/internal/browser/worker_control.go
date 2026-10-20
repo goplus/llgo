@@ -313,8 +313,15 @@ func (g *workerGroup) event(method, session string) []cdpMessage {
 		if target == nil {
 			return nil
 		}
+		coordinated := target.pausePending
 		target.paused = true
 		target.pausePending = false
+		if coordinated && !g.stopping {
+			// The user continued before this auxiliary pause arrived.
+			// Complete that continue instead of starting another group stop.
+			target.resumePending = true
+			return []cdpMessage{{Method: "Debugger.resume", SessionID: session}}
+		}
 		if !g.stopping {
 			g.stopping = true
 			g.epoch++
