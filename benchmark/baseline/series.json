@@ -190,6 +190,17 @@
     },
     {
       "kind": "branch",
+      "id": "2edd067372efc78b",
+      "label": "Branch codex/archsimd-native-alignment-20261020",
+      "path": "series/branch/2edd067372efc78b/summary.json",
+      "configPath": "series/branch/2edd067372efc78b/config.json",
+      "commitPath": "commits/88968f6e3a0681772b0f1884cc5930d8c25f92e9.json",
+      "sha": "88968f6e3a0681772b0f1884cc5930d8c25f92e9",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/88968f6e3a0681772b0f1884cc5930d8c25f92e9",
+      "updatedAt": "2026-10-20T22:14:58.798Z"
+    },
+    {
+      "kind": "branch",
       "id": "7075cae40db9f1dd",
       "label": "Branch codex/dev-wasm-full-lto-fix-20261003",
       "path": "series/branch/7075cae40db9f1dd/summary.json",
@@ -9790,6 +9801,17 @@
       "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
       "updatedAt": "2026-10-20T15:40:32.903Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2892",
+      "label": "PR #2892",
+      "path": "series/pull/2892/summary.json",
+      "configPath": "series/pull/2892/config.json",
+      "commitPath": "commits/88968f6e3a0681772b0f1884cc5930d8c25f92e9.json",
+      "sha": "88968f6e3a0681772b0f1884cc5930d8c25f92e9",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/88968f6e3a0681772b0f1884cc5930d8c25f92e9",
+      "updatedAt": "2026-10-20T22:14:56.670Z"
     },
     {
       "kind": "pull",
