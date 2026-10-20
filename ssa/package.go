@@ -512,9 +512,19 @@ func (p Program) SetRuntime(runtime any) {
 
 // SetTypeCallConv sets the default calling convention for the named type, controlling
 // how that type (and functions using it) are lowered.
-func (p Program) SetTypeCallConv(typFullName string, cc CallConv) {
+// For a programmatically constructed native struct, supply its original fields
+// so types.Sizes.Offsetsof can identify the enclosing layout without a named
+// type or source positions. Source loaders instead call SetNativeStructFields
+// before type checking. Synthetic structs must not reuse registered fields.
+func (p Program) SetTypeCallConv(typFullName string, cc CallConv, fields ...*types.Var) {
 	p.packageSyntax.mu.Lock()
 	p.packageSyntax.typeCallConvs[typFullName] = cc
+	if isNativeCallConv(cc) {
+		if len(fields) != 0 {
+			p.packageSyntax.nativeStructVars[fields[0]] = true
+		}
+		p.packageSyntax.hasNativeTypeMetadata.Store(true)
+	}
 	p.packageSyntax.mu.Unlock()
 }
 

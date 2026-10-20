@@ -102,16 +102,15 @@ run_worker_go_test() {
 	# retaining the shorter limits on the small acceptance fixtures.
 	run_with_timeout_limit 600 env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
 		-target "${target}" -emulator -v -count=1 -timeout=480s \
-		-skip '^TestRuntimeNumGoroutineIncludesNewProc$' \
 		"${repo_root}/test/go" 2>&1 | tee "${output}"
 	grep -Fxq "PASS" "${output}"
-	# Native tests isolate this assertion with os/exec. Wasm cannot spawn
-	# that subprocess itself; use a fresh test process so exiting goroutines
-	# from earlier tests cannot cancel the measured count increment.
+	# Use the independent counter-test package so neither earlier test bodies
+	# nor test/go's init fixtures can cancel the measured count increment.
+	# Wasm cannot spawn the os/exec child used by native repetitions.
 	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
 		-target "${target}" -emulator -v -count=1 -timeout=180s \
 		-run '^TestRuntimeNumGoroutineIncludesNewProc$' \
-		"${repo_root}/test/go" 2>&1 | tee "${output}.numgoroutine"
+		"${repo_root}/test/go/numgoroutine" 2>&1 | tee "${output}.numgoroutine"
 	grep -Fxq "PASS" "${output}.numgoroutine"
 }
 
@@ -127,7 +126,7 @@ run_libffi_go_test() {
 	fi
 	run_with_timeout env "${env_args[@]}" "${llgo_cmd}" test "${target_args[@]}" \
 		-tags=llgo.wasm.reflect.libffi -v -count=1 -timeout=180s \
-		"${repo_root}/test/go" 2>&1 | tee "${output}"
+		"${repo_root}/test/go" "${repo_root}/test/go/numgoroutine" 2>&1 | tee "${output}"
 	grep -Fxq "PASS" "${output}"
 }
 
