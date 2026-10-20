@@ -267,6 +267,17 @@
     },
     {
       "kind": "branch",
+      "id": "0be4b0008b04c17e",
+      "label": "Branch cpunion/llgo:codex/browser-worker-control-2164-20261020",
+      "path": "series/branch/0be4b0008b04c17e/summary.json",
+      "configPath": "series/branch/0be4b0008b04c17e/config.json",
+      "commitPath": "commits/3b78d8862b29a2452fe5c6947c9c1de7b2712fb0.json",
+      "sha": "3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
+      "updatedAt": "2026-10-20T11:07:59.196Z"
+    },
+    {
+      "kind": "branch",
       "id": "2f52cb7b1b696f66",
       "label": "Branch cpunion/llgo:codex/cabi-skip-llvm-intrinsics-20260929",
       "path": "series/branch/2f52cb7b1b696f66/summary.json",
@@ -5720,6 +5731,17 @@
       "sha": "53308d94b83afc3439885394f324b109f3abc9c8",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/53308d94b83afc3439885394f324b109f3abc9c8",
       "updatedAt": "2026-10-19T19:57:10.649Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2881",
+      "label": "PR #2881",
+      "path": "series/pull/2881/summary.json",
+      "configPath": "series/pull/2881/config.json",
+      "commitPath": "commits/3b78d8862b29a2452fe5c6947c9c1de7b2712fb0.json",
+      "sha": "3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
+      "updatedAt": "2026-10-20T11:07:59.050Z"
     }
   ]
 }
