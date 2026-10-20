@@ -212,7 +212,7 @@ jobs:
             fi
             export LLGO_STDIO_NOBUF=1
             # Keep the main batch's existing narrow fatal-signature quarantine.
-          # The separate build, cl and test/go invocations use a measured runtime
+            # The separate build, cl and test/go invocations use a measured runtime
             # overlay to reserve enough stack for hardware exception recovery.
             main_go_test=(bash dev/go_test_windows.sh python .github/scripts/run_go_tests.py main "${go_test[@]}")
           else
