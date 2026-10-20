@@ -3072,6 +3072,17 @@
     },
     {
       "kind": "branch",
+      "id": "110b937d90b208bd",
+      "label": "Branch cpunion/llgo:fix/explicit-c-variable-bindings",
+      "path": "series/branch/110b937d90b208bd/summary.json",
+      "configPath": "series/branch/110b937d90b208bd/config.json",
+      "commitPath": "commits/ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0.json",
+      "sha": "ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0",
+      "updatedAt": "2026-10-20T21:36:40.343Z"
+    },
+    {
+      "kind": "branch",
       "id": "c5182a8458e61d80",
       "label": "Branch cpunion/llgo:fix/fury-goplus-account-20261019",
       "path": "series/branch/c5182a8458e61d80/summary.json",
@@ -9746,6 +9757,17 @@
       "sha": "53308d94b83afc3439885394f324b109f3abc9c8",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/53308d94b83afc3439885394f324b109f3abc9c8",
       "updatedAt": "2026-10-19T20:00:11.580Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2882",
+      "label": "PR #2882",
+      "path": "series/pull/2882/summary.json",
+      "configPath": "series/pull/2882/config.json",
+      "commitPath": "commits/ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0.json",
+      "sha": "ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/ff55ff2a6e72be4cb2b5700121d3fc9ad5ce56d0",
+      "updatedAt": "2026-10-20T21:36:39.122Z"
     },
     {
       "kind": "pull",
