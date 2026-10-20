@@ -57,6 +57,13 @@ func runtimeSourceOverlay(base map[string][]byte, runtimeDir, goroot, goVersion 
 	}
 	// Reject new declarations as well as missing/signature-changed helpers.
 	// A Go upgrade must review new dependencies before adopting the file.
+	for _, group := range file.Comments {
+		for _, comment := range group.List {
+			if strings.HasPrefix(comment.Text, "//go:") || strings.HasPrefix(comment.Text, "// +build ") {
+				return nil, fmt.Errorf("reuse GOROOT runtime/utf8.go: unreviewed directive %s", comment.Text)
+			}
+		}
+	}
 	constants := strings.Fields("runeError runeSelf maxRune surrogateMin surrogateMax t1 tx t2 t3 t4 t5 maskx mask2 mask3 mask4 rune1Max rune2Max rune3Max locb hicb")
 	for _, decl := range file.Decls {
 		switch decl := decl.(type) {
@@ -94,9 +101,12 @@ func runtimeSourceOverlay(base map[string][]byte, runtimeDir, goroot, goVersion 
 	if err != nil {
 		return nil, fmt.Errorf("read runtime UTF-8 ABI adapter: %w", err)
 	}
-	indexSource, _, err = filterSourcePatchFile(indexSource, map[string]struct{}{"decoderune": {}})
+	indexSource, changed, err := filterSourcePatchFile(indexSource, map[string]struct{}{"decoderune": {}})
 	if err != nil {
 		return nil, err
+	}
+	if !changed {
+		return nil, fmt.Errorf("read runtime UTF-8 ABI adapter %s: missing decoderune declaration", indexFile)
 	}
 	out[indexPath] = indexSource
 

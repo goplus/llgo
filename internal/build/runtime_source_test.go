@@ -90,8 +90,15 @@ func TestRuntimeSourceRejectsUnreviewedUpgrade(t *testing.T) {
 		{"dependency", "package runtime", "package runtime\nimport _ \"unsafe\"", "unreviewed import"},
 		{"state", "package runtime", "package runtime\nvar global int", "unreviewed var"},
 		{"constant", "runeSelf", "newRuneSelf", "unreviewed constant"},
+		{"linkname", "func encoderune", "//go:linkname encoderune\nfunc encoderune", "unreviewed directive"},
+		{"noescape", "func encoderune", "//go:noescape\nfunc encoderune", "unreviewed directive"},
+		{"build", "package runtime", "//go:build go1.27\n\npackage runtime", "unreviewed directive"},
+		{"legacy-build", "package runtime", "// +build go1.27\n\npackage runtime", "unreviewed directive"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if !strings.Contains(string(src), test.old) {
+				t.Fatalf("GOROOT fixture no longer contains %q", test.old)
+			}
 			base := map[string][]byte{srcPath: []byte(strings.Replace(string(src), test.old, test.replacement, 1))}
 			_, err := runtimeSourceOverlay(base, root, runtime.GOROOT(), runtime.Version())
 			if err == nil || !strings.Contains(err.Error(), test.want) {
@@ -116,8 +123,12 @@ func TestRuntimeSourceBodyChangesFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	const old = "return runeError, k + 1"
+	if !strings.Contains(string(src), old) {
+		t.Fatalf("GOROOT fixture no longer contains %q", old)
+	}
 	second, err := runtimeSourceOverlay(map[string][]byte{
-		srcPath: []byte(strings.Replace(string(src), "return runeError, k + 1", "return runeError, k + 2", 1)),
+		srcPath: []byte(strings.Replace(string(src), old, "return runeError, k + 2", 1)),
 	}, root, runtime.GOROOT(), runtime.Version())
 	if err != nil {
 		t.Fatal(err)
@@ -132,6 +143,18 @@ func TestRuntimeSourceBodyChangesFingerprint(t *testing.T) {
 	}
 	if reflect.DeepEqual(a, b) {
 		t.Fatal("GOROOT body change did not invalidate the runtime cache")
+	}
+}
+
+func TestRuntimeSourceMissingAdapterDeclaration(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	base := make(map[string][]byte)
+	for _, name := range []string{"utf8_index.go", "utf8_index_go127.go"} {
+		base[filepath.Join(root, "internal/runtime", name)] = []byte("package runtime")
+	}
+	_, err := runtimeSourceOverlay(base, root, runtime.GOROOT(), runtime.Version())
+	if err == nil || !strings.Contains(err.Error(), "missing decoderune declaration") {
+		t.Fatalf("missing adapter declaration: %v", err)
 	}
 }
 
