@@ -3,6 +3,7 @@ module github.com/xgo-dev/llgo
 go 1.27.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/goplus/cobra v1.9.12 //xgo:class
 	github.com/goplus/gogen v1.24.8
 	github.com/goplus/lib v0.6.3

@@ -64,6 +64,42 @@ const schema = {
   }},
 };
 
+test('coordinated inspection rejects changed stops and stale expanded objects', async () => {
+  const index = {...fixtureIndex(), worker_control: true};
+  let state = {enabled: true, ready: true, paused: true, stopId: 7};
+  const plugin = new LLGoLanguageExtensionPlugin({
+    getWasmLocal: async () => {
+      state = {...state, stopId: 8};
+      return {type: 'i32', value: 42};
+    },
+  }, async url => {
+    if (url.endsWith('/debug-index.json')) return response(index);
+    if (url.endsWith('/debug-schema.json')) return response(schema);
+    if (url.endsWith('/worker-state')) return response(state);
+    if (url.endsWith('/plugin-ready')) return new Response(null, {status: 204});
+    throw new Error(`unexpected URL ${url}`);
+  });
+  await plugin.addRawModule('module', undefined, {
+    url: 'http://127.0.0.1:1234/program.wasm', code: moduleBytes().buffer,
+  });
+  const context = {rawModuleId: 'module', codeOffset: 12, inlineFrameIndex: 0};
+  assert.equal((await plugin.evaluate('constant', context, 1n)).value, 41);
+  await assert.rejects(plugin.evaluate('local', context, 1n), /resumed or changed/);
+  const module = plugin.module('module');
+  await assert.rejects(plugin.withWorkerStop(module, async () => {
+    const value = plugin.snapshotObject(module, {type: 'object'}, []);
+    state = {...state, stopId: state.stopId + 1};
+    return value;
+  }), /resumed or changed/);
+  assert.equal(plugin.objects.size, 0, 'rejected inspection releases unpublished handles');
+  const object = await plugin.withWorkerStop(module, async () =>
+    plugin.snapshotObject(module, {type: 'object'}, [{name: 'id', value: {type: 'number', value: 1}}]));
+  state = {...state, paused: false, stopId: 9};
+  await assert.rejects(plugin.getProperties(object.objectId), /resumed or changed/);
+  state = {...state, error: 'worker transport disconnected'};
+  await assert.rejects(plugin.evaluate('constant', context, 1n), /transport disconnected/);
+});
+
 function response(value, init) {
   return new Response(typeof value === 'string' ? value : JSON.stringify(value), init);
 }

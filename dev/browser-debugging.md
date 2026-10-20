@@ -58,11 +58,21 @@ stacks. For an artifact built separately, pass `-tags=llgo.wasm.debugger`.
 The tag participates in the package cache key. Ordinary builds do not enable
 the registry or extra caller-frame tracking.
 
-For multi-worker programs, pause the other threads in DevTools before reading
-shared runtime state. The extension reports registry/stack changes observed
-during inspection; these guards do not replace pausing all workers. The
-frontend does not automatically coordinate worker pauses. Its logical stack
-view does not expose parked-frame locals or switch the execution context.
+`llgo debug` coordinates the session page and its descendant dedicated workers.
+Pausing one target pauses the others; resuming or stepping one resumes the group, and
+the next stop pauses the group again. New workers join the group and exited
+workers leave it. Other tabs and extension workers are not controlled.
+Workers created during a stop stay at Chrome's startup barrier until the
+group resumes.
+
+Shared-memory inspection waits for all targets to stop and rejects values if
+the stop or worker membership changes during the read. Expanding an object from
+an older stop reports that it must be inspected again. A disconnected control
+transport disables coordinated inspection with an error. Registry/stack guards
+remain an additional check.
+
+The logical stack view does not expose parked-frame locals or switch the
+execution context.
 Debugger frame selection and local variables still refer to the paused Wasm
 execution frame. Optimized DWARF locations can be unavailable or optimized out;
 complete runtime-object views remain a later phase.
@@ -73,3 +83,20 @@ require a compatible runtime debugger; the current Wasmtime backend cannot
 provide that contract. `llgo debug -target=wasi` reports the limitation and
 `llgo run -target=wasi` continues to use Wasmer. No thread imports are replaced
 with synthetic stubs.
+
+## Qualification
+
+`dev/test_wasm_browser_debug.py` records tool versions, artifact build IDs and
+deployment/symbol sizes. Use the repository's pinned Binaryen from
+`.github/actions/setup-binaryen`; a stock binary with the same major version
+does not establish the patched DWARF contract.
+
+The 2026-10-20 macOS arm64 run used Go 1.27.2, LLVM 22.1.8, Emscripten 6.0.8,
+Binaryen `llgo-v132.3`, Node 26.8.1 and Chrome for Testing 152.0.7977.54.
+All ten sessions passed: Memory32/64 with embedded/external DWARF, plus
+1/2/4-worker goroutine fixtures for each memory width (four workers use
+external DWARF). The worker sessions check source locals, parked stacks after
+GC, goroutine exit, coordinated stepping, worker creation/termination and
+startup barriers. Four-worker lifecycle/step acceptance also passed 20
+consecutive runs. These results qualify browser coordination, not the
+remaining parked-frame variable or WASI debugger work.

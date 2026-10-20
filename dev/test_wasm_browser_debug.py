@@ -26,6 +26,16 @@ def main():
     if not env.get("LLGO_BROWSER_CHROME"):
         raise SystemExit("LLGO_BROWSER_CHROME is required; no skipped browser acceptance")
     llgo = env.get("LLGO", "llgo")
+    wasm_opt = env.get("WASMOPT")
+    if not wasm_opt and env.get("EM_BINARYEN_ROOT"):
+        wasm_opt = str(Path(env["EM_BINARYEN_ROOT"]) / "bin" /
+                       ("wasm-opt.exe" if os.name == "nt" else "wasm-opt"))
+    for command in (
+        ["git", "rev-parse", "HEAD"], [llgo, "version"], ["go", "version"], ["emcc", "--version"],
+        [wasm_opt or "wasm-opt", "--version"], ["node", "--version"],
+        [env["LLGO_BROWSER_CHROME"], "--version"],
+    ):
+        run(command, env)
     coverage_dir = env.get("LLGO_BROWSER_COVERAGE_DIR")
     if coverage_dir:
         coverage_dir = Path(coverage_dir).resolve()
@@ -46,7 +56,7 @@ def main():
                 test = ["go", "test", "-count=1", "-timeout=3m", "-v"]
                 if coverage_dir:
                     test += ["-covermode=atomic",
-                             "-coverpkg=./internal/browserdebug,./internal/wasmdebug,./internal/debugabi",
+                             "-coverpkg=./cmd/internal/browser,./internal/browserdebug,./internal/wasmdebug,./internal/debugabi",
                              f"-coverprofile={coverage_dir / f'{profile}-{mode}.out'}"]
                 run(test + ["./internal/browserdebug", "./cmd/internal/browser"], env)
             for workers in (1, 2, 4):
@@ -57,8 +67,11 @@ def main():
                      "-tags=llgo.wasm.debugger", f"-debug-artifact={mode}",
                      "-o", str(stem.with_suffix(".mjs")), "."], env, ROOT / "test/debug/wasm")
                 env["LLGO_BROWSER_DEBUG_ARTIFACT"] = str(stem.with_suffix(".wasm"))
-                run(["go", "test", "-count=1", "-timeout=3m", "-v",
-                     "./cmd/internal/browser", "-run=^TestChromeLanguageExtension$"], env)
+                test = ["go", "test", "-count=1", "-timeout=3m", "-v"]
+                if coverage_dir:
+                    test += ["-covermode=atomic", "-coverpkg=./cmd/internal/browser",
+                             f"-coverprofile={coverage_dir / f'{profile}-workers-{workers}.out'}"]
+                run(test + ["./cmd/internal/browser", "-run=^TestChromeLanguageExtension$"], env)
             env.pop("LLGO_WASM_WORKERS", None)
 
 

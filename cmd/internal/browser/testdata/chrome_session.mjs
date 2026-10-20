@@ -57,9 +57,10 @@ let browser;
 try {
   const workerSessions = [], workerPauses = new Set();
   const breakpoints = [];
-  let paused, pausedSession;
+  let paused, pausedSession, pagePause, stepping, stepped;
   function workerPaused(event, sessionId) {
     workerPauses.add(sessionId);
+    if (stepping && sessionId === pausedSession) stepped = event;
     if (event.hitBreakpoints.some(id => breakpoints.some(b => b.id === id))) {
       paused = event;
       pausedSession = sessionId;
@@ -77,18 +78,14 @@ try {
     }
   }
   async function pauseWorkers() {
-    for (const sessionId of workerSessions) {
-      if (!workerPauses.has(sessionId)) await browser.send('Debugger.pause', {}, sessionId);
-    }
-    await until(() => workerSessions.every(id => workerPauses.has(id)), 'all worker targets paused');
-  }
-  async function resumeWorkers() {
-    for (const sessionId of workerSessions) {
-      if (sessionId !== pausedSession) {
-        await browser.send('Debugger.resume', {}, sessionId);
-        workerPauses.delete(sessionId);
-      }
-    }
+    const state = await until(async () => {
+      const state = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+      if (state.error) throw new Error(state.error);
+      return state.paused && state.targets >= workerSessions.length + 1 ? state : null;
+    }, 'product coordinator paused every worker');
+    assert.ok(state.stopId > 0);
+    const again = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+    assert.equal(again.stopId, state.stopId, 'stop ID is stable while stopped');
   }
   async function resumeSelected() {
     if (pausedSession) {
@@ -141,7 +138,9 @@ try {
   }
   const fixture = index.sources.find(s => s.path.endsWith('/fixture.c'));
   const source = fixture || index.sources.find(s => s.path.endsWith('/_wrap/probe.cpp'));
-  assert.ok(source, 'debug fixture source is indexed');
+  assert.ok(source, `debug fixture source is indexed: ${JSON.stringify({
+    diagnostics: index.diagnostics, sources: index.sources.map(s => s.path),
+  })}`);
   const lineNumber = fixture ? 2 : 4; // Return after local initialization, zero-based.
   const mapping = await extension(`(async () => {
     const plugin = globalThis.__llgoLanguageExtensionPlugin;
@@ -153,7 +152,14 @@ try {
   assert.ok(mapping.length, 'extension maps the source breakpoint');
   const scripts = [];
   page.on('Debugger.scriptParsed', script => scripts.push(script));
-  page.on('Debugger.paused', event => { paused = event; pausedSession = undefined; });
+  page.on('Debugger.paused', event => {
+    pagePause = event;
+    if (stepping && !pausedSession) stepped = event;
+    if (event.hitBreakpoints.some(id => breakpoints.some(b => b.id === id))) {
+      paused = event;
+      pausedSession = undefined;
+    }
+  });
   await page.send('Debugger.enable');
   const wasm = await until(() => scripts.find(s => s.scriptLanguage === 'WebAssembly'), 'Wasm script');
   const breakpoint = await page.send('Debugger.setBreakpoint', {location: {
@@ -184,7 +190,12 @@ try {
       return evaluations.some(e => e.name === expectedName && e.result?.value === expectedValue);
     }, `real paused ${expectedName}=${expectedValue}`);
   } catch (error) {
-    throw new Error(`${error.message}; evaluations=${JSON.stringify(evaluations)}; pause=${JSON.stringify(paused.callFrames.slice(0, 2))}`);
+    const control = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+    const plugin = await extension(`(() => {
+      const p = globalThis.__llgoLanguageExtensionPlugin;
+      return {modules: [...p.modules.keys()], calls: p.addRawModuleCalls, error: p.lastAddRawModuleError};
+    })()`);
+    throw new Error(`${error.message}; evaluations=${JSON.stringify(evaluations)}; control=${JSON.stringify(control)}; plugin=${JSON.stringify(plugin)}; pause=${JSON.stringify(paused.callFrames.slice(0, 2))}`);
   }
   if (goroutineFixture) {
     await pauseWorkers();
@@ -208,6 +219,44 @@ try {
       })()`);
     }
     const records = await goroutines();
+    const beforeLifecycle = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+    assert.ok(pagePause, 'host page is paused too');
+    async function atPausedPage(expression) {
+      const result = await page.send('Debugger.evaluateOnCallFrame', {
+        callFrameId: pagePause.callFrames[0].callFrameId, expression, returnByValue: true,
+      });
+      assert.ok(!result.exceptionDetails, JSON.stringify(result));
+    }
+    await atPausedPage(`globalThis.__llgoLifecycleWorker = new Worker(URL.createObjectURL(
+      new Blob(['setInterval(() => {}, 100)'], {type: 'text/javascript'}))); void 0`);
+    const withNewWorker = await until(async () => {
+      const state = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+      if (state.error) throw new Error(state.error);
+      return state.paused && state.targets === beforeLifecycle.targets + 1 ? state : null;
+    }, 'new worker joins the coordinated stop');
+    assert.ok(withNewWorker.stopId > beforeLifecycle.stopId);
+    await atPausedPage('globalThis.__llgoLifecycleWorker.terminate(); delete globalThis.__llgoLifecycleWorker');
+    const afterLifecycle = await until(async () => {
+      const state = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+      if (state.error) throw new Error(state.error);
+      return state.paused && state.targets === beforeLifecycle.targets ? state : null;
+    }, 'exited worker leaves the coordinated stop');
+    assert.ok(afterLifecycle.stopId > withNewWorker.stopId);
+    await atPausedPage(`(() => {
+      globalThis.__llgoStartupState = new Int32Array(new SharedArrayBuffer(4));
+      globalThis.__llgoStartupWorker = new Worker(URL.createObjectURL(new Blob([
+        'onmessage = ({data}) => Atomics.store(new Int32Array(data), 0, 1)'
+      ], {type: 'text/javascript'})));
+      __llgoStartupWorker.postMessage(__llgoStartupState.buffer);
+    })()`);
+    await until(async () => {
+      const state = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+      if (state.error) throw new Error(state.error);
+      return state.paused && state.targets === beforeLifecycle.targets + 1;
+    }, 'worker waits at startup until the group resumes');
+    await atPausedPage(`(() => {
+      if (Atomics.load(__llgoStartupState, 0) !== 0) throw new Error('worker ran during the stop');
+    })()`);
     const parked = records.filter(g => g.frames.some(f => f.function === 'main.debugWaiter'));
     assert.equal(parked.length, 2, JSON.stringify(records));
     assert.ok(parked.every(g => g.state === 'waiting'), JSON.stringify(parked));
@@ -220,9 +269,17 @@ try {
     if (workerSessions.length > 1) {
       assert.equal(new Set(parked.map(g => g.processor)).size, 2, JSON.stringify(parked));
     }
+    stepping = true;
+    if (pausedSession) await browser.send('Debugger.stepOver', {}, pausedSession);
+    else await page.send('Debugger.stepOver');
+    await until(() => stepped, 'selected target steps');
+    stepping = false;
+    paused = stepped;
+    await pauseWorkers();
+    const afterStep = await (await fetch(`${sessionURL}__llgo/worker-state`)).json();
+    assert.ok(afterStep.stopId > afterLifecycle.stopId, 'step creates a new coordinated stop');
     const oldStopId = await extension('String(globalThis.__llgoLastEvaluation.stopId)');
     paused = null;
-    await resumeWorkers();
     await resumeSelected();
     await until(() => paused, 'goroutine cleanup breakpoint');
     // Let DevTools associate its current stop ID with the new pause.
@@ -235,7 +292,6 @@ try {
     const after = await goroutines();
     assert.ok(parked.every(g => !after.some(live => live.id === g.id)), JSON.stringify(after));
     console.log('parked logical stacks survive GC; exited goroutine records are removed');
-    await resumeWorkers();
   }
   for (const breakpoint of breakpoints) {
     if (breakpoint.sessionId) await browser.send('Debugger.removeBreakpoint', {breakpointId: breakpoint.id}, breakpoint.sessionId);
@@ -265,6 +321,15 @@ try {
     } catch (error) {
       throw new Error(`${error.message}; completion=${JSON.stringify(completion)}; pause=${JSON.stringify(paused?.callFrames.slice(0, 2))}`);
     }
+  }
+  if (goroutineFixture) {
+    await until(async () => {
+      const {result} = await page.send('Runtime.evaluate', {
+        expression: 'Atomics.load(__llgoStartupState, 0)', returnByValue: true,
+      });
+      return result.value === 1;
+    }, 'group resume releases the startup worker');
+    await page.send('Runtime.evaluate', {expression: '__llgoStartupWorker.terminate()'});
   }
   console.log(`source breakpoint, ${expectedName}=${expectedValue}, and program completion passed`);
 } finally {

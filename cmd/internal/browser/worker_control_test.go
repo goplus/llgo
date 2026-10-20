@@ -1,0 +1,188 @@
+package browser
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
+)
+
+func TestWorkerGroupStopResumeAndLifecycle(t *testing.T) {
+	g := workerGroup{targets: make(map[string]*controlledTarget), ready: true}
+	g.attach("page", false)
+	g.attach("worker", false)
+	commands := g.event("Debugger.paused", "worker")
+	if len(commands) != 1 || commands[0].Method != "Debugger.pause" || commands[0].SessionID != "page" {
+		t.Fatalf("pause commands = %+v", commands)
+	}
+	if g.snapshot().Paused {
+		t.Fatal("published shared-memory stop before the other target paused")
+	}
+	g.event("Debugger.paused", "page")
+	stopped := g.snapshot()
+	if !stopped.Paused || stopped.StopID == 0 {
+		t.Fatalf("snapshot = %+v", stopped)
+	}
+	if got := g.event("Debugger.paused", "page"); len(got) != 0 || g.snapshot().StopID != stopped.StopID {
+		t.Fatal("duplicate notification changed a stable stop")
+	}
+	commands = g.attach("new-worker", false)
+	if g.snapshot().Paused || g.snapshot().StopID == stopped.StopID || len(commands) != 1 {
+		t.Fatal("new worker did not invalidate the stop and request a pause")
+	}
+	g.event("Target.detachedFromTarget", "new-worker")
+	if !g.snapshot().Paused {
+		t.Fatal("departed worker prevents inspection of surviving workers")
+	}
+	commands = g.event("Debugger.resumed", "worker")
+	if g.snapshot().Paused || len(commands) != 1 || commands[0].Method != "Debugger.resume" {
+		t.Fatalf("resume = %+v, %+v", commands, g.snapshot())
+	}
+	g.event("Debugger.resumed", "page")
+	if g.stopping {
+		t.Fatal("coordinated resume started another stop")
+	}
+}
+
+func TestWorkerGroupHoldsNewWorkerUntilResume(t *testing.T) {
+	g := workerGroup{targets: map[string]*controlledTarget{
+		"page": {paused: true},
+	}, stopping: true, ready: true, epoch: 3}
+	commands := g.attach("worker", true)
+	if len(commands) != 0 || !g.snapshot().Paused || g.epoch != 4 {
+		t.Fatalf("new worker left the startup barrier: %+v, %+v", commands, g.snapshot())
+	}
+	commands = g.event("Debugger.resumed", "page")
+	if len(commands) != 1 || commands[0].Method != "Runtime.runIfWaitingForDebugger" ||
+		commands[0].SessionID != "worker" || g.snapshot().Paused {
+		t.Fatalf("resume did not release the new worker: %+v, %+v", commands, g.snapshot())
+	}
+	if g.targets["worker"].resumePending || g.targets["worker"].waiting {
+		t.Fatal("startup release incorrectly waits for a Debugger.resumed event")
+	}
+}
+
+func TestWorkerGroupStepWhileResumeIsInFlight(t *testing.T) {
+	g := workerGroup{targets: map[string]*controlledTarget{
+		"page": {paused: true}, "worker": {paused: true},
+	}, stopping: true, ready: true}
+	g.event("Debugger.resumed", "worker")
+	g.event("Debugger.paused", "worker") // A short step completes first.
+	commands := g.event("Debugger.resumed", "page")
+	if len(commands) != 1 || commands[0].Method != "Debugger.pause" {
+		t.Fatalf("late resume was not paused again: %+v", commands)
+	}
+	if g.snapshot().Paused {
+		t.Fatal("reported quiescence before the late resume was stopped")
+	}
+	g.event("Debugger.paused", "page")
+	if !g.snapshot().Paused {
+		t.Fatal("step did not produce a new consistent stop")
+	}
+}
+
+func TestCDPReplyAndEvents(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.CloseNow()
+		ctx := r.Context()
+		var command cdpMessage
+		if wsjson.Read(ctx, conn, &command) != nil {
+			return
+		}
+		_ = wsjson.Write(ctx, conn, cdpMessage{Method: "Debugger.paused", SessionID: "worker"})
+		_ = wsjson.Write(ctx, conn, cdpMessage{ID: command.ID, Result: json.RawMessage(`{"value":42}`)})
+		_ = wsjson.Read(ctx, conn, &command) // Wait for the client to close.
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, err := newCDPClient(ctx, "ws"+strings.TrimPrefix(server.URL, "http"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.conn.CloseNow()
+	var result struct{ Value int }
+	if err := client.call(ctx, "worker", "Debugger.enable", map[string]any{}, &result); err != nil || result.Value != 42 {
+		t.Fatalf("reply = %+v, %v", result, err)
+	}
+	event := <-client.events
+	if event.Method != "Debugger.paused" || event.SessionID != "worker" {
+		t.Fatalf("event = %+v", event)
+	}
+}
+
+func TestWorkerSnapshotRejectsUnprocessedResume(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.CloseNow()
+		var command cdpMessage
+		if wsjson.Read(r.Context(), conn, &command) != nil {
+			return
+		}
+		_ = wsjson.Write(r.Context(), conn, cdpMessage{Method: "Debugger.resumed", SessionID: "worker"})
+		_ = wsjson.Write(r.Context(), conn, cdpMessage{ID: command.ID, Result: json.RawMessage(`{}`)})
+		_ = wsjson.Read(r.Context(), conn, &command)
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, err := newCDPClient(ctx, "ws"+strings.TrimPrefix(server.URL, "http"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.conn.CloseNow()
+	control := &workerControl{}
+	control.client.Store(client)
+	control.state.Store(&workerSnapshot{
+		Enabled: true, Ready: true, Paused: true, StopID: 3,
+		Targets: 1, sessions: []string{"worker"},
+	})
+	session := &Session{}
+	session.workers.Store(control)
+	if state := session.checkedWorkerState(ctx); state.Paused {
+		t.Fatal("accepted an old snapshot while a resume notification awaited processing")
+	}
+}
+
+func TestCDPWorkerExitCancelsPendingRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.CloseNow()
+		var command cdpMessage
+		if wsjson.Read(r.Context(), conn, &command) != nil {
+			return
+		}
+		// Worker destruction can drop the command reply altogether.
+		_ = wsjson.Write(r.Context(), conn, cdpMessage{
+			Method: "Target.detachedFromTarget", Params: json.RawMessage(`{"sessionId":"worker"}`),
+		})
+		_ = wsjson.Read(r.Context(), conn, &command)
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, err := newCDPClient(ctx, "ws"+strings.TrimPrefix(server.URL, "http"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.conn.CloseNow()
+	err = client.call(ctx, "worker", "Runtime.getIsolateId", map[string]any{}, nil)
+	if err == nil || !closedCDPTarget(err) {
+		t.Fatalf("pending request after worker exit: %v", err)
+	}
+}

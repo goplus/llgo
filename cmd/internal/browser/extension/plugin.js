@@ -299,6 +299,52 @@
     async getInlinedCalleesRanges() { return []; }
 
     async evaluate(expression, context, stopId) {
+      const module = this.module(context.rawModuleId);
+      return this.withWorkerStop(module, () => this.evaluateAtStop(expression, context, stopId));
+    }
+
+    async workerStop(module, expected) {
+      if (!module.index.worker_control) return null;
+      const url = new URL('/__llgo/worker-state', module.rawModule.url).href;
+      for (let attempt = 0; ; ++attempt) {
+        const response = await this.fetcher(url, {cache: 'no-store'});
+        if (!response.ok) throw new Error('Cannot read browser worker control state');
+        const state = await response.json();
+        if (state.error) throw new Error(`Browser worker control: ${state.error}`);
+        if (!state.enabled) return null;
+        if (expected !== undefined && (!state.paused || state.stopId !== expected)) {
+          throw new Error('Browser workers resumed or changed; inspect the current stop again');
+        }
+        if (state.ready && state.paused) return state.stopId;
+        if (attempt === 100) throw new Error('Waiting for all browser workers to pause');
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+
+    async withWorkerStop(module, inspect, expected) {
+      const stop = await this.workerStop(module, expected);
+      const result = await inspect();
+      if (stop !== null) {
+        const values = Array.isArray(result) ? result.map(property => property.value) : [result];
+        try {
+          await this.workerStop(module, stop);
+        } catch (error) {
+          // These handles were never returned to DevTools, which therefore
+          // cannot release them after a worker changed during the read.
+          for (const value of values) {
+            if (value?.objectId) await this.releaseObject(value.objectId);
+          }
+          throw error;
+        }
+        for (const value of values) {
+          const object = value?.objectId && this.objects.get(value.objectId);
+          if (object) object.workerStop = stop;
+        }
+      }
+      return result;
+    }
+
+    async evaluateAtStop(expression, context, stopId) {
       const trimmed = expression.trim();
       if (!trimmed) return null;
       const module = this.module(context.rawModuleId);
@@ -680,6 +726,13 @@
     }
 
     async getProperties(objectId) {
+      const object = this.objects.get(objectId);
+      if (!object) return [];
+      const module = this.module(object.rawModuleId);
+      return this.withWorkerStop(module, () => this.getPropertiesAtStop(objectId), object.workerStop);
+    }
+
+    async getPropertiesAtStop(objectId) {
       const object = this.objects.get(objectId);
       if (!object) return [];
       const module = this.module(object.rawModuleId);
