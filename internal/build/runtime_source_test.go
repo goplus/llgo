@@ -158,6 +158,21 @@ func TestRuntimeSourceMissingAdapterDeclaration(t *testing.T) {
 	}
 }
 
+func TestRuntimeSourceOverlayIsIdempotent(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	first, err := runtimeSourceOverlay(nil, root, runtime.GOROOT(), runtime.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := runtimeSourceOverlay(first, root, runtime.GOROOT(), runtime.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(first, second) {
+		t.Fatal("repeated package load changed the runtime source overlay")
+	}
+}
+
 func TestRuntimeSourceMissingOrChangedCrashHook(t *testing.T) {
 	root := runtimeSourceTestRoot(t)
 	path := filepath.Join(runtime.GOROOT(), "src", "runtime", "runtime.go")

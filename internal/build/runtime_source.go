@@ -105,8 +105,15 @@ func runtimeSourceOverlay(base map[string][]byte, runtimeDir, goroot, goVersion 
 	if err != nil {
 		return nil, err
 	}
-	if !changed {
+	const adapterOverlayMarker = "\n// LLGo runtime source overlay: decoderune declaration removed.\n"
+	if !changed && !bytes.HasSuffix(indexSource, []byte(adapterOverlayMarker)) {
 		return nil, fmt.Errorf("read runtime UTF-8 ABI adapter %s: missing decoderune declaration", indexFile)
+	}
+	if changed {
+		// Multi-package install reuses the configuration's overlay. Keep the
+		// selection idempotent while still rejecting a missing declaration
+		// in an adapter that has not passed through this transformation.
+		indexSource = append(indexSource, adapterOverlayMarker...)
 	}
 	out[indexPath] = indexSource
 
