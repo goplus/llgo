@@ -31,9 +31,6 @@ func currentErrno() int32
 //go:linkname errnoRange C.llgo_test_libcall_erange
 func errnoRange() int32
 
-//go:linkname standalone C.llgo_test_allthreads_standalone
-func standalone() bool
-
 //export LLGoLibcallCallback
 //go:noinline
 func LLGoLibcallCallback(raw unsafe.Pointer) int32 {

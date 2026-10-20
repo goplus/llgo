@@ -41,8 +41,10 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		t.Fatalf("unexpected export file: %s", mod.ExportFile)
 	}
 	ir := mod.LPkg.String()
+	if strings.Contains(ir, "__llgo_allthreads_executable") {
+		t.Fatal("an executable cannot prove ownership of foreign C thread creators")
+	}
 	checks := []string{
-		"@__llgo_allthreads_executable = hidden global i32 1",
 		"define i32 @" + processEntrySymbol + "(",
 		"define void @runtime.main()",
 		".pushsection llgo_funcinfo_entry",

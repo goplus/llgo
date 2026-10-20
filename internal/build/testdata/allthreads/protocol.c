@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/syscall.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -63,6 +64,8 @@ static void stop(worker *w, pthread_t thread)
 static llgo_allthreads_call call(uintptr_t trap)
 {
     llgo_allthreads_call c = {.trap = trap};
+    if (trap == SYS_setresuid)
+        c.args[0] = c.args[1] = c.args[2] = (uintptr_t)-1;
     errno = EDOM;
     llgo_traceback_all_threads_syscall(&c);
     assert(errno == EDOM);
@@ -94,6 +97,7 @@ static void *creation(void *raw)
 int main(int argc, char **argv)
 {
     (void)argv;
+    (void)argc;
     void *main_node = llgo_traceback_register(1, 0, 0);
     assert(main_node);
     llgo_traceback_attach(main_node);
@@ -101,45 +105,52 @@ int main(int argc, char **argv)
     worker children[3] = {0};
     pthread_t threads[3];
     for (unsigned i = 0; i < 3; i++) threads[i] = start(&children[i], i+2, 1);
-    if (argc > 1) {
-        call(SYS_gettid); /* Different results must terminate the process. */
-        abort();
-    }
     for (unsigned i = 0; i < 200; i++) {
-        llgo_allthreads_call c = call(SYS_getpid);
-        assert(!c.error && c.r1 == (uintptr_t)getpid() && c.r2 == 0);
+        llgo_allthreads_call c = call(SYS_setresuid);
+        assert(!c.error && c.r1 == 0);
     }
+    /* Reject process-wide operations before any participant changes state.
+     * Replaying umask would return different old masks and abort mid-call. */
+    mode_t previous_mask = umask(0022);
+    const uintptr_t rejected[] = {SYS_umask, SYS_setpgid, SYS_setsid,
+        SYS_sethostname, SYS_setdomainname, SYS_chdir, SYS_fchdir, SYS_chroot,
+        SYS_rt_sigprocmask, SYS_gettid, SYS_getpid};
+    for (size_t i = 0; i < sizeof(rejected)/sizeof(rejected[0]); i++) {
+        llgo_allthreads_call c = call(rejected[i]);
+        assert(c.error == ENOTSUP && c.r1 == (uintptr_t)-1);
+    }
+    assert(umask(previous_mask) == 0022);
     llgo_allthreads_call c = call((uintptr_t)-1);
-    assert(c.error == ENOSYS && c.r1 == (uintptr_t)-1);
+    assert(c.error == ENOTSUP && c.r1 == (uintptr_t)-1);
     c = call(SYS_rt_sigprocmask);
     assert(c.error == ENOTSUP);
 
     __llgo_allthreads_executable = 0;
-    c = call(SYS_getpid);
+    c = call(SYS_setresuid);
     assert(c.error == ENOTSUP);
     __llgo_allthreads_executable = 1;
 
     atomic_int foreign_stop = 0;
     pthread_t thread;
     assert(!pthread_create(&thread, 0, foreign, &foreign_stop));
-    do { c = call(SYS_getpid); } while (c.error == EAGAIN);
+    do { c = call(SYS_setresuid); } while (c.error == EAGAIN);
     assert(c.error == ENOTSUP);
     atomic_store(&foreign_stop, 1);
     assert(!pthread_join(thread, 0));
 
     worker adopted = {0};
     thread = start(&adopted, 7, 0);
-    c = call(SYS_getpid);
+    c = call(SYS_setresuid);
     assert(c.error == ENOTSUP);
     stop(&adopted, thread);
 
     worker masked = {.masked = 1};
     thread = start(&masked, 8, 1);
-    c = call(SYS_getpid);
+    c = call(SYS_setresuid);
     assert(c.error == EAGAIN);
     atomic_store(&masked.unblock, 1);
     while (atomic_load(&masked.unblock)) sched_yield();
-    do { c = call(SYS_getpid); } while (c.error == EAGAIN);
+    do { c = call(SYS_setresuid); } while (c.error == EAGAIN);
     assert(!c.error);
     stop(&masked, thread);
 
@@ -148,7 +159,7 @@ int main(int argc, char **argv)
     assert(!pthread_create(&thread, 0, creation, &creator));
     while (!atomic_load(&creator.ready)) sched_yield();
     while (!atomic_load(&creator.stop)) {
-        c = call(SYS_getpid);
+        c = call(SYS_setresuid);
         assert(!c.error || c.error == EAGAIN || c.error == ENOTSUP);
         sched_yield();
     }

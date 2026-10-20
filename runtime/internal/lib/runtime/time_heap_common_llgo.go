@@ -130,7 +130,9 @@ func timerHeapSiftDown(i int) bool {
 func time_now() (sec int64, nsec int32, mono int64) {
 	if b := rt.CurrentSynctestBubble(); b != nil {
 		now := b.Now()
-		return now / 1e9, int32(now % 1e9), now
+		// A fake monotonic epoch cannot be compared to real outside times.
+		// Keep fake nanoseconds for scheduling, but omit time.Time's reading.
+		return now / 1e9, int32(now % 1e9), 0
 	}
 	sec, nsec = walltime()
 	mono = runtimeNano()

@@ -36,6 +36,24 @@ func TestFakeClockAndWait(t *testing.T) {
 	})
 }
 
+func TestFakeClockOutsideTimeArithmetic(t *testing.T) {
+	outside := time.Now()
+	synctest.Test(t, func(t *testing.T) {
+		inside := time.Now()
+		// Round(0) removes monotonic readings without changing wall time.
+		want := inside.Round(0).Sub(outside.Round(0))
+		if got := inside.Sub(outside); got != want {
+			t.Fatalf("inside.Sub(outside) = %v, wall-clock difference = %v", got, want)
+		}
+		if got := outside.Sub(inside); got != -want {
+			t.Fatalf("outside.Sub(inside) = %v, want %v", got, -want)
+		}
+		if got := time.Since(outside); got != want {
+			t.Fatalf("Since(outside) = %v, want %v", got, want)
+		}
+	})
+}
+
 func TestTimerStopResetAndTicker(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		start := time.Now()

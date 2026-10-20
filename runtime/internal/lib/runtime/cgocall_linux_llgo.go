@@ -64,6 +64,7 @@ func c_setgroups(*cgoArgset)
 
 // Own the credential pointers in runtime so programs that do not import syscall
 // also link correctly. The syscall source patch aliases these definitions.
+// Their presence also keeps AllThreadsSyscall behind Go's libc/cgo ENOTSUP guard.
 //
 //go:linkname cgoSetuid go:llgo.cgo_setuid
 var cgoSetuid = c.Func(c_setuid)

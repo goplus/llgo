@@ -34,9 +34,18 @@ atomics; it never calls Go, allocates, or acquires application locks.
 
 ## Linux ownership and barrier
 
-Initially, `AllThreadsSyscall` supports native Linux amd64/arm64 executables.
-The entry module enables it; C shared/archive libraries keep `ENOTSUP`.
-Other Linux architectures retain `ENOTSUP` for this operation.
+Public `AllThreadsSyscall` and `AllThreadsSyscall6` retain Go's libc/cgo guard
+and return `ENOTSUP` in LLGo native Linux executables and C shared/archive
+libraries. Every such executable links pthread/libc code; an import graph or
+an executable build mode cannot prove exclusion of all foreign thread
+creators. Entry modules do not enable the raw transport. The `syscall`
+credential setters use the libc wrappers above and remain supported.
+
+The private amd64/arm64 signal transport is qualified only by a C test harness
+that supplies its own controlled cohort and enable symbol. It is not a public
+opt-in or a completed implementation of #2130. Production activation requires
+a creation-exclusion boundary covering every participating thread creator;
+enumerating `/proc/self/task` before and after parking is insufficient.
 
 A runtime-created pthread has a registry entry before `pthread_create` runs.
 The main thread is explicitly marked owned. Adopted foreign threads are
@@ -61,13 +70,18 @@ threads. On success, every other participant executes once; all result words
 and errno must agree. Disagreement, or a peer blocked after execution starts,
 terminates the process because partial state cannot be rolled back.
 
-Calls must be nonblocking and preserve thread lifecycle, TLS, and the signal
-transport. The bridge rejects syscall families that directly replace those
-mechanisms. A blocking syscall on the caller can still block the operation.
-No host-cooperation API for C library modes is exposed.
+The private bridge uses an explicit allowlist: raw `setuid`, `setgid`,
+`setreuid`, `setregid`, `setresuid`, `setresgid`, and `setgroups`. These change
+per-thread kernel credentials and return zero on success. Every other trap
+returns `ENOTSUP` before executing the caller syscall, including process-wide
+operations such as `umask`, `chdir`, and `setsid`, and read-only probes such as
+`getpid`. No host-cooperation API or production enable switch is exposed.
 
 The tests cover executables and both C library modes on Linux/macOS, packed
 calls with GC, nested callbacks, signals and unwind, credential errors, and the
-Linux native protocol under creation/exit stress plus ASan/UBSan. Library-mode
-tests require `ENOTSUP`; a C-only native test supplies a complete owned cohort
-for successful getpid calls and result-mismatch fail-fast validation.
+Linux native protocol under creation/exit stress plus ASan/UBSan. Executable
+and library-mode tests require `ENOTSUP`. A linked C shared-library integration
+test checks rejection before pthread creation, while its thread is live, and
+after joining it, including the direct runtime hook. A C-only native test
+supplies a controlled owned cohort for no-op `setresuid(-1, -1, -1)` calls,
+rejected process-wide calls with an unchanged umask, and barrier cancellation.

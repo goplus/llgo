@@ -13,6 +13,10 @@ advancing future time. Due timers run before Wait returns; the main bubble
 function's exit stops future clock advancement. Remaining blocked goroutines
 produce a deadlock panic.
 
+Bubble `time.Time` values have no monotonic reading, matching Go. Arithmetic
+between an outside real timestamp and an inside fake timestamp uses wall time;
+the fake nanosecond clock remains available to timer scheduling.
+
 Channels and timers created inside a bubble retain its identity. Sends,
 receives, close/select operations, and timer mutations from another bubble or
 from outside it are rejected. A wait on an outside channel, a mutex/RWMutex,

@@ -40,19 +40,17 @@ func TestLibcCredentialWrappers(t *testing.T) {
 }
 
 func TestAllThreadsBuildModeBoundary(t *testing.T) {
-	r1, _, err := syscall.AllThreadsSyscall(syscall.SYS_GETPID, 0, 0, 0)
-	if !standalone() {
-		if err != syscall.ENOTSUP {
-			t.Fatalf("C library all-thread call=%d,%v", r1, err)
+	for _, call := range []func() (uintptr, uintptr, syscall.Errno){
+		func() (uintptr, uintptr, syscall.Errno) {
+			return syscall.AllThreadsSyscall(syscall.SYS_GETPID, 0, 0, 0)
+		},
+		func() (uintptr, uintptr, syscall.Errno) {
+			return syscall.AllThreadsSyscall6(syscall.SYS_SETRESUID, ^uintptr(0), ^uintptr(0), ^uintptr(0), 0, 0, 0)
+		},
+	} {
+		r1, r2, err := call()
+		if err != syscall.ENOTSUP || r1 != ^uintptr(0) || r2 != ^uintptr(0) {
+			t.Fatalf("libc/cgo all-thread boundary=%d,%d,%v", r1, r2, err)
 		}
-		return
-	}
-	// Parallel GC marker threads and emulator helper threads are foreign;
-	// they must be rejected. The C protocol test exercises a complete cohort.
-	if err != 0 && err != syscall.ENOTSUP && err != syscall.EAGAIN {
-		t.Fatal(err)
-	}
-	if err == 0 && r1 != uintptr(os.Getpid()) {
-		t.Fatalf("pid=%d", r1)
 	}
 }

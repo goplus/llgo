@@ -84,13 +84,6 @@ func needsWasmRuntimeScheduler(ctx *context) bool {
 func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *genConfig) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.ID+".main")
-	if ctx.buildConf.Goos == "linux" && ctx.buildConf.Target == "" && ctx.buildConf.BuildMode == BuildModeExe {
-		mode := llvm.AddGlobal(mainPkg.Module(), mainPkg.Module().Context().Int32Type(), "__llgo_allthreads_executable")
-		mode.SetInitializer(llvm.ConstInt(mode.GlobalValueType(), 1, false))
-		// Match the weak C int overridden by this executable-only definition.
-		mode.SetVisibility(llvm.HiddenVisibility)
-	}
-
 	argcVar := mainPkg.NewVarEx("__llgo_argc", prog.Pointer(prog.Int32()))
 	argcVar.Init(prog.Zero(prog.Int32()))
 

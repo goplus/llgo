@@ -1,5 +1,6 @@
-/* Private implementation included by traceback_unix.c. Registry ownership,
- * creation/exit exclusion and the signal transport have one lock owner. */
+/* Private implementation included by traceback_unix.c. Production entry
+ * modules must not enable this transport until creation exclusion covers
+ * foreign C thread creators as well as the runtime's registered cohort. */
 #if defined(__linux__)
 static pthread_mutex_t credential_lock = PTHREAD_MUTEX_INITIALIZER;
 void llgo_allthreads_credential_lock(void) { pthread_mutex_lock(&credential_lock); }
@@ -168,34 +169,13 @@ static int allcall_complete_cohort(void)
     return error ? error : (count == registered ? 0 : EAGAIN);
 }
 
-static int allcall_rejected_trap(uintptr_t trap)
+static int allcall_allowed_trap(uintptr_t trap)
 {
     switch (trap) {
-    /* These change the mechanism used to stop and resume participants, or
-     * change the cohort itself. They are outside this nonblocking contract. */
-    case SYS_rt_sigaction: case SYS_rt_sigprocmask: case SYS_rt_sigreturn:
-    case SYS_rt_sigpending: case SYS_rt_sigtimedwait: case SYS_rt_sigsuspend:
-    case SYS_rt_sigqueueinfo: case SYS_sigaltstack:
-    case SYS_clone: case SYS_execve: case SYS_exit: case SYS_exit_group:
-    case SYS_set_tid_address: case SYS_set_robust_list:
-#ifdef SYS_clone3
-    case SYS_clone3:
-#endif
-#ifdef SYS_execveat
-    case SYS_execveat:
-#endif
-#ifdef SYS_fork
-    case SYS_fork:
-#endif
-#ifdef SYS_vfork
-    case SYS_vfork:
-#endif
-#ifdef SYS_arch_prctl
-    case SYS_arch_prctl:
-#endif
-#ifdef SYS_set_thread_area
-    case SYS_set_thread_area:
-#endif
+    /* Kernel credentials are per-thread; these setters return zero on
+     * success. Unlisted syscalls must not execute even on the caller. */
+    case SYS_setuid: case SYS_setgid: case SYS_setreuid: case SYS_setregid:
+    case SYS_setresuid: case SYS_setresgid: case SYS_setgroups:
         return 1;
     default: return 0;
     }
@@ -228,7 +208,7 @@ static void allcall_cancel(void)
 void llgo_traceback_all_threads_syscall(llgo_allthreads_call *call)
 {
     call->r1 = (uintptr_t)-1; call->r2 = 0; call->error = ENOTSUP;
-    if (!__llgo_allthreads_executable || !current || allcall_rejected_trap(call->trap)) return;
+    if (!__llgo_allthreads_executable || !current || !allcall_allowed_trap(call->trap)) return;
     pthread_mutex_lock(&credential_lock);
     pthread_mutex_lock(&registry_lock);
     /* Remain suspendible while acquiring runtime locks. A GC may have
