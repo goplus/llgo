@@ -127,6 +127,9 @@ func TestSIMD128LLVM(t *testing.T) {
 			if fixed := mod.NamedFunction("main.fixed").String(); strings.Contains(fixed, "PanicSIMDImmediate") || strings.Contains(fixed, "br ") {
 				t.Fatalf("valid constant lane retained a bounds branch:\n%s", fixed)
 			}
+			if ir := mod.NamedFunction("main.invoke").String(); !strings.Contains(ir, "AllocUAligned") {
+				t.Fatalf("captured/deferred SIMD storage lacks explicit alignment:\n%s", ir)
+			}
 			for _, name := range []string{"load", "store"} {
 				ir := mod.NamedFunction("main." + name).String()
 				if !strings.Contains(ir, name+" <4 x float>") || !strings.Contains(ir, "align 4") {

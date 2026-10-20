@@ -1959,8 +1959,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				case vkSlice:
 					etSize := b.Prog.SizeOf(b.Prog.Elem(elem.Type))
 					ret.Type = src.Type
-					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
-						src, b.SliceData(elem), b.SliceLen(elem), b.Prog.Val(int(etSize))).impl
+					ret.impl = b.appendSlice(src, b.SliceData(elem), b.SliceLen(elem), etSize).impl
 					return
 				case vkString:
 					etSize := b.Prog.SizeOf(b.Prog.Byte())
@@ -1971,8 +1970,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 				default:
 					etSize := b.Prog.SizeOf(elem.Type)
 					ret.Type = src.Type
-					ret.impl = b.InlineCall(b.Pkg.rtFunc("SliceAppend"),
-						src, elem, b.Const(constant.MakeInt64(1), b.Prog.Int()), b.Prog.Val(int(etSize))).impl
+					ret.impl = b.appendSlice(src, elem, b.Const(constant.MakeInt64(1), b.Prog.Int()), etSize).impl
 					return
 				}
 			}

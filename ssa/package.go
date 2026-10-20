@@ -147,6 +147,8 @@ type aProgram struct {
 	// map to their native view, while native views map to themselves.
 	nativeStorage map[Type]Type
 	goWordSize    int
+	// Immutable target ABI alignments, safe to read during concurrent type checking.
+	simdAlignments [3]int64
 	// Resolve the physical C ABI once, outside declaration/call lowering.
 	nativeIntegerExt nativeIntegerExtension
 
@@ -348,6 +350,14 @@ func NewProgram(target *Target) Program {
 		abiSymbol:          make(map[string]*AbiSymbol),
 		debugInfoOptimized: target.effectiveOptLevel() != optlevel.O0,
 		nativeIntegerExt:   nativeIntegerExtensionForTarget(target),
+	}
+	for i, lanes := range []int{16, 32, 64} {
+		prog.simdAlignments[i] = int64(td.ABITypeAlignment(llvm.VectorType(ctx.Int8Type(), lanes)))
+		// Clang caps fixed-length AArch64 C vector alignment at 128 bits,
+		// even when LLVM's raw wide-vector type has a larger ABI alignment.
+		if target.effectiveGOARCH() == "arm64" {
+			prog.simdAlignments[i] = min(prog.simdAlignments[i], 16)
+		}
 	}
 	if goWordSize > prog.ptrSize {
 		prog.nativeStorage = make(map[Type]Type)

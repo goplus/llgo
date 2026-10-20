@@ -54,6 +54,27 @@ verification and O0/O2 code generation cover Linux/Windows amd64, ARM64, and
 WASM, including callable intrinsic definitions. This does not add wider-vector
 ABIs or instructions absent from an architecture's Go API.
 
+## Native archsimd storage alignment
+
+LLGo gives `archsimd` vector types native vector alignment, including ordinary Go
+variables, defined types, arrays and containing structs. SIMD128 is 16-byte
+aligned on the supported targets. This intentionally differs from the official
+Go implementation: a byte followed by `archsimd.Float32x4` has the vector at
+offset 16 and total size 32. Source `unsafe.Sizeof`/`Alignof`/`Offsetof`, LLVM
+storage and reflection agree. Stack/global storage, heap allocation, slice
+growth, channel buffers and reflection allocations honor this alignment.
+Zero-sized SIMD arrays retain their alignment; a final zero-sized field still
+receives Go's in-object-address padding.
+
+Array Load/Store APIs retain the scalar array's alignment requirements; an
+aligned vector result does not require aligned input. This storage rule does
+not change the Go/C calling convention or add support for new native aggregate
+signatures.
+
+Vector storage cannot appear by value in map keys or values, including inside
+arrays or structs. Use an ordinary scalar array or a pointer instead. Layout is
+recognized directly from type identity, without import-order prerequisites.
+
 ## Portable SIMD Midway
 
 With `GOEXPERIMENT=simd`, LLGo specializes portable `simd` source on amd64,

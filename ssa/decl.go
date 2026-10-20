@@ -85,10 +85,17 @@ const (
 )
 
 func (p Package) moduleZeroSizedAlloc(elem Type) Expr {
-	zerobase := p.mod.NamedGlobal(moduleZeroName)
+	name := moduleZeroName
+	alignment := p.Prog.AlignOf(elem)
+	if alignment > uint64(p.Prog.GoWordSize()) {
+		// A distinct ODR identity prevents another module with only ordinary
+		// zero-sized objects from supplying an under-aligned sentinel.
+		name += fmt.Sprintf("align%d", alignment)
+	}
+	zerobase := p.mod.NamedGlobal(name)
 	if zerobase.IsNil() {
 		byteTy := p.Prog.Byte()
-		zerobase = llvm.AddGlobal(p.mod, byteTy.ll, moduleZeroName)
+		zerobase = llvm.AddGlobal(p.mod, byteTy.ll, name)
 		zerobase.SetInitializer(llvm.ConstNull(byteTy.ll))
 		if p.Prog.target.effectiveGOOS() == "windows" {
 			// COFF aliases remain attached to their defining section. If the
@@ -102,6 +109,9 @@ func (p Package) moduleZeroSizedAlloc(elem Type) Expr {
 			p.setODRLinkage(zerobase, llvm.LinkOnceODRLinkage)
 		}
 		zerobase.SetUnnamedAddr(true)
+	}
+	if alignment > uint64(p.Prog.GoWordSize()) {
+		zerobase.SetAlignment(int(alignment))
 	}
 	return Expr{zerobase, p.Prog.Pointer(elem)}
 }
