@@ -2869,6 +2869,7 @@ func isCVariadicWrapperForwarding(fn *ssa.Function, call *ssa.CallCommon) bool {
 	return ok && param == fn.Params[len(fn.Params)-1]
 }
 
+// cVariadicWrapperForwardingReason returns an empty string when forwarding is supported.
 func (p *context) cVariadicWrapperForwardingReason(fn *ssa.Function, call *ssa.CallCommon) string {
 	callee := call.Signature()
 	// Promoted pointer methods adjust the receiver and return the C call's

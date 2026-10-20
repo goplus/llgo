@@ -1,6 +1,8 @@
 package cl
 
 import (
+	"errors"
+	"go/types"
 	"os"
 	"strings"
 	"testing"
@@ -9,7 +11,50 @@ import (
 	"github.com/xgo-dev/llgo/internal/optlevel"
 	llssa "github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
+	"golang.org/x/tools/go/ssa"
 )
+
+func TestCVariadicWrapperCycles(t *testing.T) {
+	const source = `package foo
+type T int32
+func (t *T) A(__llgo_va_list ...any) int32 {
+	t.C(__llgo_va_list...)
+	return t.B(__llgo_va_list...)
+}
+func (t *T) B(__llgo_va_list ...any) int32 { return t.A(__llgo_va_list...) }
+func (t *T) C(__llgo_va_list ...any) int32 { return 0 }
+`
+	ssaPkg, _, _ := buildGoSSAPkg(t, source)
+	methods := types.NewMethodSet(types.NewPointer(ssaPkg.Pkg.Scope().Lookup("T").Type()))
+	wrappers := make(map[string]*ssa.Function)
+	for _, name := range []string{"A", "B", "C"} {
+		fn := ssaPkg.Prog.MethodValue(methods.Lookup(ssaPkg.Pkg, name))
+		fn.Synthetic = "wrapper for " + name
+		wrappers[name] = fn
+	}
+	prog := newLLSSAProgForTarget(t, &llssa.Target{GOOS: "linux", GOARCH: "amd64"})
+	defer prog.Dispose()
+	p := &context{prog: prog}
+	checked := make(map[*ssa.Function]error)
+	if err := p.cVariadicWrapperError(wrappers["A"], checked); err != nil {
+		t.Fatalf("supported wrapper cycle did not terminate: %v", err)
+	}
+	for name, fn := range wrappers {
+		if err, ok := checked[fn]; !ok || err != nil {
+			t.Fatalf("supported wrapper %s was not memoized: %v", name, err)
+		}
+	}
+	// An exit from a cycle can still be unsupported. Do not memoize a
+	// back-edge as a successful complete traversal and hide that exit.
+	want := errors.New("unsupported forwarding at cycle exit")
+	p.variadicErrors = map[*ssa.Function]error{wrappers["C"]: want}
+	checked = make(map[*ssa.Function]error)
+	for _, name := range []string{"A", "B", "A"} {
+		if err := p.cVariadicWrapperError(wrappers[name], checked); !errors.Is(err, want) {
+			t.Fatalf("wrapper %s lost the cycle's unsupported exit: %v", name, err)
+		}
+	}
+}
 
 func TestCVariadicMethodWrapperForwarding(t *testing.T) {
 	source, err := os.ReadFile("_testrt/vamethod/in.go")
