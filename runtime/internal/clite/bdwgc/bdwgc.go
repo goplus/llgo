@@ -65,6 +65,11 @@ func MallocUncollectable(size uintptr) c.Pointer
 //go:linkname Realloc C.GC_realloc
 func Realloc(ptr c.Pointer, size uintptr) c.Pointer
 
+// Base returns the collector allocation containing ptr, or nil for a non-heap pointer.
+//
+//go:linkname Base C.GC_base
+func Base(ptr c.Pointer) c.Pointer
+
 //go:linkname Free C.GC_free
 func Free(ptr c.Pointer)
 

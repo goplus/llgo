@@ -134,6 +134,10 @@ func (q *chanWaitq) remove(w *chanWaiter) {
 }
 
 func NewChan(eltSize, cap int) *Chan {
+	return NewChanAligned(eltSize, cap, 1)
+}
+
+func NewChanAligned(eltSize, cap, eltAlign int) *Chan {
 	if cap < 0 {
 		panicMakeChanSize()
 	}
@@ -145,7 +149,7 @@ func NewChan(eltSize, cap int) *Chan {
 	ret.elemsize = eltSize
 	ret.dataqsiz = cap
 	if cap > 0 {
-		ret.buf = AllocU(mem)
+		ret.buf = AllocUAligned(mem, uintptr(eltAlign))
 	}
 	ret.mutex.init()
 	return ret

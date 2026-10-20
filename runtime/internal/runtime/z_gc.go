@@ -233,6 +233,11 @@ func finalizer(ptr unsafe.Pointer, cb unsafe.Pointer) {
 }
 
 func registerCleanupPtr(ptr unsafe.Pointer, e *entry) {
+	// The callback carries no object argument, so only the registration
+	// (including the previous-finalizer chain) needs the collector base.
+	if base := bdwgc.Base(ptr); base != nil {
+		ptr = base
+	}
 	var oldFn bdwgc.FinalizerFunc
 	var oldCb unsafe.Pointer
 	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
