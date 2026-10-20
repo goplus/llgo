@@ -795,13 +795,22 @@ jobs:
   windows-gnu-cross:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    name: windows GNU cross (${{ matrix.os }}, ${{ matrix.windows_arch }})
+    name: windows GNU cross (${{ matrix.os }}, ${{ matrix.windows_arch == 'all' && 'amd64 + arm64 + 386' || matrix.windows_arch }})
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-latest]
-        windows_arch: [amd64, arm64, "386"]
+        include:
+          - os: ubuntu-24.04
+            windows_arch: amd64
+          - os: ubuntu-24.04
+            windows_arch: arm64
+          - os: ubuntu-24.04
+            windows_arch: "386"
+          # Share the host compiler, llvm-mingw archive and vcpkg bootstrap
+          # across targets while retaining every macOS-to-Windows build.
+          - os: macos-latest
+            windows_arch: all
     runs-on: ${{ startsWith(matrix.os, 'ubuntu') && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -817,6 +826,7 @@ jobs:
           go-version: "1.27.0"
 
       - name: Build Unix host compiler
+        id: host_compiler
         shell: bash
         run: |
           go build -p=2 -o "$RUNNER_TEMP/llgo-host" ./cmd/llgo
@@ -825,11 +835,26 @@ jobs:
           # available to the following cross-host builds.
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
-      - name: Test cross-host windows/${{ matrix.windows_arch }}
+      - name: Test cross-host windows/amd64
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == 'amd64') }}
         uses: ./.github/actions/test-windows-cross
         with:
           llgo: ${{ runner.temp }}/llgo-host
-          windows-arch: ${{ matrix.windows_arch }}
+          windows-arch: amd64
+
+      - name: Test cross-host windows/arm64
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == 'arm64') }}
+        uses: ./.github/actions/test-windows-cross
+        with:
+          llgo: ${{ runner.temp }}/llgo-host
+          windows-arch: arm64
+
+      - name: Test cross-host windows/386
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == '386') }}
+        uses: ./.github/actions/test-windows-cross
+        with:
+          llgo: ${{ runner.temp }}/llgo-host
+          windows-arch: "386"
 
   wasm-browser-debug:
     permissions:

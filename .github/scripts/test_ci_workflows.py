@@ -19,8 +19,9 @@ import ci_policy
 WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
-    "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
+    "llgo.yml": 21, "go.yml": 6, "targets.yml": 5, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
+    "mise.yml": 5, "pixi.yml": 5,
 }
 BOOTSTRAP_RUNNER_JOBS = {
     ("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy"),
@@ -102,6 +103,12 @@ class WorkflowContractTests(unittest.TestCase):
                     if reusable.startswith("./.github/workflows/"):
                         pending.append(Path(reusable).name)
 
+    def test_extended_cross_target_abi_matrix_runs_on_linux(self):
+        step = next(step for step in load("go.yml")["jobs"]["test"]["steps"]
+                    if step.get("id") == "test_coverage")
+        self.assertEqual(step["env"]["LLGO_TEST_EXTENDED_ABI"],
+                         "${{ runner.os == 'Linux' && '1' || '0' }}")
+
     def test_gdb_windows_acceptance_covers_both_abis_and_all_native_architectures(self):
         job = load("llgo.yml")["jobs"]["llgo"]
         entries = job["strategy"]["matrix"]["include"]
@@ -171,6 +178,7 @@ class WorkflowContractTests(unittest.TestCase):
                 fake_go.write_text(f"#!{sys.executable}\n" + """
 import json, os, sys
 if sys.argv[1] == 'list':
+    print('github.com/xgo-dev/llgo/cmd/internal/version')
     print('github.com/xgo-dev/llgo/internal/build')
 else:
     with open(os.environ['TEST_GO_LOG'], 'a') as stream:
@@ -179,6 +187,9 @@ else:
                 fake_go.chmod(0o755)
                 (root / "dev").mkdir()
                 (root / "dev/go_test_windows.sh").write_text('exec "$@"\n')
+                helper = root / ".github/scripts/run_go_tests.py"
+                helper.parent.mkdir(parents=True)
+                shutil.copyfile(WORKFLOWS.parent / "scripts/run_go_tests.py", helper)
                 subprocess.run(["bash", "-c", script], cwd=root, check=True,
                                capture_output=True, text=True, env={**os.environ,
                                    "PATH": directory + os.pathsep + os.environ["PATH"],
@@ -190,12 +201,48 @@ else:
                     args = next(args for args in calls if package in args)
                     self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
                                      [f"-overlay={overlay}"] if overlay else [])
-                simd = next(args for args in calls if "./internal/build" in args)
-                self.assertIn("^TestSIMD", simd)
-                self.assertIn("-coverprofile=coverage-simd.txt", simd)
-                self.assertIn(
-                    "-coverpkg=github.com/xgo-dev/llgo/internal/build,"
-                    "github.com/xgo-dev/llgo/cl,github.com/xgo-dev/llgo/ssa", simd)
+                # Every package and test still runs; SIMD belongs to the full
+                # build suite instead of a second filtered invocation.
+                build = next(args for args in calls if "./internal/build" in args)
+                self.assertNotIn("-run", build)
+                self.assertNotIn("-skip", build)
+                self.assertIn("-coverprofile=coverage-build.txt", build)
+                self.assertIn("-coverpkg=./...", build)
+                self.assertEqual(sum("./internal/build" in args for args in calls), 1)
+                self.assertFalse(any("github.com/xgo-dev/llgo/internal/build" in args
+                                     for args in calls))
+                self.assertTrue(all("-json" in args for args in calls))
+
+    def test_cross_host_windows_checks_keep_every_host_target_pair(self):
+        job = load("llgo.yml")["jobs"]["windows-gnu-cross"]
+        entries = job["strategy"]["matrix"]["include"]
+        checks = [step for step in job["steps"]
+                  if step.get("uses") == "./.github/actions/test-windows-cross"]
+        actual = set()
+        for entry in entries:
+            for step in checks:
+                arch = step["with"]["windows-arch"]
+                if entry["windows_arch"] in {"all", arch}:
+                    actual.add((entry["os"], arch))
+                self.assertIn("!cancelled()", step["if"])
+                self.assertIn("steps.host_compiler.outcome == 'success'", step["if"])
+                self.assertIn(f"matrix.windows_arch == '{arch}'", step["if"])
+                self.assertNotIn("continue-on-error", step)
+        self.assertEqual(actual, {(host, arch) for host in ("ubuntu-24.04", "macos-latest")
+                                  for arch in ("amd64", "arm64", "386")})
+        self.assertEqual(sum(entry["os"] == "macos-latest" for entry in entries), 1)
+
+    def test_embedded_debuggers_share_setup_without_losing_backend_failures(self):
+        job = load("targets.yml")["jobs"]["embedded-debug"]
+        self.assertCountEqual(job["strategy"]["matrix"]["os"],
+                              ["ubuntu-24.04", "macos-15", "windows-2022"])
+        self.assertNotIn("backend", job["strategy"]["matrix"])
+        for backend in ("gdb", "lldb"):
+            step = next(step for step in job["steps"]
+                        if f"runtest.py --backend {backend}" in step.get("run", ""))
+            self.assertIn("!cancelled()", step["if"])
+            self.assertIn("steps.compiler.outcome == 'success'", step["if"])
+            self.assertNotIn("continue-on-error", step)
 
     def test_code_and_document_jobs_consume_the_shared_decision(self):
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml", "model-demo.yml"]:
@@ -436,7 +483,7 @@ else:
             with self.subTest(workflow=filename):
                 self.assertEqual(workflow["jobs"]["prepare"]["uses"], PREPARE)
                 self.assertIn("prepare", needs(job))
-                self.assertNotIn("if", job)  # These checks still run for docs-only PRs.
+                self.assertEqual(job["if"], "needs.prepare.outputs.run_code_ci == 'true'")
                 self.assertEqual(job["runs-on"],
                                  "${{ matrix.os == 'ubuntu-24.04' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
                 self.assertCountEqual(job["strategy"]["matrix"]["os"],

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -18,8 +19,18 @@ var (
 )
 
 func init() {
-	// crosscompile
-	if runtime.GOOS == "darwin" {
+	// These are cross-target IR checks: buildConf selects Linux, WASI or an
+	// embedded target regardless of the host. CI runs the expanded matrix on
+	// Linux; retain the historical Darwin default for local test runs.
+	extended := runtime.GOOS == "darwin"
+	if value, ok := os.LookupEnv("LLGO_TEST_EXTENDED_ABI"); ok {
+		var err error
+		extended, err = strconv.ParseBool(value)
+		if err != nil {
+			panic("LLGO_TEST_EXTENDED_ABI: " + err.Error())
+		}
+	}
+	if extended {
 		archs = append(archs, "wasm32")
 		archs = append(archs, "esp32")
 		archs = append(archs, "esp32c3")
