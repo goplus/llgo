@@ -425,7 +425,21 @@ Homebrew's versioned LLVM 22 formula does not ship LLDB and there is no `lldb@22
 
 ### on Linux
 
+The APT/YUM configurations below accept packages without GPG signature verification
+(`trusted=yes` / `gpgcheck=0`); downloads use HTTPS.
+
 #### Debian/Ubuntu
+
+Install the latest stable release for amd64 or arm64 from the APT repository:
+
+```sh
+echo 'deb [trusted=yes] https://pkgs.goplus.org/apt/ /' | sudo tee /etc/apt/sources.list.d/goplus.list
+sudo apt-get update
+sudo apt-get install -y llgo
+llgo version
+```
+
+For source builds, install the build dependencies:
 
 <!-- embedme doc/_readme/scripts/install_ubuntu.sh#L2-L1000 -->
 
@@ -453,9 +467,25 @@ export CGO_LDFLAGS="$($LLVM_CONFIG --ldflags) $($LLVM_CONFIG --libs all)"
 
 #### Fedora Linux 44 or newer
 
-Fedora 44 and 45 ship LLVM 22 as the default LLVM stack. Fedora 43 still
-ships LLVM 21 and is not a supported default-toolchain environment for this
-LLGo release.
+Install the latest stable release for amd64 or arm64 from the YUM/DNF repository:
+
+```sh
+sudo tee /etc/yum.repos.d/fury.repo > /dev/null <<'EOF'
+[fury]
+name=goplus (Gemfury)
+baseurl=https://pkgs.goplus.org/yum/
+enabled=1
+gpgcheck=0
+EOF
+sudo dnf install -y llgo
+llgo version
+```
+
+With YUM, use `sudo yum install -y llgo` for the installation command.
+
+For source builds, Fedora 44 and 45 ship LLVM 22 as the default LLVM stack.
+Fedora 43 still ships LLVM 21 and is not a supported default-toolchain
+environment for this LLGo release.
 
 ```sh
 sudo dnf install -y llvm-devel clang-devel lld lldb libcxx-devel llvm-libunwind-devel \
