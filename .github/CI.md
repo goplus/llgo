@@ -80,18 +80,26 @@ prepare outputs; `test_ci_workflows.py` enforces the common expression instead.
 The reusable prepare workflow has no concurrency group of its own.
 
 Closing or merging a PR cancels its existing CI runs. The `PR closed` workflow
-handles `pull_request_target: closed` without checking out code or granting
-token permissions. Each call to `pr-ci-cancel.yml` enters the matching PR
-concurrency group, cancelling both running and pending work without touching
-other PRs or main. Its one-minute no-op uses qiniu upstream and hosted Ubuntu
-in forks. CI gates still report preparation failures, but use
-`always() && !cancelled()` so cancellation can stop them too.
+handles `pull_request_target: closed` using only the base commit's cleanup
+script (`github.sha`), never PR code, artifacts, dependencies or caches. Only
+that job receives Actions write permission. It uses qiniu upstream and hosted
+Ubuntu in forks. It does not enter any PR's concurrency group.
 
-When adding or renaming a `pull_request` workflow, update the cancellation
-matrix in `pr-closed.yml`. Contract tests discover both `.yml` and `.yaml`
-files and traverse all jobs and local reusable workflows, so new jobs and
-matrices are checked automatically. This policy takes effect after merge to
-main; it does not prevent later manual reruns or handle close/reopen races.
+The script snapshots active `pull_request` runs, matches their PR association,
+and cancels individual run IDs only when their creation/start time precedes the
+close event. Runs in the same second as the close and manual reruns are preserved.
+It rechecks each run and the live PR state before cancellation; a reopened PR or
+a different close event stops cleanup. Fork runs with no PR association require
+a matching head repository/branch used by exactly one historical PR; ambiguous
+heads are preserved. API failures fail the cleanup job without broad cancellation.
+GitHub does not provide an atomic run-attempt/state-and-cancel operation, so a
+run that finishes and is manually rerun between its final check and POST remains
+a narrow API race; new run IDs after a reopen are never cancellation candidates.
+
+Concurrency keys use workflow filenames, independent of display names. Contract
+tests discover both `.yml` and `.yaml` files and traverse all jobs and local
+reusable workflows. CI gates use `always() && !cancelled()` so cancellation can
+stop them too. The close policy takes effect after merge to main.
 
 Every workflow that uses prepare has a uniquely named `CI gate (...)` job. It
 runs even if prepare fails and reports that failure. Branch protection should

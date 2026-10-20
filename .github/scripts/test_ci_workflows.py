@@ -24,7 +24,7 @@ CODE_WORKFLOWS = {
 }
 BOOTSTRAP_RUNNER_JOBS = {
     ("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy"),
-    ("pr-ci-cancel.yml", "cancel"),
+    ("pr-closed.yml", "cancel-pr-ci"),
 }
 
 
@@ -64,17 +64,21 @@ class WorkflowContractTests(unittest.TestCase):
         workflow = load("pr-closed.yml")
         self.assertEqual(workflow["on"], {"pull_request_target": {"types": ["closed"]}})
         self.assertEqual(workflow["permissions"], {})
+        self.assertNotIn("concurrency", workflow)
         job = workflow["jobs"]["cancel-pr-ci"]
-        # Both merges and unmerged closes cancel PR CI. Main uses a separate group.
         self.assertNotIn("if", job)
-        self.assertEqual(job["uses"], "./.github/workflows/pr-ci-cancel.yml")
-        self.assertEqual(job["with"], {
-            "workflow": "${{ matrix.workflow }}",
-            "number": "${{ github.event.pull_request.number }}"})
-        self.assertEqual(job["strategy"]["fail-fast"], "false")
-        names = [workflow["name"] for workflow in pr_workflows().values()]
-        self.assertEqual(len(names), len(set(names)), "PR workflow names must be unique")
-        self.assertCountEqual(job["strategy"]["matrix"]["workflow"], names)
+        self.assertNotIn("concurrency", job)
+        self.assertEqual(job["permissions"], {
+            "actions": "write", "contents": "read", "pull-requests": "read"})
+        checkout, cancel = job["steps"]
+        self.assertEqual(checkout["uses"], "actions/checkout@v7")
+        self.assertEqual(checkout["with"], {
+            "ref": "${{ github.sha }}", "persist-credentials": "false",
+            "sparse-checkout": ".github/scripts", "sparse-checkout-cone-mode": "false"})
+        self.assertEqual(cancel["env"], {"GH_TOKEN": "${{ github.token }}"})
+        self.assertEqual(cancel["run"], "python3 .github/scripts/pr_ci.py")
+        self.assertEqual(job["timeout-minutes"], "5")
+        self.assertFalse((WORKFLOWS / "pr-ci-cancel.yml").exists())
 
     def test_pr_jobs_and_local_reusable_jobs_remain_cancelable(self):
         # Discover every job rather than keeping a job-name allowlist: new jobs
@@ -97,20 +101,6 @@ class WorkflowContractTests(unittest.TestCase):
                     reusable = job.get("uses", "")
                     if reusable.startswith("./.github/workflows/"):
                         pending.append(Path(reusable).name)
-
-    def test_pr_cancellation_uses_native_concurrency_without_pr_code_or_token(self):
-        workflow = load("pr-ci-cancel.yml")
-        self.assertEqual(workflow["on"], {"workflow_call": {"inputs": {
-            "workflow": {"type": "string", "required": "true"},
-            "number": {"type": "number", "required": "true"}}}})
-        self.assertEqual(workflow["permissions"], {})
-        self.assertEqual(workflow["concurrency"], {
-            "group": "${{ inputs.workflow }}-pull_request-${{ inputs.number }}",
-            "cancel-in-progress": "true"})
-        job = workflow["jobs"]["cancel"]
-        self.assertNotIn("if", job)
-        self.assertEqual(job["timeout-minutes"], "1")
-        self.assertEqual(job["steps"], [{"run": "true"}])
 
     def test_gdb_windows_acceptance_covers_both_abis_and_all_native_architectures(self):
         job = load("llgo.yml")["jobs"]["llgo"]
@@ -232,12 +222,12 @@ else:
                     self.assertNotIn("paths", push)
                     self.assertNotIn("paths-ignore", push)
                 concurrency = workflow["concurrency"]
-                # PR-only workflows must also match pr-ci-cancel.yml. Retain
-                # main supersession and unique tag/manual run groups.
+                # Use the filename as a stable key, independent of display names.
+                # Retain main supersession and unique tag/manual run groups.
                 self.assertEqual(concurrency["cancel-in-progress"],
                                  "${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}")
                 self.assertEqual(concurrency["group"],
-                                 "${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}")
+                                 path.name + "-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}")
 
     def test_gated_pr_workflows_always_start_the_prepare_job(self):
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml"]:
