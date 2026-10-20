@@ -5,8 +5,11 @@ package cgo
 import "testing"
 
 func TestLinknameCVariables(t *testing.T) {
-	if !linkedVarAddressesMatch() || &linkedScalarAlias != &linkedScalar {
+	if !linkedVarAddressesMatch() {
 		t.Fatal("C-prefixed bindings do not share the native variables' addresses")
+	}
+	if &linkedScalarAlias != &linkedScalar {
+		t.Fatal("llgo:link and go:linkname aliases do not share the same variable address")
 	}
 	if linkedScalar != 42 || linkedScalarAlias != 42 {
 		t.Fatalf("native scalar initializer lost: %d, %d", linkedScalar, linkedScalarAlias)
