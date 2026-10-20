@@ -1122,10 +1122,10 @@ var External = 7
 func Use() int { return External }
 `
 	ir := compileWithRewrites(t, src, nil)
-	if !strings.Contains(ir, "@C.external = external global i64") {
+	if !strings.Contains(ir, "@external = external global i64") {
 		t.Fatalf("linknamed global should remain an external declaration:\n%s", ir)
 	}
-	assertStoreToGlobal(t, ir, "@C.external")
+	assertStoreToGlobal(t, ir, "@external")
 }
 
 func TestStaticGlobalInitDeterministicOrder(t *testing.T) {

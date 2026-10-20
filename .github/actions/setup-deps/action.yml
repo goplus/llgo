@@ -818,7 +818,8 @@ runs:
         # LLVM/LLD toolchain above on PATH for WASI and other cross-target links.
         # Release-artifact jobs also need it when install-llvm=false.
         if [[ "$RUNNER_ARCH" == ARM64 ]]; then
-          LLGO_INSTALLER_LIBRARY_ONLY=1 source ./install.sh
+          # Consumers may check out LLGo below their workspace root.
+          LLGO_INSTALLER_LIBRARY_ONLY=1 source "$GITHUB_ACTION_PATH/../../../install.sh"
           install_macos_lld
         fi
 
