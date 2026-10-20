@@ -1,6 +1,7 @@
 package build
 
 import (
+	"fmt"
 	"go/ast"
 	"go/importer"
 	"go/parser"
@@ -15,6 +16,78 @@ import (
 
 	"github.com/xgo-dev/llgo/internal/env"
 )
+
+func TestRuntimeSourceVersionSelection(t *testing.T) {
+	for _, test := range []struct {
+		version, indexType, adapter string
+		crash                       bool
+	}{
+		{"go1.22", "int", "utf8_index.go", false},
+		{"go1.26", "int", "utf8_index.go", true},
+		{"go1.27", "uint", "utf8_index_go127.go", true},
+	} {
+		t.Run(test.version, func(t *testing.T) {
+			root, goroot := runtimeSourceTestRoot(t), t.TempDir()
+			// Small source fixtures isolate version selection. The toolchain
+			// qualification below checks the actual upstream algorithms.
+			base := map[string][]byte{
+				filepath.Join(goroot, "src/runtime/utf8.go"): []byte(fmt.Sprintf(`package runtime
+func countrunes(s string) int { return len(s) }
+func decoderune(s string, k %[1]s) (r rune, pos %[1]s) { return 0, k }
+func encoderune(p []byte, r rune) int { return 0 }
+`, test.indexType)),
+			}
+			if test.crash {
+				base[filepath.Join(goroot, "src/runtime/runtime.go")] = []byte(
+					"package runtime\nfunc setCrashFD(fd uintptr) uintptr { return fd }\n")
+			}
+			overlay, err := runtimeSourceOverlay(base, root, goroot, test.version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := overlay[filepath.Join(root, "internal/runtime", test.adapter)]; !ok {
+				t.Fatal("selected the wrong decoder index adapter")
+			}
+			_, hasCrash := overlay[filepath.Join(root, "internal/lib/runtime/crash_fd_go123.go")]
+			if hasCrash != test.crash {
+				t.Fatalf("crash hook present = %v, want %v", hasCrash, test.crash)
+			}
+		})
+	}
+}
+
+func TestRuntimeSourceInvalidAdapter(t *testing.T) {
+	if _, err := runtimeSourceOverlay(nil, t.TempDir(), runtime.GOROOT(), runtime.Version()); err == nil ||
+		!strings.Contains(err.Error(), "read runtime UTF-8 ABI adapter") {
+		t.Fatalf("missing adapter: %v", err)
+	}
+	root := runtimeSourceTestRoot(t)
+	base := make(map[string][]byte)
+	for _, name := range []string{"utf8_index.go", "utf8_index_go127.go"} {
+		base[filepath.Join(root, "internal/runtime", name)] = []byte("package runtime\nfunc (")
+	}
+	if _, err := runtimeSourceOverlay(base, root, runtime.GOROOT(), runtime.Version()); err == nil {
+		t.Fatal("accepted malformed adapter source")
+	}
+}
+
+func TestRuntimeSourceBuildRejectsMissingHelpers(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LLGO_ROOT", root)
+	conf := NewDefaultConf(ModeBuild)
+	conf.OutFile = filepath.Join(t.TempDir(), "unused")
+	conf.Overlay = map[string][]byte{
+		filepath.Join(runtime.GOROOT(), "src/runtime/utf8.go"): []byte("package runtime\n"),
+	}
+	_, err = Build(Invocation{Args: []string{"."}, Config: conf,
+		Dir: filepath.Join(root, "internal/build/testdata/runtimecompiler")})
+	if err == nil || !strings.Contains(err.Error(), "missing helpers") {
+		t.Fatalf("build did not report incomplete upstream runtime source: %v", err)
+	}
+}
 
 func runtimeSourceTestRoot(t *testing.T) string {
 	t.Helper()
