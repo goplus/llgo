@@ -25,6 +25,7 @@ import (
 	"sort"
 
 	"github.com/xgo-dev/llgo/internal/genmethod"
+	runtimeabi "github.com/xgo-dev/llgo/runtime/abi"
 	"github.com/xgo-dev/llgo/ssa/abi"
 	"github.com/xgo-dev/llvm"
 )
@@ -92,11 +93,19 @@ func staticPtrToThis(t types.Type) (types.Type, bool) {
 	return ptr, types.NewMethodSet(ptr).Len() != 0
 }
 
-func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, global llvm.Value) (fields []llvm.Value) {
+func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, global llvm.Value, storage Type) (fields []llvm.Value) {
 	prog := b.Prog
 	ab := prog.abi
+	var size, alignment, fieldAlignment uintptr
+	if storage != nil {
+		size = uintptr(prog.SizeOf(storage))
+		alignment = uintptr(prog.AlignOf(storage))
+		fieldAlignment = alignment
+	} else {
+		size, alignment, fieldAlignment = ab.Size(t), ab.Align(t), ab.FieldAlign(t)
+	}
 	// Size uintptr
-	fields = append(fields, prog.IntVal(uint64(ab.Size(t)), prog.Uintptr()).impl)
+	fields = append(fields, prog.IntVal(uint64(size), prog.Uintptr()).impl)
 	// PtrBytes uintptr
 	fields = append(fields, prog.IntVal(uint64(ab.PtrBytes(t)), prog.Uintptr()).impl)
 	// Hash uint32
@@ -105,15 +114,18 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, gl
 	fields = append(fields, prog.IntVal(uint64(hash), prog.Uint32()).impl)
 	// TFlag uint8
 	tflag := ab.TFlag(t)
+	if storage != nil && !prog.IsRegularMemory(t) {
+		tflag &^= runtimeabi.TFlagRegularMemory
+	}
 	if hasUncommon {
 		tflag |= abi.TFlagUncommon
 	}
 	fields = append(fields, prog.IntVal(uint64(tflag), prog.Byte()).impl)
 	// Align uint8
-	align := prog.IntVal(uint64(ab.Align(t)), prog.Byte()).impl
+	align := prog.IntVal(uint64(alignment), prog.Byte()).impl
 	fields = append(fields, align)
 	// FieldAlign uint8
-	fieldAlign := prog.IntVal(uint64(ab.FieldAlign(t)), prog.Byte()).impl
+	fieldAlign := prog.IntVal(uint64(fieldAlignment), prog.Byte()).impl
 	fields = append(fields, fieldAlign)
 	// Kind uint8
 	kind := uint8(ab.Kind(t))
@@ -163,7 +175,7 @@ type StructField struct {
 }
 */
 
-func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
+func (b Builder) abiStructFields(t *types.Struct, name string, offsets []int64) llvm.Value {
 	prog := b.Prog
 	n := t.NumFields()
 	if n == 0 {
@@ -172,7 +184,6 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 	g := b.Pkg.VarOf(name)
 	if g == nil {
 		ft := prog.rtType("structfield")
-		offsets := b.abiStructFieldOffsets(t)
 		fields := make([]llvm.Value, n)
 		for i := 0; i < n; i++ {
 			f := t.Field(i)
@@ -288,7 +299,7 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	})
 }
 
-func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value) (fields []llvm.Value) {
+func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value, storage Type) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
 	switch t := types.Unalias(t).(type) {
@@ -353,7 +364,18 @@ func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value)
 			fields = append(fields, bridges.call.impl, bridges.make.impl)
 		}
 	case *types.Struct:
-		name, _ = prog.abi.TypeName(t)
+		var offsets []int64
+		if storage == nil {
+			name, _ = prog.abi.TypeName(t)
+			offsets = b.abiStructFieldOffsets(t)
+		} else {
+			// Keep the owner's name: on Windows/386, native {int32; uint64}
+			// and the Go type have the same fields but different offsets.
+			offsets = make([]int64, t.NumFields())
+			for i := range offsets {
+				offsets[i] = int64(prog.OffsetOf(storage, i))
+			}
+		}
 		var pkgPath string
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
@@ -366,7 +388,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value)
 		}
 		fields = []llvm.Value{
 			b.Str(pkgPath).impl,
-			b.abiStructFields(t, name+"$fields"),
+			b.abiStructFields(t, name+"$fields", offsets),
 		}
 	case *types.Interface:
 		name, _ = prog.abi.TypeName(t)
@@ -375,7 +397,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value)
 			b.abiInterfaceImethods(t, name+"$imethods"),
 		}
 	case *types.Named:
-		return b.abiExtendedFields(t.Underlying(), name, global)
+		return b.abiExtendedFields(t.Underlying(), name, global, storage)
 	}
 	return
 }
@@ -683,6 +705,28 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 		[N]Method
 	}
 */
+// nativeMetadataType selects the storage used by a native aggregate and its
+// by-value containers. References end the traversal: *Native does not embed
+// Native's size, while struct{ N Native; Y float64 } does.
+func (p Program) nativeMetadataType(t types.Type) Type {
+	switch value := t.Underlying().(type) {
+	case *types.Array:
+		if p.hasNativeTypeLayout(t) || p.nativeMetadataType(value.Elem()) != nil {
+			return p.rawType(t)
+		}
+	case *types.Struct:
+		if p.hasNativeTypeLayout(t) {
+			return p.rawType(t)
+		}
+		for i := 0; i < value.NumFields(); i++ {
+			if p.nativeMetadataType(value.Field(i).Type()) != nil {
+				return p.rawType(t)
+			}
+		}
+	}
+	return nil
+}
+
 func (b Builder) abiType(t types.Type) Expr {
 	prog := b.Prog
 	pkg := b.Pkg
@@ -712,8 +756,9 @@ func (b Builder) abiType(t types.Type) Expr {
 			typ = types.NewStruct(structFields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), GoDecl))
-		commonFields := b.abiCommonFields(t, name, hasUncommon, g.impl)
-		extendedFields := b.abiExtendedFields(t, name, g.impl)
+		storage := prog.nativeMetadataType(t)
+		commonFields := b.abiCommonFields(t, name, hasUncommon, g.impl, storage)
+		extendedFields := b.abiExtendedFields(t, name, g.impl, storage)
 		fields := commonFields
 		if len(extendedFields) != 0 {
 			fields = append([]llvm.Value{
