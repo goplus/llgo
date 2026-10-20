@@ -54,7 +54,7 @@ func TestRuntimeSourceOverlay(t *testing.T) {
 			t.Fatalf("%s: %v", arch, err)
 		}
 	}
-	if got := fset.Position(file.Decls[0].Pos()).Filename; got != filepath.Join(runtime.GOROOT(), "src/runtime/utf8.go") {
+	if got := fset.Position(file.Decls[0].Pos()).Filename; filepath.Clean(got) != filepath.Join(runtime.GOROOT(), "src", "runtime", "utf8.go") {
 		t.Fatalf("source identity = %q", got)
 	}
 	crashPath := filepath.Join(root, "internal/lib/runtime/crash_fd_go123.go")
@@ -132,6 +132,24 @@ func TestRuntimeSourceBodyChangesFingerprint(t *testing.T) {
 	}
 	if reflect.DeepEqual(a, b) {
 		t.Fatal("GOROOT body change did not invalidate the runtime cache")
+	}
+}
+
+func TestRuntimeSourceMissingOrChangedCrashHook(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	path := filepath.Join(runtime.GOROOT(), "src", "runtime", "runtime.go")
+	for _, src := range []string{
+		"package runtime",
+		"package runtime\nfunc setCrashFD(fd int) int { return fd }",
+		"package runtime\nfunc setCrashFD(fd uintptr) uintptr",
+		"package runtime\nfunc setCrashFD(",
+	} {
+		if _, err := runtimeSourceOverlay(map[string][]byte{path: []byte(src)}, root, runtime.GOROOT(), runtime.Version()); err == nil {
+			t.Fatalf("accepted missing or changed crash hook: %s", src)
+		}
+	}
+	if _, err := runtimeSourceOverlay(nil, root, t.TempDir(), runtime.Version()); err == nil {
+		t.Fatal("accepted a GOROOT with missing runtime sources")
 	}
 }
 
