@@ -5,6 +5,40 @@ Native Linux links compress retained DWARF with zlib by default. Use
 omits DWARF entirely. Compression retains the ordinary symbol table and the
 runtime PCLN metadata.
 
+Native macOS and Windows also accept **experimental, explicit**
+`-ldflags=-compressdwarf=true` compression. Their default remains uncompressed.
+On macOS this runs `dsymutil` and compresses the adjacent `program.dSYM`
+bundle's DWARF using GNU `__zdebug_*` sections; the executable and its code
+signature are unchanged. On Windows it compresses embedded DWARF as
+`.zdebug_*` sections, preserving section RVAs, runtime tables, and CodeView
+references. It does not compress PDBs. Signed PE images and unsupported
+layouts are rejected before rewriting the image. `-w` still omits DWARF and
+does not generate a dSYM.
+
+These formats can be read by Go's `debug/macho` and `debug/pe` packages, but
+reader support varies. In particular the tested Apple LLDB cannot read
+compressed Mach-O dSYMs, and LLVM 22's PE reader does not recognize
+`.zdebug_*`. `llgo debug` with its LLDB backend rejects explicit compression
+on either platform. For LLDB use the default or `-compressdwarf=false`. If a
+compressed bundle already exists, regenerate an uncompressed one with
+`dsymutil program -o program.dSYM` while its debug-map objects remain
+available. If the executable was stripped, rebuild with
+`-ldflags='-s -w=false -compressdwarf=false'` instead, because its debug map
+has already been discarded. Treat the compressed dSYM as a storage/reader experiment until
+the debugger supports it. Successful DWARF decoding does not establish
+compatibility with other debuggers.
+
+Rebuilding without explicit compression (the default), with compression
+disabled, or with DWARF omitted removes an earlier LLGo-generated compressed
+bundle so it cannot mask the new image's debug map. This rebuild
+cleanup leaves manually generated bundles alone. `llgo clean` removes the
+default output's adjacent dSYM bundle, and temporary
+`run`/`test` outputs reclaim generated bundles automatically. When using a
+custom `-o program`, dispose of `program.dSYM` along with the executable.
+With `-ldflags='-s -w=false -compressdwarf=true'`, compression runs on the
+staged dSYM before symbol stripping publishes the executable and bundle.
+This keeps the matching DWARF even though stripping discards the debug map.
+
 On macOS, size-optimized main executables limit automatic dynamic exports
 even when DWARF is enabled. Explicit exports, shared libraries, and dynamic
 lookup configurations keep their export policy. DWARF builds retain their

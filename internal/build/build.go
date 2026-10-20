@@ -1295,7 +1295,10 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 		if err := finalizeDarwinSizeExecutable(linkCtx, link.outFmts.Out, verbose); err != nil {
 			return err
 		}
-		return finalizeNativeSymbols(linkCtx, link.outFmts, verbose)
+		if err := finalizeNativeSymbols(linkCtx, link.outFmts, verbose); err != nil {
+			return err
+		}
+		return finalizeNativeDWARFCompression(linkCtx, link.outFmts.Out, verbose)
 	}()
 	if err != nil {
 		return nil, err
