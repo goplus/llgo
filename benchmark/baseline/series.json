@@ -36,6 +36,17 @@
     },
     {
       "kind": "branch",
+      "id": "e7ab0e157f506a44",
+      "label": "Branch MeteorsLiu/llgo:codex/fix-native-callback-ffi",
+      "path": "series/branch/e7ab0e157f506a44/summary.json",
+      "configPath": "series/branch/e7ab0e157f506a44/config.json",
+      "commitPath": "commits/11d6a421c5bea1219e7843674e05dbd995b5d5dc.json",
+      "sha": "11d6a421c5bea1219e7843674e05dbd995b5d5dc",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/11d6a421c5bea1219e7843674e05dbd995b5d5dc",
+      "updatedAt": "2026-10-20T12:44:20.355Z"
+    },
+    {
+      "kind": "branch",
       "id": "659461d832b1c5b0",
       "label": "Branch MeteorsLiu/llgo:codex/fix-struct-ptrbytes",
       "path": "series/branch/659461d832b1c5b0/summary.json",
@@ -9713,6 +9724,17 @@
       "sha": "53308d94b83afc3439885394f324b109f3abc9c8",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/53308d94b83afc3439885394f324b109f3abc9c8",
       "updatedAt": "2026-10-19T20:00:11.580Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2883",
+      "label": "PR #2883",
+      "path": "series/pull/2883/summary.json",
+      "configPath": "series/pull/2883/config.json",
+      "commitPath": "commits/11d6a421c5bea1219e7843674e05dbd995b5d5dc.json",
+      "sha": "11d6a421c5bea1219e7843674e05dbd995b5d5dc",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/11d6a421c5bea1219e7843674e05dbd995b5d5dc",
+      "updatedAt": "2026-10-20T12:44:17.730Z"
     }
   ]
 }
