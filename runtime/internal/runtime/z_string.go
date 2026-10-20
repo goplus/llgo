@@ -98,7 +98,7 @@ func StringIterNext(it *StringIter) (ok bool, k int, v rune) {
 		it.pos++
 		v = rune(c)
 	} else {
-		v, it.pos = decoderune(it.s, it.pos)
+		v, it.pos = decodeNonASCII(it.s, it.pos)
 	}
 	ok = true
 	return
@@ -124,7 +124,7 @@ func StringToRunes(s string) []rune {
 			data[index] = rune(c)
 			i++
 		} else {
-			data[index], i = decoderune(s, i)
+			data[index], i = decodeNonASCII(s, i)
 		}
 		index++
 	}

@@ -1,0 +1,175 @@
+package build
+
+import (
+	"go/ast"
+	"go/importer"
+	"go/parser"
+	"go/token"
+	"go/types"
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/xgo-dev/llgo/internal/env"
+)
+
+func runtimeSourceTestRoot(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	dir := filepath.Join(root, "internal/runtime")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"utf8_index.go", "utf8_index_go127.go"} {
+		data, err := os.ReadFile(filepath.Join(env.LLGoRuntimeDir(), "internal/runtime", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root
+}
+
+func TestRuntimeSourceOverlay(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	overlay, err := runtimeSourceOverlay(nil, root, runtime.GOROOT(), runtime.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	utf8Path := filepath.Join(root, "internal/runtime/utf8.go")
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, utf8Path, overlay[utf8Path], 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The imported algorithm must be self-contained on both pointer widths.
+	for _, arch := range []string{"386", "amd64"} {
+		config := types.Config{Sizes: types.SizesFor("gc", arch)}
+		if _, err := config.Check("runtime", fset, []*ast.File{file}, nil); err != nil {
+			t.Fatalf("%s: %v", arch, err)
+		}
+	}
+	if got := fset.Position(file.Decls[0].Pos()).Filename; got != filepath.Join(runtime.GOROOT(), "src/runtime/utf8.go") {
+		t.Fatalf("source identity = %q", got)
+	}
+	crashPath := filepath.Join(root, "internal/lib/runtime/crash_fd_go123.go")
+	crash, err := parser.ParseFile(token.NewFileSet(), crashPath, overlay[crashPath], parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, decl := range crash.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name != "setCrashFD" {
+			t.Fatalf("selected unrelated runtime helper %s", fn.Name.Name)
+		}
+	}
+	if !strings.Contains(string(overlay[crashPath]), "//go:linkname setCrashFD") {
+		t.Fatal("lost the standard library linkname")
+	}
+	if _, err := os.Stat(utf8Path); !os.IsNotExist(err) {
+		t.Fatal("reuse wrote to the runtime source tree")
+	}
+}
+
+func TestRuntimeSourceRejectsUnreviewedUpgrade(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	srcPath := filepath.Join(runtime.GOROOT(), "src/runtime/utf8.go")
+	src, err := os.ReadFile(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name, old, replacement, want string
+	}{
+		{"missing", "func encoderune", "func renamedEncoder", "unreviewed helper"},
+		{"signature", "p []byte", "p []int", "unreviewed helper"},
+		{"dependency", "package runtime", "package runtime\nimport _ \"unsafe\"", "unreviewed import"},
+		{"state", "package runtime", "package runtime\nvar global int", "unreviewed var"},
+		{"constant", "runeSelf", "newRuneSelf", "unreviewed constant"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			base := map[string][]byte{srcPath: []byte(strings.Replace(string(src), test.old, test.replacement, 1))}
+			_, err := runtimeSourceOverlay(base, root, runtime.GOROOT(), runtime.Version())
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want %s", err, test.want)
+			}
+			if len(base) != 1 {
+				t.Fatal("changed caller overlay")
+			}
+		})
+	}
+}
+
+func TestRuntimeSourceBodyChangesFingerprint(t *testing.T) {
+	root := runtimeSourceTestRoot(t)
+	srcPath := filepath.Join(runtime.GOROOT(), "src/runtime/utf8.go")
+	src, err := os.ReadFile(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(root, "internal/runtime/utf8.go")
+	first, err := runtimeSourceOverlay(nil, root, runtime.GOROOT(), runtime.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := runtimeSourceOverlay(map[string][]byte{
+		srcPath: []byte(strings.Replace(string(src), "return runeError, k + 1", "return runeError, k + 2", 1)),
+	}, root, runtime.GOROOT(), runtime.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := digestFilesWithOverlay([]string{target}, first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := digestFilesWithOverlay([]string{target}, second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reflect.DeepEqual(a, b) {
+		t.Fatal("GOROOT body change did not invalidate the runtime cache")
+	}
+}
+
+// Qualification can supply additional pinned source trees without compiling
+// this Go 1.27 compiler itself with the older tools.
+func TestRuntimeSourceToolchains(t *testing.T) {
+	roots := filepath.SplitList(os.Getenv("LLGO_REUSE_TEST_GOROOTS"))
+	if len(roots) == 0 {
+		roots = []string{runtime.GOROOT()}
+	}
+	for _, goroot := range roots {
+		version, err := os.ReadFile(filepath.Join(goroot, "VERSION"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		goVersion := strings.Fields(string(version))[0]
+		t.Run(goVersion, func(t *testing.T) {
+			root := runtimeSourceTestRoot(t)
+			overlay, err := runtimeSourceOverlay(nil, root, goroot, goVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fset := token.NewFileSet()
+			var files []*ast.File
+			for path, data := range overlay {
+				if filepath.Dir(path) != filepath.Join(root, "internal", "runtime") {
+					continue
+				}
+				file, err := parser.ParseFile(fset, path, data, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				files = append(files, file)
+			}
+			config := types.Config{Importer: importer.Default()}
+			if _, err := config.Check("runtime", fset, files, nil); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
