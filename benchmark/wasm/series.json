@@ -1734,10 +1734,10 @@
       "label": "Branch cpunion/llgo:codex/windows-release-closeout-2325-20261019",
       "path": "series/branch/d8ca332757fac9cf/summary.json",
       "configPath": "series/branch/d8ca332757fac9cf/config.json",
-      "commitPath": "commits/1e6c3f1616b43df3f870f944249c9c40d070b2c3.json",
-      "sha": "1e6c3f1616b43df3f870f944249c9c40d070b2c3",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/1e6c3f1616b43df3f870f944249c9c40d070b2c3",
-      "updatedAt": "2026-10-19T14:40:14.205Z"
+      "commitPath": "commits/b0c99d85b344eb726c437beffd69f727a9d63504.json",
+      "sha": "b0c99d85b344eb726c437beffd69f727a9d63504",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b0c99d85b344eb726c437beffd69f727a9d63504",
+      "updatedAt": "2026-10-20T02:22:08.155Z"
     },
     {
       "kind": "branch",
@@ -5672,10 +5672,10 @@
       "label": "PR #2867",
       "path": "series/pull/2867/summary.json",
       "configPath": "series/pull/2867/config.json",
-      "commitPath": "commits/1e6c3f1616b43df3f870f944249c9c40d070b2c3.json",
-      "sha": "1e6c3f1616b43df3f870f944249c9c40d070b2c3",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/1e6c3f1616b43df3f870f944249c9c40d070b2c3",
-      "updatedAt": "2026-10-19T14:40:14.065Z"
+      "commitPath": "commits/b0c99d85b344eb726c437beffd69f727a9d63504.json",
+      "sha": "b0c99d85b344eb726c437beffd69f727a9d63504",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/b0c99d85b344eb726c437beffd69f727a9d63504",
+      "updatedAt": "2026-10-20T02:22:08.024Z"
     },
     {
       "kind": "pull",
