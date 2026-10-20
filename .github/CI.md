@@ -48,11 +48,11 @@ silently measuring a different commit.
 `xgo-dev` repository uses its qiniu runners; workflows running in forks use
 GitHub-hosted Ubuntu 24.04. Consume them with `fromJSON(...)`.
 
-Prepare and the independent CI policy check select their runner directly from
-the workflow repository owner: they cannot wait for prepare outputs. These are
-the only bootstrap exceptions to centralized runner selection, and the contract
-tests check that their labels match the policy. CI gates use `linux_runner`,
-with a hosted fallback if preparation fails before producing outputs. This
+Prepare, the independent CI policy check, and PR-close cancellation select their
+runner directly from the workflow repository owner: they cannot wait for prepare
+outputs. These are the only bootstrap exceptions to centralized runner selection,
+and the contract tests check that their labels match the policy. CI gates use
+`linux_runner`, with a hosted fallback if preparation fails before producing outputs. This
 keeps ordinary PR startup and completion jobs out of the hosted runner queue.
 
 The amd64 Mise/Pixi environment checks, release artifact verification, Linux
@@ -78,6 +78,20 @@ use a separate main group and also cancel superseded runs. Tags and other
 events use `github.run_id` to keep their runs independent. Workflow-level concurrency cannot consume
 prepare outputs; `test_ci_workflows.py` enforces the common expression instead.
 The reusable prepare workflow has no concurrency group of its own.
+
+Closing or merging a PR cancels its existing CI runs. The `PR closed` workflow
+handles `pull_request_target: closed` without checking out code or granting
+token permissions. Each call to `pr-ci-cancel.yml` enters the matching PR
+concurrency group, cancelling both running and pending work without touching
+other PRs or main. Its one-minute no-op uses qiniu upstream and hosted Ubuntu
+in forks. CI gates still report preparation failures, but use
+`always() && !cancelled()` so cancellation can stop them too.
+
+When adding or renaming a `pull_request` workflow, update the cancellation
+matrix in `pr-closed.yml`. Contract tests discover both `.yml` and `.yaml`
+files and traverse all jobs and local reusable workflows, so new jobs and
+matrices are checked automatically. This policy takes effect after merge to
+main; it does not prevent later manual reruns or handle close/reopen races.
 
 Every workflow that uses prepare has a uniquely named `CI gate (...)` job. It
 runs even if prepare fails and reports that failure. Branch protection should
