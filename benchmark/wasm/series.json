@@ -799,10 +799,10 @@
       "label": "Branch cpunion/llgo:codex/fix-variadic-forwarding-diagnostics-2855-20261019",
       "path": "series/branch/37710bb2bd979497/summary.json",
       "configPath": "series/branch/37710bb2bd979497/config.json",
-      "commitPath": "commits/f53ae1259dc08aaa04557b12312c8a313f3abca7.json",
-      "sha": "f53ae1259dc08aaa04557b12312c8a313f3abca7",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/f53ae1259dc08aaa04557b12312c8a313f3abca7",
-      "updatedAt": "2026-10-20T03:19:31.158Z"
+      "commitPath": "commits/fe17994d824c3621922e08818fcd2790485b437e.json",
+      "sha": "fe17994d824c3621922e08818fcd2790485b437e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/fe17994d824c3621922e08818fcd2790485b437e",
+      "updatedAt": "2026-10-20T07:47:17.277Z"
     },
     {
       "kind": "branch",
@@ -5650,10 +5650,10 @@
       "label": "PR #2864",
       "path": "series/pull/2864/summary.json",
       "configPath": "series/pull/2864/config.json",
-      "commitPath": "commits/f53ae1259dc08aaa04557b12312c8a313f3abca7.json",
-      "sha": "f53ae1259dc08aaa04557b12312c8a313f3abca7",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/f53ae1259dc08aaa04557b12312c8a313f3abca7",
-      "updatedAt": "2026-10-20T03:19:31.015Z"
+      "commitPath": "commits/fe17994d824c3621922e08818fcd2790485b437e.json",
+      "sha": "fe17994d824c3621922e08818fcd2790485b437e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/fe17994d824c3621922e08818fcd2790485b437e",
+      "updatedAt": "2026-10-20T07:47:17.130Z"
     },
     {
       "kind": "pull",
