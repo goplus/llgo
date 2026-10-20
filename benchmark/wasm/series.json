@@ -157,6 +157,17 @@
     },
     {
       "kind": "branch",
+      "id": "299cf2f33b7735bc",
+      "label": "Branch codex/runtime-aligned-storage-20261020",
+      "path": "series/branch/299cf2f33b7735bc/summary.json",
+      "configPath": "series/branch/299cf2f33b7735bc/config.json",
+      "commitPath": "commits/68288bcde3210c9fdb68f4d4662c719c0f222e37.json",
+      "sha": "68288bcde3210c9fdb68f4d4662c719c0f222e37",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/68288bcde3210c9fdb68f4d4662c719c0f222e37",
+      "updatedAt": "2026-10-20T19:55:48.993Z"
+    },
+    {
+      "kind": "branch",
       "id": "578011f5e0ca5690",
       "label": "Branch codex/runtime-attributes-20261008",
       "path": "series/branch/578011f5e0ca5690/summary.json",
@@ -5764,6 +5775,17 @@
       "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
       "updatedAt": "2026-10-20T17:54:22.779Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2893",
+      "label": "PR #2893",
+      "path": "series/pull/2893/summary.json",
+      "configPath": "series/pull/2893/config.json",
+      "commitPath": "commits/68288bcde3210c9fdb68f4d4662c719c0f222e37.json",
+      "sha": "68288bcde3210c9fdb68f4d4662c719c0f222e37",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/68288bcde3210c9fdb68f4d4662c719c0f222e37",
+      "updatedAt": "2026-10-20T19:55:48.862Z"
     }
   ]
 }
