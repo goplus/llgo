@@ -18,16 +18,19 @@ locations. Neither source tree is modified.
 | `newproc`, stack switching, TLS, GC metadata, write barriers | LLGo low-level runtime/backend | Full Go runtime and scheduler assembly remain gated |
 
 `internal/build/runtime_source.go` is the checked selection list. UTF-8
-imports, new declarations, and changed helper signatures fail explicitly.
+imports, compiler/build directives, new declarations, and changed helper
+signatures fail explicitly.
 The selected crash-output function's signature is checked; new dependencies
 must type-check against LLGo's remaining runtime. The normal type checker
 rejects duplicate definitions. This is an initial migration, not a complete
 runtime symbol-ownership or closure-ABI audit for #2165.
 
-The declarations in `runtime/internal/runtime/utf8*.go` and
+The declarations in `runtime/internal/runtime/utf8.go` and
 `runtime/internal/lib/runtime/crash_fd_go123.go` let `cmd/go` collect package
 metadata before LLGo applies its source view. They do not contain alternate
-algorithm implementations. Adding another reused subsystem requires an
+algorithm implementations. The `utf8_index*.go` files retain the LLGo-owned
+`decodeNonASCII` adapter; only their metadata-only `decoderune` declaration
+is removed by the overlay. Adding another reused subsystem requires an
 explicit selection, compatible boundary types, removal of its old bodies,
 and runtime tests.
 
@@ -51,7 +54,8 @@ gate therefore selects **keep bridges**. Ordinary-package Plan 9 translation
 and its ABI checks remain available; this decision introduces no vDSO loader
 or assembly allowlist.
 
-`TestGettimeofdayAndRawFallback` compares the libc path with a direct kernel
+`TestGettimeofdayAndRawFallback` covers Linux amd64 and arm64; the assembly
+candidate above is specific to amd64. It compares the libc path with a direct kernel
 time syscall and checks return/errno behavior, including a preceding failed
 syscall. This is an explicit raw-syscall reference, not forced execution of
 libc's internal fallback or proof that libc used vDSO. Native executable and

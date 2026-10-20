@@ -145,8 +145,11 @@ func checkRuntimeSourceFunction(fset *token.FileSet, fn *ast.FuncDecl, signature
 	if err := format.Node(&actual, fset, fn.Type); err != nil {
 		return err
 	}
+	// Parameter/result names are intentional: even cosmetic signature changes
+	// request review of the upstream helper before adopting the new source.
 	if signature == "" || fn.Recv != nil || fn.Body == nil || actual.String() != signature {
-		return fmt.Errorf("reuse GOROOT runtime: unreviewed helper %s %s (expected %q)", fn.Name.Name, actual.String(), signature)
+		return fmt.Errorf("reuse GOROOT runtime/%s: unreviewed helper %s %s (expected %q)",
+			filepath.Base(fset.Position(fn.Pos()).Filename), fn.Name.Name, actual.String(), signature)
 	}
 	return nil
 }
