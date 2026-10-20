@@ -3217,6 +3217,17 @@ func TestDoReportsAltPackageLocalityDirectiveError(t *testing.T) {
 	if err := os.MkdirAll(runtimePkgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// Keep the source-reuse entry points so this minimal runtime reaches the
+	// invalid locality directive below instead of failing source selection.
+	for _, name := range []string{"utf8.go", "utf8_index.go", "utf8_index_go127.go"} {
+		data, err := os.ReadFile(filepath.Join(env.LLGoRuntimeDir(), "internal", "runtime", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(runtimePkgDir, name), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := os.WriteFile(filepath.Join(runtimeDir, "go.mod"), []byte("module github.com/xgo-dev/llgo/runtime\n\ngo 1.24.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
