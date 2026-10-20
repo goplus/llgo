@@ -93,6 +93,18 @@ import _ "unsafe" // for go:linkname
 func Sqrt(x float64) float64
 ```
 
+Use the same `C.` prefix for external C variables:
+
+```go
+//go:linkname Optind C.optind
+var Optind int32
+```
+
+The prefix selects native storage and is removed from the linker symbol name.
+The native library supplies the storage and initializer; declare the Go binding
+without an initializer. Function-pointer variables use a native function pointer.
+`C.` is an LLGo extension to `go:linkname`, and also works with `llgo:link`.
+
 You can use this directly in your own code:
 
 <!-- embedme doc/_readme/llgo_call_c/call_c.go -->

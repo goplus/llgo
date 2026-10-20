@@ -156,37 +156,37 @@ const (
 	runtimeFuncInfoLineMask    = runtimeFuncInfoLineWrapper - 1
 )
 
-//go:linkname runtimeFuncInfoTable __llgo_funcinfo_table
+//go:linkname runtimeFuncInfoTable C.__llgo_funcinfo_table
 var runtimeFuncInfoTable *runtimeFuncInfoRecord
 
-//go:linkname runtimeFuncInfoStrings __llgo_funcinfo_strings
+//go:linkname runtimeFuncInfoStrings C.__llgo_funcinfo_strings
 var runtimeFuncInfoStrings *c.Char
 
-//go:linkname runtimeFuncInfoStringOffsets __llgo_funcinfo_string_offsets
+//go:linkname runtimeFuncInfoStringOffsets C.__llgo_funcinfo_string_offsets
 var runtimeFuncInfoStringOffsets *uint32
 
-//go:linkname runtimeFuncInfoStringCount __llgo_funcinfo_string_count
+//go:linkname runtimeFuncInfoStringCount C.__llgo_funcinfo_string_count
 var runtimeFuncInfoStringCount uintptr
 
-//go:linkname runtimeFuncInfoHash __llgo_funcinfo_hash
+//go:linkname runtimeFuncInfoHash C.__llgo_funcinfo_hash
 var runtimeFuncInfoHash *uint16
 
-//go:linkname runtimeFuncInfoCount __llgo_funcinfo_count
+//go:linkname runtimeFuncInfoCount C.__llgo_funcinfo_count
 var runtimeFuncInfoCount uintptr
 
-//go:linkname runtimeFuncInfoHashMask __llgo_funcinfo_hash_mask
+//go:linkname runtimeFuncInfoHashMask C.__llgo_funcinfo_hash_mask
 var runtimeFuncInfoHashMask uintptr
 
-//go:linkname runtimeFuncInfoSymbolIndex __llgo_funcinfo_symbol_index
+//go:linkname runtimeFuncInfoSymbolIndex C.__llgo_funcinfo_symbol_index
 var runtimeFuncInfoSymbolIndex *runtimeFuncInfoSymbolIndexRecord
 
-//go:linkname runtimeFuncInfoSymbolIndexCount __llgo_funcinfo_symbol_index_count
+//go:linkname runtimeFuncInfoSymbolIndexCount C.__llgo_funcinfo_symbol_index_count
 var runtimeFuncInfoSymbolIndexCount uintptr
 
-//go:linkname runtimeFuncInfoEntryStart __llgo_funcinfo_entry_start
+//go:linkname runtimeFuncInfoEntryStart C.__llgo_funcinfo_entry_start
 var runtimeFuncInfoEntryStart *runtimeFuncInfoEntryRecord
 
-//go:linkname runtimeFuncInfoEntryEnd __llgo_funcinfo_entry_end
+//go:linkname runtimeFuncInfoEntryEnd C.__llgo_funcinfo_entry_end
 var runtimeFuncInfoEntryEnd *runtimeFuncInfoEntryRecord
 
 type runtimePCLineRecord struct {
@@ -197,16 +197,16 @@ type runtimePCLineRecord struct {
 	line      uint32
 }
 
-//go:linkname runtimePCLineTable __llgo_pcline_table
+//go:linkname runtimePCLineTable C.__llgo_pcline_table
 var runtimePCLineTable *runtimePCLineRecord
 
-//go:linkname runtimePCLineCount __llgo_pcline_count
+//go:linkname runtimePCLineCount C.__llgo_pcline_count
 var runtimePCLineCount uintptr
 
-//go:linkname runtimePCSiteStart __llgo_pcsite_start
+//go:linkname runtimePCSiteStart C.__llgo_pcsite_start
 var runtimePCSiteStart *runtimePCSiteRecord
 
-//go:linkname runtimePCSiteEnd __llgo_pcsite_end
+//go:linkname runtimePCSiteEnd C.__llgo_pcsite_end
 var runtimePCSiteEnd *runtimePCSiteRecord
 
 type runtimePCLineFrame struct {
