@@ -45,6 +45,11 @@ escape these roots. Loopback CORS accepts only the extension identity generated
 for this session. Native GDB Remote options `-remote` and `-server`
 do not apply to browser sessions.
 
+Worker coordination enables a random loopback Chrome debugging port in the
+isolated profile. Chrome's CDP endpoint allows other local users/processes to
+control that browser; use it on a machine whose local users you trust.
+Disabling DevTools also disables this port and worker coordination.
+
 Embedded and external DWARF are both accepted. For external DWARF, keep the
 referenced `.debug.wasm` file within the module directory: its build ID must match the
 module. The sidecar is debugger data; it does not replace the JavaScript host
@@ -86,8 +91,8 @@ with synthetic stubs.
 
 ## Qualification
 
-`dev/test_wasm_browser_debug.py` records tool versions, artifact build IDs and
-deployment/symbol sizes. Use the repository's pinned Binaryen from
+`dev/test_wasm_browser_debug.py` records tool versions; its verbose Go tests
+record artifact build IDs and deployment/symbol sizes. Use the repository's pinned Binaryen from
 `.github/actions/setup-binaryen`; a stock binary with the same major version
 does not establish the patched DWARF contract.
 

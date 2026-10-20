@@ -1,3 +1,17 @@
+// Copyright (c) 2026 The XGo Authors (xgo.dev). All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package browser
 
 import (
@@ -5,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,6 +30,13 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+)
+
+const (
+	cdpRequestTimeout    = 10 * time.Second
+	chromeStartupTimeout = 20 * time.Second
+	chromeStartupPoll    = 50 * time.Millisecond
+	cdpEventCapacity     = 256
 )
 
 type workerSnapshot struct {
@@ -72,12 +94,24 @@ func (s *Session) checkedWorkerState(ctx context.Context) workerSnapshot {
 	}
 	// Drain transport notifications before accepting a shared-memory snapshot.
 	// These commands do not execute guest code and also work on paused targets.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	results := make(chan error, len(state.sessions))
 	for _, session := range state.sessions {
-		if err := client.call(ctx, session, "Runtime.getIsolateId", map[string]any{}, nil); err != nil {
+		go func(session string) {
+			results <- client.call(ctx, session, "Runtime.getIsolateId", map[string]any{}, nil)
+		}(session)
+	}
+	for range state.sessions {
+		if err := <-results; err != nil {
 			state.Paused = false
 			return state
 		}
 	}
+	// The reader increments received before queuing each lifecycle/debugger
+	// event; the actor publishes its snapshot before updating applied. Read
+	// received first, so an actor catching up cannot hide an unapplied event.
+	// A gap, or another event arriving during this check, invalidates the read.
 	received, applied := client.received.Load(), control.applied.Load()
 	current := s.WorkerState()
 	if state.StopID != current.StopID || received != applied || client.received.Load() != received {
@@ -100,6 +134,19 @@ type cdpError struct {
 	Message string `json:"message"`
 }
 
+type cdpAttachment struct {
+	SessionID          string `json:"sessionId"`
+	WaitingForDebugger bool   `json:"waitingForDebugger"`
+	Target             struct {
+		ID   string `json:"targetId"`
+		Type string `json:"type"`
+	} `json:"targetInfo"`
+}
+
+type cdpDetachment struct {
+	SessionID string `json:"sessionId"`
+}
+
 type cdpPending struct {
 	session string
 	reply   chan cdpMessage
@@ -117,16 +164,22 @@ type cdpClient struct {
 }
 
 func newCDPClient(ctx context.Context, endpoint string) (*cdpClient, error) {
-	dial, cancel := context.WithTimeout(ctx, 10*time.Second)
+	dial, cancel := context.WithTimeout(ctx, cdpRequestTimeout)
 	defer cancel()
 	conn, _, err := websocket.Dial(dial, endpoint, nil)
 	if err != nil {
-		return nil, err
+		// net/http includes the full CDP discovery token in URL errors.
+		// Retain the underlying connection failure without publishing that URL.
+		var requestError *url.Error
+		if errors.As(err, &requestError) {
+			err = requestError.Err
+		}
+		return nil, fmt.Errorf("connect to Chromium debugger: %w", err)
 	}
 	conn.SetReadLimit(8 << 20)
 	client := &cdpClient{
 		conn: conn, pending: make(map[uint64]cdpPending),
-		events: make(chan cdpMessage, 256), done: make(chan struct{}),
+		events: make(chan cdpMessage, cdpEventCapacity), done: make(chan struct{}),
 	}
 	go func() {
 		defer close(client.done)
@@ -149,9 +202,7 @@ func newCDPClient(ctx context.Context, endpoint string) (*cdpClient, error) {
 			switch message.Method {
 			case "Target.attachedToTarget", "Target.detachedFromTarget", "Debugger.paused", "Debugger.resumed":
 				if message.Method == "Target.detachedFromTarget" {
-					var detached struct {
-						SessionID string `json:"sessionId"`
-					}
+					var detached cdpDetachment
 					if json.Unmarshal(message.Params, &detached) == nil && detached.SessionID != "" {
 						// Chrome need not reply to requests outstanding when
 						// a worker exits. Unblock the actor before it consumes
@@ -170,6 +221,10 @@ func newCDPClient(ctx context.Context, endpoint string) (*cdpClient, error) {
 				select {
 				case client.events <- message:
 				default:
+					// Never block this reader: the actor may be waiting for
+					// a reply behind these events on the same connection.
+					// Fail closed rather than lose a resume or accept stale
+					// shared-memory data after unbounded worker churn.
 					client.err = errors.New("browser worker event queue overflow")
 					return
 				}
@@ -180,7 +235,7 @@ func newCDPClient(ctx context.Context, endpoint string) (*cdpClient, error) {
 }
 
 func (c *cdpClient) call(ctx context.Context, session, method string, params any, result any) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, cdpRequestTimeout)
 	defer cancel()
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -221,7 +276,7 @@ func (c *cdpClient) call(ctx context.Context, session, method string, params any
 // evaluation cannot finish until the user resumes the now-paused target.
 // Give this debugger-generated frame a recognizable source name in DevTools.
 func (c *cdpClient) wake(ctx context.Context, session string) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, cdpRequestTimeout)
 	defer cancel()
 	c.mu.Lock()
 	c.next++
@@ -234,16 +289,16 @@ func (c *cdpClient) wake(ctx context.Context, session string) error {
 }
 
 func chromeEndpoint(ctx context.Context, profile string) (string, error) {
-	ticker := time.NewTicker(50 * time.Millisecond)
+	ticker := time.NewTicker(chromeStartupPoll)
 	defer ticker.Stop()
 	for {
 		data, err := os.ReadFile(filepath.Join(profile, "DevToolsActivePort"))
 		if err == nil {
-			lines := strings.Fields(string(data))
-			if len(lines) == 2 {
-				port, err := strconv.Atoi(lines[0])
-				if err == nil && port > 0 && port <= 65535 && strings.HasPrefix(lines[1], "/devtools/browser/") {
-					return fmt.Sprintf("ws://127.0.0.1:%d%s", port, lines[1]), nil
+			fields := strings.Fields(string(data))
+			if len(fields) == 2 {
+				port, err := strconv.Atoi(fields[0])
+				if err == nil && port > 0 && port <= 65535 && strings.HasPrefix(fields[1], "/devtools/browser/") {
+					return fmt.Sprintf("ws://127.0.0.1:%d%s", port, fields[1]), nil
 				}
 			}
 		}
@@ -372,7 +427,7 @@ func (g *workerGroup) pauseRunning() []cdpMessage {
 }
 
 func (control *workerControl) run(ctx context.Context, profile, pageURL string) error {
-	startup, cancel := context.WithTimeout(ctx, 20*time.Second)
+	startup, cancel := context.WithTimeout(ctx, chromeStartupTimeout)
 	defer cancel()
 	endpoint, err := chromeEndpoint(startup, profile)
 	if err != nil {
@@ -406,7 +461,7 @@ func (control *workerControl) run(ctx context.Context, profile, pageURL string) 
 			select {
 			case <-startup.Done():
 				return errors.New("LLGo browser page did not appear")
-			case <-time.After(50 * time.Millisecond):
+			case <-time.After(chromeStartupPoll):
 			}
 		}
 	}
@@ -425,38 +480,12 @@ func (control *workerControl) run(ctx context.Context, profile, pageURL string) 
 			var commands []cdpMessage
 			switch event.Method {
 			case "Target.attachedToTarget":
-				var attached struct {
-					SessionID          string `json:"sessionId"`
-					WaitingForDebugger bool   `json:"waitingForDebugger"`
-					Target             struct {
-						ID   string `json:"targetId"`
-						Type string `json:"type"`
-					} `json:"targetInfo"`
-				}
-				if err := json.Unmarshal(event.Params, &attached); err != nil {
+				commands, err = control.attachTarget(ctx, client, &group, pageID, event)
+				if err != nil {
 					return err
 				}
-				if attached.Target.ID != pageID && (group.targets[session] == nil || attached.Target.Type != "worker") {
-					control.applied.Store(event.sequence)
-					continue
-				}
-				session = attached.SessionID
-				commands = group.attach(session, attached.WaitingForDebugger)
-				control.state.Store(ptrWorkerSnapshot(group.snapshot()))
-				if err := initializeWorkerTarget(ctx, client, session); err != nil {
-					if closedCDPTarget(err) {
-						group.event("Target.detachedFromTarget", session)
-						control.state.Store(ptrWorkerSnapshot(group.snapshot()))
-						control.applied.Store(event.sequence)
-						continue
-					}
-					return err
-				}
-				group.ready = true
 			case "Target.detachedFromTarget":
-				var detached struct {
-					SessionID string `json:"sessionId"`
-				}
+				var detached cdpDetachment
 				if err := json.Unmarshal(event.Params, &detached); err != nil {
 					return err
 				}
@@ -477,24 +506,58 @@ func (control *workerControl) run(ctx context.Context, profile, pageURL string) 
 				commands = group.event(event.Method, session)
 			}
 			control.state.Store(ptrWorkerSnapshot(group.snapshot()))
-			for _, command := range commands {
-				if err := client.call(ctx, command.SessionID, command.Method, map[string]any{}, nil); err != nil {
-					if closedCDPTarget(err) {
-						group.event("Target.detachedFromTarget", command.SessionID)
-						control.state.Store(ptrWorkerSnapshot(group.snapshot()))
-						continue
-					}
-					return err
-				}
-				if command.Method == "Debugger.pause" {
-					if err := client.wake(ctx, command.SessionID); err != nil {
-						return err
-					}
-				}
+			if err := control.executeCommands(ctx, client, &group, commands); err != nil {
+				return err
 			}
 			control.applied.Store(event.sequence)
 		}
 	}
+}
+
+func (control *workerControl) attachTarget(ctx context.Context, client *cdpClient, group *workerGroup, pageID string, event cdpMessage) ([]cdpMessage, error) {
+	var attached cdpAttachment
+	if err := json.Unmarshal(event.Params, &attached); err != nil {
+		return nil, err
+	}
+	parentSession := event.SessionID
+	if attached.Target.ID != pageID && (group.targets[parentSession] == nil || attached.Target.Type != "worker") {
+		return nil, nil
+	}
+	session := attached.SessionID
+	commands := group.attach(session, attached.WaitingForDebugger)
+	control.state.Store(ptrWorkerSnapshot(group.snapshot()))
+	if err := initializeWorkerTarget(ctx, client, session); err != nil {
+		if closedCDPTarget(err) {
+			return append(commands, group.event("Target.detachedFromTarget", session)...), nil
+		}
+		return nil, err
+	}
+	group.ready = true
+	return commands, nil
+}
+
+func (control *workerControl) executeCommands(ctx context.Context, client *cdpClient, group *workerGroup, commands []cdpMessage) error {
+	for len(commands) != 0 {
+		command := commands[0]
+		commands = commands[1:]
+		if group.targets[command.SessionID] == nil {
+			continue // A preceding request observed this target's exit.
+		}
+		if err := client.call(ctx, command.SessionID, command.Method, map[string]any{}, nil); err != nil {
+			if closedCDPTarget(err) {
+				commands = append(commands, group.event("Target.detachedFromTarget", command.SessionID)...)
+				control.state.Store(ptrWorkerSnapshot(group.snapshot()))
+				continue
+			}
+			return err
+		}
+		if command.Method == "Debugger.pause" {
+			if err := client.wake(ctx, command.SessionID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func ptrWorkerSnapshot(state workerSnapshot) *workerSnapshot { return &state }

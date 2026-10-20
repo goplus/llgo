@@ -15,7 +15,7 @@ DWARF. The test attaches to every worker and installs the source breakpoint in
 each Wasm instance. The product coordinator pauses the page and all workers;
 the test does not issue those auxiliary pause/resume commands. It verifies
 stable stop IDs, worker creation and termination while stopped, local values,
-and execution through a step, a second breakpoint and program completion.
+and execution through a step, a second hit of the source breakpoint and program completion.
 New workers remain at Chrome's startup barrier during a stop; acceptance
 checks that they cannot update shared memory until the group resumes.
 
