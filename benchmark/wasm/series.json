@@ -447,10 +447,10 @@
       "label": "Branch cpunion/llgo:codex/dependabot-ci-cleanup",
       "path": "series/branch/bfe22ecee34c0514/summary.json",
       "configPath": "series/branch/bfe22ecee34c0514/config.json",
-      "commitPath": "commits/75991183efdc9c929844c81f5ce4a09aa35b75e5.json",
-      "sha": "75991183efdc9c929844c81f5ce4a09aa35b75e5",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/75991183efdc9c929844c81f5ce4a09aa35b75e5",
-      "updatedAt": "2026-10-17T09:55:30.291Z"
+      "commitPath": "commits/8f54f739da66bef16d3a6195c3601502359400f2.json",
+      "sha": "8f54f739da66bef16d3a6195c3601502359400f2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f54f739da66bef16d3a6195c3601502359400f2",
+      "updatedAt": "2026-10-20T03:32:49.337Z"
     },
     {
       "kind": "branch",
@@ -5221,10 +5221,10 @@
       "label": "PR #2800",
       "path": "series/pull/2800/summary.json",
       "configPath": "series/pull/2800/config.json",
-      "commitPath": "commits/75991183efdc9c929844c81f5ce4a09aa35b75e5.json",
-      "sha": "75991183efdc9c929844c81f5ce4a09aa35b75e5",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/75991183efdc9c929844c81f5ce4a09aa35b75e5",
-      "updatedAt": "2026-10-17T09:55:30.142Z"
+      "commitPath": "commits/8f54f739da66bef16d3a6195c3601502359400f2.json",
+      "sha": "8f54f739da66bef16d3a6195c3601502359400f2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8f54f739da66bef16d3a6195c3601502359400f2",
+      "updatedAt": "2026-10-20T03:32:49.269Z"
     },
     {
       "kind": "pull",
