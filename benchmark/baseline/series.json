@@ -47,6 +47,17 @@
     },
     {
       "kind": "branch",
+      "id": "aa324641a3827928",
+      "label": "Branch MeteorsLiu/llgo:codex/fix-native-struct-metadata",
+      "path": "series/branch/aa324641a3827928/summary.json",
+      "configPath": "series/branch/aa324641a3827928/config.json",
+      "commitPath": "commits/f8bd5d68928cf0f0036d7097118c2058c9e0489d.json",
+      "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "updatedAt": "2026-10-20T15:40:35.501Z"
+    },
+    {
+      "kind": "branch",
       "id": "659461d832b1c5b0",
       "label": "Branch MeteorsLiu/llgo:codex/fix-struct-ptrbytes",
       "path": "series/branch/659461d832b1c5b0/summary.json",
@@ -9735,6 +9746,17 @@
       "sha": "11d6a421c5bea1219e7843674e05dbd995b5d5dc",
       "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/11d6a421c5bea1219e7843674e05dbd995b5d5dc",
       "updatedAt": "2026-10-20T12:44:17.730Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2890",
+      "label": "PR #2890",
+      "path": "series/pull/2890/summary.json",
+      "configPath": "series/pull/2890/config.json",
+      "commitPath": "commits/f8bd5d68928cf0f0036d7097118c2058c9e0489d.json",
+      "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "updatedAt": "2026-10-20T15:40:32.903Z"
     }
   ]
 }
