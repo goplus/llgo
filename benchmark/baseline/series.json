@@ -282,10 +282,10 @@
       "label": "Branch codex/simd-c-interop-20261017",
       "path": "series/branch/c2da2f58a51b41d0/summary.json",
       "configPath": "series/branch/c2da2f58a51b41d0/config.json",
-      "commitPath": "commits/4ba3ce666d86acc46260c76315d663cdfa7d7d6d.json",
-      "sha": "4ba3ce666d86acc46260c76315d663cdfa7d7d6d",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/4ba3ce666d86acc46260c76315d663cdfa7d7d6d",
-      "updatedAt": "2026-10-19T14:45:03.161Z"
+      "commitPath": "commits/1985b25cbff567b81a8dde82b1b48b062f3a4f16.json",
+      "sha": "1985b25cbff567b81a8dde82b1b48b062f3a4f16",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1985b25cbff567b81a8dde82b1b48b062f3a4f16",
+      "updatedAt": "2026-10-20T18:08:28.352Z"
     },
     {
       "kind": "branch",
@@ -9467,10 +9467,10 @@
       "label": "PR #2841",
       "path": "series/pull/2841/summary.json",
       "configPath": "series/pull/2841/config.json",
-      "commitPath": "commits/4ba3ce666d86acc46260c76315d663cdfa7d7d6d.json",
-      "sha": "4ba3ce666d86acc46260c76315d663cdfa7d7d6d",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/4ba3ce666d86acc46260c76315d663cdfa7d7d6d",
-      "updatedAt": "2026-10-19T14:45:00.545Z"
+      "commitPath": "commits/1985b25cbff567b81a8dde82b1b48b062f3a4f16.json",
+      "sha": "1985b25cbff567b81a8dde82b1b48b062f3a4f16",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1985b25cbff567b81a8dde82b1b48b062f3a4f16",
+      "updatedAt": "2026-10-20T18:08:24.604Z"
     },
     {
       "kind": "pull",
