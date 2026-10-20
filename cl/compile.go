@@ -416,7 +416,7 @@ func (p *context) compileMethodsIf(pkg llssa.Package, typ types.Type, keep func(
 
 // Global variable.
 func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) error {
-	typ := p.patchType(gbl.Type())
+	typ := p.nativeVariableType(gbl)
 	name, vtype, define := p.varName(gbl.Pkg.Pkg, gbl)
 	if vtype == pyVar {
 		return nil
@@ -612,6 +612,15 @@ func hasInstantiatedRecv(recv *types.Var) bool {
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
+	declaration := f
+	if origin := f.Origin(); origin != nil {
+		declaration = origin
+	}
+	if declaration.Pkg != nil && p.prog.LinknameDirective(funcName(declaration.Pkg.Pkg, declaration, declaration != f)) == "llgo:link" {
+		// A llgo:link body exists only for Go type checking. It must never
+		// become a definition, including when its target uses the Go ABI.
+		return nil, nil, ignoredFunc
+	}
 	simd, simdDecl := lookupSIMD(f, p.prog.Target().GOARCH)
 	simdDecl = simdDecl && f.Pkg == p.goPkg
 	if simdDecl {
@@ -633,6 +642,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}()
 		return p.patchType(f.Signature).(*types.Signature)
 	}()
+	if _, native := p.prog.NativeExport(name); native {
+		if sig.Variadic() || sig.Results().Len() > 1 {
+			panic(fmt.Errorf("native export %s has an unsupported signature", name))
+		}
+		pkg.SetNativeExportSignature(name, sig)
+	}
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
@@ -3026,6 +3041,16 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 	}
 	if err = ctx.validateCVariadicWrapperUses(); err != nil {
 		return nil, nil, err
+	}
+	if !options.CExportWrappers {
+		for goName, nativeName := range ret.ExportFuncs() {
+			if export, ok := prog.NativeExport(goName); ok {
+				implementation := ret.FuncOf(goName)
+				if implementation != nil && implementation.HasBody() {
+					ret.DefineNativeExport(goName, nativeName, ret.NativeExportSignature(goName), export.CallConv, nil)
+				}
+			}
+		}
 	}
 	ret.MaterializePreserveSyms()
 	if metaCollect {
