@@ -201,28 +201,26 @@ jobs:
     needs: prepare
     runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     timeout-minutes: 240
+    outputs:
+      sdk-sha256: ${{ steps.build-x86.outputs.sdk-sha256 }}
+      esp-sha256: ${{ steps.build-x86.outputs.esp-sha256 }}
     steps:
       - uses: actions/checkout@v7
-      - name: Restore pinned Windows x86 toolchains
-        id: x86-cache
-        uses: actions/cache/restore@v6
+      # Cache only a download with an independent SHA-256 pin. Source-built
+      # archives are produced afresh; their sidecars are not trust anchors.
+      - name: Cache pinned Windows x86 bootstrap download
+        uses: actions/cache@v6
         with:
-          path: .windows-x86-toolchains
-          key: llgo-windows-x86-toolchains-v1-${{ hashFiles('.github/windows/build-x86-toolchains.sh') }}
+          path: .windows-x86-downloads
+          key: llgo-windows-x86-bootstrap-v1-534b92e067b22a6b4441f48ae9240a3341b17825d04d577eab0cf85c44b4deda
       - name: Build native x86 SDK and ESP tools
-        if: steps.x86-cache.outputs.cache-hit != 'true'
+        id: build-x86
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build ccache
           .github/windows/build-x86-toolchains.sh
-      - name: Verify cached or built archives
+      - name: Verify source-built archives
         run: cd .windows-x86-toolchains && sha256sum -c ./*.sha256
-      - name: Save source-built x86 toolchains
-        if: steps.x86-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: .windows-x86-toolchains
-          key: llgo-windows-x86-toolchains-v1-${{ hashFiles('.github/windows/build-x86-toolchains.sh') }}
       - uses: actions/upload-artifact@v7
         with:
           name: windows-x86-native-toolchains
@@ -234,21 +232,21 @@ jobs:
 
   build-windows-compiler:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, build, build-windows-x86-toolchains]
+    needs: [prepare, build]
+    env:
+      LLGO_X86_SDK_SHA256: ''
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        goarch: [amd64, arm64, '386']
+        goarch: [amd64, arm64]
         include:
-          - goarch: '386'
-            os: windows-2022
           - goarch: amd64
             os: windows-2022
           - goarch: arm64
             os: windows-11-arm
     runs-on: ${{ matrix.os }}
-    steps:
+    steps: &windows-compiler-steps
       - uses: actions/checkout@v7
       - name: Install build dependencies
         uses: ./.github/actions/setup-deps
@@ -295,6 +293,7 @@ jobs:
           ./.github/windows/build-compiler.ps1
           -GoArch '${{ matrix.goarch }}'
           -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
+          -X86SDKChecksum '${{ env.LLGO_X86_SDK_SHA256 }}'
           -OutputDirectory '${{ runner.temp }}/llgo-windows-compiler'
       - name: Upload shared host compiler
         uses: actions/upload-artifact@v7
@@ -306,26 +305,43 @@ jobs:
           compression-level: 0
           retention-days: 3
 
+  # Keep x86's source-build dependency off the amd64/arm64 critical path.
+  # Shared step aliases keep validation and packaging identical across hosts.
+  build-windows-compiler-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build, build-windows-x86-toolchains]
+    env:
+      LLGO_X86_SDK_SHA256: ${{ needs.build-windows-x86-toolchains.outputs.sdk-sha256 }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-compiler-steps
+
   build-windows:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, build, build-windows-compiler, build-windows-x86-toolchains]
+    needs: [prepare, build, build-windows-compiler]
+    env:
+      LLGO_X86_ESP_SHA256: ''
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         abi: [msvc, mingw]
-        goarch: [amd64, arm64, '386']
+        goarch: [amd64, arm64]
         include:
-          - goarch: '386'
-            os: windows-2022
           - goarch: amd64
             os: windows-2022
           - goarch: arm64
             os: windows-11-arm
     runs-on: ${{ matrix.os }}
-    steps:
+    steps: &windows-package-steps
       - uses: actions/checkout@v7
       - name: Cache ESP release archive
+        if: matrix.goarch != '386'
         uses: actions/cache@v6
         with:
           path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
@@ -357,6 +373,7 @@ jobs:
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
           -HostCompilerDirectory '${{ runner.temp }}/llgo-windows-compiler'
           -X86ToolchainDirectory '${{ github.workspace }}/.windows-x86-toolchains'
+          -X86ESPChecksum '${{ env.LLGO_X86_ESP_SHA256 }}'
       - name: Upload Windows archive
         uses: actions/upload-artifact@v7
         with:
@@ -369,6 +386,21 @@ jobs:
           include-hidden-files: true
           compression-level: 0
 
+  build-windows-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build, build-windows-compiler-x86, build-windows-x86-toolchains]
+    env:
+      LLGO_X86_ESP_SHA256: ${{ needs.build-windows-x86-toolchains.outputs.esp-sha256 }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-package-steps
+
   test-windows-artifacts:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build-windows]
@@ -377,16 +409,14 @@ jobs:
       fail-fast: false
       matrix:
         abi: [msvc, mingw]
-        goarch: [amd64, arm64, '386']
+        goarch: [amd64, arm64]
         include:
-          - goarch: '386'
-            os: windows-2022
           - goarch: amd64
             os: windows-2022
           - goarch: arm64
             os: windows-11-arm
     runs-on: ${{ matrix.os }}
-    steps:
+    steps: &windows-test-steps
       - uses: actions/checkout@v7
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -456,9 +486,22 @@ jobs:
           ./.github/windows/test-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
 
+  test-windows-artifacts-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build-windows-x86]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-test-steps
+
   prepare-winget:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, test-windows-artifacts]
+    needs: [prepare, test-windows-artifacts, test-windows-artifacts-x86]
     runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner) }}
     steps:
       - uses: actions/checkout@v7
@@ -624,7 +667,7 @@ jobs:
     permissions:
       contents: write
       packages: write
-    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, test-linux-distributions, populate-linux-sysroot]
+    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, test-windows-artifacts-x86, test-linux-distributions, populate-linux-sysroot]
     runs-on: ubuntu-latest
     if: needs.prepare.outputs.run_code_ci == 'true' && (startsWith(github.ref, 'refs/tags/'))
     steps:

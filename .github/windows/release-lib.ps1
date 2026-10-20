@@ -233,13 +233,16 @@ function Assert-ReleaseCompilerArtifact {
 }
 
 function Expand-ReleaseLocalXz {
-  param([string]$Archive, [string]$Destination)
+  param([string]$Archive, [string]$SHA256, [string]$Destination)
+  # This expected hash comes from the producing job, outside its artifact.
+  if ($SHA256 -notmatch '^[0-9a-f]{64}$') { throw 'Invalid source-built release SHA-256' }
   $file = Get-Item -LiteralPath $Archive
   $line = (Get-Content -Raw -LiteralPath ($file.FullName + '.sha256')).Trim()
   if ($line -notmatch '^([0-9a-f]{64})  ([^\r\n]+)$' -or $Matches[2] -ne $file.Name) {
     throw "Invalid local release archive checksum: $Archive"
   }
-  $checksum = $Matches[1]
+  $checksum = $SHA256
+  if ($Matches[1] -ne $checksum) { throw "Local release archive checksum mismatch: $Archive" }
   if ((Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant() -ne $checksum) {
     throw "Local release archive checksum mismatch: $Archive"
   }

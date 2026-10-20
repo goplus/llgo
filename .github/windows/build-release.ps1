@@ -4,7 +4,8 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
   [Parameter(Mandatory = $true)][string]$HostCompilerDirectory,
-  [string]$X86ToolchainDirectory
+  [string]$X86ToolchainDirectory,
+  [string]$X86ESPChecksum
 )
 
 $ErrorActionPreference = 'Stop'
@@ -42,14 +43,14 @@ $espChecksums = @{
 }
 $espChecksum = if ($GoArch -eq '386') {
   $sourceArchive = Join-Path $X86ToolchainDirectory "clang-esp-$espVersion-$espTarget.tar.xz"
-  (Get-FileHash -Algorithm SHA256 $sourceArchive).Hash.ToLowerInvariant()
+  $X86ESPChecksum
 } else { $espChecksums[$GoArch] }
 if (-not $espChecksum) { throw "Missing pinned ESP Clang checksum for windows/$GoArch" }
 $espAsset = "clang-esp-$espVersion-$espTarget.tar.xz"
 $espParent = Join-Path $env:RUNNER_TEMP ('llgo-release-esp-' + [Guid]::NewGuid())
 try {
   if ($GoArch -eq '386') {
-    Expand-ReleaseLocalXz -Archive $sourceArchive -Destination $espParent
+    Expand-ReleaseLocalXz -Archive $sourceArchive -SHA256 $espChecksum -Destination $espParent
   } else {
     Expand-ReleaseXz `
       -URL "https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/$espVersion/$espAsset" `

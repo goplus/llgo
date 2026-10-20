@@ -49,8 +49,8 @@ try {
   } finally {
     Pop-Location
   }
-  # The per-run x86 artifact has the same integrity boundary as a pinned
-  # download. Inspect its bytes and filename before delegating extraction.
+  # Bind the per-run x86 artifact to the producer's independent job output.
+  # Replacing both bytes and their in-artifact sidecar must still fail.
   $localArchive = Join-Path $temporary 'sdk.tar.xz'
   [IO.File]::WriteAllText($localArchive, 'local source-built archive')
   $localHash = (Get-FileHash -Algorithm SHA256 $localArchive).Hash.ToLowerInvariant()
@@ -60,17 +60,22 @@ try {
     param([string]$URL, [string]$SHA256, [string]$CacheDirectory, [string]$Destination)
     $script:localExtraction = @{ URL = $URL; Hash = $SHA256; Destination = $Destination }
   }
-  Expand-ReleaseLocalXz -Archive $localArchive -Destination (Join-Path $temporary 'extracted')
+  Expand-ReleaseLocalXz -Archive $localArchive -SHA256 $localHash -Destination (Join-Path $temporary 'extracted')
   if ($script:localExtraction.Hash -ne $localHash -or -not ([Uri]$script:localExtraction.URL).IsFile) {
     throw 'Local x86 extraction did not preserve the hash/file boundary'
   }
   [IO.File]::WriteAllText($localArchive, 'corrupted archive')
   $rejected = $false
-  try { Expand-ReleaseLocalXz -Archive $localArchive -Destination 'unused' } catch { $rejected = $true }
+  try { Expand-ReleaseLocalXz -Archive $localArchive -SHA256 $localHash -Destination 'unused' } catch { $rejected = $true }
   if (-not $rejected) { throw 'A corrupted source-built x86 archive was accepted' }
+  $tamperedHash = (Get-FileHash -Algorithm SHA256 $localArchive).Hash.ToLowerInvariant()
+  "$tamperedHash  sdk.tar.xz" | Set-Content -Encoding ascii ($localArchive + '.sha256')
+  $rejected = $false
+  try { Expand-ReleaseLocalXz -Archive $localArchive -SHA256 $localHash -Destination 'unused' } catch { $rejected = $true }
+  if (-not $rejected) { throw 'Replacing both an x86 archive and its sidecar bypassed the producer hash' }
   "$localHash  other-name.tar.xz" | Set-Content -Encoding ascii ($localArchive + '.sha256')
   $rejected = $false
-  try { Expand-ReleaseLocalXz -Archive $localArchive -Destination 'unused' } catch { $rejected = $true }
+  try { Expand-ReleaseLocalXz -Archive $localArchive -SHA256 $localHash -Destination 'unused' } catch { $rejected = $true }
   if (-not $rejected) { throw 'A source-built archive with a mismatched checksum filename was accepted' }
   # A shared compiler is bound to one source/version/architecture. Reject
   # stale or modified artifacts before either ABI archive can copy its bytes.

@@ -648,11 +648,11 @@ function Install-LLGo {
     throw 'LLGO_UPDATE_PATH must be 0 or 1'
   }
 
-  New-Item -ItemType Directory -Force $root | Out-Null
-  $dependencyPaths = @()
   if ($installDependencies -eq '1' -and $architecture -eq '386') {
     throw 'Automatic x86 development dependency installation is unavailable; configure a native i686 toolchain and use LLGO_INSTALL_DEPS=0'
   }
+  New-Item -ItemType Directory -Force $root | Out-Null
+  $dependencyPaths = @()
   if ($installDependencies -eq '1') {
     $dependencyPaths = @(Install-LLGoWindowsDependencies `
       -Root $root `

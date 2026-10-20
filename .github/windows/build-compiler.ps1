@@ -2,6 +2,7 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('amd64', 'arm64', '386')][string]$GoArch,
   [string]$X86ToolchainDirectory,
+  [string]$X86SDKChecksum,
   [Parameter(Mandatory = $true)][string]$OutputDirectory
 )
 
@@ -48,7 +49,7 @@ if ($GoArch -eq '386') {
   if (-not $X86ToolchainDirectory) { throw 'The Windows x86 SDK/ESP artifact is required' }
   $parent = Join-Path $env:RUNNER_TEMP 'llgo-release-x86-sdk'
   if (Test-Path $parent) { Remove-Item -Recurse -Force $parent }
-  Expand-ReleaseLocalXz -Archive (Join-Path $X86ToolchainDirectory 'llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz') -Destination $parent
+  Expand-ReleaseLocalXz -Archive (Join-Path $X86ToolchainDirectory 'llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz') -SHA256 $X86SDKChecksum -Destination $parent
   $llvmRoot = Join-Path $parent 'llvm-sdk'
   $manifest = Get-Content (Join-Path $llvmRoot 'LLGO-LLVM-MANIFEST.txt')
   if ($manifest -notcontains 'host_target=i686-w64-mingw32' -or $manifest -notcontains 'llvm_version=22.1.8' -or

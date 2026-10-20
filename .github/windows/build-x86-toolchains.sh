@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Pinned source producer; release correctness uses the per-run artifact.
+# Pinned source producer; only the checksum-pinned bootstrap is cached.
+# See X86_TOOLCHAINS.md for the source and artifact trust boundaries.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source_root="${RUNNER_TEMP:?}/llgo-x86-toolchains"
@@ -14,11 +15,16 @@ fi
 source "$source_root/toolchain.env"
 archive="llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64.tar.xz"
 bootstrap="$RUNNER_TEMP/llgo-x86-bootstrap"
-curl --fail -L --retry 5 --retry-all-errors -o "$RUNNER_TEMP/$archive" \
-    "https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/$archive"
-printf '%s  %s\n' "$LLVM_MINGW_LINUX_X86_64_SHA256" "$RUNNER_TEMP/$archive" | sha256sum -c -
+downloads="$root/.windows-x86-downloads"
+mkdir -p "$downloads"
+if [[ ! -f "$downloads/$archive" ]]; then
+    curl --fail -L --retry 5 --retry-all-errors -o "$downloads/$archive" \
+        "https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/$archive"
+fi
+# Restored download bytes must match the source-pinned checksum on every use.
+printf '%s  %s\n' "$LLVM_MINGW_LINUX_X86_64_SHA256" "$downloads/$archive" | sha256sum -c -
 mkdir -p "$bootstrap"
-tar -xf "$RUNNER_TEMP/$archive" --strip-components=1 -C "$bootstrap"
+tar -xf "$downloads/$archive" --strip-components=1 -C "$bootstrap"
 export PATH="$bootstrap/bin:$PATH"
 export LLVM_SDK_JOBS=2
 "$source_root/scripts/build_windows_sdk.sh"
@@ -29,14 +35,25 @@ cp "$source_root/dist/"*.tar.xz "$source_root/dist/"*.sha256 "$root/.windows-x86
 # Verify the bytes, then make that sidecar portable across cache/runner paths.
 python3 - "$root/.windows-x86-toolchains" <<'PYTHON'
 import hashlib
+import os
 from pathlib import Path
 import sys
 for archive in Path(sys.argv[1]).glob('*.tar.xz'):
     sidecar = archive.with_suffix(archive.suffix + '.sha256')
     expected, filename = sidecar.read_text().strip().split(maxsplit=1)
-    actual = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+    with archive.open('rb') as source:
+        digest = hashlib.sha256()
+        for chunk in iter(lambda: source.read(1024 * 1024), b''):
+            digest.update(chunk)
+    actual = digest.hexdigest()
     if actual != expected or Path(filename).name != archive.name:
         raise SystemExit(f'Invalid source-built archive checksum: {archive}')
     sidecar.write_text(f'{expected}  {archive.name}\n')
+    # Carry the expected hash outside the downloaded artifact. Consumers
+    # compare against the producing job's outputs, not an archive's sidecar.
+    if os.environ.get('GITHUB_OUTPUT'):
+        kind = 'sdk' if archive.name.startswith('llvm-sdk-') else 'esp'
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write(f'{kind}-sha256={actual}\n')
 PYTHON
 (cd "$root/.windows-x86-toolchains" && sha256sum -c ./*.sha256)

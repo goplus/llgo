@@ -54,6 +54,7 @@ go.work*
 .sysroot/
 .windows-dist/
 .windows-x86-toolchains/
+.windows-x86-downloads/
 
 # Embedded firmware files
 *.bin

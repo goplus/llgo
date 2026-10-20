@@ -1,6 +1,7 @@
 """Guard the integration contract so workflow edits cannot silently bypass policy."""
 
 import json
+import hashlib
 import os
 from pathlib import Path
 import runpy
@@ -196,12 +197,19 @@ else:
         for name in ("build-windows", "test-windows-artifacts"):
             matrix = jobs[name]["strategy"]["matrix"]
             self.assertCountEqual(matrix["abi"], ["msvc", "mingw"])
-            self.assertCountEqual(matrix["goarch"], ["386", "amd64", "arm64"])
-            self.assertIn({"goarch": "386", "os": "windows-2022"}, matrix["include"])
-        self.assertIn("build-windows-x86-toolchains", needs(jobs["build-windows"]))
+            self.assertCountEqual(matrix["goarch"], ["amd64", "arm64"])
+            x86 = jobs[name + "-x86"]["strategy"]["matrix"]
+            self.assertCountEqual(x86["abi"], ["msvc", "mingw"])
+            self.assertEqual(x86["goarch"], ["386"])
+            self.assertEqual(x86["os"], ["windows-2022"])
+            self.assertEqual(jobs[name]["steps"], jobs[name + "-x86"]["steps"])
+        self.assertIn("build-windows-x86-toolchains", needs(jobs["build-windows-x86"]))
         self.assertIn("build-windows-compiler", needs(jobs["build-windows"]))
+        self.assertIn("build-windows-compiler-x86", needs(jobs["build-windows-x86"]))
         compiler = jobs["build-windows-compiler"]
-        self.assertCountEqual(compiler["strategy"]["matrix"]["goarch"], ["386", "amd64", "arm64"])
+        self.assertCountEqual(compiler["strategy"]["matrix"]["goarch"], ["amd64", "arm64"])
+        self.assertEqual(jobs["build-windows-compiler-x86"]["strategy"]["matrix"]["goarch"], ["386"])
+        self.assertEqual(compiler["steps"], jobs["build-windows-compiler-x86"]["steps"])
         self.assertNotIn("abi", compiler["strategy"]["matrix"])
         host = next(step for step in compiler["steps"]
                     if step.get("uses") == "./.github/actions/setup-deps")
@@ -220,16 +228,73 @@ else:
         self.assertEqual(consumer["if"], "matrix.goarch == '386'")
         self.assertEqual(consumer["with"]["name"], artifact["with"]["name"])
 
+    def test_windows_native_release_does_not_wait_for_x86(self):
+        jobs = load("release-build.yml")["jobs"]
+
+        def ancestors(name):
+            result = set(needs(jobs[name]))
+            for dependency in list(result):
+                result.update(ancestors(dependency))
+            return result
+
+        for name in ("build-windows-compiler", "build-windows", "test-windows-artifacts"):
+            self.assertNotIn("build-windows-x86-toolchains", ancestors(name))
+        self.assertIn("build-windows-x86-toolchains", ancestors("test-windows-artifacts-x86"))
+        cache = next(step for step in jobs["build-windows"]["steps"]
+                     if step.get("name") == "Cache ESP release archive")
+        self.assertEqual(cache["if"], "matrix.goarch != '386'")
+
+    def test_x86_release_trusts_fresh_producer_hashes_not_cached_sidecars(self):
+        jobs = load("release-build.yml")["jobs"]
+        producer = jobs["build-windows-x86-toolchains"]
+        build = next(step for step in producer["steps"] if step.get("id") == "build-x86")
+        self.assertNotIn("if", build)
+        caches = [step for step in producer["steps"] if step.get("uses", "").startswith("actions/cache")]
+        self.assertEqual(len(caches), 1)
+        self.assertEqual(caches[0]["with"]["path"], ".windows-x86-downloads")
+        self.assertIn("534b92e067b22a6b4441f48ae9240a3341b17825d04d577eab0cf85c44b4deda", caches[0]["with"]["key"])
+        for kind, consumer, variable in (("sdk", "build-windows-compiler-x86", "LLGO_X86_SDK_SHA256"),
+                                         ("esp", "build-windows-x86", "LLGO_X86_ESP_SHA256")):
+            self.assertEqual(producer["outputs"][kind + "-sha256"],
+                             "${{ steps.build-x86.outputs." + kind + "-sha256 }}")
+            self.assertEqual(jobs[consumer]["env"][variable],
+                             "${{ needs.build-windows-x86-toolchains.outputs." + kind + "-sha256 }}")
+
+    def test_x86_producer_verifies_archives_before_exporting_hashes(self):
+        script = (WORKFLOWS.parent / "windows/build-x86-toolchains.sh").read_text()
+        code = script.split("<<'PYTHON'\n", 1)[1].split("\nPYTHON", 1)[0]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / "job-output"
+            expected = {}
+            for kind, name in (("sdk", "llvm-sdk-test.tar.xz"), ("esp", "clang-esp-test.tar.xz")):
+                archive = root / name
+                archive.write_bytes((kind * 100).encode())
+                digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+                expected[kind + "-sha256"] = digest
+                (root / (name + ".sha256")).write_text(f"{digest}  /old/runner/{name}\n")
+            env = dict(os.environ, GITHUB_OUTPUT=str(output))
+            subprocess.run([sys.executable, "-c", code, str(root)], env=env, check=True)
+            self.assertEqual(dict(line.split("=", 1) for line in output.read_text().splitlines()), expected)
+            for sidecar in root.glob("*.sha256"):
+                self.assertEqual(sidecar.read_text().split()[1], sidecar.name.removesuffix(".sha256"))
+            (root / "llvm-sdk-test.tar.xz").write_bytes(b"corrupted source-built archive")
+            result = subprocess.run([sys.executable, "-c", code, str(root)], env=env, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"Invalid source-built archive checksum", result.stderr)
+
     def test_release_artifact_dependencies_and_tag_guard_are_preserved(self):
         jobs = load("release-build.yml")["jobs"]
         for consumer, producer in {
             "build": "populate-linux-sysroot", "build-windows": "build",
             "test-windows-artifacts": "build-windows", "prepare-winget": "test-windows-artifacts",
+            "test-windows-artifacts-x86": "build-windows-x86",
             "test-artifacts": "build", "test-linux-distributions": "build",
         }.items():
             self.assertIn(producer, needs(jobs[consumer]))
         self.assertEqual(set(needs(jobs["release"])), {
-            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-linux-distributions", "populate-linux-sysroot"})
+            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-windows-artifacts-x86", "test-linux-distributions", "populate-linux-sysroot"})
+        self.assertIn("test-windows-artifacts-x86", needs(jobs["prepare-winget"]))
         self.assertIn("startsWith(github.ref, 'refs/tags/')", jobs["release"]["if"])
 
     def test_linux_distribution_ci_builds_packages_without_publishing(self):
