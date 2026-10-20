@@ -36,6 +36,17 @@
     },
     {
       "kind": "branch",
+      "id": "aa324641a3827928",
+      "label": "Branch MeteorsLiu/llgo:codex/fix-native-struct-metadata",
+      "path": "series/branch/aa324641a3827928/summary.json",
+      "configPath": "series/branch/aa324641a3827928/config.json",
+      "commitPath": "commits/f8bd5d68928cf0f0036d7097118c2058c9e0489d.json",
+      "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "updatedAt": "2026-10-20T17:54:22.893Z"
+    },
+    {
+      "kind": "branch",
       "id": "5bc53c6e53371965",
       "label": "Branch MeteorsLiu/llgo:codex/layout-integration-tests",
       "path": "series/branch/5bc53c6e53371965/summary.json",
@@ -5742,6 +5753,17 @@
       "sha": "3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/3b78d8862b29a2452fe5c6947c9c1de7b2712fb0",
       "updatedAt": "2026-10-20T11:07:59.050Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2890",
+      "label": "PR #2890",
+      "path": "series/pull/2890/summary.json",
+      "configPath": "series/pull/2890/config.json",
+      "commitPath": "commits/f8bd5d68928cf0f0036d7097118c2058c9e0489d.json",
+      "sha": "f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "sourceUrl": "https://github.com/MeteorsLiu/llgo/commit/f8bd5d68928cf0f0036d7097118c2058c9e0489d",
+      "updatedAt": "2026-10-20T17:54:22.779Z"
     }
   ]
 }
