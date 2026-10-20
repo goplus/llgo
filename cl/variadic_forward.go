@@ -110,8 +110,13 @@ func (p *context) validateCVariadicWrapperUses() error {
 				if conversion, ok := instr.(*ssa.MakeInterface); ok {
 					typ := conversion.X.Type()
 					methods := p.goProg.MethodSets.MethodSet(typ)
-					for i := 0; i < methods.Len(); i++ {
-						selection := methods.At(i)
+					// Only the destination interface's methods are exposed by
+					// this conversion. In particular, boxing into any needs no
+					// variadic forwarding, even if the concrete type has it.
+					destination := conversion.Type().Underlying().(*types.Interface)
+					for i := 0; i < destination.NumMethods(); i++ {
+						method := destination.Method(i)
+						selection := methods.Lookup(method.Pkg(), method.Name())
 						if !llssa.HasNameValist(selection.Type().(*types.Signature)) {
 							continue
 						}

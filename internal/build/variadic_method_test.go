@@ -18,6 +18,7 @@ func TestCVariadicPromotedMethod(t *testing.T) {
 		}{
 			{"../../cl/_testrt/vamethod", "hello (100)\n(200) world\nifmt (100,200)\n"},
 			{"./testdata/variadicmethod", "variadic-method-ok\n"},
+			{"./testdata/variadicunrelated", "variadic-unrelated-ok\n"},
 		} {
 			t.Run(level.String()+"/"+filepath.Base(fixture.path), func(t *testing.T) {
 				conf := NewDefaultConf(ModeBuild)

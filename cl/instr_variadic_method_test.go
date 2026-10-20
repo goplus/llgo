@@ -214,6 +214,49 @@ func TestCVariadicIncompatibleSignatureIR(t *testing.T) {
 	}
 }
 
+func TestCVariadicUnrelatedInterfaces(t *testing.T) {
+	for _, use := range []struct{ name, source string }{
+		{"value_any", "func use(v T) any { return v }"},
+		{"pointer_any", "func use(v *T) any { return v }"},
+		{"value_stringer", "func use(v T) Stringer { return v }"},
+		{"pointer_stringer", "func use(v *T) Stringer { return v }"},
+		{"promoted_any", "func use(v Wrapper) any { return v }"},
+		{"promoted_stringer", "func use(v *Wrapper) Stringer { return v }"},
+		{"embedded_interface", "func use(v Wrapper) Embedded { return v }"},
+		{"interface_alias", "func use(v T) Alias { return v }"},
+		{"global", "var value Stringer = T(7)"},
+		{"generic", "func expose[V any](v V) any { return v }; func use(v T) any { return expose(v) }"},
+	} {
+		for _, target := range []llssa.Target{
+			{GOOS: "linux", GOARCH: "amd64"},
+			{GOOS: "wasip1", GOARCH: "wasm", WasmProfile: "w32"},
+		} {
+			t.Run(use.name+"/"+target.GOOS, func(t *testing.T) {
+				const declarations = `package foo
+type T int32
+//llgo:link T.Check C.check
+func (T) Check(__llgo_va_list ...any) int32 { return 0 }
+func (T) String() string { return "ok" }
+type Wrapper struct { T }
+type Stringer interface { String() string }
+type Embedded interface { Stringer }
+type Alias = Stringer
+`
+				ssaPkg, _, files := buildGoSSAPkg(t, declarations+use.source)
+				prog := newLLSSAProgForTarget(t, &target)
+				defer prog.Dispose()
+				pkg, err := NewPackage(prog, ssaPkg, files)
+				if err != nil {
+					t.Fatalf("unrelated interface exposed the C variadic method: %v", err)
+				}
+				if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+	}
+}
+
 func TestCVariadicUnsupportedWrapperUses(t *testing.T) {
 	for _, tc := range []struct {
 		name, declaration, use, reason string
