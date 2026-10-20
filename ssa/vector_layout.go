@@ -33,6 +33,14 @@ func (p *goProgram) vectorLayout(t types.Type, native bool) (vectorSourceLayout,
 	if index, ok := simdTagIndex(t); ok {
 		return vectorSourceLayout{0, p.simdAlignments[index]}, true
 	}
+	if _, ok := prog.cVectorArray(t); ok {
+		return vectorSourceLayout{16, 16}, true
+	}
+	if native {
+		if _, ok := SIMDVectorShape(t); ok {
+			return vectorSourceLayout{16, 16}, true
+		}
+	}
 	switch t := types.Unalias(t).(type) {
 	case *types.Named:
 		return p.vectorLayout(t.Underlying(), prog.hasNativeStructLayout(t))
@@ -52,7 +60,7 @@ func (p *goProgram) vectorLayout(t types.Type, native bool) (vectorSourceLayout,
 		}
 		return vectorSourceLayout{size, elem.align}, true
 	case *types.Struct:
-		if !prog.containsVectorStorage(t) {
+		if !prog.containsVectorStorage(t, native) {
 			return vectorSourceLayout{}, false
 		}
 		fields := make([]*types.Var, t.NumFields())
@@ -71,7 +79,7 @@ func (p *goProgram) vectorStructLayout(fields []*types.Var, native bool) (vector
 	prog := Program(unsafe.Pointer(p))
 	changed := false
 	for _, field := range fields {
-		if prog.containsVectorStorage(field.Type()) {
+		if prog.containsVectorStorage(field.Type(), native) {
 			changed = true
 			break
 		}
