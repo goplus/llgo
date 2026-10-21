@@ -218,6 +218,9 @@ jobs:
           else
             main_go_test=(python .github/scripts/run_go_tests.py main "${go_test[@]}")
           fi
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            main_go_test+=(-p=2)
+          fi
 
           # cl's error-path tests also recover nil dereferences. Keep the
           # measured Windows exception-stack reserve on build, cl and test/go;
@@ -226,18 +229,20 @@ jobs:
             go_test+=("-overlay=$LLGO_GO_TEST_OVERLAY")
           fi
 
-          run_main_suites() {
-            # Leave one long-running build process alongside at most two main
-            # test packages. Each compiler still has its package worker pool.
+          run_main_suite() {
+            # Linux leaves one build process alongside at most two main test
+            # packages. Each compiler still has its package worker pool.
             # The direct language suite retains its own invocation and is
             # excluded from host coverage: test/ is measured by LLGo.
             go list ./... \
               | grep -v '^github.com/xgo-dev/llgo/test/go$' \
               | grep -v '^github.com/xgo-dev/llgo/cl$' \
               | grep -v '^github.com/xgo-dev/llgo/internal/build$' \
-              | xargs "${main_go_test[@]}" -p=2 -timeout 45m -coverprofile="coverage-main.txt" -covermode=set \
+              | xargs "${main_go_test[@]}" -timeout 45m -coverprofile="coverage-main.txt" -covermode=set \
                   -coverpkg=./... -bench '^BenchmarkGo126' -benchtime=1x
+          }
 
+          run_compiler_suites() {
             # cl owns the compiler fixtures and measures calls into ssa.
             python .github/scripts/run_go_tests.py compiler "${go_test[@]}" -timeout 45m \
               -coverpkg=github.com/xgo-dev/llgo/cl,github.com/xgo-dev/llgo/ssa \
@@ -252,6 +257,20 @@ jobs:
             python .github/scripts/run_go_tests.py build "${go_test[@]}" -count=1 -timeout 45m \
               -coverpkg=./... -coverprofile=coverage-build.txt -covermode=set \
               -bench '^BenchmarkGo126' -benchtime=1x ./internal/build
+          }
+
+          # Overlap improved Qiniu Linux timings, but regressed on hosted macOS.
+          # Keep the original serial order on other hosts until measured there.
+          if [[ "$RUNNER_OS" != Linux ]]; then
+            run_main_suite
+            run_build_suite
+            run_compiler_suites
+            exit 0
+          fi
+
+          run_main_suites() {
+            run_main_suite
+            run_compiler_suites
           }
 
           # Start the longest suite immediately and overlap independent packages.

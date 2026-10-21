@@ -165,13 +165,14 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(step["working-directory"], "runtime")
         self.assertIn("-coverprofile=../coverage-traceback.txt", step["run"])
 
-    def test_go_suites_overlap_preserve_overlays_and_propagate_failures(self):
+    def test_go_suite_scheduling_preserves_overlays_and_propagates_failures(self):
         step = next(step for step in load("go.yml")["jobs"]["test"]["steps"]
                     if step.get("id") == "test_coverage")
         script = step["run"].replace("${{ matrix.windows_abi }}", "msvc")
-        scenarios = [("Linux", "", ""), ("Windows", "", ""),
+        scenarios = [("Linux", "", ""), ("macOS", "", ""), ("Windows", "", ""),
                      ("Windows", "C:/runner temp/runtime-overlay.json", "")]
-        scenarios += [("Linux", "", suite) for suite in ("main", "build", "compiler", "language")]
+        scenarios += [(runner, "", suite) for runner in ("Linux", "macOS", "Windows")
+                      for suite in ("main", "build", "compiler", "language")]
         for runner, overlay, failure in scenarios:
             with self.subTest(runner=runner, overlay=overlay, failure=failure), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
@@ -193,13 +194,18 @@ else:
     with (root / 'commands.jsonl').open('a') as stream:
         stream.write(json.dumps(args) + '\n')
     (root / (suite + '.started')).touch()
-    if suite in {'main', 'build'}:
+    if os.environ['RUNNER_OS'] == 'Linux' and suite in {'main', 'build'}:
         peer = root / (('main' if suite == 'build' else 'build') + '.started')
         deadline = time.monotonic() + 5
         while not peer.exists():
             if time.monotonic() > deadline:
                 sys.exit('independent suites did not overlap')
             time.sleep(0.01)
+    elif os.environ['RUNNER_OS'] != 'Linux':
+        order = ['main', 'build', 'compiler', 'language']
+        index = order.index(suite)
+        if index and not (root / (order[index - 1] + '.finished')).exists():
+            sys.exit('host suites did not retain serial order')
     (root / (suite + '.finished')).touch()
     sys.exit(7 if suite == os.environ['TEST_GO_FAILURE'] else 0)
 """)
@@ -228,6 +234,9 @@ else:
                     expected_suites.add("compiler")
                 if failure not in {"main", "compiler"}:
                     expected_suites.add("language")
+                if runner != "Linux":
+                    order = ["main", "build", "compiler", "language"]
+                    expected_suites = set(order[:order.index(failure) + 1] if failure else order)
                 self.assertEqual(len(calls), len(expected_suites))
                 report = summary.read_text()
                 for suite in expected_suites:
@@ -238,15 +247,16 @@ else:
                         self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
                                          [f"-overlay={overlay}"] if overlay else [])
                 main = next(args for args in calls if "github.com/xgo-dev/llgo/cmd/internal/version" in args)
-                self.assertIn("-p=2", main)
+                self.assertEqual("-p=2" in main, runner == "Linux")
                 self.assertFalse(any(arg.startswith("-overlay=") for arg in main))
                 # Every build case still runs exactly once with compiler coverage.
-                build = next(args for args in calls if "./internal/build" in args)
-                self.assertNotIn("-run", build)
-                self.assertNotIn("-skip", build)
-                self.assertIn("-coverprofile=coverage-build.txt", build)
-                self.assertIn("-coverpkg=./...", build)
-                self.assertEqual(sum("./internal/build" in args for args in calls), 1)
+                if "build" in expected_suites:
+                    build = next(args for args in calls if "./internal/build" in args)
+                    self.assertNotIn("-run", build)
+                    self.assertNotIn("-skip", build)
+                    self.assertIn("-coverprofile=coverage-build.txt", build)
+                    self.assertIn("-coverpkg=./...", build)
+                    self.assertEqual(sum("./internal/build" in args for args in calls), 1)
                 self.assertFalse(any("github.com/xgo-dev/llgo/internal/build" in args
                                      for args in calls))
                 self.assertTrue(all("-json" in args for args in calls))
