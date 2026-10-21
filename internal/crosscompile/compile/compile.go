@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/xgo-dev/llgo/internal/clang"
 )
+
+const maxCompileWorkers = 4
 
 type CompileOptions struct {
 	CC      string // Compiler to use
@@ -81,7 +84,14 @@ func (g CompileGroup) Compile(
 		}
 		compiler := clang.NewCompiler(cfg)
 		compiler.Verbose = true
+		// Clang writes diagnostics in multiple chunks. Buffer each subprocess
+		// so concurrent compiles cannot split another file's diagnostic lines.
+		var stdout, stderr bytes.Buffer
+		compiler.Stdout = &stdout
+		compiler.Stderr = &stderr
 		err = compiler.Compile("-o", tempObjName, "-x", lang, "-c", file)
+		os.Stdout.Write(stdout.Bytes())
+		os.Stderr.Write(stderr.Bytes())
 		if err != nil {
 			return fmt.Errorf("compile %s: %w", file, err)
 		}
@@ -123,7 +133,7 @@ func compileFiles(count int, compile func(int) error) error {
 	var workers sync.WaitGroup
 	// Respect restricted Go runtimes and avoid launching one Clang per CPU on
 	// large hosts, where other compiler stages or CI jobs may also be active.
-	for range min(count, runtime.GOMAXPROCS(0), 4) {
+	for range min(count, runtime.GOMAXPROCS(0), maxCompileWorkers) {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
