@@ -19,7 +19,7 @@ import ci_policy
 WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
-    "llgo.yml": 21, "go.yml": 6, "targets.yml": 5, "build-cache.yml": 4,
+    "llgo.yml": 21, "go.yml": 6, "targets.yml": 4, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
     "mise.yml": 5, "pixi.yml": 5,
 }
@@ -243,6 +243,94 @@ else:
             self.assertIn("!cancelled()", step["if"])
             self.assertIn("steps.compiler.outcome == 'success'", step["if"])
             self.assertNotIn("continue-on-error", step)
+
+    def test_all_board_fixtures_share_one_compiler_and_cache(self):
+        job = load("targets.yml")["jobs"]["llgo"]
+        self.assertEqual(matrix_size(job), 1)
+        steps = job["steps"]
+        compiler = next(step for step in steps if step.get("id") == "compiler")
+        self.assertIn("go build -tags=dev", compiler["run"])
+        self.assertIn("LLGO_TEST_COMPILER=", compiler["run"])
+        cache = next(step for step in steps
+                     if step.get("uses") == "./.github/actions/setup-llgo-cache")
+        self.assertEqual(cache["with"]["crosscompile-cache-mode"], "readwrite")
+        self.assertEqual(cache["with"]["build-cache-scope"], "embedded-boards")
+        for fixture in ("empty", "defer"):
+            step = next(step for step in steps
+                        if step.get("run") == f"bash build.sh {fixture}")
+            self.assertEqual(step["working-directory"], "_demo/embed/targetsbuild")
+            self.assertIn("!cancelled()", step["if"])
+            self.assertIn("steps.compiler.outcome == 'success'", step["if"])
+            self.assertNotIn("continue-on-error", step)
+
+    def test_wasm_caches_use_pinned_go_and_include_workers(self):
+        steps = load("llgo.yml")["jobs"]["wasm-runtime"]["steps"]
+        go = next(i for i, step in enumerate(steps)
+                  if step.get("uses") == "./.github/actions/setup-go")
+        cache = next(i for i, step in enumerate(steps)
+                     if step.get("uses") == "./.github/actions/setup-llgo-cache")
+        self.assertLess(go, cache)
+        self.assertNotIn("if", steps[cache])
+        self.assertEqual(steps[cache]["with"]["build-cache-mode"], "readwrite")
+        self.assertEqual(steps[cache]["with"]["build-cache-scope"], "wasm-${{ matrix.suite }}")
+        self.assertEqual(steps[cache]["with"]["crosscompile-cache-mode"], "readwrite")
+        self.assertIn("matrix.suite != 'workers'", steps[cache]["with"]["wasmer-cache-mode"])
+
+    def test_benchmark_runtime_manifest_keeps_versions_and_full_demo_dependencies(self):
+        root = WORKFLOWS.parents[1]
+        full = json.loads((root / ".github/windows/vcpkg/vcpkg.json").read_text())
+        runtime = json.loads((root / ".github/windows/vcpkg-runtime/vcpkg.json").read_text())
+        self.assertEqual(full["builtin-baseline"], runtime["builtin-baseline"])
+        self.assertEqual(full["overrides"], runtime["overrides"])
+        runtime_names = {dep if isinstance(dep, str) else dep["name"]
+                         for dep in runtime["dependencies"]}
+        full_names = {dep if isinstance(dep, str) else dep["name"]
+                      for dep in full["dependencies"]}
+        self.assertEqual(runtime_names, {"bdwgc", "libffi", "libuv", "pkgconf", "zlib"})
+        self.assertEqual(full_names - runtime_names, {"openssl", "cjson", "sqlite3"})
+        self.assertIn({"name": "pkgconf", "host": True}, runtime["dependencies"])
+        action = yaml.load((root / ".github/actions/setup-deps/action.yml").read_text(),
+                           Loader=yaml.BaseLoader)
+        self.assertEqual(action["inputs"]["windows-msvc-dependencies"]["default"], "full")
+        cache = next(step for step in action["runs"]["steps"]
+                     if step.get("id") == "windows_vcpkg_cache")
+        self.assertIn("steps.windows_profile.outputs.manifest-hash", cache["with"]["key"])
+        self.assertIn("steps.windows_profile.outputs.manifest-hash", cache["with"]["path"])
+        steps = load("benchmark.yml")["jobs"]["benchmark"]["steps"]
+        deps = next(step for step in steps
+                    if step.get("uses") == "./.github/actions/setup-deps")
+        self.assertEqual(deps["with"]["windows-msvc-dependencies"], "runtime")
+
+    def test_cache_scopes_preserve_legacy_keys_and_isolate_package_workloads(self):
+        root = WORKFLOWS.parents[1]
+        action = yaml.load((root / ".github/actions/setup-llgo-cache/action.yml").read_text(),
+                           Loader=yaml.BaseLoader)
+        resolve = action["runs"]["steps"][0]["run"]
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            for tool, output in (("go", "go1.27.0"), ("clang", "clang version 22.1.8")):
+                path = directory / tool
+                path.write_text(f"#!/bin/sh\necho '{output}'\n")
+                path.chmod(0o755)
+            profiles = []
+            for scope in ("", "embedded-boards", "wasm-runtime", "wasm-workers", "bad/scope"):
+                output = directory / "outputs"
+                output.write_text("")
+                result = subprocess.run(["bash", "-c", resolve], cwd=root,
+                    env={**os.environ, "PATH": f"{directory}{os.pathsep}{os.environ['PATH']}",
+                         "BUILD_CACHE_MODE": "readwrite", "CROSSCOMPILE_CACHE_MODE": "readwrite",
+                         "WASMER_CACHE_MODE": "off", "BUILD_CACHE_SCOPE": scope,
+                         "LLGO_WINDOWS_ABI": "native", "LLGO_WINDOWS_ARCH": "native",
+                         "GITHUB_OUTPUT": str(output)}, capture_output=True, text=True)
+                if scope == "bad/scope":
+                    self.assertNotEqual(result.returncode, 0)
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                values = dict(line.split("=", 1) for line in output.read_text().splitlines())
+                self.assertEqual(values["profile"], "native-native")
+                self.assertEqual(values["build-profile"], "native-native" + (f"-{scope}" if scope else ""))
+                profiles.append(values["build-profile"])
+            self.assertEqual(len(profiles), len(set(profiles)))
 
     def test_code_and_document_jobs_consume_the_shared_decision(self):
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml", "model-demo.yml"]:

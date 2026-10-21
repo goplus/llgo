@@ -27,12 +27,11 @@ jobs:
   llgo:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    name: llgo (${{ matrix.test_dir }}, ${{ matrix.os }}, LLVM ${{ matrix.llvm }})
-    timeout-minutes: 30
+    name: llgo (empty + defer, ${{ matrix.os }}, LLVM ${{ matrix.llvm }})
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        test_dir: [empty, defer]
         os:
           - ubuntu-latest
         llvm: [22]
@@ -47,14 +46,31 @@ jobs:
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
 
-      - name: Install
-        run: |
-          go install ./...
-          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-llgo-cache
+        with:
+          build-cache-mode: readwrite
+          build-cache-scope: embedded-boards
+          crosscompile-cache-mode: readwrite
 
-      - name: Build targets (${{ matrix.test_dir }})
+      - name: Build compiler once for all boards
+        id: compiler
+        run: |
+          go build -tags=dev -o "$RUNNER_TEMP/llgo-targets" ./cmd/llgo
+          {
+            echo "LLGO_TEST_COMPILER=$RUNNER_TEMP/llgo-targets"
+            echo "LLGO_ROOT=$GITHUB_WORKSPACE"
+            echo "LLGO_BUILD_CACHE=1"
+          } >> "$GITHUB_ENV"
+
+      - name: Build targets (empty)
+        if: ${{ !cancelled() && steps.compiler.outcome == 'success' }}
         working-directory: _demo/embed/targetsbuild
-        run: bash build.sh "${{ matrix.test_dir }}"
+        run: bash build.sh empty
+
+      - name: Build targets (defer)
+        if: ${{ !cancelled() && steps.compiler.outcome == 'success' }}
+        working-directory: _demo/embed/targetsbuild
+        run: bash build.sh defer
 
   embedded-debug:
     if: needs.prepare.outputs.run_code_ci == 'true'

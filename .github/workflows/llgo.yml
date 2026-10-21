@@ -953,11 +953,16 @@ jobs:
         with:
           version: "39.0.1"
 
-      - name: Restore Wasmer cache
-        if: matrix.suite != 'workers'
+      - name: Set up Go for building llgo
+        uses: ./.github/actions/setup-go
+
+      - name: Cache LLGo builds and WebAssembly toolchains
         uses: ./.github/actions/setup-llgo-cache
         with:
-          wasmer-cache-mode: readwrite
+          build-cache-mode: readwrite
+          build-cache-scope: wasm-${{ matrix.suite }}
+          crosscompile-cache-mode: readwrite
+          wasmer-cache-mode: ${{ matrix.suite != 'workers' && 'readwrite' || 'off' }}
 
       - name: Install Wasmer for W32
         if: matrix.suite != 'workers'
@@ -967,9 +972,6 @@ jobs:
         uses: bytecodealliance/actions/wasm-tools/setup@v1
         with:
           version: "1.243.0"
-
-      - name: Set up Go for building llgo
-        uses: ./.github/actions/setup-go
 
       - name: Install llgo
         run: |
