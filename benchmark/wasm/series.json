@@ -2401,6 +2401,17 @@
     },
     {
       "kind": "branch",
+      "id": "ee65ee08fa675848",
+      "label": "Branch visualfc/llgo:fix/sync-pool-shared-tls",
+      "path": "series/branch/ee65ee08fa675848/summary.json",
+      "configPath": "series/branch/ee65ee08fa675848/config.json",
+      "commitPath": "commits/d92c69ed75da5bf141b529b7a6f6485e30c88f8f.json",
+      "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
+      "updatedAt": "2026-10-21T12:13:37.539Z"
+    },
+    {
+      "kind": "branch",
       "id": "e942f7189a85bdbd",
       "label": "Branch visualfc/llgo:fix/trivial-iface-fold",
       "path": "series/branch/e942f7189a85bdbd/summary.json",
@@ -5918,6 +5929,17 @@
       "sha": "67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "updatedAt": "2026-10-21T04:15:02.313Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2902",
+      "label": "PR #2902",
+      "path": "series/pull/2902/summary.json",
+      "configPath": "series/pull/2902/config.json",
+      "commitPath": "commits/d92c69ed75da5bf141b529b7a6f6485e30c88f8f.json",
+      "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
+      "updatedAt": "2026-10-21T12:13:37.401Z"
     }
   ]
 }
