@@ -132,6 +132,8 @@ try {
   })()`);
 
   const index = await (await fetch(`${sessionURL}__llgo/debug-index.json`)).json();
+  assert.ok(index.variables.every(variable => variable.scope === 'GLOBAL' || variable.ranges?.length),
+    'locals without executable scopes must not leak into unrelated frames');
   const goroutineFixture = index.variables.some(v => v.name === 'wasmDebuggerRegistry');
   if (goroutineFixture) {
     browser = await connect({webSocketDebuggerUrl: `ws://127.0.0.1:${port}${browserPath}`});
