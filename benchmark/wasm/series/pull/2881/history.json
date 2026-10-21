@@ -11,8 +11,8 @@
         "sha": "c171abfa130108bc6451e01fcf15a8a3474eb0a7",
         "ref": "main",
         "url": "https://github.com/xgo-dev/llgo/commit/c171abfa130108bc6451e01fcf15a8a3474eb0a7",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39610153019",
-        "timestamp": "2026-10-21T13:41:10Z"
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39688293522",
+        "timestamp": "2026-10-21T22:41:24Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -24,8 +24,8 @@
             "sha": "c171abfa130108bc6451e01fcf15a8a3474eb0a7",
             "ref": "main",
             "url": "https://github.com/xgo-dev/llgo/commit/c171abfa130108bc6451e01fcf15a8a3474eb0a7",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39610153019",
-            "timestamp": "2026-10-21T13:41:10Z"
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39688293522",
+            "timestamp": "2026-10-21T22:41:24Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 9041258738
+                    "build-ns": 8425514509
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 9041258738
+                "build-ns": 8425514509
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8460054773
+                    "build-ns": 8434270367
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8460054773
+                "build-ns": 8434270367
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7194727345
+                    "build-ns": 7426712863
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7194727345
+                "build-ns": 7426712863
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 25313373593
+                    "build-ns": 28043785843
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 25313373593
+                "build-ns": 28043785843
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5493104088
+                    "build-ns": 5335556577
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5493104088
+                "build-ns": 5335556577
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4970180699
+                    "build-ns": 5074059857
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4970180699
+                "build-ns": 5074059857
               }
             },
             {
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "cpunion/llgo",
-        "sha": "925044e05867b60fb962b9f4c7758bea611c582d",
+        "sha": "8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
         "ref": "codex/browser-worker-control-2164-20261020",
-        "url": "https://github.com/cpunion/llgo/commit/925044e05867b60fb962b9f4c7758bea611c582d",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39610153019",
-        "timestamp": "2026-10-21T13:41:10Z"
+        "url": "https://github.com/cpunion/llgo/commit/8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39688293522",
+        "timestamp": "2026-10-21T22:41:24Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "cpunion/llgo",
-            "sha": "925044e05867b60fb962b9f4c7758bea611c582d",
+            "sha": "8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
             "ref": "codex/browser-worker-control-2164-20261020",
-            "url": "https://github.com/cpunion/llgo/commit/925044e05867b60fb962b9f4c7758bea611c582d",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39610153019",
-            "timestamp": "2026-10-21T13:41:10Z"
+            "url": "https://github.com/cpunion/llgo/commit/8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39688293522",
+            "timestamp": "2026-10-21T22:41:24Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7864750217
+                    "build-ns": 8739919484
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7864750217
+                "build-ns": 8739919484
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7617631027
+                    "build-ns": 8362245549
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7617631027
+                "build-ns": 8362245549
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6820397907
+                    "build-ns": 7599916114
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6820397907
+                "build-ns": 7599916114
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 25637708023
+                    "build-ns": 26857607846
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 25637708023
+                "build-ns": 26857607846
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4892071219
+                    "build-ns": 5472654800
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4892071219
+                "build-ns": 5472654800
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4762561124
+                    "build-ns": 5096836107
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4762561124
+                "build-ns": 5096836107
               }
             },
             {
