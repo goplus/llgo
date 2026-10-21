@@ -34,6 +34,12 @@ is removed by the overlay. Adding another reused subsystem requires an
 explicit selection, compatible boundary types, removal of its old bodies,
 and runtime tests.
 
+String slicing keeps separate runtime entries for signed indices that fit a
+native `int` and for wider or unsigned indices. Go 1.27's reused decoder uses
+an unsigned offset; it must not prevent LTO from specializing the common signed
+path. The compiler checks the original index width before narrowing, and the
+generic entry preserves wide values and signedness in bounds-panic messages.
+
 ## Ownership and upgrade audit
 
 From an LLGo development environment, generate a source ownership report:
@@ -133,11 +139,15 @@ existing selection.
   and new-dependency rejection are tested beside the build implementation.
 - Runtime tests cover every Unicode scalar value, invalid scalar values,
   all two-byte inputs, truncated/overlong UTF-8 and string/rune iteration.
+- String-slice tests cover native, narrow, wide and unsigned indices, empty
+  strings and exact bounds-panic messages; IR tests check 32/64-bit dispatch.
 - The existing `runtime/debug` descriptor test exercises `SetCrashOutput`.
 - Run the runtime/syscall tests in executable, `c-shared` and `c-archive`
   modes on the relevant native targets; run UTF-8 on the Wasm profiles too.
 
 Remaining #2165 work includes qualifying dynamic compiler lookups and external
-boundaries, further standard-runtime subsystems, and the separately gated closure,
-metadata, stack and scheduler ABI work. These source selections do not
+boundaries, further standard-runtime subsystems, and metadata, stack and
+scheduler ABI compatibility. Hidden closure-environment passing is already
+implemented by #2255; it does not establish full Go runtime ABI compatibility.
+These source selections do not
 establish compatibility with the full upstream runtime.

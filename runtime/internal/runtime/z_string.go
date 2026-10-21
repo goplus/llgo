@@ -60,7 +60,19 @@ func CStrDup(s String) *int8 {
 }
 
 func StringSlice(base String, i, j int) String {
-	return StringSlice2(base, int64(i), int64(j), true, true)
+	// Keep native signed bounds independent of StringSlice2's dynamic flags.
+	// An unsigned caller must not prevent LTO from specializing this path.
+	if uint(j) > uint(base.len) {
+		panicBounds(int64(j), true, base.len, boundsSliceAlen)
+	}
+	if uint(i) > uint(j) {
+		panicBounds(int64(i), true, j, boundsSliceB)
+	}
+	if i < base.len {
+		return String{c.Advance(base.data, i), j - i}
+	}
+	// Preserve the source base for an empty suffix, as StringSlice2 does.
+	return String{base.data, 0}
 }
 
 func StringSlice2(base String, i, j int64, iSigned, jSigned bool) String {
