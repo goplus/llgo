@@ -215,6 +215,21 @@ else:
                 helper = root / ".github/scripts/run_go_tests.py"
                 helper.parent.mkdir(parents=True)
                 shutil.copyfile(WORKFLOWS.parent / "scripts/run_go_tests.py", helper)
+                # This contract checks suite ordering and Windows options.
+                # The real shard executor has separate end-to-end Go tests.
+                (helper.parent / "run_build_tests.py").write_text(r"""
+import argparse, subprocess, sys
+parser = argparse.ArgumentParser()
+parser.add_argument('--overlay')
+parser.add_argument('--ldflags')
+args = parser.parse_args()
+command = ['go', 'test', '-json', '-coverpkg=./...', '-coverprofile=coverage-build.txt']
+if args.overlay:
+    command.append('-overlay=' + args.overlay)
+if args.ldflags:
+    command.append('-ldflags=' + args.ldflags)
+sys.exit(subprocess.call(command + ['./internal/build']))
+""")
                 result = subprocess.run(["bash", "-c", script], cwd=root,
                                         capture_output=True, text=True, timeout=20,
                                         env={**os.environ,
@@ -257,6 +272,8 @@ else:
                     self.assertIn("-coverprofile=coverage-build.txt", build)
                     self.assertIn("-coverpkg=./...", build)
                     self.assertEqual(sum("./internal/build" in args for args in calls), 1)
+                    self.assertEqual(any(arg.startswith("-ldflags=-linkmode=external") for arg in build),
+                                     runner == "Windows")
                 self.assertFalse(any("github.com/xgo-dev/llgo/internal/build" in args
                                      for args in calls))
                 self.assertTrue(all("-json" in args for args in calls))

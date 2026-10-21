@@ -230,8 +230,8 @@ jobs:
           fi
 
           run_main_suite() {
-            # Linux leaves one build process alongside at most two main test
-            # packages. Each compiler still has its package worker pool.
+            # Linux leaves two bounded build processes alongside at most two
+            # main test packages. Each compiler has its package worker pool.
             # The direct language suite retains its own invocation and is
             # excluded from host coverage: test/ is measured by LLGo.
             go list ./... \
@@ -252,11 +252,14 @@ jobs:
           }
 
           run_build_suite() {
-            # Run every build fixture once, including SIMD, with broad compiler
-            # coverage. Its isolated package cache is owned by TestMain.
-            python .github/scripts/run_go_tests.py build "${go_test[@]}" -count=1 -timeout 45m \
-              -coverpkg=./... -coverprofile=coverage-build.txt -covermode=set \
-              -bench '^BenchmarkGo126' -benchtime=1x ./internal/build
+            # Split the longest package within this job. Each process has its
+            # own source tree/cache and GOMAXPROCS=2. Discover every test,
+            # verify exactly-once execution, and union statement coverage.
+            build_tests=(python .github/scripts/run_build_tests.py --overlay "$LLGO_GO_TEST_OVERLAY")
+            if [[ "$RUNNER_OS" == Windows ]]; then
+              build_tests+=("--ldflags=-linkmode=external -extldflags=-lsynchronization")
+            fi
+            python .github/scripts/run_go_tests.py build "${build_tests[@]}"
           }
 
           # Overlap improved Qiniu Linux timings, but regressed on hosted macOS.
