@@ -23,7 +23,7 @@ signatures fail explicitly.
 The selected crash-output function's signature is checked; new dependencies
 must type-check against LLGo's remaining runtime. The normal type checker
 rejects duplicate definitions. This is an initial migration, not a complete
-runtime symbol-ownership or closure-ABI audit for #2165.
+closure-ABI audit for #2165.
 
 The declarations in `runtime/internal/runtime/utf8.go` and
 `runtime/internal/lib/runtime/crash_fd_go123.go` let `cmd/go` collect package
@@ -33,6 +33,70 @@ algorithm implementations. The `utf8_index*.go` files retain the LLGo-owned
 is removed by the overlay. Adding another reused subsystem requires an
 explicit selection, compatible boundary types, removal of its old bodies,
 and runtime tests.
+
+## Ownership and upgrade audit
+
+From an LLGo development environment, generate a source ownership report:
+
+```sh
+go run ./dev/runtimeaudit -goos=linux -goarch=amd64 -o=runtime-linux.json
+```
+
+`-dir` selects the application's module directory and therefore its resolved
+Go toolchain. The report records that Go version, GOOS, GOARCH, build tags,
+tool tags and `CGO_ENABLED`. It includes LLGo's default tags (`llgo`, `purego`,
+`math_big_pure_go`) and the target's closure ABI tag. Source selection uses
+the build's source overlays and alternative package declaration filtering.
+Paths use `$GOROOT` and `$LLGO` prefixes so
+reports can be compared across checkouts. The command fails on duplicate
+declarations, conflicting Go implementations/linknames, or unresolved runtime
+references; it writes the JSON report before failing for unresolved references.
+
+The inventory covers declarations in both runtime layers, `runtime/abi`, the
+merged `internal/abi` source view, public GOROOT runtime types/constants, and
+runtime entry points supplied by other standard-library packages. Each record
+includes its source owner, location, function signature, linkname, Go body,
+file imports and function directives. Legacy coverage-main hooks appear as
+compiler-generated entries with their instrumentation/version condition.
+The requirement list includes selected
+standard-library runtime/ABI selectors and linkname declarations, plus literal
+compiler runtime lookups. Package-scoped linknames may appear in another file.
+
+Compiler sources contain lowering for multiple targets. Literal lookups whose
+declarations exist only outside the selected source view appear separately in
+`other_target_compiler_uses`; type-dependent lookup expressions appear in
+`dynamic_compiler_uses`. These lists need compiler/execution coverage. This is
+a source inventory, not a call graph or proof of linker reachability: unused
+standard-library declarations are checked too. Go declarations without bodies
+record external boundaries. Assembly `TEXT` entries record source locations;
+preprocessor conditions, generated offsets and ABI compatibility still require
+the existing translator and execution tests. No assembly is enabled by the audit.
+
+Hosted Wasm source selection needs the same profile tags as the build:
+
+```sh
+go run ./dev/runtimeaudit -goos=js -goarch=wasm \
+  -tags=llgo.wasm.gc.linear,llgo.wasm.emscripten -o=runtime-js.json
+go run ./dev/runtimeaudit -goos=wasip1 -goarch=wasm \
+  -tags=llgo.wasm.gc.linear,llgo.wasi_threads,llgo.wasm.workers \
+  -o=runtime-wasi.json
+```
+
+`TestRuntimeOwnership` checks Darwin arm64, Linux amd64, Windows
+amd64/arm64/386 and these two Wasm selections against the active toolchain.
+Set `LLGO_RUNTIME_AUDIT_DIR` to an existing directory when running that test
+to retain its JSON reports. Negative fixtures cover new hooks, duplicate
+owners, package-scoped aliases, variable alias storage and source/assembly
+selection. Run this gate alongside the normal compile/execution matrix when
+upgrading Go; a source report alone does not establish runtime compatibility.
+
+The initial audit exposed hooks that were too narrowly selected:
+`runtime.getAuxv` now exists on platforms without a process auxiliary vector,
+where it returns an empty slice, and `runtime.nanotime` uses the platform clock
+on Windows/Wasm as well as Unix. The `runtime.fastrand64` compatibility entry
+now delegates to the platform random generator. Go 1.21's non-`purego`
+`hash/maphash` and external packages use this entry; LLGo's default `purego`
+selection does not require it. Direct linkname execution tests cover these hooks.
 
 ## Replacement-package assembly decision (#2128)
 
@@ -73,7 +137,7 @@ existing selection.
 - Run the runtime/syscall tests in executable, `c-shared` and `c-archive`
   modes on the relevant native targets; run UTF-8 on the Wasm profiles too.
 
-Remaining #2165 work includes the complete compiler/stdlib ownership report,
-further standard-runtime subsystems, and the separately gated closure,
+Remaining #2165 work includes qualifying dynamic compiler lookups and external
+boundaries, further standard-runtime subsystems, and the separately gated closure,
 metadata, stack and scheduler ABI work. These source selections do not
 establish compatibility with the full upstream runtime.

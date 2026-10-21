@@ -805,12 +805,14 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 	commands.environ = sourceGo.apply(commands.environ)
 	var llgoFiles map[string][]string
+	sourceCgoEnabled := sourceGo.CGO_ENABLED == "1"
 	conf.Overlay, llgoFiles, err = buildSourcePatchOverlayForGOROOT(conf.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT, sourcePatchBuildContext{
 		goos:       conf.Goos,
 		goarch:     conf.Goarch,
 		goversion:  sourcePatchGoVersion,
 		toolTags:   sourceGo.toolTags,
 		buildFlags: cfg.BuildFlags,
+		cgoEnabled: &sourceCgoEnabled,
 	})
 	if err != nil {
 		return nil, err
