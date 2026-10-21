@@ -1899,10 +1899,10 @@
       "label": "Branch cpunion/llgo:fix/linkname-go-storage-20261021",
       "path": "series/branch/61406ad638abd89f/summary.json",
       "configPath": "series/branch/61406ad638abd89f/config.json",
-      "commitPath": "commits/b0696286836d5f28c3807a97f25bbda6b88d498d.json",
-      "sha": "b0696286836d5f28c3807a97f25bbda6b88d498d",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/b0696286836d5f28c3807a97f25bbda6b88d498d",
-      "updatedAt": "2026-10-21T05:36:47.429Z"
+      "commitPath": "commits/a0590272fef3a2b87ae1174580d2460b2862f6d3.json",
+      "sha": "a0590272fef3a2b87ae1174580d2460b2862f6d3",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/a0590272fef3a2b87ae1174580d2460b2862f6d3",
+      "updatedAt": "2026-10-21T15:33:53.535Z"
     },
     {
       "kind": "branch",
@@ -5914,10 +5914,10 @@
       "label": "PR #2894",
       "path": "series/pull/2894/summary.json",
       "configPath": "series/pull/2894/config.json",
-      "commitPath": "commits/b0696286836d5f28c3807a97f25bbda6b88d498d.json",
-      "sha": "b0696286836d5f28c3807a97f25bbda6b88d498d",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/b0696286836d5f28c3807a97f25bbda6b88d498d",
-      "updatedAt": "2026-10-21T05:36:47.274Z"
+      "commitPath": "commits/a0590272fef3a2b87ae1174580d2460b2862f6d3.json",
+      "sha": "a0590272fef3a2b87ae1174580d2460b2862f6d3",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/a0590272fef3a2b87ae1174580d2460b2862f6d3",
+      "updatedAt": "2026-10-21T15:33:53.400Z"
     },
     {
       "kind": "pull",
