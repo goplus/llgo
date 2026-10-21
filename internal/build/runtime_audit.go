@@ -610,11 +610,11 @@ func (a *runtimeAuditor) compilerUses(report *RuntimeOwnership) error {
 			parsedFiles++
 			ast.Inspect(file, func(node ast.Node) bool {
 				call, ok := node.(*ast.CallExpr)
-				if !ok || len(call.Args) != 1 {
+				if !ok || len(call.Args) == 0 {
 					return true
 				}
 				sel, ok := call.Fun.(*ast.SelectorExpr)
-				if !ok || !slices.Contains([]string{"rtFunc", "rtEnvFunc", "rtNamed", "RuntimeFunc"}, sel.Sel.Name) {
+				if !ok || !slices.Contains([]string{"rtFunc", "rtEnvFunc", "rtNamed", "rtType", "RuntimeFunc", "runtimeFunc"}, sel.Sel.Name) {
 					return true
 				}
 				if literal, ok := call.Args[0].(*ast.BasicLit); ok && literal.Kind == token.STRING {

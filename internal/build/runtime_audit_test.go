@@ -276,6 +276,8 @@ func TestRuntimeAuditUpgradeDiagnostics(t *testing.T) {
 		{"dot-import", "go/src/consumer/use.go", "package consumer\nimport . \"runtime\"\nfunc use() { NewHook() }", "cannot resolve dot import"},
 		{"new-stdlib-hook", "go/src/consumer/use.go", "package consumer\nimport \"runtime\"\nfunc use() { runtime.NewHook() }", "missing"},
 		{"new-compiler-hook", "ssa/use.go", "package ssa\nfunc use() { p.rtFunc(\"NewHook\") }", "missing"},
+		{"new-compiler-type", "ssa/use.go", "package ssa\nfunc use() { p.rtType(\"NewType\") }", "missing"},
+		{"new-compiler-declaration", "cl/use.go", "package cl\nfunc use() { p.runtimeFunc(\"NewHook\", signature) }", "missing"},
 		{"changed-upstream-helper", "go/src/runtime/utf8.go", "package runtime\nfunc encoderune(p []int, r rune) int { return 0 }", "unreviewed helper"},
 		{"malformed-patch", "runtime/_patch/sync/bad.go", "package sync\nfunc (", "parse source patch directives"},
 		{"duplicate-runtime", "runtime/internal/runtime/duplicate.go", "package runtime\nfunc countrunes(s string) int { return 0 }", "duplicate runtime declaration"},
