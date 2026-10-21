@@ -465,6 +465,17 @@
     },
     {
       "kind": "branch",
+      "id": "fbe785315f414700",
+      "label": "Branch cpunion/llgo:codex/crosscompile-parallel-libraries-20261021",
+      "path": "series/branch/fbe785315f414700/summary.json",
+      "configPath": "series/branch/fbe785315f414700/config.json",
+      "commitPath": "commits/0bf4ad51631ff57b72a37e34944499917dfb43dd.json",
+      "sha": "0bf4ad51631ff57b72a37e34944499917dfb43dd",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0bf4ad51631ff57b72a37e34944499917dfb43dd",
+      "updatedAt": "2026-10-21T18:19:40.173Z"
+    },
+    {
+      "kind": "branch",
       "id": "0778b507a6b1a2a6",
       "label": "Branch cpunion/llgo:codex/debug-artifact-policy-2164-20260801",
       "path": "series/branch/0778b507a6b1a2a6/summary.json",
@@ -5962,6 +5973,17 @@
       "sha": "67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "updatedAt": "2026-10-21T04:15:02.313Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2898",
+      "label": "PR #2898",
+      "path": "series/pull/2898/summary.json",
+      "configPath": "series/pull/2898/config.json",
+      "commitPath": "commits/0bf4ad51631ff57b72a37e34944499917dfb43dd.json",
+      "sha": "0bf4ad51631ff57b72a37e34944499917dfb43dd",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0bf4ad51631ff57b72a37e34944499917dfb43dd",
+      "updatedAt": "2026-10-21T18:19:40.049Z"
     },
     {
       "kind": "pull",
