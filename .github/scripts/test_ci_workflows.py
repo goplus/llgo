@@ -165,24 +165,43 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(step["working-directory"], "runtime")
         self.assertIn("-coverprofile=../coverage-traceback.txt", step["run"])
 
-    def test_windows_exception_overlay_reaches_compiler_and_language_tests(self):
+    def test_go_suites_overlap_preserve_overlays_and_propagate_failures(self):
         step = next(step for step in load("go.yml")["jobs"]["test"]["steps"]
                     if step.get("id") == "test_coverage")
         script = step["run"].replace("${{ matrix.windows_abi }}", "msvc")
-        for runner, overlay in (("Linux", ""), ("Windows", ""),
-                                ("Windows", "C:/runner temp/runtime-overlay.json")):
-            with self.subTest(runner=runner, overlay=overlay), tempfile.TemporaryDirectory() as directory:
+        scenarios = [("Linux", "", ""), ("Windows", "", ""),
+                     ("Windows", "C:/runner temp/runtime-overlay.json", "")]
+        scenarios += [("Linux", "", suite) for suite in ("main", "build", "compiler", "language")]
+        for runner, overlay, failure in scenarios:
+            with self.subTest(runner=runner, overlay=overlay, failure=failure), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 log = root / "commands.jsonl"
+                summary = root / "summary.md"
                 fake_go = root / "go"
-                fake_go.write_text(f"#!{sys.executable}\n" + """
-import json, os, sys
+                fake_go.write_text(f"#!{sys.executable}\n" + r"""
+import json, os, sys, time
+from pathlib import Path
 if sys.argv[1] == 'list':
     print('github.com/xgo-dev/llgo/cmd/internal/version')
     print('github.com/xgo-dev/llgo/internal/build')
 else:
-    with open(os.environ['TEST_GO_LOG'], 'a') as stream:
-        stream.write(json.dumps(sys.argv[1:]) + '\\n')
+    args = sys.argv[1:]
+    suite = next((name for package, name in (
+        ('./internal/build', 'build'), ('./cl', 'compiler'), ('./test/go', 'language'))
+        if package in args), 'main')
+    root = Path(os.environ['TEST_GO_LOG']).parent
+    with (root / 'commands.jsonl').open('a') as stream:
+        stream.write(json.dumps(args) + '\n')
+    (root / (suite + '.started')).touch()
+    if suite in {'main', 'build'}:
+        peer = root / (('main' if suite == 'build' else 'build') + '.started')
+        deadline = time.monotonic() + 5
+        while not peer.exists():
+            if time.monotonic() > deadline:
+                sys.exit('independent suites did not overlap')
+            time.sleep(0.01)
+    (root / (suite + '.finished')).touch()
+    sys.exit(7 if suite == os.environ['TEST_GO_FAILURE'] else 0)
 """)
                 fake_go.chmod(0o755)
                 (root / "dev").mkdir()
@@ -190,19 +209,38 @@ else:
                 helper = root / ".github/scripts/run_go_tests.py"
                 helper.parent.mkdir(parents=True)
                 shutil.copyfile(WORKFLOWS.parent / "scripts/run_go_tests.py", helper)
-                subprocess.run(["bash", "-c", script], cwd=root, check=True,
-                               capture_output=True, text=True, env={**os.environ,
-                                   "PATH": directory + os.pathsep + os.environ["PATH"],
-                                   "RUNNER_OS": runner, "LLGO_GO_TEST_OVERLAY": overlay,
-                                   "TEST_GO_LOG": str(log)})
+                result = subprocess.run(["bash", "-c", script], cwd=root,
+                                        capture_output=True, text=True, timeout=20,
+                                        env={**os.environ,
+                                             "PATH": directory + os.pathsep + os.environ["PATH"],
+                                             "RUNNER_OS": runner, "LLGO_GO_TEST_OVERLAY": overlay,
+                                             "TEST_GO_LOG": str(log), "TEST_GO_FAILURE": failure,
+                                             "GITHUB_STEP_SUMMARY": str(summary)})
+                if failure == "main":
+                    # GNU and BSD xargs map a child failure to different codes.
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                else:
+                    self.assertEqual(result.returncode, 7 if failure else 0,
+                                     result.stdout + result.stderr)
                 calls = [json.loads(line) for line in log.read_text().splitlines()]
-                self.assertEqual(len(calls), 4)
+                expected_suites = {"main", "build"}
+                if failure != "main":
+                    expected_suites.add("compiler")
+                if failure not in {"main", "compiler"}:
+                    expected_suites.add("language")
+                self.assertEqual(len(calls), len(expected_suites))
+                report = summary.read_text()
+                for suite in expected_suites:
+                    self.assertTrue((root / (suite + ".finished")).exists())
+                    self.assertIn(f"### Go tests: {suite} (exit {7 if suite == failure else 0})", report)
                 for package in ("./cl", "./internal/build", "./test/go"):
-                    args = next(args for args in calls if package in args)
-                    self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
-                                     [f"-overlay={overlay}"] if overlay else [])
-                # Every package and test still runs; SIMD belongs to the full
-                # build suite instead of a second filtered invocation.
+                    for args in (args for args in calls if package in args):
+                        self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
+                                         [f"-overlay={overlay}"] if overlay else [])
+                main = next(args for args in calls if "github.com/xgo-dev/llgo/cmd/internal/version" in args)
+                self.assertIn("-p=2", main)
+                self.assertFalse(any(arg.startswith("-overlay=") for arg in main))
+                # Every build case still runs exactly once with compiler coverage.
                 build = next(args for args in calls if "./internal/build" in args)
                 self.assertNotIn("-run", build)
                 self.assertNotIn("-skip", build)

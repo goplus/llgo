@@ -219,41 +219,64 @@ jobs:
             main_go_test=(python .github/scripts/run_go_tests.py main "${go_test[@]}")
           fi
 
-          # Keep the direct language-behavior suite in a separate invocation.
-          # Its host Go coverage is not uploaded: test/ is measured by LLGo.
-          # Compiler-only source and diagnostic fixtures live in test/cmd/llgo;
-          # remaining test/go sources pass go test's default vet checks.
-          # Record coverage across packages so host runtime tests also measure
-          # the compiler they invoke.
-          go list ./... \
-            | grep -v '^github.com/xgo-dev/llgo/test/go$' \
-            | grep -v '^github.com/xgo-dev/llgo/cl$' \
-            | grep -v '^github.com/xgo-dev/llgo/internal/build$' \
-            | xargs "${main_go_test[@]}" -timeout 45m -coverprofile="coverage-main.txt" -covermode=set \
-                -coverpkg=./... -bench '^BenchmarkGo126' -benchtime=1x
-
-          # cl's error-path tests (e.g. TestErrInitLinkname) also recover nil
-          # dereferences. Apply the measured Windows exception-stack reserve
-          # before both cl and test/go (golang/go#81238).
+          # cl's error-path tests also recover nil dereferences. Keep the
+          # measured Windows exception-stack reserve on build, cl and test/go;
+          # main_go_test already captured the original, quarantined command.
           if [[ -n "$LLGO_GO_TEST_OVERLAY" ]]; then
             go_test+=("-overlay=$LLGO_GO_TEST_OVERLAY")
           fi
 
-          # Run all build fixtures once, including SIMD, with compiler coverage.
-          # Previously this package ran in the main batch and its SIMD fixtures
-          # ran again solely to collect cl/ssa coverage (another 2-4 minutes).
-          python .github/scripts/run_go_tests.py build "${go_test[@]}" -count=1 -timeout 45m \
-            -coverpkg=./... -coverprofile=coverage-build.txt -covermode=set \
-            -bench '^BenchmarkGo126' -benchtime=1x ./internal/build
+          run_main_suites() {
+            # Leave one long-running build process alongside at most two main
+            # test packages. Each compiler still has its package worker pool.
+            # The direct language suite retains its own invocation and is
+            # excluded from host coverage: test/ is measured by LLGo.
+            go list ./... \
+              | grep -v '^github.com/xgo-dev/llgo/test/go$' \
+              | grep -v '^github.com/xgo-dev/llgo/cl$' \
+              | grep -v '^github.com/xgo-dev/llgo/internal/build$' \
+              | xargs "${main_go_test[@]}" -p=2 -timeout 45m -coverprofile="coverage-main.txt" -covermode=set \
+                  -coverpkg=./... -bench '^BenchmarkGo126' -benchtime=1x
 
-          # Compiler fixtures owned by cl exercise ssa in-process. Instrument
-          # both packages in this single test binary so coverage follows those
-          # calls without restoring duplicate fixture tests under ssa.
-          python .github/scripts/run_go_tests.py compiler "${go_test[@]}" -timeout 45m \
-            -coverpkg=github.com/xgo-dev/llgo/cl,github.com/xgo-dev/llgo/ssa \
-            -coverprofile="coverage-compiler.txt" -covermode=set \
-            -bench '^BenchmarkGo126' -benchtime=1x ./cl
-          python .github/scripts/run_go_tests.py language "${go_test[@]}" -timeout 45m ./test/go
+            # cl owns the compiler fixtures and measures calls into ssa.
+            python .github/scripts/run_go_tests.py compiler "${go_test[@]}" -timeout 45m \
+              -coverpkg=github.com/xgo-dev/llgo/cl,github.com/xgo-dev/llgo/ssa \
+              -coverprofile="coverage-compiler.txt" -covermode=set \
+              -bench '^BenchmarkGo126' -benchtime=1x ./cl
+            python .github/scripts/run_go_tests.py language "${go_test[@]}" -timeout 45m ./test/go
+          }
+
+          run_build_suite() {
+            # Run every build fixture once, including SIMD, with broad compiler
+            # coverage. Its isolated package cache is owned by TestMain.
+            python .github/scripts/run_go_tests.py build "${go_test[@]}" -count=1 -timeout 45m \
+              -coverpkg=./... -coverprofile=coverage-build.txt -covermode=set \
+              -bench '^BenchmarkGo126' -benchtime=1x ./internal/build
+          }
+
+          # Start the longest suite immediately and overlap independent packages.
+          # Separate summary files avoid interleaved Markdown; all JSON logs and
+          # coverage profiles already have distinct names. Drain both processes
+          # and propagate either failure before the later emulator/coverage steps.
+          # Relative paths also work for native Windows Python under Git Bash.
+          mkdir -p go-test-timings
+          summaries=$(mktemp -d go-test-timings/summaries.XXXXXX)
+          trap 'rm -rf "$summaries"' EXIT
+          GITHUB_STEP_SUMMARY="$summaries/build.md" run_build_suite &
+          build_pid=$!
+          GITHUB_STEP_SUMMARY="$summaries/main.md" run_main_suites &
+          main_pid=$!
+          status=0
+          wait "$main_pid" || status=$?
+          wait "$build_pid" || status=$?
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            for report in "$summaries/main.md" "$summaries/build.md"; do
+              if [[ -f "$report" ]]; then
+                cat "$report" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            done
+          fi
+          exit "$status"
 
       - name: Test traceback formatter with coverage
         shell: bash
