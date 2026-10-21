@@ -89,6 +89,14 @@ normal frame selector and local-variable pane refer to the paused Wasm frame.
 Exact parked PCs, optimized register reconstruction and complete runtime-object
 views remain a later phase.
 
+Runtime views expand strings, slices, arrays, interface payloads, maps and
+buffered channels, including nested values and zero-sized elements. Named
+interface payloads use runtime import-path metadata to find their DWARF types;
+unresolved types retain the summary without guessing a payload layout. Function
+values show their Wasm table index and closure-context address; typed closure
+captures are not yet decoded. Container expansion is bounded to 100 elements
+and map scans to 4096 buckets.
+
 WASI source sessions remain unavailable for current W32 pthread artifacts.
 Their shared `env.memory`, `wasi.thread-spawn` and `wasix_32v1.thread_exit` imports
 require a compatible runtime debugger; the current Wasmtime backend cannot
@@ -120,3 +128,12 @@ values again after resuming. A recovered goroutine parks in a later defer to
 check that cleared panic snapshots cannot expose unwound frame addresses.
 Unit tests reject register/changing/ambiguous
 locations, panic snapshots and stale stops, and check recursive object release.
+
+The 2026-10-22 run passed all twelve sessions with deep runtime values after
+memory growth and GC: nested strings/slices, named interface payloads from main
+and imported packages, typed nils, function/closure addresses, maps during
+evacuation, indirect keys/values, wrapped closed channels and zero-sized
+elements. A second stop verifies mutations and drained channels; object release
+checks include every expanded child. The compiler now uses the runtime's
+canonical package paths in DWARF. Native macOS LLDB O0/O2 panic, inline and
+aggregate acceptance also passes with this change.

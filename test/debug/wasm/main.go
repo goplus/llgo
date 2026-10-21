@@ -48,6 +48,7 @@ func debugRecoveredWaiter(ready chan<- bool, release <-chan bool, done chan<- bo
 func debugPanicLeaf() { panic("parked panic snapshot") }
 
 func main() {
+	prepareDebugViews()
 	ready, release, done := make(chan bool, 2), make(chan bool), make(chan bool, 2)
 	spawnDebugG(func() { debugWaiter(3, ready, release, done) })
 	spawnDebugG(func() { debugWaiter(4, ready, release, done) })
@@ -62,6 +63,7 @@ func main() {
 	if cppProbe(14) != 21 {
 		panic("debug probe returned the wrong value")
 	}
+	checkDebugViews()
 	close(release)
 	<-done
 	<-done

@@ -203,6 +203,89 @@ try {
   }
   if (goroutineFixture) {
     await pauseWorkers();
+    async function runtimeViews() {
+      return extension(`(async () => {
+        const plugin = globalThis.__llgoLanguageExtensionPlugin;
+        const {context, stopId} = globalThis.__llgoLastEvaluation;
+        const owned = new Set();
+        const root = await plugin.evaluate('debugViews', context, stopId);
+        if (!root?.objectId) throw new Error('debugViews is unavailable');
+        async function expand(value, depth = 0) {
+          if (!value) throw new Error('runtime view returned no value');
+          if (value.objectId) owned.add(value.objectId);
+          const result = {type: value.type, value: value.value, description: value.description};
+          const object = plugin.objects.get(value.objectId);
+          if (object?.kind === 'map' && object.length === 49n) {
+            result.growing = (await plugin.readNamedUnsigned(plugin.module(context.rawModuleId),
+              object.hashType, object.address, object.spec.old_buckets, stopId)) !== 0n;
+          }
+          // Function values expose a table index and context address. There is
+          // no typed closure-environment view; do not dereference raw code/data.
+          if (value.hasChildren && depth < 6 && !value.description?.startsWith('func[')) {
+            result.properties = Object.fromEntries(await Promise.all(
+              (await plugin.getProperties(value.objectId)).map(async p => [p.name, await expand(p.value, depth + 1)])));
+          }
+          return result;
+        }
+        const tree = await expand(root);
+        await plugin.releaseObject(root.objectId);
+        const leaked = [...owned].filter(id => plugin.objects.has(id));
+        if (leaked.length) throw new Error('runtime view retains released objects: ' + leaked);
+        return tree.properties;
+      })()`);
+    }
+    function checkRuntimeViews(views, afterResume = false) {
+      const values = value => Object.values(value.properties).map(child => child.value);
+      const node = (value, name, numbers) => {
+        assert.equal(value.properties.Name.value, name);
+        assert.deepEqual(values(value.properties.Values), numbers);
+      };
+      assert.equal(views.Text.value, 'runtime 世界', JSON.stringify(views.Text));
+      for (const record of [views.Imported.properties.value, views.ImportedPointer.properties.value.properties['*']]) {
+        assert.equal(record.properties.Name.value, 'imported');
+        assert.equal(record.properties.Value.value, 87);
+      }
+      const first = afterResume ? 55 : 3;
+      node(views.Nodes.properties[0], 'runtime 世界', [first, 5, 8]);
+      node(views.Nodes.properties[1], 'nested', [13, 21]);
+      assert.ok(views.Box.properties?.value, JSON.stringify(views.Box));
+      node(views.Box.properties.value, 'runtime 世界', [first, 5, 8]);
+      node(views.Pointer.properties.value.properties['*'], 'runtime 世界', [first, 5, 8]);
+      node(views.Label.properties.value.properties['*'], 'runtime 世界', [first, 5, 8]);
+      assert.equal(views.TypedNil.properties.value.description, 'nil');
+      for (const name of ['Nil', 'NilFunction', 'NilMap', 'NilChannel']) {
+        assert.equal(views[name].type, 'null', name);
+      }
+      assert.match(views.Function.description, /^func\[\d+\]$/);
+      assert.match(views.Closure.description, /^func\[\d+\] data=0x[1-9a-f][0-9a-f]*$/);
+      const count = afterResume ? 48 : 49;
+      assert.equal(views.Mapping.description, `len=${count}`);
+      if (!afterResume) assert.equal(views.Mapping.growing, true, 'inspect a partially evacuated map');
+      const entries = views.Mapping.properties;
+      assert.equal(Object.keys(entries).length, count * 2);
+      const keys = new Set();
+      for (let i = 0; i < count; i++) {
+        const key = entries[`key[${i}]`].value;
+        assert.ok(key >= 0 && key < 49 && (!afterResume || key !== 7));
+        keys.add(key);
+        node(entries[`value[${i}]`], 'entry', [key, key + 100]);
+      }
+      assert.equal(keys.size, count, 'map growth must not duplicate entries');
+      assert.deepEqual(values(views.Indirect.properties['key[0]']), [7, ...Array(16).fill(0)]);
+      assert.deepEqual(values(views.Indirect.properties['value[0]']), [11, 19, ...Array(16).fill(0)]);
+      assert.deepEqual([views.Set.properties['key[0]'].value, views.Set.properties['key[1]'].value].sort(), [7, 9]);
+      assert.equal(views.Queue.description, `len=${afterResume ? 0 : 3} cap=3 closed`);
+      if (!afterResume) {
+        node(views.Queue.properties[0], 'runtime 世界', [3, 5, 8]);
+        node(views.Queue.properties[1], 'nested', [13, 21]);
+        node(views.Queue.properties[2], 'wrapped', [34]);
+      }
+      assert.equal(views.Signals.description, 'len=2 cap=2 closed');
+      assert.equal(Object.keys(views.Signals.properties).length, 2);
+      assert.equal(Object.keys(views.Empty.properties).length, 3);
+      assert.equal(Object.keys(views.EmptyArray.properties).length, 3);
+    }
+    checkRuntimeViews(await runtimeViews());
     async function goroutines() {
       return extension(`(async () => {
         const plugin = globalThis.__llgoLanguageExtensionPlugin;
@@ -313,10 +396,11 @@ try {
       return (await extension(`globalThis.__llgoEvaluations.filter(e => e.name === ${JSON.stringify(expectedName)} && e.result?.value === ${expectedValue}).length`)) >= 2;
     }, 'cleanup C++ local');
     await pauseWorkers();
+    checkRuntimeViews(await runtimeViews(), true);
     const after = await goroutines();
     assert.ok(parked.every(g => !after.some(live => live.id === g.id)), JSON.stringify(after));
     assert.ok(!after.some(live => live.id === recovered.id), 'recovered goroutine record is removed');
-    console.log('parked locals survive GC and memory growth; exited goroutine records are removed');
+    console.log('parked locals and deep runtime views survive GC and memory growth; resumed values refresh and exited records disappear');
   }
   for (const breakpoint of breakpoints) {
     if (breakpoint.sessionId) await browser.send('Debugger.removeBreakpoint', {breakpointId: breakpoint.id}, breakpoint.sessionId);

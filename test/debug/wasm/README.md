@@ -24,6 +24,11 @@ addresses, the extension also reads locals whose DWARF locations stay in
 linear memory across the executable scope. The fixture checks distinct arrays
 in four/five recursive frames after memory growth and GC. Register-dependent
 or changing locations and unwound panic snapshots remain unavailable.
+The same stops inspect nested strings/slices, named interface payloads from
+main and imported packages, typed nils, functions and closure addresses, a map
+during bucket evacuation, indirect map keys/values, closed wrapped channels,
+and zero-sized container elements. After resuming, a second stop verifies
+mutations and channel draining; releasing the root also releases its children.
 The extension checks the coordinated stop before and after inspection, and
 rejects expanded objects from an older stop. Registry and frame sequence
 guards remain an additional check. This uses Chrome's debugger transport and
