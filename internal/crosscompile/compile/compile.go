@@ -62,6 +62,8 @@ func (g CompileGroup) Compile(
 
 	// Keep archive members in source order even when compiles finish out of
 	// order. Duplicate symbol resolution can depend on archive member order.
+	// Each worker writes one distinct index; the backing array is never resized
+	// and compileFiles joins every worker before the archive reads it.
 	objFiles := make([]string, len(g.Files))
 
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
