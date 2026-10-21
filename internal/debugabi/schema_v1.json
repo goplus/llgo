@@ -152,6 +152,9 @@
         "status": "atomicstatus",
         "processor_id": "processorID",
         "stack": "stack",
+        "panic_depth": "panicDepth",
+        "frame_debug": "wasmCallerFrame",
+        "frame_base": "base",
         "function": "Function",
         "file": "File",
         "line": "Line"

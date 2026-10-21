@@ -76,11 +76,18 @@ an older stop reports that it must be inspected again. A disconnected control
 transport disables coordinated inspection with an error. Registry/stack guards
 remain an additional check.
 
-The logical stack view does not expose parked-frame locals or switch the
-execution context.
-Debugger frame selection and local variables still refer to the paused Wasm
-execution frame. Optimized DWARF locations can be unavailable or optimized out;
-complete runtime-object views remain a later phase.
+Expand a waiting goroutine's frame in `$goroutines` to inspect its memory
+locals. Debug builds save each frame's native base; the reader accepts a
+`DW_OP_fbreg` location only when one scope and location cover the entire
+function. Recursive frames therefore use their own addresses after GC and
+fiber switches. Register values, changing locations, ambiguous names and
+unwound panic snapshots remain unavailable. Ordinary builds retain no frame
+bases. Existing artifacts without saved bases still show source stacks.
+
+Selecting a logical frame does not switch the execution context. DevTools'
+normal frame selector and local-variable pane refer to the paused Wasm frame.
+Exact parked PCs, optimized register reconstruction and complete runtime-object
+views remain a later phase.
 
 WASI source sessions remain unavailable for current W32 pthread artifacts.
 Their shared `env.memory`, `wasi.thread-spawn` and `wasix_32v1.thread_exit` imports
@@ -104,4 +111,12 @@ external DWARF). The worker sessions check source locals, parked stacks after
 GC, goroutine exit, coordinated stepping, worker creation/termination and
 startup barriers. Four-worker lifecycle/step acceptance also passed 20
 consecutive runs. These results qualify browser coordination, not the
-remaining parked-frame variable or WASI debugger work.
+remaining optimized-variable or WASI debugger work.
+
+The 2026-10-21 run on the same toolchain passed twelve sessions with saved
+frame bases, adding two-worker `-Os` coverage for each memory width. The goroutine fixtures read distinct arrays from four/five
+recursive waiting frames after forced memory growth and GC, then verify the
+values again after resuming. A recovered goroutine parks in a later defer to
+check that cleared panic snapshots cannot expose unwound frame addresses.
+Unit tests reject register/changing/ambiguous
+locations, panic snapshots and stale stops, and check recursive object release.

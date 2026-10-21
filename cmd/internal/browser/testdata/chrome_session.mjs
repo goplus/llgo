@@ -111,6 +111,7 @@ try {
     if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
     return result.result.value;
   }
+  const optimizedFixture = process.env.LLGO_BROWSER_DEBUG_OPTIMIZED === '1';
   await extension(`(() => {
     const plugin = globalThis.__llgoLanguageExtensionPlugin;
     globalThis.__llgoEvaluations = [];
@@ -118,7 +119,7 @@ try {
     plugin.evaluate = async (...args) => {
       try {
         const result = await evaluate(...args);
-        if (args[0] === 'cpp_local' || args[0] === 'value') {
+        if (args[0] === ${JSON.stringify(optimizedFixture ? 'input' : 'cpp_local')} || args[0] === 'value') {
           globalThis.__llgoLastEvaluation = {context: args[1], stopId: args[2]};
         }
         globalThis.__llgoEvaluations.push({name: args[0], result});
@@ -181,8 +182,9 @@ try {
   const run = page.send('Runtime.evaluate', {expression: 'globalThis.__llgoDebugRun()', awaitPromise: true});
   await until(() => paused, 'source breakpoint');
   assert.ok(paused.hitBreakpoints.some(id => breakpoints.some(b => b.id === id)), JSON.stringify(paused));
-  const expectedName = fixture ? 'value' : 'cpp_local';
-  const expectedValue = fixture ? 42 : 21;
+  // The optimized C++ fixture can eliminate cpp_local; input remains live.
+  const expectedName = fixture ? 'value' : optimizedFixture ? 'input' : 'cpp_local';
+  const expectedValue = fixture ? 42 : optimizedFixture ? 14 : 21;
   let evaluations;
   try {
     await until(async () => {
@@ -208,11 +210,20 @@ try {
         const values = await plugin.getProperties(root.objectId);
         if (values.length !== records.length) throw new Error('goroutine view differs from registry');
         for (const value of values) {
+          const record = records.find(record => record.id === value.name);
           const properties = await plugin.getProperties(value.value.objectId);
           const frames = properties.find(p => p.name === 'frames').value;
-          await plugin.getProperties(frames.objectId);
+          for (const child of await plugin.getProperties(frames.objectId)) {
+            const frame = record.frames[Number(child.name)];
+            if (frame.function !== 'main.debugWaiter') continue;
+            const locals = await plugin.getProperties(child.value.objectId);
+            const local = locals.find(property => property.name === 'local')?.value;
+            if (!local?.objectId) throw new Error('parked array local unavailable: ' + JSON.stringify(locals));
+            frame.local = (await plugin.getProperties(local.objectId)).map(property => property.value.value);
+          }
         }
-        const owned = [...plugin.objects].filter(([, object]) => object.kind === 'snapshot').map(([id]) => id);
+        const owned = [...plugin.objects].filter(([, object]) =>
+          object.kind === 'snapshot' || object.kind === 'parked-frame').map(([id]) => id);
         await plugin.releaseObject(root.objectId);
         if (owned.some(id => plugin.objects.has(id))) throw new Error('goroutine view retains released objects');
         return records;
@@ -258,10 +269,21 @@ try {
       if (Atomics.load(__llgoStartupState, 0) !== 0) throw new Error('worker ran during the stop');
     })()`);
     const parked = records.filter(g => g.frames.some(f => f.function === 'main.debugWaiter'));
+    const recovered = records.find(g => g.frames.some(f => f.function === 'main.debugRecoveredWaiter'));
+    assert.equal(recovered?.state, 'waiting', 'recovered goroutine parks in a later defer');
+    assert.ok(recovered.frames.filter(f => f.function === 'main.debugRecoveredWaiter' || f.function === 'main.debugPanicLeaf')
+      .every(f => !f.base), 'cleared panic snapshots must not expose retained physical frame addresses');
     assert.equal(parked.length, 2, JSON.stringify(records));
     assert.ok(parked.every(g => g.state === 'waiting'), JSON.stringify(parked));
     assert.deepEqual(parked.map(g => g.frames.filter(f => f.function === 'main.debugWaiter').length).sort(), [4, 5]);
     assert.ok(parked.every(g => g.frames.every(f => f.file && Number(f.line) > 0)), JSON.stringify(parked));
+    for (const goroutine of parked) {
+      const frames = goroutine.frames.filter(frame => frame.function === 'main.debugWaiter');
+      for (const [depth, frame] of frames.entries()) {
+        assert.deepEqual(frame.local, Array.from({length: 4}, (_, index) =>
+          depth + index * 11 + (index === (depth & 3) ? 100 : 0)), 'parked recursive local after GC and memory growth');
+      }
+    }
     assert.equal(new Set(parked.map(g => g.id)).size, 2);
     assert.ok(parked.every(g => g.processor !== null), JSON.stringify(parked));
     const main = records.find(g => g.frames.some(f => f.function === 'main.main'));
@@ -291,7 +313,8 @@ try {
     await pauseWorkers();
     const after = await goroutines();
     assert.ok(parked.every(g => !after.some(live => live.id === g.id)), JSON.stringify(after));
-    console.log('parked logical stacks survive GC; exited goroutine records are removed');
+    assert.ok(!after.some(live => live.id === recovered.id), 'recovered goroutine record is removed');
+    console.log('parked locals survive GC and memory growth; exited goroutine records are removed');
   }
   for (const breakpoint of breakpoints) {
     if (breakpoint.sessionId) await browser.send('Debugger.removeBreakpoint', {breakpointId: breakpoint.id}, breakpoint.sessionId);

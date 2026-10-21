@@ -59,20 +59,23 @@ def main():
                              "-coverpkg=./cmd/internal/browser,./internal/browserdebug,./internal/wasmdebug,./internal/debugabi",
                              f"-coverprofile={coverage_dir / f'{profile}-{mode}.out'}"]
                 run(test + ["./internal/browserdebug", "./cmd/internal/browser"], env)
-            for workers in (1, 2, 4):
+            for workers, optimization in ((1, "-O0"), (2, "-O0"), (4, "-O0"), (2, "-Os")):
                 mode = "external" if workers == 4 else "embedded"
-                stem = Path(directory) / f"{profile}-goroutines-{workers}"
+                variant = f"{profile}-goroutines-{workers}" + ("-optimized" if optimization == "-Os" else "")
+                stem = Path(directory) / variant
                 env["LLGO_WASM_WORKERS"] = str(workers)
-                run([llgo, "build", "-target", target, "-O0",
+                env["LLGO_BROWSER_DEBUG_OPTIMIZED"] = "1" if optimization == "-Os" else "0"
+                run([llgo, "build", "-target", target, optimization,
                      "-tags=llgo.wasm.debugger", f"-debug-artifact={mode}",
                      "-o", str(stem.with_suffix(".mjs")), "."], env, ROOT / "test/debug/wasm")
                 env["LLGO_BROWSER_DEBUG_ARTIFACT"] = str(stem.with_suffix(".wasm"))
                 test = ["go", "test", "-count=1", "-timeout=3m", "-v"]
                 if coverage_dir:
                     test += ["-covermode=atomic", "-coverpkg=./cmd/internal/browser",
-                             f"-coverprofile={coverage_dir / f'{profile}-workers-{workers}.out'}"]
+                             f"-coverprofile={coverage_dir / f'{variant}.out'}"]
                 run(test + ["./cmd/internal/browser", "-run=^TestChromeLanguageExtension$"], env)
             env.pop("LLGO_WASM_WORKERS", None)
+            env.pop("LLGO_BROWSER_DEBUG_OPTIMIZED", None)
 
 
 if __name__ == "__main__":

@@ -362,9 +362,10 @@
           {name: 'state', value: {type: 'string', value: record.state, hasChildren: false}},
           {name: 'processor', value: {type: 'string', value: record.processor ?? '<unattached>', hasChildren: false}},
           {name: 'frames', value: {type: 'array', description: `${record.frames.length} logical frames`,
-            properties: record.frames.map((frame, index) => ({name: String(index), value: {
-              type: 'string', value: `${frame.function} (${frame.file}:${frame.line})`, hasChildren: false,
-            }}))}},
+            properties: record.frames.map((frame, index) => ({name: String(index), value: frame.base ? {
+              type: 'object', description: `${frame.function} (${frame.file}:${frame.line})`,
+              parkedFrame: frame, stopId,
+            } : {type: 'string', value: `${frame.function} (${frame.file}:${frame.line})`, hasChildren: false}}))}},
         ]}}));
         return this.snapshotObject(module, {type: 'array', description: `${records.length} Go goroutines`}, properties);
       }
@@ -729,7 +730,10 @@
       const object = this.objects.get(objectId);
       if (!object) return [];
       const module = this.module(object.rawModuleId);
-      return this.withWorkerStop(module, () => this.getPropertiesAtStop(objectId), object.workerStop);
+      const properties = await this.withWorkerStop(module, () => this.getPropertiesAtStop(objectId), object.workerStop);
+      object.children = [...new Set([...(object.children || []),
+        ...properties.map(property => property.value?.objectId).filter(Boolean)])];
+      return properties;
     }
 
     async getPropertiesAtStop(objectId) {
@@ -740,12 +744,25 @@
         if (!object.resolvedProperties) {
           object.children = [];
           object.resolvedProperties = object.properties.map(property => {
+            if (property.value.parkedFrame) {
+              const {parkedFrame, stopId, ...summary} = property.value;
+              const child = this.storeObject(module, null, null, stopId, 'parked-frame', {frame: parkedFrame});
+              object.children.push(child);
+              return {...property, value: {...summary, objectId: child, hasChildren: true}};
+            }
             if (!property.value.properties) return property;
             const {properties, ...summary} = property.value;
             const value = this.snapshotObject(module, summary, properties);
             object.children.push(value.objectId);
             return {...property, value};
           });
+        }
+        return object.resolvedProperties;
+      }
+      if (object.kind === 'parked-frame') {
+        if (!object.resolvedProperties) {
+          object.resolvedProperties = await globalThis.LLGoWasmGoroutines.locals(this, module, object.frame, object.stopId);
+          object.children = object.resolvedProperties.map(property => property.value.objectId).filter(Boolean);
         }
         return object.resolvedProperties;
       }

@@ -192,8 +192,10 @@ Browser debugging supports paused Wasm locals and an opt-in `$goroutines`
 watch view of logical Go source stacks, including parked fibers. The session
 coordinates pauses, resumes and stepping across the page and its dedicated
 workers. Shared-memory inspection waits for a stable group stop and rejects
-values if the stop or worker membership changes. Parked-frame local-variable
-inspection remains a later phase.
+values if the stop or worker membership changes. Expand a waiting goroutine's
+frame to inspect memory locals whose DWARF scope and frame-relative location
+remain valid throughout the function. Register values, changing locations and
+panic snapshots remain unavailable.
 WASI source sessions are explicitly rejected: current W32 modules require
 shared `env.memory` and `wasi.thread-spawn`, which the
 current Wasmtime debug backend does not implement. Use `llgo run -target=wasi`
