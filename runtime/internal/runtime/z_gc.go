@@ -41,6 +41,17 @@ func AllocU(size uintptr) unsafe.Pointer {
 	return ret
 }
 
+func allocUAligned(size, alignment uintptr) unsafe.Pointer {
+	ret := bdwgc.Memalign(alignment, size)
+	if ret == nil {
+		// GC_memalign rejects alignments above the collector's heap-block
+		// size. Preserve support for those requests using scanned storage.
+		return allocUAlignedFallback(size, alignment)
+	}
+	recordMemProfileAlloc(size)
+	return ret
+}
+
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
 	ret := AllocU(size)

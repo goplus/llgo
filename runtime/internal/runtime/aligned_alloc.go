@@ -23,12 +23,15 @@ import (
 )
 
 // AllocUAligned allocates GC-owned storage with a power-of-two alignment.
-// Like LocalPackage, it returns an interior pointer; both supported collectors
-// retain the entire allocation through interior pointers. This is not an
-// AllocRoot/FreeRoot allocation and must not be passed to a native free.
+// It may return an interior pointer; both supported collectors retain the
+// entire allocation through interior pointers. This storage is not paired
+// with AllocRoot/FreeRoot and must not be passed to a native free.
 func AllocUAligned(size, alignment uintptr) unsafe.Pointer {
 	if alignment == 0 || alignment&(alignment-1) != 0 {
 		panic("runtime: invalid allocation alignment")
+	}
+	if size > maxAlloc {
+		panic("runtime: allocation size out of range")
 	}
 	if alignment <= unsafe.Sizeof(uintptr(0)) {
 		return AllocU(size)
@@ -41,8 +44,14 @@ func AllocUAligned(size, alignment uintptr) unsafe.Pointer {
 	if padding > maxAlloc || size > maxAlloc-padding {
 		panic("runtime: allocation size out of range")
 	}
-	p := AllocU(size + padding)
-	return unsafe.Add(p, -uintptr(p)&padding)
+	return allocUAligned(size, alignment)
+}
+
+// allocUAlignedFallback is used when the backend cannot provide the requested
+// alignment. AllocUAligned has already checked size plus padding for overflow.
+func allocUAlignedFallback(size, alignment uintptr) unsafe.Pointer {
+	p := AllocU(size + alignment - 1)
+	return unsafe.Add(p, -uintptr(p)&(alignment-1))
 }
 
 // AllocZAligned is the zero-initialized counterpart of AllocUAligned.
