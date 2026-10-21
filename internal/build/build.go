@@ -940,6 +940,10 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		prepareSpan.done()
 		return nil, err
 	}
+	if err := validateVectorMaps(prog, initial, altPkgs); err != nil {
+		prepareSpan.done()
+		return nil, err
+	}
 	prepareSpan.done()
 	frontendOptions.PreloadedSyntax = true
 

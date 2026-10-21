@@ -19,6 +19,7 @@ package ssa
 import (
 	"fmt"
 	"go/types"
+	"unsafe"
 
 	"github.com/xgo-dev/llvm"
 )
@@ -57,7 +58,11 @@ func (p Program) structLayout(typ Type) (structLayout, bool) {
 func (p Program) toLLVMStructBody(raw *types.Struct, native bool) ([]llvm.Type, *structLayout) {
 	fields := p.toLLVMFields(raw, native)
 	goarch := p.target.effectiveGOARCH()
-	if native || (goarch != "386" && !(goarch == "wasm" && p.target.WasmProfile != "")) || len(fields) == 0 {
+	if native || len(fields) == 0 {
+		return fields, nil
+	}
+	_, vectorLayout := (*goProgram)(unsafe.Pointer(p)).vectorLayout(raw, false)
+	if goarch != "386" && !(goarch == "wasm" && p.target.WasmProfile != "") && !vectorLayout {
 		return fields, nil
 	}
 
@@ -71,7 +76,7 @@ func (p Program) toLLVMStructBody(raw *types.Struct, native bool) ([]llvm.Type, 
 	goAlign := int64(1)
 	goSize := int64(0)
 	for i, field := range fields {
-		fieldAlign := sizes.Alignof(raw.Field(i).Type())
+		fieldAlign := (*goProgram)(unsafe.Pointer(p)).Alignof(raw.Field(i).Type())
 		if p.hasNativeTypeLayout(raw.Field(i).Type()) {
 			fieldAlign = int64(p.td.ABITypeAlignment(field))
 		}
@@ -133,9 +138,12 @@ func (p Program) toLLVMStructBody(raw *types.Struct, native bool) ([]llvm.Type, 
 
 	probe := p.ctx.StructType(body, false)
 	if int64(p.td.ABITypeAlignment(probe)) < goAlign {
-		// Go alignments are powers of two and the corresponding LLVM integer
-		// type supplies the same aggregate alignment.
+		// Integers carry ordinary alignment; vector carriers are needed for
+		// over-aligned SIMD storage, since i128 need not be 16-byte aligned.
 		alignType := p.ctx.IntType(int(goAlign * 8))
+		if goAlign > int64(p.GoWordSize()) {
+			alignType = llvm.VectorType(p.tyInt8(), int(goAlign))
+		}
 		body = append(body, llvm.ArrayType(alignType, 0))
 		probe = p.ctx.StructType(body, false)
 	}
