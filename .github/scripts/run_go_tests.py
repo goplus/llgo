@@ -17,7 +17,8 @@ def cell(value):
 def run(command, output, suite, summary=None):
     output.mkdir(parents=True, exist_ok=True)
     cases = []
-    with (output / f"{suite}.jsonl").open("w", encoding="utf-8") as log:
+    print(f"Starting Go test suite {suite}: {command!r}", file=sys.stderr, flush=True)
+    with (output / f"{suite}.jsonl").open("w", encoding="utf-8", buffering=1) as log:
         with subprocess.Popen(command, stdout=subprocess.PIPE, text=True,
                               encoding="utf-8", errors="replace", bufsize=1) as process:
             for line in process.stdout:
@@ -26,13 +27,13 @@ def run(command, output, suite, summary=None):
                     event = json.loads(line)
                 except ValueError:
                     # Preserve unexpected tool output so diagnostics never disappear.
-                    print(line, end="")
+                    print(line, end="", flush=True)
                     continue
                 if not isinstance(event, dict):
-                    print(line, end="")
+                    print(line, end="", flush=True)
                     continue
                 if isinstance(event.get("Output"), str):
-                    print(event["Output"], end="")
+                    print(event["Output"], end="", flush=True)
                 if event.get("Test") and event.get("Action") in {"pass", "fail", "skip"}:
                     cases.append({key: event.get(key) for key in
                                   ("Package", "Test", "Action", "Elapsed")})
