@@ -3875,6 +3875,17 @@
     },
     {
       "kind": "branch",
+      "id": "8cf78832660556e7",
+      "label": "Branch visualfc/llgo:fix/interface-compare-dominance",
+      "path": "series/branch/8cf78832660556e7/summary.json",
+      "configPath": "series/branch/8cf78832660556e7/config.json",
+      "commitPath": "commits/549670ddf3ae766d455f90b649fc01421bb7bb7b.json",
+      "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
+      "updatedAt": "2026-10-21T13:05:34.088Z"
+    },
+    {
+      "kind": "branch",
       "id": "6a9e9e0a9e38c5b1",
       "label": "Branch visualfc/llgo:fix/js-funcof-sync-from-go-call",
       "path": "series/branch/6a9e9e0a9e38c5b1/summary.json",
@@ -9944,6 +9955,17 @@
       "sha": "67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/67999a72cdeaae2ecbe45bfd1aeaa8a2bd6f3acb",
       "updatedAt": "2026-10-21T04:34:32.410Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2900",
+      "label": "PR #2900",
+      "path": "series/pull/2900/summary.json",
+      "configPath": "series/pull/2900/config.json",
+      "commitPath": "commits/549670ddf3ae766d455f90b649fc01421bb7bb7b.json",
+      "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
+      "updatedAt": "2026-10-21T13:05:31.418Z"
     },
     {
       "kind": "pull",
