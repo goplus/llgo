@@ -20,7 +20,7 @@ WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
-    "benchmark.yml": 9, "release-build.yml": 18, "doc.yml": 6, "fmt.yml": 1,
+    "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
 }
 BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
 
@@ -191,16 +191,77 @@ else:
             with self.subTest(workflow=filename):
                 self.assertEqual(count, expected)
 
+    def test_windows_release_covers_all_architectures_with_native_x86_toolchains(self):
+        jobs = load("release-build.yml")["jobs"]
+        for name in ("build-windows", "test-windows-artifacts"):
+            matrix = jobs[name]["strategy"]["matrix"]
+            self.assertCountEqual(matrix["abi"], ["msvc", "mingw"])
+            self.assertCountEqual(matrix["goarch"], ["amd64", "arm64"])
+            x86 = jobs[name + "-x86"]["strategy"]["matrix"]
+            self.assertCountEqual(x86["abi"], ["msvc", "mingw"])
+            self.assertEqual(x86["goarch"], ["386"])
+            self.assertEqual(x86["os"], ["windows-2022"])
+            self.assertEqual(jobs[name]["steps"], jobs[name + "-x86"]["steps"])
+        self.assertIn("build-windows-compiler", needs(jobs["build-windows"]))
+        self.assertIn("build-windows-compiler-x86", needs(jobs["build-windows-x86"]))
+        compiler = jobs["build-windows-compiler"]
+        self.assertCountEqual(compiler["strategy"]["matrix"]["goarch"], ["amd64", "arm64"])
+        self.assertEqual(jobs["build-windows-compiler-x86"]["strategy"]["matrix"]["goarch"], ["386"])
+        self.assertEqual(compiler["steps"], jobs["build-windows-compiler-x86"]["steps"])
+        self.assertNotIn("abi", compiler["strategy"]["matrix"])
+        host = next(step for step in compiler["steps"]
+                    if step.get("uses") == "./.github/actions/setup-deps")
+        self.assertEqual(host["with"]["windows-abi"], "msvc")
+        upload = next(step for step in compiler["steps"]
+                      if step.get("name") == "Upload shared host compiler")
+        download = next(step for step in jobs["build-windows"]["steps"]
+                        if step.get("name") == "Download shared host compiler")
+        self.assertEqual(upload["with"]["name"], download["with"]["name"])
+    def test_windows_release_uses_checksum_pinned_official_toolchains(self):
+        jobs = load("release-build.yml")["jobs"]
+        self.assertNotIn("build-windows-x86-toolchains", jobs)
+        self.assertFalse((WORKFLOWS.parent / "windows/build-x86-toolchains.sh").exists())
+        pins = json.loads((WORKFLOWS.parent / "windows/espressif-toolchain.json").read_text())
+        self.assertRegex(pins["release"], r"^22\.1\.4_\d{8}$")
+        self.assertRegex(pins["producer_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(pins["sdk"]["version"], "22.1.8")
+        self.assertEqual(pins["sdk"]["asset"], "llvm-sdk-22.1.8-i686-w64-mingw32.tar.xz")
+        self.assertRegex(pins["sdk"]["sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(set(pins["payloads"]), {"386", "amd64", "arm64"})
+        for arch, target in (("386", "i686"), ("amd64", "x86_64"), ("arm64", "aarch64")):
+            pin = pins["payloads"][arch]
+            self.assertEqual(pin["asset"], f"clang-esp-{pins['release']}-{target}-w64-mingw32.tar.xz")
+            self.assertRegex(pin["sha256"], r"^[0-9a-f]{64}$")
+        for name in ("build-windows-compiler", "build-windows-compiler-x86"):
+            step = next(step for step in jobs[name]["steps"]
+                        if step.get("name") == "Cache Windows x86 LLVM SDK archive")
+            self.assertEqual(step["if"], "matrix.goarch == '386'")
+            self.assertIn("espressif-toolchain.json", step["with"]["key"])
+            self.assertEqual(step["with"]["path"], "${{ runner.tool_cache }}/llgo-release-downloads/llvm-x86")
+        for name in ("build-windows", "build-windows-x86"):
+            step = next(step for step in jobs[name]["steps"]
+                        if step.get("name") == "Cache ESP release archive")
+            self.assertNotIn("if", step)
+            self.assertIn("espressif-toolchain.json", step["with"]["key"])
+        for filename in ("build-compiler.ps1", "build-release.ps1"):
+            script = (WORKFLOWS.parent / "windows" / filename).read_text()
+            self.assertIn("espressif-toolchain.json", script)
+            self.assertIn("https://github.com/xgo-dev/espressif-llvm-project-prebuilt/releases/download/", script)
+            self.assertNotIn("Expand-ReleaseLocalXz", script)
+            self.assertNotIn("cpunion/espressif", script)
+
     def test_release_artifact_dependencies_and_tag_guard_are_preserved(self):
         jobs = load("release-build.yml")["jobs"]
         for consumer, producer in {
             "build": "populate-linux-sysroot", "build-windows": "build",
             "test-windows-artifacts": "build-windows", "prepare-winget": "test-windows-artifacts",
+            "test-windows-artifacts-x86": "build-windows-x86",
             "test-artifacts": "build", "test-linux-distributions": "build",
         }.items():
             self.assertIn(producer, needs(jobs[consumer]))
         self.assertEqual(set(needs(jobs["release"])), {
-            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-linux-distributions", "populate-linux-sysroot"})
+            "prepare", "prepare-winget", "test-artifacts", "test-windows-artifacts", "test-windows-artifacts-x86", "test-linux-distributions", "populate-linux-sysroot"})
+        self.assertIn("test-windows-artifacts-x86", needs(jobs["prepare-winget"]))
         self.assertIn("startsWith(github.ref, 'refs/tags/')", jobs["release"]["if"])
 
     def test_linux_distribution_ci_builds_packages_without_publishing(self):
