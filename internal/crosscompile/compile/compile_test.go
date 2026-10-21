@@ -449,6 +449,33 @@ func TestCompileFailureDoesNotPublishArchiveOrLeaveObjects(t *testing.T) {
 	}
 }
 
+func TestCompileObjectCreationFailureCleansUp(t *testing.T) {
+	tempRoot := t.TempDir()
+	for _, name := range []string{"TMPDIR", "TMP", "TEMP"} {
+		t.Setenv(name, tempRoot)
+	}
+	// Exceed the filesystem's component limit so a worker fails before Clang
+	// starts. Filesystem errors must also reach the caller without publishing
+	// an archive or leaving the group's temporary directory behind.
+	group := CompileGroup{
+		OutputFileName: "failed.a",
+		Files:          []string{strings.Repeat("x", 300) + ".c"},
+	}
+	outputDir := t.TempDir()
+	err := group.Compile(outputDir, CompileOptions{CC: "missing-clang"})
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) || pathErr.Op != "open" {
+		t.Fatalf("Compile error = %v, want object creation failure", err)
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, group.OutputFileName)); !os.IsNotExist(err) {
+		t.Fatalf("failed object creation published an archive: %v", err)
+	}
+	entries, err := os.ReadDir(tempRoot)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("temporary objects remain: %v, %v", entries, err)
+	}
+}
+
 func TestLibConfig_String(t *testing.T) {
 	tests := []struct {
 		name     string
