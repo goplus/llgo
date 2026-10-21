@@ -41,19 +41,33 @@ class GoTestReportTests(unittest.TestCase):
         self.assertIn("sub&#124;case", summary)
         self.assertEqual(len((root / "build.jsonl").read_text().splitlines()), 4)
 
+    def test_prints_every_case_beyond_the_summary_limit(self):
+        events = [{"Package": "p", "Test": f"TestCase{i:02}", "Action": "pass", "Elapsed": i}
+                  for i in range(20)]
+        root, status, output, summary = self.invoke([json.dumps(event) for event in events])
+        self.assertEqual(status, 0)
+        timings = (root / "build-times.txt").read_text()
+        self.assertIn(timings, output)
+        self.assertIn("Parent times include subtests", timings)
+        self.assertLess(timings.index("TestCase19"), timings.index("TestCase00"))
+        for event in events:
+            self.assertIn(event["Test"], timings)
+        self.assertNotIn("TestCase00", summary)
+
     def test_failure_status_and_plain_diagnostics_reach_the_outer_wrapper(self):
         events = [{"Action": "output", "Output": "fatal error: test failure\n"},
                   {"Package": "p", "Test": "TestBroken", "Action": "fail", "Elapsed": 5}]
         root, status, output, summary = self.invoke([json.dumps(event) for event in events], 7)
         self.assertEqual(status, 7)
-        self.assertEqual(output, "fatal error: test failure\n")
+        self.assertTrue(output.startswith("fatal error: test failure\n"))
+        self.assertIn("5.00\tfail\tp\tTestBroken", output)
         self.assertIn("exit 7", summary)
         self.assertEqual(json.loads((root / "build-times.json").read_text())[0]["Action"], "fail")
 
     def test_unstructured_tool_output_is_visible(self):
         _, status, output, _ = self.invoke(["compiler diagnostic", "[1, 2]"])
         self.assertEqual(status, 0)
-        self.assertEqual(output, "compiler diagnostic\n[1, 2]\n")
+        self.assertTrue(output.startswith("compiler diagnostic\n[1, 2]\n"))
 
     def test_windows_quarantine_still_rejects_unrelated_failures_after_json_rendering(self):
         repo = Path(__file__).resolve().parents[2]

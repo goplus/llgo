@@ -79,12 +79,14 @@ func buildConf(arch string) (conf *build.Config, targetAbi string) {
 
 func TestBuild(t *testing.T) {
 	for _, arch := range archs {
-		conf, _ := buildConf(arch)
-		pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
-		if err != nil {
-			t.Fatalf("build error: %v %v", arch, err)
-		}
-		pkgs[0].LPkg.Prog.Dispose()
+		t.Run(arch, func(t *testing.T) {
+			conf, _ := buildConf(arch)
+			pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+			if err != nil {
+				t.Fatalf("build error: %v %v", arch, err)
+			}
+			pkgs[0].LPkg.Prog.Dispose()
+		})
 	}
 }
 
@@ -118,51 +120,49 @@ func testArch(t *testing.T, arch string, archDir string, files []string) {
 		}
 	}
 	for _, file := range files {
-		pkgs, err := build.Do([]string{filepath.Join("./_testdata/demo", file)}, conf)
-		if err != nil {
-			t.Fatalf("build error: %v %v", arch, err)
-		}
-		ctx := llvm.NewContext()
-		llfile := filepath.Join("./_testdata/arch", archDir, file[:len(file)-3]+".ll")
-		buf, err := llvm.NewMemoryBufferFromFile(llfile)
-		if err != nil {
-			t.Fatalf("bad file: %v %v", llfile, err)
-		}
-		m, err := ctx.ParseIR(buf)
-		if err != nil {
-			t.Fatalf("parser IR error %v", arch)
-		}
-		pkg := pkgs[0].LPkg
-		actual := pkg.Module()
-		customABI := false
-		if targetAbi != "" {
-			pre, ok := preABI[pkgs[0].PkgPath]
-			if !ok {
-				t.Fatalf("pre-ABI module for %q was not captured", pkgs[0].PkgPath)
-			}
-			preFile := filepath.Join(t.TempDir(), "pre.ll")
-			if err := os.WriteFile(preFile, []byte(pre), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			preBuf, err := llvm.NewMemoryBufferFromFile(preFile)
+		t.Run(file, func(t *testing.T) {
+			pkgs, err := build.Do([]string{filepath.Join("./_testdata/demo", file)}, conf)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("build error: %v %v", arch, err)
 			}
-			actual, err = ctx.ParseIR(preBuf)
+			defer pkgs[0].LPkg.Prog.Dispose()
+			ctx := llvm.NewContext()
+			defer ctx.Dispose()
+			llfile := filepath.Join("./_testdata/arch", archDir, file[:len(file)-3]+".ll")
+			buf, err := llvm.NewMemoryBufferFromFile(llfile)
 			if err != nil {
-				t.Fatalf("parse pre-ABI IR error: %v", err)
+				t.Fatalf("bad file: %v %v", llfile, err)
 			}
-			customABI = true
-			tr := cabi.NewTransformer(pkg.Prog, conf.Target, targetAbi, false)
-			tr.TransformModule(file, actual)
-		}
-		testModule(t, context{arch: arch, file: file}, pkg.Prog.TargetData(), actual, m)
-		if customABI {
-			actual.Dispose()
-		}
-		m.Dispose()
-		ctx.Dispose()
-		pkg.Prog.Dispose()
+			m, err := ctx.ParseIR(buf)
+			if err != nil {
+				t.Fatalf("parser IR error %v", arch)
+			}
+			defer m.Dispose()
+			pkg := pkgs[0].LPkg
+			actual := pkg.Module()
+			if targetAbi != "" {
+				pre, ok := preABI[pkgs[0].PkgPath]
+				if !ok {
+					t.Fatalf("pre-ABI module for %q was not captured", pkgs[0].PkgPath)
+				}
+				preFile := filepath.Join(t.TempDir(), "pre.ll")
+				if err := os.WriteFile(preFile, []byte(pre), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				preBuf, err := llvm.NewMemoryBufferFromFile(preFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				actual, err = ctx.ParseIR(preBuf)
+				if err != nil {
+					t.Fatalf("parse pre-ABI IR error: %v", err)
+				}
+				defer actual.Dispose()
+				tr := cabi.NewTransformer(pkg.Prog, conf.Target, targetAbi, false)
+				tr.TransformModule(file, actual)
+			}
+			testModule(t, context{arch: arch, file: file}, pkg.Prog.TargetData(), actual, m)
+		})
 	}
 }
 

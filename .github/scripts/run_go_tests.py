@@ -40,6 +40,18 @@ def run(command, output, suite, summary=None):
     cases.sort(key=lambda case: case.get("Elapsed") or 0, reverse=True)
     (output / f"{suite}-times.json").write_text(
         json.dumps(cases, indent=2) + "\n", encoding="utf-8")
+    # Keep every case in a plain-text artifact and the job log. The summary
+    # remains bounded because GitHub limits its size. Parent elapsed times
+    # include their subtests and must not be added to child elapsed times.
+    with (output / f"{suite}-times.txt").open("w", encoding="utf-8") as report:
+        report.write(f"Go test timings: {suite} ({len(cases)} cases, exit {status})\n")
+        report.write("Parent times include subtests; do not sum both.\n")
+        report.write("Seconds\tResult\tPackage\tCase\n")
+        for case in cases:
+            report.write(f"{case['Elapsed'] or 0:.2f}\t{case['Action']}\t"
+                         f"{case['Package']}\t{case['Test']}\n")
+    print()
+    print((output / f"{suite}-times.txt").read_text(encoding="utf-8"), end="")
     if summary:
         with Path(summary).open("a", encoding="utf-8") as report:
             report.write(f"\n### Go tests: {cell(suite)} (exit {status})\n\n")
