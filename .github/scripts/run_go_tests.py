@@ -52,7 +52,11 @@ def run(command, output, suite, summary=None):
             report.write(f"{case['Elapsed'] or 0:.2f}\t{case['Action']}\t"
                          f"{case['Package']}\t{case['Test']}\n")
     print()
-    print((output / f"{suite}-times.txt").read_text(encoding="utf-8"), end="")
+    # A single full-suite write can hang in a Windows Git Bash/tee pipe even
+    # after the reader has received every line. Keep the report writes bounded.
+    with (output / f"{suite}-times.txt").open(encoding="utf-8") as timings:
+        for line in timings:
+            print(line, end="", flush=True)
     if summary:
         with Path(summary).open("a", encoding="utf-8") as report:
             report.write(f"\n### Go tests: {cell(suite)} (exit {status})\n\n")

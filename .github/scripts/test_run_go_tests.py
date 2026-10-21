@@ -71,6 +71,24 @@ class GoTestReportTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertTrue(output.startswith("compiler diagnostic\n[1, 2]\n"))
 
+    def test_native_log_pipe_preserves_large_output_stderr_and_exit_status(self):
+        repo = Path(__file__).resolve().parents[2]
+        payload = ("native output \u4e2d\u6587\r\n".encode("utf-8") * 400000)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, log = root / "source", root / "log"
+            source.write_bytes(payload)
+            child = ("import pathlib,sys; "
+                     f"sys.stdout.buffer.write(pathlib.Path({str(source)!r}).read_bytes()); "
+                     "sys.stdout.buffer.flush(); "
+                     "sys.stderr.buffer.write(b'final diagnostic\\n'); sys.exit(23)")
+            result = subprocess.run(
+                [sys.executable, str(repo / "dev/run_logged_command.py"), str(log),
+                 sys.executable, "-c", child], capture_output=True, timeout=15)
+            self.assertEqual(result.returncode, 23, result.stderr)
+            self.assertEqual(result.stdout, payload + b"final diagnostic\n")
+            self.assertEqual(log.read_bytes(), result.stdout)
+
     def test_progress_and_json_log_are_visible_before_child_exits(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
