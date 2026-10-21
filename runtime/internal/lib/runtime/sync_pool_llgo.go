@@ -5,24 +5,39 @@ import (
 	"unsafe"
 
 	"github.com/xgo-dev/llgo/runtime/internal/clite/tls"
+	psync "github.com/xgo-dev/llgo/runtime/internal/sync"
 )
+
+// All pools share one host key. Keys are process-wide resources, not freed
+// by thread exit, and even simultaneously live pools can exceed their limit.
+var poolLocalOnce psync.Once
+var poolLocals tls.Handle[map[*unsafe.Pointer]unsafe.Pointer]
 
 //go:linkname syncRuntimePoolLocalAlloc sync.runtime_poolLocalAlloc
 func syncRuntimePoolLocalAlloc(victim *unsafe.Pointer) unsafe.Pointer {
-	handle := tls.Alloc[unsafe.Pointer](func(local *unsafe.Pointer) {
-		if local != nil {
-			atomic.StorePointer(victim, *local)
-		}
+	poolLocalOnce.Do(func() {
+		poolLocals = tls.Alloc[map[*unsafe.Pointer]unsafe.Pointer](func(locals *map[*unsafe.Pointer]unsafe.Pointer) {
+			for victim, local := range *locals {
+				atomic.StorePointer(victim, local)
+			}
+		})
 	})
-	return unsafe.Pointer(&handle)
+	// The victim field identifies the pool and keeps its owner alive until
+	// this thread's locals have been published by the TLS destructor.
+	return unsafe.Pointer(victim)
 }
 
 //go:linkname syncRuntimePoolLocalGet sync.runtime_poolLocalGet
 func syncRuntimePoolLocalGet(handle unsafe.Pointer) unsafe.Pointer {
-	return (*tls.Handle[unsafe.Pointer])(handle).Get()
+	return poolLocals.Get()[(*unsafe.Pointer)(handle)]
 }
 
 //go:linkname syncRuntimePoolLocalSet sync.runtime_poolLocalSet
 func syncRuntimePoolLocalSet(handle, local unsafe.Pointer) {
-	(*tls.Handle[unsafe.Pointer])(handle).Set(local)
+	locals := poolLocals.Get()
+	if locals == nil {
+		locals = make(map[*unsafe.Pointer]unsafe.Pointer)
+		poolLocals.Set(locals)
+	}
+	locals[(*unsafe.Pointer)(handle)] = local
 }

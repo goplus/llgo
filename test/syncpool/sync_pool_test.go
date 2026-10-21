@@ -39,3 +39,34 @@ func TestPoolDoesNotReturnItemConcurrently(t *testing.T) {
 		t.Fatal("sync.Pool returned an item while it was still in use")
 	}
 }
+
+// More simultaneously live pools than the host's TLS key limit.
+func TestManyLivePools(t *testing.T) {
+	pools := make([]sync.Pool, 2048)
+	for i := range pools {
+		pools[i].Put(i)
+	}
+	for i := range pools {
+		if got := pools[i].Get(); got != i {
+			t.Fatalf("pool %d: got %v", i, got)
+		}
+	}
+}
+
+func TestManyPoolsAcrossThreads(t *testing.T) {
+	for batch := 0; batch < 40; batch++ {
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 64; i++ {
+				var p sync.Pool
+				p.Put(i)
+				if got := p.Get(); got != i {
+					t.Errorf("pool %d: got %v", i, got)
+				}
+			}
+		}()
+		wg.Wait()
+	}
+}
