@@ -1755,7 +1755,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 					p.assertNilDerefBase(b, v.X)
 				}
 				if isInterfaceCompareDeref(v) {
-					p.assertNilDerefBase(b, v.X)
+					// Keep cached SSA values valid across sibling branches.
+					p.emitNilDerefBaseCheck(b, v.X)
 					b.AssertNilDeref(x)
 				}
 			}
