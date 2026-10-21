@@ -1752,10 +1752,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		} else {
 			if v.Op == token.MUL {
 				if t := p.type_(v.Type(), llssa.GoDecl); t.RawType() != nil && p.prog.SizeOf(t) == 0 {
-					p.assertNilDerefBase(b, v.X)
+					p.emitNilDerefBaseCheck(b, v.X)
 				}
 				if isInterfaceCompareDeref(v) {
-					// Keep cached SSA values valid across sibling branches.
+					// Preserve p.bvals: a branch-local reload would break SSA dominance.
 					p.emitNilDerefBaseCheck(b, v.X)
 					b.AssertNilDeref(x)
 				}
@@ -2298,7 +2298,7 @@ func (p *context) needsWasmNilGuard(addr ssa.Value) bool {
 
 // assertNilDerefBase uses pointer-returning checks to rewrite p.bvals. Keep its
 // traversal in sync with emitNilDerefBaseCheck, which emits cold failure
-// branches without replacing cached addresses for delayed receiver checks.
+// branches while preserving cached addresses and their SSA dominance.
 func (p *context) assertNilDerefBase(b llssa.Builder, addr ssa.Value) {
 	switch addr := addr.(type) {
 	case *ssa.UnOp:

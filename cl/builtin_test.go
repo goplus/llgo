@@ -229,6 +229,32 @@ func check(pp **V, branch bool, a, b V) bool {
 	}
 }
 
+func TestCompileZeroSizedDerefKeepsDominance(t *testing.T) {
+	for _, typ := range []string{"struct{}", "[0]int"} {
+		t.Run(typ, func(t *testing.T) {
+			_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+type V `+typ+`
+
+func check(pp **V, branch bool) V {
+	p := *pp
+	if branch {
+		return *p
+	}
+	return *p
+}
+`)
+			if err := llvm.VerifyModule(m, llvm.ReturnStatusAction); err != nil {
+				t.Fatalf("compiled IR failed verifier: %v\n%s", err, m.String())
+			}
+			if !strings.Contains(m.String(), "AssertNilDeref") {
+				t.Fatal("compiled IR missing nil-dereference guard")
+			}
+		})
+	}
+}
+
 func TestCompileNestedLargeNilDerefBaseGuard(t *testing.T) {
 	_, m := mustCompileLLPkgFromSrc(t, `
 package foo
