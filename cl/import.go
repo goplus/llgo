@@ -936,6 +936,9 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 	// TODO(lijie): need a bettery way to process linkname (maybe alias)
 	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
 		if v, ok := p.prog.Linkname(name); ok {
+			if strings.HasPrefix(v, "C.") {
+				return v[2:], cVar, false
+			}
 			if strings.HasPrefix(v, "stdcall.") {
 				panic(fmt.Errorf("stdcall linkname namespace applies only to functions: %s", name))
 			}

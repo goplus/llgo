@@ -275,22 +275,22 @@ type Option struct {
 	Val    Int
 }
 
-//go:linkname Argc __llgo_argc
+//go:linkname Argc C.__llgo_argc
 var Argc Int
 
-//go:linkname Argv __llgo_argv
+//go:linkname Argv C.__llgo_argv
 var Argv **Char
 
-//go:linkname Optarg optarg
+//go:linkname Optarg C.optarg
 var Optarg *Char
 
-//go:linkname Optind optind
+//go:linkname Optind C.optind
 var Optind Int
 
-//go:linkname Opterr opterr
+//go:linkname Opterr C.opterr
 var Opterr Int
 
-//go:linkname Optopt optopt
+//go:linkname Optopt C.optopt
 var Optopt Int
 
 //go:linkname Getopt C.getopt
