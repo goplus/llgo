@@ -1367,6 +1367,17 @@
     },
     {
       "kind": "branch",
+      "id": "d334df80295d1716",
+      "label": "Branch cpunion/llgo:codex/runtime-source-reuse-2165-20261020",
+      "path": "series/branch/d334df80295d1716/summary.json",
+      "configPath": "series/branch/d334df80295d1716/config.json",
+      "commitPath": "commits/0981b3687f9bcae9563a4bdc41f4eb928a51c05e.json",
+      "sha": "0981b3687f9bcae9563a4bdc41f4eb928a51c05e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0981b3687f9bcae9563a4bdc41f4eb928a51c05e",
+      "updatedAt": "2026-10-21T11:28:53.628Z"
+    },
+    {
+      "kind": "branch",
       "id": "efb7ab070cad982c",
       "label": "Branch cpunion/llgo:codex/selected-go-driver",
       "path": "series/branch/efb7ab070cad982c/summary.json",
@@ -5808,6 +5819,17 @@
       "sha": "53308d94b83afc3439885394f324b109f3abc9c8",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/53308d94b83afc3439885394f324b109f3abc9c8",
       "updatedAt": "2026-10-19T19:57:10.649Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2880",
+      "label": "PR #2880",
+      "path": "series/pull/2880/summary.json",
+      "configPath": "series/pull/2880/config.json",
+      "commitPath": "commits/0981b3687f9bcae9563a4bdc41f4eb928a51c05e.json",
+      "sha": "0981b3687f9bcae9563a4bdc41f4eb928a51c05e",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/0981b3687f9bcae9563a4bdc41f4eb928a51c05e",
+      "updatedAt": "2026-10-21T11:28:53.492Z"
     },
     {
       "kind": "pull",
