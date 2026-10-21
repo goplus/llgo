@@ -8,8 +8,10 @@ import (
 	psync "github.com/xgo-dev/llgo/runtime/internal/sync"
 )
 
-// All pools share one host key. Keys are process-wide resources, not freed
-// by thread exit, and even simultaneously live pools can exceed their limit.
+// Share one TLS key to avoid exhausting the process-wide pthread key limit.
+// Thread exit releases slot values; the key itself remains allocated.
+// Each thread retains the pools it has used and their locals until exit, as
+// the previous per-pool TLS slots did through their destructor closures.
 var poolLocalOnce psync.Once
 var poolLocals tls.Handle[map[*unsafe.Pointer]unsafe.Pointer]
 
@@ -17,8 +19,8 @@ var poolLocals tls.Handle[map[*unsafe.Pointer]unsafe.Pointer]
 func syncRuntimePoolLocalAlloc(victim *unsafe.Pointer) unsafe.Pointer {
 	poolLocalOnce.Do(func() {
 		poolLocals = tls.Alloc[map[*unsafe.Pointer]unsafe.Pointer](func(locals *map[*unsafe.Pointer]unsafe.Pointer) {
-			for victim, local := range *locals {
-				atomic.StorePointer(victim, local)
+			for victimField, local := range *locals {
+				atomic.StorePointer(victimField, local)
 			}
 		})
 	})
