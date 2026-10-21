@@ -1,4 +1,4 @@
-//go:build llgo && (amd64 || arm64 || wasm)
+//go:build llgo && (386 || amd64 || arm64 || wasm)
 
 package gotest
 
@@ -52,5 +52,24 @@ func TestRuntimeAlignedAllocationGC(t *testing.T) {
 			}()
 			alignedAllocation(bad[0], bad[1])
 		}()
+	}
+}
+
+// Run this with nogc as well: GC_malloc already returns zeroed memory and can
+// hide a missing clear in AllocZAligned. Linux CI poisons malloc allocations
+// with MALLOC_PERTURB_ so the nogc case does not rely on allocator reuse.
+func TestRuntimeAlignedAllocationZeroed(t *testing.T) {
+	for _, alignment := range []uintptr{1, unsafe.Sizeof(uintptr(0)), 16, 32, 64} {
+		for _, size := range []uintptr{1, 37, 4093} {
+			p := alignedAllocation(size, alignment)
+			if uintptr(p)&(alignment-1) != 0 {
+				t.Fatalf("size %d alignment %d: misaligned allocation", size, alignment)
+			}
+			for i, b := range unsafe.Slice((*byte)(p), int(size)) {
+				if b != 0 {
+					t.Fatalf("size %d alignment %d: byte %d = %#x, want zero", size, alignment, i, b)
+				}
+			}
+		}
 	}
 }

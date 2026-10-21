@@ -16,7 +16,11 @@
 
 package runtime
 
-import "unsafe"
+import (
+	"unsafe"
+
+	c "github.com/xgo-dev/llgo/runtime/internal/clite"
+)
 
 // AllocUAligned allocates GC-owned storage with a power-of-two alignment.
 // Like LocalPackage, it returns an interior pointer; both supported collectors
@@ -44,6 +48,6 @@ func AllocUAligned(size, alignment uintptr) unsafe.Pointer {
 // AllocZAligned is the zero-initialized counterpart of AllocUAligned.
 func AllocZAligned(size, alignment uintptr) unsafe.Pointer {
 	p := AllocUAligned(size, alignment)
-	memclrNoHeapPointers(p, size)
+	c.Memset(p, 0, size)
 	return p
 }
