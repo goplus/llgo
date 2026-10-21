@@ -216,6 +216,19 @@ func TestRuntimeAuditUsesEffectiveSourceSelection(t *testing.T) {
 	if !reflect.DeepEqual(owners, want) {
 		t.Fatalf("owners = %v, want %v", owners, want)
 	}
+	// An explicit skip may remove a declaration without replacing its body.
+	write(filepath.Join(alternate, "replace.go"), "package abi\n//llgo:skip Kept\nfunc Replaced() {}\n")
+	files, err = a.standardFiles("internal/abi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		for _, decl := range file.file.Decls {
+			if slices.Contains(declPatchKeys(decl), "Kept") {
+				t.Fatal("explicitly skipped declaration remains in the source view")
+			}
+		}
+	}
 	write(filepath.Join(alternate, "replace.go"), "package abi\n//llgo:skipall\nfunc Only() {}\n")
 	files, err = a.standardFiles("internal/abi")
 	if err != nil {
@@ -243,6 +256,9 @@ func TestRuntimeAuditAssemblyBoundary(t *testing.T) {
 	if len(report.Symbols) != 1 || report.Symbols[0].Name != "runtime.cmpstring" || report.Symbols[0].Owner != "goroot-assembly" {
 		t.Fatalf("assembly entries: %+v", report.Symbols)
 	}
+	if err := a.assembly(&report, "internal/bytealg", dir); err == nil || !strings.Contains(err.Error(), "duplicate runtime assembly entry") {
+		t.Fatalf("duplicate assembly provider: %v", err)
+	}
 	a.overlay[path] = []byte("// suppressed by source patch\n")
 	report.Symbols = nil
 	if err := a.assembly(&report, "internal/bytealg", dir); err != nil {
@@ -265,7 +281,14 @@ func TestRuntimeAuditUpgradeDiagnostics(t *testing.T) {
 		{"duplicate-runtime", "runtime/internal/runtime/duplicate.go", "package runtime\nfunc countrunes(s string) int { return 0 }", "duplicate runtime declaration"},
 		{"malformed-abi", "go/src/internal/abi/bad.go", "package abi\nfunc (", "expected"},
 		{"malformed-stdlib", "go/src/consumer/bad.go", "package consumer\nfunc (", "expected"},
+		{"invalid-source-selection", "go/src/consumer/bad.go", "//go:build &&\n\npackage consumer", "parsing //go:build line"},
+		{"conflicting-stdlib-linknames", "go/src/consumer/use.go", "package consumer\nimport _ \"unsafe\"\n//go:linkname hook runtime.One\n//go:linkname hook runtime.Two\nfunc hook()", "conflicting linkname"},
+		{"invalid-assembly-selection", "go/src/consumer/bad.s", "//go:build &&\n\nTEXT runtime·hook(SB),NOSPLIT,$0-0\nRET", "parsing //go:build line"},
+		{"malformed-alternative", "runtime/internal/lib/internal/abi/bad.go", "package abi\nfunc (", "expected"},
+		{"malformed-inactive-runtime", "runtime/internal/runtime/bad_windows.go", "package runtime\nfunc (", "expected"},
 		{"malformed-compiler", "cl/use.go", "package cl\nfunc (", "expected"},
+		{"missing-compiler", "", "", "requires compiler sources"},
+		{"no-compiler-go-files", "", "", "requires compiler sources"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
@@ -306,6 +329,14 @@ func encoderune(p []byte, r rune) int { return 0 }
 			if test.path != "" {
 				write(test.path, test.source)
 			}
+			if test.name == "missing-compiler" || test.name == "no-compiler-go-files" {
+				if err := os.RemoveAll(filepath.Join(root, "cl")); err != nil {
+					t.Fatal(err)
+				}
+				if test.name == "no-compiler-go-files" {
+					write("cl/README.md", "A directory without compiler sources must not produce a complete report.")
+				}
+			}
 			report, err := auditRuntimeSources(filepath.Join(root, "runtime"), filepath.Join(root, "go"), sourcePatchBuildContext{goos: "linux", goarch: "amd64", goversion: goVersion, buildFlags: []string{"-tags=llgo"}})
 			if test.want == "" || test.want == "missing" {
 				if err != nil {
@@ -332,5 +363,25 @@ func encoderune(p []byte, r rune) int { return 0 }
 				t.Fatalf("error = %v, want %s", err, test.want)
 			}
 		})
+	}
+}
+
+func TestRuntimeAuditInputErrors(t *testing.T) {
+	if _, err := AuditRuntimeSources(RuntimeAuditConfig{}); err == nil || !strings.Contains(err.Error(), "requires RuntimeDir") {
+		t.Fatalf("missing configuration: %v", err)
+	}
+	if _, err := AuditRuntimeSources(RuntimeAuditConfig{RuntimeDir: env.LLGoRuntimeDir(), GOOS: "linux", GOARCH: "amd64", Dir: filepath.Join(t.TempDir(), "missing")}); err == nil || !strings.Contains(err.Error(), "resolve Go source configuration") {
+		t.Fatalf("unresolvable application toolchain: %v", err)
+	}
+	a := runtimeAuditFixture(t)
+	path := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(path, nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.files(path); err == nil {
+		t.Fatal("accepted a regular file as a source directory")
+	}
+	if err := a.assembly(&RuntimeOwnership{}, "consumer", path); err == nil {
+		t.Fatal("accepted a regular file as an assembly directory")
 	}
 }

@@ -597,9 +597,7 @@ func (a *runtimeAuditor) compilerUses(report *RuntimeOwnership) error {
 		if err != nil {
 			return fmt.Errorf("runtime audit requires compiler sources: %w", err)
 		}
-		if len(entries) == 0 {
-			return fmt.Errorf("runtime audit requires compiler sources in %s", dir)
-		}
+		parsedFiles := 0
 		for _, entry := range entries {
 			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
 				continue
@@ -609,6 +607,7 @@ func (a *runtimeAuditor) compilerUses(report *RuntimeOwnership) error {
 			if err != nil {
 				return err
 			}
+			parsedFiles++
 			ast.Inspect(file, func(node ast.Node) bool {
 				call, ok := node.(*ast.CallExpr)
 				if !ok || len(call.Args) != 1 {
@@ -634,6 +633,9 @@ func (a *runtimeAuditor) compilerUses(report *RuntimeOwnership) error {
 				}
 				return true
 			})
+		}
+		if parsedFiles == 0 {
+			return fmt.Errorf("runtime audit requires compiler sources in %s", dir)
 		}
 	}
 	return nil
