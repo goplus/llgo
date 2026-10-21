@@ -190,6 +190,22 @@ jobs:
             -Profile "${{ matrix.windows_abi }}" `
             -GoArch "${{ matrix.windows_arch || 'amd64' }}"
 
+      - name: Check BDWGC collection under the Windows heap lock
+        if: runner.os == 'Windows' && matrix.windows_abi == 'mingw' && matrix.windows_arch == '386'
+        shell: python {0}
+        run: |
+          import os
+          from pathlib import Path
+          import subprocess
+
+          compiler = Path(os.environ["LLGO_MINGW_TARGET_BIN"]) / "i686-w64-mingw32-clang.exe"
+          prefix = Path(os.environ["LLGO_MINGW_TARGET_VCPKG_ROOT"])
+          executable = Path(os.environ["RUNNER_TEMP"]) / "bdwgc-heap-lock.exe"
+          subprocess.run([str(compiler), "-O2", ".github/windows/test-bdwgc-heap-lock.c",
+                          "-I" + str(prefix / "include"), "-L" + str(prefix / "lib"),
+                          "-lgc", "-o", str(executable)], check=True)
+          subprocess.run([str(executable)], check=True, timeout=30)
+
       - name: Run Go 1.27 LLGo core tests
         env:
           LLGO_BUILD_CACHE: "1"

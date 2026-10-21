@@ -28,3 +28,16 @@ pin file invalidate the archive caches without disabling integrity checks.
 Compiler, packaging, and native artifact tests remain separate for x86 and
 amd64/arm64. WinGet candidates and publication require all six Windows ZIPs
 and all architecture tests to pass.
+
+The llvm-mingw runtime dependencies apply `bdwgc-windows-fault-guard.patch` to
+the pinned BDWGC 8.2.12 port. Its GNU scan guard calls CRT `signal()`, whose
+first use on a collecting thread can allocate from the process heap after the
+collector suspends a thread holding that heap's lock
+([BDWGC #924](https://github.com/bdwgc/bdwgc/issues/924)). The patch prepares
+and restores that thread's signal state before stopping the world, so scanning
+reuses the CRT's existing exception-action table.
+`test-bdwgc-heap-lock.c` covers collection on a fresh thread while another
+registered thread holds the heap lock for a bounded interval, as well as
+application exception-handler preservation. The native MinGW x86 job runs the
+check with an external timeout. Dependency cache keys include the patch and
+port preparation script; upgrading BDWGC requires reviewing the patch.
