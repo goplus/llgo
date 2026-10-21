@@ -316,7 +316,11 @@ func (a *runtimeAuditor) source(pos token.Pos) string {
 func (a *runtimeAuditor) files(dir string) ([]runtimeAuditFile, error) {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
-		return nil, nil
+		// Windows also reports ERROR_PATH_NOT_FOUND when ReadDir receives a
+		// regular file. Only an absent path may represent an optional package.
+		if _, statErr := os.Stat(dir); os.IsNotExist(statErr) {
+			return nil, nil
+		}
 	}
 	if err != nil {
 		return nil, err

@@ -376,6 +376,9 @@ func TestRuntimeAuditInputErrors(t *testing.T) {
 		t.Fatalf("unresolvable application toolchain: %v", err)
 	}
 	a := runtimeAuditFixture(t)
+	if files, err := a.files(filepath.Join(t.TempDir(), "absent")); err != nil || len(files) != 0 {
+		t.Fatalf("absent optional package: %v, %v", files, err)
+	}
 	path := filepath.Join(t.TempDir(), "file")
 	if err := os.WriteFile(path, nil, 0644); err != nil {
 		t.Fatal(err)
