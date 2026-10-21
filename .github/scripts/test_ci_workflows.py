@@ -22,12 +22,25 @@ CODE_WORKFLOWS = {
     "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
 }
-BOOTSTRAP_RUNNER_JOBS = {("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy")}
+BOOTSTRAP_RUNNER_JOBS = {
+    ("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy"),
+    ("pr-closed.yml", "cancel-pr-ci"),
+}
 
 
 def load(name):
     # BaseLoader preserves the GitHub Actions 'on' key instead of YAML 1.1's True.
     return yaml.load((WORKFLOWS / name).read_text(), Loader=yaml.BaseLoader)
+
+
+def workflow_paths():
+    return sorted(path for path in WORKFLOWS.iterdir()
+                  if path.suffix in {".yml", ".yaml"})
+
+
+def pr_workflows():
+    return {path.name: workflow for path in workflow_paths()
+            if "pull_request" in (workflow := load(path.name)).get("on", {})}
 
 
 def needs(job):
@@ -47,6 +60,48 @@ def matrix_size(job):
 
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_pr_close_covers_every_pr_workflow(self):
+        workflow = load("pr-closed.yml")
+        self.assertEqual(workflow["on"], {"pull_request_target": {"types": ["closed"]}})
+        self.assertEqual(workflow["permissions"], {})
+        self.assertNotIn("concurrency", workflow)
+        job = workflow["jobs"]["cancel-pr-ci"]
+        self.assertNotIn("if", job)
+        self.assertNotIn("concurrency", job)
+        self.assertEqual(job["permissions"], {
+            "actions": "write", "contents": "read", "pull-requests": "read"})
+        checkout, cancel = job["steps"]
+        self.assertEqual(checkout["uses"], "actions/checkout@v7")
+        self.assertEqual(checkout["with"], {
+            "ref": "${{ github.sha }}", "persist-credentials": "false",
+            "sparse-checkout": ".github/scripts", "sparse-checkout-cone-mode": "false"})
+        self.assertEqual(cancel["env"], {"GH_TOKEN": "${{ github.token }}"})
+        self.assertEqual(cancel["run"], "python3 .github/scripts/pr_ci.py")
+        self.assertEqual(job["timeout-minutes"], "5")
+        self.assertFalse((WORKFLOWS / "pr-ci-cancel.yml").exists())
+
+    def test_pr_jobs_and_local_reusable_jobs_remain_cancelable(self):
+        # Discover every job rather than keeping a job-name allowlist: new jobs
+        # and matrices are covered even when CODE_WORKFLOWS does not list them.
+        pending = list(pr_workflows())
+        checked = set()
+        while pending:
+            filename = pending.pop()
+            if filename in checked:
+                continue
+            checked.add(filename)
+            for name, job in load(filename)["jobs"].items():
+                with self.subTest(workflow=filename, job=name):
+                    condition = " ".join(job.get("if", "").split())
+                    condition = condition.removeprefix("${{").removesuffix("}}").strip()
+                    # Running job conditions are re-evaluated on cancellation.
+                    # Unconditional always() would keep even a gate running.
+                    if "always()" in condition:
+                        self.assertEqual(condition, "always() && !cancelled()")
+                    reusable = job.get("uses", "")
+                    if reusable.startswith("./.github/workflows/"):
+                        pending.append(Path(reusable).name)
+
     def test_gdb_windows_acceptance_covers_both_abis_and_all_native_architectures(self):
         job = load("llgo.yml")["jobs"]["llgo"]
         entries = job["strategy"]["matrix"]["include"]
@@ -154,24 +209,25 @@ else:
                     self.assertIn("prepare", needs(job))
                     self.assertIn(f"needs.prepare.outputs.{flag} == 'true'", job["if"])
 
-    def test_main_push_is_not_path_filtered_and_cancels_older_main_runs(self):
-        for path in WORKFLOWS.glob("*.yml"):
+    def test_pr_and_main_concurrency_groups_are_isolated(self):
+        for path in workflow_paths():
             workflow = load(path.name)
             events = workflow.get("on", {})
-            if "push" not in events:
+            if "push" not in events and "pull_request" not in events:
                 continue
             with self.subTest(workflow=path.name):
-                push = events["push"] or {}
-                self.assertIn("main", push.get("branches", []))
-                self.assertNotIn("paths", push)
-                self.assertNotIn("paths-ignore", push)
+                if "push" in events:
+                    push = events["push"] or {}
+                    self.assertIn("main", push.get("branches", []))
+                    self.assertNotIn("paths", push)
+                    self.assertNotIn("paths-ignore", push)
                 concurrency = workflow["concurrency"]
-                # PRs retain their own groups; tags and other events keep
-                # unique run IDs and do not cancel each other.
+                # Use the filename as a stable key, independent of display names.
+                # Retain main supersession and unique tag/manual run groups.
                 self.assertEqual(concurrency["cancel-in-progress"],
                                  "${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}")
                 self.assertEqual(concurrency["group"],
-                                 "${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}")
+                                 path.name + "-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}")
 
     def test_gated_pr_workflows_always_start_the_prepare_job(self):
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml"]:
@@ -351,7 +407,7 @@ else:
                     self.assertEqual(args[-1], f"https://push.fury.io/uploads?as={expected_account}")
 
     def test_runner_policy_is_not_duplicated_in_workflows(self):
-        for path in WORKFLOWS.glob("*.yml"):
+        for path in workflow_paths():
             workflow = load(path.name)
             for name, job in workflow["jobs"].items():
                 with self.subTest(workflow=path.name, job=name):
@@ -498,7 +554,7 @@ else:
                 self.assertEqual(values["pr_head_sha"], head)
                 self.assertEqual(values["pr_merge_base"], base)
 
-    def test_each_prepared_workflow_has_an_unskippable_gate(self):
+    def test_preparation_failures_are_reported_unless_workflow_is_cancelled(self):
         names = set()
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml", "model-demo.yml"]:
             gate = load(filename)["jobs"]["ci-gate"]
@@ -506,7 +562,7 @@ else:
                 self.assertNotIn(gate["name"], names)
                 names.add(gate["name"])
                 self.assertEqual(needs(gate), ["prepare"])
-                self.assertEqual(gate["if"], "always()")
+                self.assertEqual(gate["if"], "always() && !cancelled()")
                 # On success the gate shares the qiniu pool. A failed prepare
                 # has no runner output, so keep its diagnostic job schedulable.
                 self.assertEqual(gate["runs-on"],
