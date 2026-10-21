@@ -469,10 +469,10 @@
       "label": "Branch cpunion/llgo:codex/browser-worker-control-2164-20261020",
       "path": "series/branch/0be4b0008b04c17e/summary.json",
       "configPath": "series/branch/0be4b0008b04c17e/config.json",
-      "commitPath": "commits/925044e05867b60fb962b9f4c7758bea611c582d.json",
-      "sha": "925044e05867b60fb962b9f4c7758bea611c582d",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/925044e05867b60fb962b9f4c7758bea611c582d",
-      "updatedAt": "2026-10-21T16:38:59.667Z"
+      "commitPath": "commits/8d4bc64bb4b934147763f915ab4b6e55fb385dc2.json",
+      "sha": "8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+      "updatedAt": "2026-10-21T23:36:29.099Z"
     },
     {
       "kind": "branch",
@@ -9885,10 +9885,10 @@
       "label": "PR #2881",
       "path": "series/pull/2881/summary.json",
       "configPath": "series/pull/2881/config.json",
-      "commitPath": "commits/925044e05867b60fb962b9f4c7758bea611c582d.json",
-      "sha": "925044e05867b60fb962b9f4c7758bea611c582d",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/925044e05867b60fb962b9f4c7758bea611c582d",
-      "updatedAt": "2026-10-21T16:38:58.450Z"
+      "commitPath": "commits/8d4bc64bb4b934147763f915ab4b6e55fb385dc2.json",
+      "sha": "8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8d4bc64bb4b934147763f915ab4b6e55fb385dc2",
+      "updatedAt": "2026-10-21T23:36:27.012Z"
     },
     {
       "kind": "pull",
