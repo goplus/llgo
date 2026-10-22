@@ -443,7 +443,7 @@ sys.exit(subprocess.call(command + ['./internal/build']))
         for filename, expected in CODE_WORKFLOWS.items():
             workflow = load(filename)
             count = sum(matrix_size(job) for name, job in workflow["jobs"].items()
-                        if name not in {"prepare", "ci-gate", "release"})
+                        if name not in {"prepare", "ci-gate", "release", "submit-winget"})
             with self.subTest(workflow=filename):
                 self.assertEqual(count, expected)
 
@@ -552,6 +552,25 @@ sys.exit(subprocess.call(command + ['./internal/build']))
                                     "GITHUB_OUTPUT": str(output)})
                 expected = "true" if tag in {"v1.2.3", "v0.0.0"} else "false"
                 self.assertEqual(output.read_text(), f"stable={expected}\n")
+
+    def test_winget_submission_follows_stable_release_and_has_a_read_only_preview(self):
+        jobs = load("release-build.yml")["jobs"]
+        call = jobs["submit-winget"]
+        self.assertEqual(set(needs(call)), {"prepare", "release"})
+        self.assertIn("github.repository == 'xgo-dev/llgo'", call["if"])
+        self.assertIn("needs.release.outputs.stable == 'true'", call["if"])
+        self.assertEqual(jobs["release"]["outputs"]["stable"], "${{ steps.release-type.outputs.stable }}")
+        self.assertEqual(call["uses"], "./.github/workflows/winget.yml")
+        workflow = load("winget.yml")
+        self.assertEqual(set(workflow["on"]), {"workflow_call", "workflow_dispatch"})
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        self.assertEqual(workflow["on"]["workflow_dispatch"]["inputs"]["dry_run"]["default"], "true")
+        self.assertEqual(workflow["on"]["workflow_call"]["inputs"]["dry_run"]["default"], "false")
+        job = workflow["jobs"]["submit"]
+        self.assertEqual(job["if"], "github.repository == 'xgo-dev/llgo' || inputs.dry_run")
+        step = next(step for step in job["steps"] if step.get("name") == "Submit release manifests")
+        self.assertEqual(step["env"]["WINGET_PR_TOKEN"], "${{ !inputs.dry_run && secrets.WINGET_PR_TOKEN || '' }}")
+        self.assertNotIn("${{", step["run"])
 
     def test_fury_upload_validates_packages_and_stops_on_failure(self):
         steps = load("release-build.yml")["jobs"]["release"]["steps"]
@@ -692,6 +711,10 @@ sys.exit(subprocess.call(command + ['./internal/build']))
         checkout = job["steps"][0]
         self.assertEqual(checkout["with"]["fetch-depth"],
                          "${{ github.event_name == 'pull_request' && '0' || '1' }}")
+        self.assertGreater(int(checkout["env"]["GIT_HTTP_LOW_SPEED_LIMIT"]), 0)
+        self.assertGreater(int(checkout["env"]["GIT_HTTP_LOW_SPEED_TIME"]), 0)
+        retry_budget = 3 * int(checkout["env"]["GIT_HTTP_LOW_SPEED_TIME"]) + 2 * 20
+        self.assertLess(retry_budget, int(job["timeout-minutes"]) * 60)
         self.assertEqual(workflow["permissions"], {"contents": "read"})
 
     def test_pr_policy_comes_from_base_and_missing_base_enables_all_checks(self):
@@ -718,6 +741,7 @@ sys.exit(subprocess.call(command + ['./internal/build']))
                 git("add", ".")
                 git("commit", "-qm", "base")
                 base = git("rev-parse", "HEAD")
+                historical_blob = git("rev-parse", "HEAD:README.md")
 
                 if case == "docs-only":
                     (repo / "README.md").write_text("updated prose\n")
@@ -729,7 +753,32 @@ sys.exit(subprocess.call(command + ['./internal/build']))
                     (repo / "compiler.go").write_text("package compiler\n")
                 git("add", ".")
                 git("commit", "-qm", "pr")
+                if case == "base-policy":
+                    (repo / "README.md").write_text("final documentation edit\n")
+                    git("add", ".")
+                    git("commit", "-qm", "docs after code")
                 head = git("rev-parse", "HEAD")
+
+                # Exercise checkout's transport, including lazy retrieval of
+                # the trusted policy when the PR replaces its current blob.
+                git("config", "uploadpack.allowFilter", "true")
+                git("config", "uploadpack.allowAnySHA1InWant", "true")
+                remote = repo.as_uri()
+                repo = repo / "checkout"
+                repo.mkdir()
+                git("init", "-q")
+                git("config", "protocol.file.allow", "always")
+                git("remote", "add", "origin", remote)
+                fetch = ["fetch", "--quiet", "--no-tags"]
+                configured_filter = load("ci-prepare.yml")["jobs"]["prepare"]["steps"][0]["with"].get("filter")
+                if configured_filter:
+                    fetch.append("--filter=" + configured_filter)
+                git(*fetch, "origin", "+refs/heads/*:refs/remotes/origin/*")
+                git("checkout", "-q", "--detach", head)
+                self.assertEqual(git("rev-parse", "--is-shallow-repository"), "false")
+                if case != "missing-base-policy":
+                    self.assertIn("?" + historical_blob,
+                                  git("rev-list", "--objects", "--all", "--missing=print"))
 
                 event = repo / "event.json"
                 event.write_text(json.dumps({"pull_request": {
