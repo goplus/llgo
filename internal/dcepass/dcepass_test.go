@@ -62,7 +62,7 @@ func TestEmitStrongTypeOverrides(t *testing.T) {
 					os.Stderr = stderr
 					logFile.Close()
 				}()
-				EmitStrongTypeOverrides(dst, []llvm.Module{src}, tt.liveSlots, true)
+				EmitStrongTypeOverrides(dst, []llvm.Module{src}, tt.liveSlots, nil, true)
 			}()
 			log, err := os.ReadFile(logPath)
 			if err != nil {
@@ -483,4 +483,51 @@ func parseModule(t *testing.T, ctx *llvm.Context, path string) llvm.Module {
 		t.Fatal(err)
 	}
 	return mod
+}
+
+func TestDropUnobservedMethodMetadata(t *testing.T) {
+	srcContext := llvm.NewContext()
+	defer srcContext.Dispose()
+	dstContext := llvm.NewContext()
+	defer dstContext.Dispose()
+	text := `
+%"github.com/xgo-dev/llgo/runtime/abi.UncommonType" = type { { ptr, i64 }, i16, i16, i32 }
+%"github.com/xgo-dev/llgo/runtime/abi.Method" = type { { ptr, i64 }, ptr, ptr, ptr }
+@method.name = private constant [4 x i8] c"Drop"
+@method.type = external constant i8
+@_llgo_hidden = weak_odr constant { i64, %"github.com/xgo-dev/llgo/runtime/abi.UncommonType", [1 x %"github.com/xgo-dev/llgo/runtime/abi.Method"] } {
+ i64 42,
+ %"github.com/xgo-dev/llgo/runtime/abi.UncommonType" { { ptr, i64 } zeroinitializer, i16 1, i16 1, i32 24 },
+ [1 x %"github.com/xgo-dev/llgo/runtime/abi.Method"] [ %"github.com/xgo-dev/llgo/runtime/abi.Method" { { ptr, i64 } { ptr @method.name, i64 4 }, ptr @method.type, ptr @method, ptr @method } ]
+}
+declare void @method()
+`
+	path := filepath.Join(t.TempDir(), "type.ll")
+	if err := os.WriteFile(path, []byte(text), 0600); err != nil {
+		t.Fatal(err)
+	}
+	src := parseModule(t, &srcContext, path)
+	defer src.Dispose()
+	for _, drop := range []bool{false, true} {
+		dst := dstContext.NewModule("override")
+		EmitStrongTypeOverrides(dst, []llvm.Module{src}, nil, func(string) bool { return drop }, false)
+		if err := llvm.VerifyModule(dst, llvm.ReturnStatusAction); err != nil {
+			t.Fatal(err)
+		}
+		init := dst.NamedGlobal("_llgo_hidden").Initializer()
+		wantCount := uint64(1)
+		if drop {
+			wantCount = 0
+		}
+		if got := init.Operand(1).Operand(1).ZExtValue(); got != wantCount {
+			t.Fatalf("drop=%v: method count=%d", drop, got)
+		}
+		if got := init.Operand(2).IsNull(); got != drop {
+			t.Fatalf("drop=%v: zero method storage=%v", drop, got)
+		}
+		if drop && (!dst.NamedGlobal("method.type").IsNil() || !dst.NamedFunction("method").IsNil()) {
+			t.Fatal("cleared methods still reference signature or function")
+		}
+		dst.Dispose()
+	}
 }

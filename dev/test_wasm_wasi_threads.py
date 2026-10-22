@@ -87,6 +87,27 @@ def run_llgo(env, args, marker, timeout=180):
         raise SystemExit(f"LLGo {' '.join(args)} failed with exit code {result.returncode}")
 
 
+def check_size_probe(env, module):
+    if b"unusedFunctionMetadata" in module.read_bytes():
+        raise SystemExit(f"{module.name}: dead function metadata survived")
+    source = ROOT / "internal/build/testdata/wasm-size/main.go"
+    panic_line = next(i for i, line in enumerate(source.read_text().splitlines(), 1)
+                      if line.startswith("func panicSite()"))
+    for args, expected_exit, marker in (
+        ((), 0, 'effects=2 map=5 value=0000002a float=1.25 text="中"'),
+        (("panic",), 2, "panic: size-probe-panic"),
+    ):
+        result = subprocess.run(wasmer_command(module, *args), env=env,
+                                capture_output=True, text=True, timeout=60)
+        output = result.stdout + result.stderr
+        print(output, end="", flush=True)
+        if result.returncode != expected_exit or marker not in output.splitlines():
+            raise SystemExit(f"{module.name} {args}: exit {result.returncode}")
+        if args and ("main.panicSite" not in output
+                     or f"/wasm-size/main.go:{panic_line}" not in output):
+            raise SystemExit(f"{module.name}: panic source location lost")
+
+
 def run_arena_boundaries(env, directory):
     module = pathlib.Path(directory) / "gc-arena.wasm"
     subprocess.run(
@@ -121,6 +142,11 @@ def main():
     env.pop("LLGO_WASI_THREADS", None)
     env["PATH"] = str(pathlib.Path(wasmer).resolve().parent) + os.pathsep + env["PATH"]
     with tempfile.TemporaryDirectory(prefix="llgo-wasi-threads-") as directory:
+        module = pathlib.Path(directory) / "size.wasm"
+        subprocess.run([LLGO, "build", "-target", "wasi", "-o", str(module),
+                        str(ROOT / "internal/build/testdata/wasm-size")],
+                       check=True, env=env, timeout=300)
+        check_size_probe(env, module)
         run_output_cache_probe(env, directory)
         simd = pathlib.Path(directory) / "simd-threads-eh.wasm"
         subprocess.run([os.environ.get("WASM_TOOLS", "wasm-tools"), "parse",

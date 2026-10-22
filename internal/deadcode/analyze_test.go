@@ -548,3 +548,28 @@ func newSummary(t *testing.T, pkgs ...*meta.PackageMeta) *meta.GlobalSummary {
 	}
 	return summary
 }
+
+func TestAnalyzeMethodMetadataVisibility(t *testing.T) {
+	pm := buildPackage(func(b *pkgBuilder) {
+		main := b.sym("main.main")
+		visible := b.sym("_llgo_visible")
+		child := b.sym("_llgo_child")
+		dead := b.sym("_llgo_dead")
+		for _, typ := range []meta.Symbol{visible, child, dead} {
+			b.addMethodInfo(typ, []pkgSlot{methodSlot(b, methodSig(b, "Method"), "pkg.Method", "pkg.Method")})
+			b.addEdge(main, typ)
+		}
+		b.addUseIface(main, visible)
+		b.b.AddTypeChild(visible, child)
+	})
+	defer pm.Close()
+	analysis := AnalyzeProgram(newSummary(t, pm), []string{"main.main"})
+	for _, tc := range []struct {
+		name string
+		drop bool
+	}{{"_llgo_visible", false}, {"_llgo_child", false}, {"_llgo_dead", true}, {"missing", false}} {
+		if got := analysis.CanDropMethodMetadata(tc.name); got != tc.drop {
+			t.Errorf("%s: drop=%v, want %v", tc.name, got, tc.drop)
+		}
+	}
+}

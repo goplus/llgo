@@ -81,6 +81,7 @@ type Options struct {
 	// ReceiverNilChecks retains pointer-method selection semantics erased
 	// during Go SSA construction. It is collected from checked source info.
 	ReceiverNilChecks *ReceiverNilChecks
+	UnusedGlobalInits *UnusedGlobalInits
 }
 
 // SetDebug sets debug flags.
@@ -3030,6 +3031,7 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 
 	ctx.collectStaticGlobalInits(pkg)
 	ctx.collectStaticMapInits(pkg)
+	ctx.collectUnusedGlobalInits(pkg)
 
 	members := make([]*namedMember, 0, len(pkg.Members))
 	skips := ctx.skips

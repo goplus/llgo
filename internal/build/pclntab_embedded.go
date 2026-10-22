@@ -32,10 +32,16 @@ import (
 
 func canPruneEmbeddedPCLN(ctx *context) bool {
 	conf := ctx.buildConf
-	return conf.PCLNMode == PCLNEmbedded && conf.Target == "" &&
-		conf.BuildMode == BuildModeExe && (conf.Goos == "linux" || conf.Goos == "darwin") &&
+	if conf.PCLNMode != PCLNEmbedded || conf.BuildMode != BuildModeExe || os.Getenv("LLGO_PCLNPOST") == "0" {
+		return false
+	}
+	if canPruneWasmPCLN(ctx) {
+		return true
+	}
+	return conf.Target == "" &&
+		(conf.Goos == "linux" || conf.Goos == "darwin") &&
 		(conf.Goarch == "amd64" || conf.Goarch == "arm64") &&
-		shouldEmitRuntimeEntrySites(ctx) && os.Getenv("LLGO_PCLNPOST") != "0"
+		shouldEmitRuntimeEntrySites(ctx)
 }
 
 // linkedPCLNData joins metadata to ownership-checked final sites. Both packing
@@ -50,6 +56,13 @@ func linkedPCLNData(original pclnmap.Data, analysis pclnpost.ExternalAnalysis) (
 	data.EntrySites = make([]pclnmap.Site, len(analysis.EntrySites))
 	for i, site := range analysis.EntrySites {
 		data.EntrySites[i] = pclnmap.Site{PCOffset: site.PCOffset, ID: site.ID}
+	}
+	if original.GOARCH == "wasm" {
+		if len(original.Table.PCLines) != 0 || len(analysis.PCLineSites) != 0 {
+			return pclnmap.Data{}, fmt.Errorf("unexpected native PC-line records in Wasm pclntab")
+		}
+		// A fully inlined program can legitimately have no named Go bodies.
+		return pclnmap.Prune(data)
 	}
 	data.PCSites = make([]pclnmap.Site, len(analysis.PCLineSites))
 	owners := make([]string, len(analysis.PCLineSites))
@@ -69,8 +82,12 @@ func linkedPCLNData(original pclnmap.Data, analysis pclnpost.ExternalAnalysis) (
 // the removed bytes and relocate every reference, including LTO constants and
 // Mach-O chained fixups. Runtime table formats and lookup costs stay unchanged.
 func pruneEmbeddedPCLN(ctx *context, plan *mainLinkPlan, output string, verbose bool) error {
+	analyze := pclnpost.AnalyzeExternal
+	if plan.embeddedPCLN != nil && plan.entryTarget.GOARCH == "wasm" {
+		analyze = func(path string) (pclnpost.ExternalAnalysis, error) { return analyzeWasmPCLN(path, *plan.embeddedPCLN) }
+	}
 	return pruneEmbeddedPCLNWith(plan, output, verbose, embeddedPCLNLinker{
-		analyze: pclnpost.AnalyzeExternal,
+		analyze: analyze,
 		compile: func(ir, object string) error { return compileEmbeddedEntry(ctx, plan, ir, object) },
 		link: func(candidate string, inputs []string) error {
 			return linkObjFiles(ctx, candidate, inputs, plan.linkArgs, verbose)

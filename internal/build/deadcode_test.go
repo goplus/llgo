@@ -42,7 +42,7 @@ func TestApplyDeadcodeDropOverridesWritesStrongTypeOverride(t *testing.T) {
 		ExportFile: "pkg.a",
 	}, &genConfig{})
 
-	if err := applyDeadcodeDropOverrides([]Package{srcAPkg}, entryPkg, false, false); err != nil {
+	if err := applyDeadcodeDropOverrides([]Package{srcAPkg}, entryPkg, false, false, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,7 +75,7 @@ func TestDCEEntryRootCandidates(t *testing.T) {
 
 func TestApplyDeadcodeDropRejectsMissingMetadata(t *testing.T) {
 	pkg := &aPackage{Package: &packages.Package{PkgPath: "example.com/missing"}}
-	err := applyDeadcodeDropOverrides([]Package{pkg}, nil, false, false)
+	err := applyDeadcodeDropOverrides([]Package{pkg}, nil, false, false, false)
 	if err == nil || !strings.Contains(err.Error(), "missing dead-code metadata for linked package example.com/missing") {
 		t.Fatalf("applyDeadcodeDropOverrides() = %v, want missing metadata diagnostic", err)
 	}

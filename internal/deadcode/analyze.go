@@ -44,6 +44,30 @@ type pass struct {
 
 // Analyze returns live ABI method slot indexes by concrete type symbol name.
 func Analyze(info *meta.GlobalSummary, rootNames []string) map[string][]int {
+	return AnalyzeProgram(info, rootNames).LiveSlots
+}
+
+// Analysis keeps interface/reflection visibility and method liveness from the
+// same fixed point. It borrows info and must not outlive its package metadata.
+type Analysis struct {
+	LiveSlots map[string][]int
+	info      *meta.GlobalSummary
+	visible   map[meta.Symbol]struct{}
+}
+
+// CanDropMethodMetadata requires a known type that cannot be observed through
+// an interface, including reflection through child and method-result types.
+// Callers must additionally rule out opaque native consumers of Go metadata.
+func (a Analysis) CanDropMethodMetadata(name string) bool {
+	typ, known := a.info.LookupSymbol(name)
+	if !known || !a.info.HasFacts(typ) || len(a.info.MethodSlots(typ)) == 0 {
+		return false
+	}
+	_, visible := a.visible[typ]
+	return !visible
+}
+
+func AnalyzeProgram(info *meta.GlobalSummary, rootNames []string) Analysis {
 	roots := make([]meta.Symbol, 0, len(rootNames))
 	for _, name := range rootNames {
 		if sym, ok := info.LookupSymbol(name); ok {
@@ -51,18 +75,18 @@ func Analyze(info *meta.GlobalSummary, rootNames []string) map[string][]int {
 		}
 	}
 
-	liveSlots := deadcode(info, roots)
-	out := make(map[string][]int, len(liveSlots))
-	for typ, slots := range liveSlots {
+	pass := deadcode(info, roots)
+	out := make(map[string][]int, len(pass.liveSlots))
+	for typ, slots := range pass.liveSlots {
 		name := info.SymbolName(typ)
 		sorted := append([]int(nil), slots...)
 		sort.Ints(sorted)
 		out[name] = sorted
 	}
-	return out
+	return Analysis{LiveSlots: out, info: info, visible: pass.usedInIface}
 }
 
-func deadcode(info *meta.GlobalSummary, roots []meta.Symbol) map[meta.Symbol][]int {
+func deadcode(info *meta.GlobalSummary, roots []meta.Symbol) *pass {
 	d := &pass{
 		info:               info,
 		methodImplKeys:     make(map[methodID][]ifaceMethodKey),
@@ -86,7 +110,7 @@ func deadcode(info *meta.GlobalSummary, roots []meta.Symbol) map[meta.Symbol][]i
 		d.flood()
 		changed := d.methodMarkingLoop()
 		if len(d.workQueue) == 0 && !changed {
-			return d.liveSlots
+			return d
 		}
 	}
 }

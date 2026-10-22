@@ -18,8 +18,9 @@ const (
 // srcMods contains the original package modules. For each constant ABI type
 // global with a method array, it creates a same-name strong global in dst and
 // clears IFn/TFn for method slots not listed in liveSlots[typeName].
-// When verbose is true, dropped method slots are reported to os.Stderr.
-func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, liveSlots map[string][]int, verbose bool) {
+// dropMetadata can clear names/signatures for types proven invisible to
+// interfaces and reflection; nil preserves them. verbose logs removed slots.
+func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, liveSlots map[string][]int, dropMetadata func(string) bool, verbose bool) {
 	emitted := make(map[string]bool)
 	emitter := newOverrideEmitter(dst)
 	for _, src := range srcMods {
@@ -32,7 +33,8 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, liveSlots m
 			if !ok {
 				continue
 			}
-			emitter.emitTypeOverride(g, methodsVal, elemTy, liveSlotSet(liveSlots[name]), verbose)
+			drop := dropMetadata != nil && dropMetadata(name)
+			emitter.emitTypeOverride(g, methodsVal, elemTy, liveSlotSet(liveSlots[name]), drop, verbose)
 			emitted[name] = true
 		}
 	}
@@ -52,7 +54,7 @@ func newOverrideEmitter(dst llvm.Module) *overrideEmitter {
 	}
 }
 
-func (e *overrideEmitter) emitTypeOverride(srcType, methodsVal llvm.Value, elemTy llvm.Type, keepIdx map[int]bool, verbose bool) {
+func (e *overrideEmitter) emitTypeOverride(srcType, methodsVal llvm.Value, elemTy llvm.Type, keepIdx map[int]bool, dropMetadata, verbose bool) {
 	init := srcType.Initializer()
 	dstType := e.ensureOverrideGlobal(srcType)
 	e.values[srcType] = dstType
@@ -61,6 +63,29 @@ func (e *overrideEmitter) emitTypeOverride(srcType, methodsVal llvm.Value, elemT
 	fields := make([]llvm.Value, fieldCount)
 	for i := 0; i < fieldCount-1; i++ {
 		fields[i] = e.cloneConst(init.Operand(i))
+	}
+	// Keep the descriptor's prefix and storage layout stable. Its methodless
+	// uncommon header remains valid, while zeroing the array releases names,
+	// signature descriptors and their transitive type graphs to linker DCE.
+	if dropMetadata && len(keepIdx) == 0 && fieldCount == 3 &&
+		fields[1].Type().TypeKind() == llvm.StructTypeKind &&
+		fields[1].Type().StructName() == "github.com/xgo-dev/llgo/runtime/abi.UncommonType" {
+		uncommon := fields[1]
+		parts := make([]llvm.Value, uncommon.OperandsCount())
+		for i := range parts {
+			parts[i] = uncommon.Operand(i)
+		}
+		parts[1], parts[2] = llvm.ConstNull(parts[1].Type()), llvm.ConstNull(parts[2].Type())
+		fields[1] = constStructOfType(uncommon.Type(), parts)
+		fields[2] = llvm.ConstNull(e.cloneType(methodsVal.Type()))
+		dstType.SetInitializer(constStructOfType(e.cloneType(init.Type()), fields))
+		dstType.SetGlobalConstant(true)
+		dstType.SetLinkage(llvm.ExternalLinkage)
+		copyGlobalAttrs(dstType, srcType)
+		if verbose {
+			fmt.Fprintf(os.Stderr, "[dce] drop unobserved method metadata %s\n", srcType.Name())
+		}
+		return
 	}
 
 	unreachableMethod := e.unreachableMethod()

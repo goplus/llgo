@@ -1035,6 +1035,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	}
 
 	allPkgs := append([]*aPackage{}, pkgs...)
+	configureUnusedGlobalInits(ctx)
 	allPkgs = append(allPkgs, depPkgs...)
 	var nativeTestRoots []*packages.Package
 	if mode == ModeTest && !inv.compileOnly {
@@ -2616,7 +2617,10 @@ func buildMainLink(ctx *context, pkg *packages.Package, preparation *mainLinkPre
 		return nil, err
 	}
 	if ctx.buildConf.deadcodeDropEnabled() {
-		if err := applyDeadcodeDropOverrides(preparation.linkedOrder, entryPkg, preparation.gen.rtInit, verbose); err != nil {
+		// The initializer plan exists only after accounting for native inputs.
+		// Reuse that boundary before pruning unobservable method metadata.
+		trimMethods := ctx.buildConf.Goarch == "wasm" && ctx.buildConf.BuildMode == BuildModeExe && ctx.frontendOptions.UnusedGlobalInits != nil
+		if err := applyDeadcodeDropOverrides(preparation.linkedOrder, entryPkg, preparation.gen.rtInit, trimMethods, verbose); err != nil {
 			return nil, err
 		}
 	}
@@ -2717,7 +2721,7 @@ func linkedPackageMetas(pkgs []Package) ([]*meta.PackageMeta, error) {
 	return metas, nil
 }
 
-func applyDeadcodeDropOverrides(pkgs []Package, entryPkg Package, needRuntime bool, verbose bool) error {
+func applyDeadcodeDropOverrides(pkgs []Package, entryPkg Package, needRuntime, trimMethods, verbose bool) error {
 	metas, err := linkedPackageMetas(pkgs)
 	if err != nil {
 		return err
@@ -2728,8 +2732,12 @@ func applyDeadcodeDropOverrides(pkgs []Package, entryPkg Package, needRuntime bo
 	}
 
 	roots := dceEntryRootCandidates(pkgs, needRuntime)
-	liveSlots := deadcode.Analyze(summary, roots)
-	dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), dceSourceModules(pkgs), liveSlots, verbose)
+	analysis := deadcode.AnalyzeProgram(summary, roots)
+	var dropMetadata func(string) bool
+	if trimMethods {
+		dropMetadata = analysis.CanDropMethodMetadata
+	}
+	dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), dceSourceModules(pkgs), analysis.LiveSlots, dropMetadata, verbose)
 	return nil
 }
 

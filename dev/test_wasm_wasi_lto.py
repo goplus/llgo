@@ -7,14 +7,14 @@ import pathlib
 import subprocess
 import tempfile
 
-from test_wasm_wasi_threads import wasmer_command
+from test_wasm_wasi_threads import check_size_probe, wasmer_command
 
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LLGO = os.environ.get("LLGO", "llgo")
 
 
-def build(env, directory, mode, fixture, tags="", test=False):
+def build(env, directory, mode, fixture, tags="", test=False, extra_flags=()):
     module = directory / f"{fixture.name}-{mode}-{tags or 'gc'}.wasm"
     link_object = module.with_suffix(".lto.o")
     build_env = env.copy()
@@ -25,6 +25,7 @@ def build(env, directory, mode, fixture, tags="", test=False):
     build_env["LDFLAGS"] = (env.get("LDFLAGS", "") + " " + flags).strip()
     command = [LLGO, "test", "-c"] if test else [LLGO, "build"]
     command += ["-target", "wasi", "-O2", f"-lto={mode}"]
+    command += extra_flags
     if tags:
         command += ["-tags", tags]
     subprocess.run(command + ["-o", str(module), str(fixture)],
@@ -66,6 +67,11 @@ def main():
             fixture = ROOT / "cl/_testlto/globaldce_interface_matrix"
             module = build(env, directory, mode, fixture)
             run(env, module, (fixture / "expect.txt").read_text().splitlines())
+            # Keep the original method-summary DCE covered alongside Full LTO;
+            # the interface matrix above exercises LLVM GoGlobalDCE instead.
+            module = build(env, directory, mode, ROOT / "internal/build/testdata/wasm-size",
+                           extra_flags=("-deadcodedrop", "-globaldce=false"))
+            check_size_probe(env, module)
             for tags in ("nogc", ""):
                 fixture = ROOT / "internal/build/testdata/wasm-wasi-goexit-defer"
                 module = build(env, directory, mode, fixture, tags)

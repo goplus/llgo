@@ -233,6 +233,11 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 
 	m.pkg.PkgPath = p.PkgPath
 	m.pkg.PkgID = p.ID
+	m.pkg.DeadInits = slices.Clone(c.frontendOptions.UnusedGlobalInits.CacheKeys(pkg.SSA))
+	if pkg.AltPkg != nil && c.progSSA != nil {
+		m.pkg.DeadInits = append(m.pkg.DeadInits, c.frontendOptions.UnusedGlobalInits.CacheKeys(c.progSSA.Package(pkg.AltPkg.Types))...)
+		slices.Sort(m.pkg.DeadInits)
+	}
 	if p.PkgPath == llssa.PkgRuntime {
 		// Only the runtime embeds this setting; goroutine callers have a
 		// configuration-independent ABI. Match SetPthreadStackSize in Build.
