@@ -16,7 +16,11 @@
 
 package goflags
 
-import "github.com/xgo-dev/llgo/internal/build"
+import (
+	"fmt"
+
+	"github.com/xgo-dev/llgo/internal/build"
+)
 
 // ApplyBuildFlags validates and appends normalized Go build flags, and maps
 // the supported compiler and linker semantics into typed build configuration.
@@ -29,6 +33,10 @@ func ApplyBuildFlags(conf *build.Config, args []string) error {
 	if err != nil {
 		return err
 	}
+	compilerFlags, err := parseNativeFlags(all)
+	if err != nil {
+		return err
+	}
 
 	parallelism, parallelismPresent, err := parseBuildParallelism(all)
 	if err != nil {
@@ -38,9 +46,15 @@ func ApplyBuildFlags(conf *build.Config, args []string) error {
 	if err != nil {
 		return err
 	}
+	if len(linkFlags.Ignored) != 0 {
+		return fmt.Errorf("unsupported LLGo linker options: %v", linkFlags.Ignored)
+	}
 	next := *conf
 	next.GoBuildFlags = all
-	applyFrontendGCFlags(&next)
+	if err := applyOverlay(&next, all); err != nil {
+		return err
+	}
+	compilerFlags.apply(&next)
 	if parallelismPresent {
 		next.BuildParallelism = parallelism
 	}

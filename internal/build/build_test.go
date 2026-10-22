@@ -3,6 +3,7 @@ package build
 import (
 	"bytes"
 	"debug/macho"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	gobuild "go/build"
@@ -34,6 +35,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv("LLGO_TEST_GODEBUG_METADATA") != "" {
+		runDefaultGODEBUGMetadataHelper()
+		os.Exit(0)
+	}
 	if mode := os.Getenv("LLGO_TEST_GO_CONFIG_HELPER"); mode != "" {
 		runGoConfigHelper(mode)
 		os.Exit(0)
@@ -120,7 +125,11 @@ func TestMain(m *testing.M) {
 			fmt.Fprintln(os.Stderr, "missing -o")
 			os.Exit(9)
 		}
-		if err := os.WriteFile(output, []byte("linked"), 0o666); err != nil {
+		payload := "linked"
+		if mode == "write-html" {
+			payload = `<html><script type=module>import init from"./main.js"</script></html>`
+		}
+		if err := os.WriteFile(output, []byte(payload), 0o666); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(10)
 		}
@@ -138,6 +147,7 @@ func TestMain(m *testing.M) {
 func TestConfigCloneDoesNotAliasInput(t *testing.T) {
 	input := &Config{
 		RunArgs:      []string{"run"},
+		Exec:         []string{"wrapper", "argument"},
 		GoBuildFlags: []string{"-tags=custom"},
 		Overlay:      map[string][]byte{"input.go": []byte("package input")},
 		Coverage:     &CoverageConfig{Mode: "count"},
@@ -149,6 +159,7 @@ func TestConfigCloneDoesNotAliasInput(t *testing.T) {
 	}
 	cloned := input.clone()
 	cloned.RunArgs[0] = "changed"
+	cloned.Exec[0] = "changed"
 	cloned.GoBuildFlags[0] = "-tags=changed"
 	cloned.Overlay["input.go"][0] = 'P'
 	cloned.GlobalRewrites["example.com/p"]["value"] = "changed"
@@ -157,6 +168,9 @@ func TestConfigCloneDoesNotAliasInput(t *testing.T) {
 
 	if got := input.RunArgs[0]; got != "run" {
 		t.Fatalf("input RunArgs changed to %q", got)
+	}
+	if got := input.Exec[0]; got != "wrapper" {
+		t.Fatalf("input execution wrapper changed to %q", got)
 	}
 	if got := input.GoBuildFlags[0]; got != "-tags=custom" {
 		t.Fatalf("input GoBuildFlags changed to %q", got)
@@ -201,20 +215,6 @@ func TestConfigCloneDropsGeneratedCoverageOverlay(t *testing.T) {
 	cloned.Overlay["source.go"][0] = 'P'
 	if got := string(base["source.go"]); got != "package source" {
 		t.Fatalf("cloned coverage overlay aliases its snapshot: %q", got)
-	}
-}
-
-func TestUseShadowStack(t *testing.T) {
-	t.Setenv(llgoShadowStack, "0")
-	if !useShadowStack("wasm") {
-		t.Fatal("WebAssembly must use the software shadow stack")
-	}
-	if useShadowStack("amd64") {
-		t.Fatal("native target unexpectedly enabled the shadow stack")
-	}
-	t.Setenv(llgoShadowStack, "1")
-	if !useShadowStack("amd64") {
-		t.Fatal("native target did not honor LLGO_SHADOW_STACK=1")
 	}
 }
 
@@ -908,19 +908,23 @@ func TestConfigureWasmGC(t *testing.T) {
 	}
 }
 
-func TestConfigureWasmGCRejectsWASIThreads(t *testing.T) {
+func TestConfigureWasmGCWASIThreads(t *testing.T) {
 	t.Setenv("LLGO_WASI_THREADS", "1")
 	conf := Config{Goos: "wasip1", Goarch: "wasm", Tags: "llgo.wasm.gc.linear"}
-	if _, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err == nil {
-		t.Fatal("expected llgo.wasm.gc.linear with WASI threads to fail")
+	if enabled, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err != nil || !enabled {
+		t.Fatalf("explicit WASI threaded GC = %v, %v; want true, nil", enabled, err)
 	}
 	conf.Tags = ""
-	if _, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err == nil || !strings.Contains(err.Error(), "-tags nogc") {
-		t.Fatalf("WASI threads without a collector returned %v, want an actionable error", err)
+	if enabled, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err != nil || !enabled || !slices.Contains(splitSourcePatchBuildTags(conf.Tags), "llgo.wasm.gc.linear") {
+		t.Fatalf("default WASI threaded GC = %v, %v, tags %q; want enabled", enabled, err, conf.Tags)
 	}
 	conf.Tags = "nogc"
 	if enabled, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err != nil || enabled {
-		t.Fatalf("experimental WASI threads with nogc = %v, %v; want false, nil", enabled, err)
+		t.Fatalf("WASI threads with nogc = %v, %v; want false, nil", enabled, err)
+	}
+	conf.Tags = "nogc,llgo.wasm.gc.linear"
+	if _, err := configureWasmGC(&conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err == nil {
+		t.Fatal("WASI threads accepted conflicting collector tags")
 	}
 }
 
@@ -940,7 +944,7 @@ func TestUsesSingleWorkerWasmScheduler(t *testing.T) {
 	}{
 		{"Emscripten", "js", "wasm", false, true},
 		{"Emscripten ignores WASI setting", "js", "wasm", true, true},
-		{"single-worker WASI", "wasip1", "wasm", false, true},
+		{"WASI always uses pthreads", "wasip1", "wasm", false, false},
 		{"WASI threads", "wasip1", "wasm", true, false},
 		{"unsupported wasm host", "plan9", "wasm", false, false},
 		{"native", "linux", "amd64", false, false},
@@ -956,6 +960,33 @@ func TestUsesSingleWorkerWasmScheduler(t *testing.T) {
 	}
 	if usesSingleWorkerWasmScheduler(nil) {
 		t.Fatal("nil configuration selected the single-worker scheduler")
+	}
+}
+
+func TestConfigureWasmAsyncifyExports(t *testing.T) {
+	t.Setenv(llgoWasmWorkers, "1")
+	for _, tc := range []struct {
+		name     string
+		provider crosscompile.WasmProvider
+		flags    []string
+		want     bool
+	}{
+		{"Emscripten Asyncify", crosscompile.WasmProviderEmscripten, []string{"-sASYNCIFY=1"}, true},
+		{"GoJS Asyncify", crosscompile.WasmProviderGoJS, []string{"-sASYNCIFY=1"}, true},
+		{"Emscripten without Asyncify", crosscompile.WasmProviderEmscripten, nil, false},
+		{"GoJS without Asyncify", crosscompile.WasmProviderGoJS, nil, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := &Config{Goos: "js", Goarch: "wasm"}
+			export := crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: tc.provider, LDFLAGS: tc.flags}
+			if _, err := configureWasmWorkers(conf, &export); err != nil {
+				t.Fatal(err)
+			}
+			shim := filepath.Join(env.LLGoROOT(), "targets", "emscripten-asyncify-exports.js")
+			if got := slices.Contains(export.LDFLAGS, shim); got != tc.want {
+				t.Fatalf("Asyncify shim present = %v, want %v; flags %v", got, tc.want, export.LDFLAGS)
+			}
+		})
 	}
 }
 
@@ -999,6 +1030,36 @@ func TestConfigureWasmWorkers(t *testing.T) {
 	}
 	if !slices.Contains(splitSourcePatchBuildTags(conf.Tags), "llgo.wasm.gc.linear") {
 		t.Fatalf("worker GC tag missing from %q", conf.Tags)
+	}
+}
+
+func TestConfigureWasmWorkersReportsInvalidConfiguration(t *testing.T) {
+	t.Setenv(llgoWasmWorkers, "invalid")
+	conf := &Config{Goos: "js", Goarch: "wasm"}
+	export := &crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}
+	if _, err := configureWasmWorkers(conf, export); err == nil {
+		t.Fatal("invalid worker count was accepted")
+	}
+	if _, err := Do(nil, conf); err == nil || !strings.Contains(err.Error(), llgoWasmWorkers) {
+		t.Fatalf("build error = %v, want invalid worker configuration", err)
+	}
+}
+
+func TestConfigureWasmWorkersReportsMissingHostShim(t *testing.T) {
+	root := t.TempDir()
+	runtimeDir := filepath.Join(root, env.LLGoRuntimePkgName)
+	if err := os.MkdirAll(runtimeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(runtimeDir, "go.mod"), []byte("module "+env.LLGoRuntimePkg+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LLGO_ROOT", root)
+	t.Setenv(llgoWasmWorkers, "2")
+	conf := &Config{Goos: "js", Goarch: "wasm"}
+	export := &crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}
+	if _, err := configureWasmWorkers(conf, export); err == nil || !strings.Contains(err.Error(), "worker host shim") {
+		t.Fatalf("worker configuration error = %v, want missing host shim", err)
 	}
 }
 
@@ -1177,11 +1238,6 @@ func TestWasmRuntimeBackendSelection(t *testing.T) {
 			omit: []string{"g_tls.go", "os_pthread.go", "proc_pthread.go", "fatal_default.go", "local_context_tls.go"},
 		},
 		{
-			name: "single-worker WASI", goos: "wasip1", tags: []string{"llgo", "nogc"},
-			want: []string{"g_wasm.go", "os_wasm.go", "proc_wasip1.go", "runqueue_wasm.go", "fatal_wasip1.go", "local_context_baremetal.go"},
-			omit: []string{"g_tls.go", "os_pthread.go", "proc_pthread.go", "fatal_default.go", "local_context_tls.go"},
-		},
-		{
 			name: "multi-worker WASI", goos: "wasip1", tags: []string{"llgo", "nogc", "llgo.wasi_threads"},
 			want: []string{"g_tls.go", "os_pthread.go", "proc_pthread.go", "fatal_default.go", "local_context_tls.go"},
 			omit: []string{"g_wasm.go", "os_wasm.go", "proc_wasip1.go", "runqueue_wasm.go", "fatal_wasip1.go", "local_context_baremetal.go"},
@@ -1318,13 +1374,24 @@ func TestBaremetalRuntimeKeepsSchedulerFreeLifecycleStubs(t *testing.T) {
 
 func TestNeedsLinuxExportDynamic(t *testing.T) {
 	t.Setenv(llgoFuncInfo, "")
-	ctx := &context{buildConf: &Config{Goos: "linux"}}
+	ctx := &context{buildConf: &Config{Goos: "linux", BuildMode: BuildModeExe}}
 	if !needsLinuxExportDynamic(ctx) {
 		t.Fatal("linux funcinfo executable should export dynamic symbols")
 	}
 	if got := linuxExportDynamicArgs(ctx); strings.Join(got, " ") != "-Wl,--export-dynamic-symbol=main.* -Wl,--export-dynamic-symbol=command-line-arguments.*" {
 		t.Fatalf("linuxExportDynamicArgs = %v", got)
 	}
+	sites := true
+	ctx.linkRuntimeSites = &sites
+	if got := linuxExportDynamicArgs(ctx); got != nil {
+		t.Fatalf("entry sites should not need dynamic exports: %v", got)
+	}
+	ctx.buildConf.PCLNMode = PCLNExternal
+	if needsLinuxExportDynamic(ctx) {
+		t.Fatal("external PCLN should not need dynamic exports")
+	}
+	ctx.buildConf.PCLNMode = PCLNEmbedded
+	sites = false
 	t.Setenv(llgoFuncInfo, "0")
 	if needsLinuxExportDynamic(ctx) {
 		t.Fatal("LLGO_FUNCINFO=0 should disable dynamic symbol export")
@@ -1341,6 +1408,13 @@ func TestNeedsLinuxExportDynamic(t *testing.T) {
 	ctx.buildConf.Target = "wasi"
 	if needsLinuxExportDynamic(ctx) {
 		t.Fatal("named targets should not force host linux dynamic symbol export")
+	}
+	ctx.buildConf.Target = ""
+	for _, mode := range []BuildMode{BuildModeCShared, BuildModeCArchive} {
+		ctx.buildConf.BuildMode = mode
+		if needsLinuxExportDynamic(ctx) {
+			t.Fatalf("%s should not use executable export policy", mode)
+		}
 	}
 }
 
@@ -1442,22 +1516,43 @@ func TestExtest(t *testing.T) {
 		outputChan <- data.String()
 	}()
 
-	var testingBuilds int
-	conf := &Config{Mode: ModeTest, BuildParallelism: 2}
-	conf.ModuleHook = func(pkg Package) {
-		if pkg.PkgPath == "testing" {
-			testingBuilds++
-		}
-	}
+	// ModuleHook forces the coordinator backend. Count the shared package
+	// through tracing so the same build also exercises the native parallel DAG.
+	trace := filepath.Join(t.TempDir(), "build.json")
+	conf := &Config{Mode: ModeTest, BuildParallelism: 2, BuildTrace: trace}
 	mockRun([]string{"../../cl/_testgo/runextest/..."}, conf)
 
 	w.Close()
 	got := <-outputChan
+	data, err := os.ReadFile(trace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []buildTraceEvent
+	if err := json.Unmarshal(data, &events); err != nil {
+		t.Fatal(err)
+	}
+	var testingBuilds int
+	var isolated bool
+	for _, event := range events {
+		if event.Phase != "X" {
+			continue
+		}
+		if event.Name == "backend+publish testing" {
+			testingBuilds++
+		}
+		if event.Args["class"] == "isolated" {
+			isolated = true
+		}
+	}
+	if !isolated {
+		t.Error("native test DAG did not use the isolated backend")
+	}
 	if testingBuilds != 1 {
 		t.Errorf("testing package builds = %d, want 1 shared build", testingBuilds)
 	}
-	if count := strings.Count(got, "PASS\n"); count != 4 {
-		t.Errorf("PASS count = %d, want 4; output:\n%s", count, got)
+	if strings.Contains(got, "PASS\n") {
+		t.Errorf("non-verbose package-list mode exposed successful test output:\n%s", got)
 	}
 	for _, pkg := range []string{
 		"github.com/xgo-dev/llgo/cl/_testgo/runextest",
@@ -1465,14 +1560,10 @@ func TestExtest(t *testing.T) {
 		"github.com/xgo-dev/llgo/cl/_testgo/runextest/bar/barinner",
 		"github.com/xgo-dev/llgo/cl/_testgo/runextest/foo",
 	} {
-		if !strings.Contains(got, "ok  \t"+pkg+"\n") {
+		if !strings.Contains(got, "ok  \t"+pkg+"\t") {
 			t.Errorf("output does not contain result for %s:\n%s", pkg, got)
 		}
 	}
-}
-
-func TestExtestNativeTestDAG(t *testing.T) {
-	mockRun([]string{"../../cl/_testgo/runextest/..."}, &Config{Mode: ModeTest, BuildParallelism: 2})
 }
 
 func TestExtestNativeTestDAGFailFast(t *testing.T) {
@@ -1678,6 +1769,56 @@ func TestLinkOptionsControlDarwinDebugSymbols(t *testing.T) {
 	}
 }
 
+func TestDarwinDWARFCacheUsesStableArchivePaths(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Mach-O debug-map integration test")
+	}
+
+	cacheDir := t.TempDir()
+	oldCacheRootFunc := cacheRootFunc
+	cacheRootFunc = func() string { return cacheDir }
+	t.Cleanup(func() { cacheRootFunc = oldCacheRootFunc })
+
+	binPath := filepath.Join(t.TempDir(), "ldflagsstrip")
+	buildCachedArchivePaths := func() []string {
+		cfg := &Config{
+			Mode:        ModeBuild,
+			OutFile:     binPath,
+			LinkOptions: LinkOptions{DWARF: DWARFPreserve},
+		}
+		if _, err := Do([]string{"./testdata/ldflagsstrip"}, cfg); err != nil {
+			t.Fatalf("ModeBuild with DWARF failed: %v", err)
+		}
+		f, err := macho.Open(binPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+		if f.Symtab == nil {
+			t.Fatal("Mach-O has no symbol table")
+		}
+
+		const nOSO = 0x66
+		cachePrefix := filepath.Join(cacheDir, cacheBuildDirName) + string(os.PathSeparator)
+		var paths []string
+		for _, sym := range f.Symtab.Syms {
+			if sym.Type == nOSO && strings.HasPrefix(sym.Name, cachePrefix) {
+				paths = append(paths, sym.Name)
+			}
+		}
+		return paths
+	}
+
+	coldPaths := buildCachedArchivePaths()
+	warmPaths := buildCachedArchivePaths()
+	if len(coldPaths) == 0 {
+		t.Fatal("cold build has no cache-backed N_OSO paths")
+	}
+	if !slices.Equal(coldPaths, warmPaths) {
+		t.Fatalf("cold and warm N_OSO paths differ:\ncold: %q\nwarm: %q", coldPaths, warmPaths)
+	}
+}
+
 func machoHasStabs(t *testing.T, path string) bool {
 	t.Helper()
 	f, err := macho.Open(path)
@@ -1690,7 +1831,8 @@ func machoHasStabs(t *testing.T, path string) bool {
 	}
 	const nStab = 0xe0
 	for _, symbol := range f.Symtab.Syms {
-		if symbol.Type&nStab != 0 {
+		// Apple strip emits an N_OPT radr marker even without any DWARF.
+		if symbol.Type&nStab != 0 && symbol.Type != 0x3c {
 			return true
 		}
 	}
@@ -1882,6 +2024,9 @@ func TestExecuteInitialPackageLinkCompileOnlyNamedTargetDoesNotExecute(t *testin
 		Goos:        runtime.GOOS,
 		Goarch:      runtime.GOARCH,
 		PCLNMode:    PCLNNone,
+		// This post-link test bypasses config resolution. Its linker helper
+		// writes an opaque fixture, so use the resolved no-DWARF artifact mode.
+		DebugArtifactMode: DebugArtifactNone,
 	}
 	ctx := &context{
 		mode:      ModeTest,
@@ -1909,6 +2054,16 @@ func TestExecuteInitialPackageLinkCompileOnlyNamedTargetDoesNotExecute(t *testin
 	}
 	if data, err := os.ReadFile(output); err != nil || string(data) != "linked" {
 		t.Fatalf("linked output = %q, %v", data, err)
+	}
+	// Executed emulator tests must join the same output-aware test batch as
+	// native programs. The linker helper writes an opaque artifact, so any
+	// attempt to launch it here would fail this assertion.
+	conf.CompileOnly, conf.Emulator = false, true
+	ctx.crossCompile.Emulator = "host-runner {}"
+	link.plan = &mainLinkPlan{outputPath: output}
+	program, err = executeInitialPackageLink(ctx, link, false, false)
+	if err != nil || program == nil || program.runner != ctx.crossCompile.Emulator || program.pkgName != "example.com/wasm-test" {
+		t.Fatalf("emulator test did not return a deferred test program: %+v, %v", program, err)
 	}
 }
 
@@ -1972,7 +2127,220 @@ func TestExecuteInitialPackageLinkRawWasmRunUsesHostRunner(t *testing.T) {
 	}
 }
 
-func TestShouldDisableClangImplicitWasmOptOnlyForWasmPostLinkClang(t *testing.T) {
+func TestExecuteMainLinkNilPlan(t *testing.T) {
+	if err := executeMainLink(&context{buildConf: &Config{BuildMode: BuildModeExe}}, nil, false); err == nil {
+		t.Fatal("nil plan succeeded")
+	}
+}
+
+func TestExecuteMainLinkPublishesEmscriptenBrowserHost(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write-html")
+	root := writeFakeLLGoRoot(t, true)
+	t.Setenv("LLGO_ROOT", root)
+	output := filepath.Join(t.TempDir(), "main.html")
+	ctx := &context{
+		mode: ModeBuild,
+		buildConf: &Config{
+			Mode:      ModeBuild,
+			BuildMode: BuildModeExe,
+			Target:    "emscripten",
+			Goos:      "js",
+			Goarch:    "wasm",
+			PCLNMode:  PCLNNone,
+		},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	stale := filepath.Join(filepath.Dir(output), "main.mjs")
+	if err := os.WriteFile(stale, []byte("stale-wasm64-glue"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Fatalf("stale main.mjs still present: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(output), wasmFSScriptName)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), `<script src="./wasm_fs.js"></script>`) {
+		t.Fatalf("HTML = %q", got)
+	}
+}
+
+func TestExecuteMainLinkReportsStaleGlueError(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write-html")
+	dir := t.TempDir()
+	output := filepath.Join(dir, "main.html")
+	stale := filepath.Join(dir, "main.mjs")
+	if err := os.Mkdir(stale, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stale, "keep.txt"), []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &context{
+		mode: ModeBuild,
+		buildConf: &Config{
+			Mode:      ModeBuild,
+			BuildMode: BuildModeExe,
+			Target:    "emscripten",
+			Goos:      "js",
+			Goarch:    "wasm",
+			PCLNMode:  PCLNNone,
+		},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, false)
+	if err == nil || !strings.Contains(err.Error(), "stale Emscripten glue") {
+		t.Fatalf("stale glue error = %v", err)
+	}
+}
+
+func TestExecuteMainLinkNativeJSOutputKeepsSiblingMjs(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
+	dir := t.TempDir()
+	output := filepath.Join(dir, "app.js")
+	sibling := filepath.Join(dir, "app.mjs")
+	if err := os.WriteFile(sibling, []byte("unrelated"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &context{
+		mode: ModeBuild,
+		buildConf: &Config{
+			Mode:      ModeBuild,
+			BuildMode: BuildModeExe,
+			Goos:      runtime.GOOS,
+			Goarch:    runtime.GOARCH,
+			PCLNMode:  PCLNNone,
+		},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	if err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, false); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := os.ReadFile(sibling); err != nil || string(got) != "unrelated" {
+		t.Fatalf("unrelated sibling app.mjs = %q, %v", got, err)
+	}
+	if got, err := os.ReadFile(output); err != nil || string(got) != "linked" {
+		t.Fatalf("native app.js = %q, %v", got, err)
+	}
+}
+
+func TestExecuteMainLinkRejectsWasmFSJSCollision(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
+	root := writeFakeLLGoRoot(t, true)
+	t.Setenv("LLGO_ROOT", root)
+	output := filepath.Join(t.TempDir(), wasmFSScriptName)
+	ctx := &context{
+		mode: ModeBuild,
+		buildConf: &Config{
+			Mode:      ModeBuild,
+			BuildMode: BuildModeExe,
+			Target:    "emscripten",
+			Goos:      "js",
+			Goarch:    "wasm",
+			PCLNMode:  PCLNNone,
+		},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, false)
+	if err == nil || !strings.Contains(err.Error(), "collides") {
+		t.Fatalf("collision error = %v", err)
+	}
+	got, readErr := os.ReadFile(output)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(got) == "/* shim */\n" {
+		t.Fatal("colliding copy replaced the generated module with the shim")
+	}
+	if string(got) != "linked" {
+		t.Fatalf("output = %q, want the generated module", got)
+	}
+}
+
+func TestExecuteMainLinkReportsEmscriptenBrowserHostError(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write-html")
+	root := writeFakeLLGoRoot(t, false)
+	t.Setenv("LLGO_ROOT", root)
+	output := filepath.Join(t.TempDir(), "main.html")
+	ctx := &context{
+		mode: ModeBuild,
+		buildConf: &Config{
+			Mode:      ModeBuild,
+			BuildMode: BuildModeExe,
+			Target:    "emscripten",
+			Goos:      "js",
+			Goarch:    "wasm",
+			PCLNMode:  PCLNNone,
+		},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	if err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, false); err == nil {
+		t.Fatal("missing wasm_fs.js succeeded")
+	}
+}
+
+func TestExecuteMainLinkReportsLinkError(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "fail")
+	ctx := &context{
+		mode:         ModeBuild,
+		buildConf:    &Config{Mode: ModeBuild, BuildMode: BuildModeExe, PCLNMode: PCLNNone},
+		crossCompile: crosscompile.Export{CC: os.Args[0]},
+	}
+	if err := executeMainLink(ctx, &mainLinkPlan{outputPath: filepath.Join(t.TempDir(), "app")}, false); err == nil {
+		t.Fatal("link failure succeeded")
+	}
+}
+
+func TestExecuteMainLinkReportsPrepareOutputError(t *testing.T) {
+	parent := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(parent, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &context{
+		buildConf:    &Config{BuildMode: BuildModeExe, Goos: "wasip1", Goarch: "wasm", PCLNMode: PCLNNone},
+		crossCompile: crosscompile.Export{WasmPostLink: crosscompile.WasmPostLink{Asyncify: true}},
+	}
+	if err := executeMainLink(ctx, &mainLinkPlan{outputPath: filepath.Join(parent, "app.wasm")}, false); err == nil {
+		t.Fatal("prepare output below a regular file succeeded")
+	}
+}
+
+func TestExecuteMainLinkReportsWasmPostLinkError(t *testing.T) {
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
+	t.Setenv("WASMOPT", filepath.Join(t.TempDir(), "missing-wasm-opt"))
+	output := filepath.Join(t.TempDir(), "app.wasm")
+	conf := &Config{
+		Mode:      ModeBuild,
+		BuildMode: BuildModeExe,
+		Goos:      "wasip1",
+		Goarch:    "wasm",
+		PCLNMode:  PCLNNone,
+	}
+	ctx := &context{
+		mode:      ModeBuild,
+		buildConf: conf,
+		crossCompile: crosscompile.Export{
+			CC:           os.Args[0],
+			WasmPostLink: crosscompile.WasmPostLink{Asyncify: true},
+		},
+	}
+	err := executeMainLink(ctx, &mainLinkPlan{outputPath: output}, false)
+	if err == nil {
+		t.Fatal("expected wasm-opt failure")
+	}
+	if !strings.Contains(err.Error(), "wasm-opt") {
+		t.Fatalf("error = %v, want wasm-opt failure", err)
+	}
+}
+
+func TestShouldDisableClangImplicitWasmOptOnlyForWasmClang(t *testing.T) {
 	ctx := &context{
 		buildConf: &Config{Goarch: "wasm"},
 		crossCompile: crosscompile.Export{
@@ -1991,8 +2359,8 @@ func TestShouldDisableClangImplicitWasmOptOnlyForWasmPostLinkClang(t *testing.T)
 	}
 	ctx.buildConf.Goarch = "wasm"
 	ctx.crossCompile.WasmPostLink.Asyncify = false
-	if ctx.shouldDisableClangImplicitWasmOpt("clang++") {
-		t.Fatal("non-Asyncify wasm link disabled wasm-opt")
+	if !ctx.shouldDisableClangImplicitWasmOpt("clang++") {
+		t.Fatal("WASI threads clang link did not disable implicit wasm-opt")
 	}
 	ctx.crossCompile.WasmPostLink.Asyncify = true
 	ctx.crossCompile.Linker = "custom-linker"
@@ -2005,35 +2373,39 @@ func TestShouldDisableClangImplicitWasmOptOnlyForWasmPostLinkClang(t *testing.T)
 }
 
 func TestLinkerDisablesClangImplicitWasmOpt(t *testing.T) {
-	for _, driver := range []string{"clang", "clang++"} {
-		t.Run(driver, func(t *testing.T) {
-			dir := t.TempDir()
-			tool := writeBuildTestTool(t, dir, driver)
-			argsFile := filepath.Join(dir, "args")
-			output := filepath.Join(dir, "linked.wasm")
-			t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
-			t.Setenv("LINK_ARGS_FILE", argsFile)
+	for _, asyncify := range []bool{false, true} {
+		t.Run(fmt.Sprintf("asyncify=%v", asyncify), func(t *testing.T) {
+			for _, driver := range []string{"clang", "clang++"} {
+				t.Run(driver, func(t *testing.T) {
+					dir := t.TempDir()
+					tool := writeBuildTestTool(t, dir, driver)
+					argsFile := filepath.Join(dir, "args")
+					output := filepath.Join(dir, "linked.wasm")
+					t.Setenv("LLGO_TEST_LINKER_HELPER", "write")
+					t.Setenv("LINK_ARGS_FILE", argsFile)
 
-			target := crosscompile.Export{
-				CC:           tool,
-				WasmPostLink: crosscompile.WasmPostLink{Asyncify: true},
-			}
-			if driver == "clang++" {
-				target.CXX = tool
-			}
-			ctx := &context{
-				buildConf:    &Config{Goarch: "wasm"},
-				crossCompile: target,
-			}
-			if err := ctx.linker().Link("-o", output); err != nil {
-				t.Fatal(err)
-			}
-			args, err := os.ReadFile(argsFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !slices.Contains(strings.Split(strings.TrimSpace(string(args)), "\n"), "--no-wasm-opt") {
-				t.Fatalf("%s link args did not disable implicit wasm-opt: %q", driver, args)
+					target := crosscompile.Export{
+						CC:           tool,
+						WasmPostLink: crosscompile.WasmPostLink{Asyncify: asyncify},
+					}
+					if driver == "clang++" {
+						target.CXX = tool
+					}
+					ctx := &context{
+						buildConf:    &Config{Goarch: "wasm"},
+						crossCompile: target,
+					}
+					if err := ctx.linker().Link("-o", output); err != nil {
+						t.Fatal(err)
+					}
+					args, err := os.ReadFile(argsFile)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !slices.Contains(strings.Split(strings.TrimSpace(string(args)), "\n"), "--no-wasm-opt") {
+						t.Fatalf("%s link args did not disable implicit wasm-opt: %q", driver, args)
+					}
+				})
 			}
 		})
 	}
@@ -2077,12 +2449,13 @@ func TestTestMultiplePackagesWithOutputFile(t *testing.T) {
 
 func TestCmpTestNonexistentPatternReturnsError(t *testing.T) {
 	cfg := &Config{Mode: ModeCmpTest}
-	_, err := Do([]string{"./this/path/does/not/exist/..."}, cfg)
+	const pattern = "./this/path/does/not/exist/..."
+	_, err := Do([]string{pattern}, cfg)
 	if err == nil {
 		t.Fatal("expected error for nonexistent cmptest pattern")
 	}
-	if !strings.Contains(err.Error(), "cannot build SSA for packages") && !strings.Contains(err.Error(), "no such file or directory") {
-		t.Fatalf("unexpected error: %v", err)
+	if !strings.Contains(err.Error(), pattern) {
+		t.Fatalf("package diagnostic lost the requested pattern: %v", err)
 	}
 }
 
@@ -2432,14 +2805,16 @@ func TestFullRpathArgs(t *testing.T) {
 	}
 }
 
-func TestWASIThreadsAreOptIn(t *testing.T) {
-	t.Setenv(llgoWasiThreads, "")
-	if IsWasiThreadsEnabled() {
-		t.Fatal("WASI threads are enabled by default")
-	}
-	t.Setenv(llgoWasiThreads, "1")
-	if !IsWasiThreadsEnabled() {
-		t.Fatal("WASI threads opt-in was ignored")
+func TestWASIThreadsRequired(t *testing.T) {
+	for _, value := range []string{"", "1", "true", "on", "0", "false", "off", "invalid"} {
+		t.Setenv(llgoWasiThreads, value)
+		wantError := value == "0" || value == "false" || value == "off" || value == "invalid"
+		if err := validateWASIThreads(&Config{Goos: "wasip1", Goarch: "wasm"}); (err != nil) != wantError {
+			t.Fatalf("LLGO_WASI_THREADS=%q: %v", value, err)
+		}
+		if err := validateWASIThreads(&Config{Goos: "linux", Goarch: "amd64"}); err != nil {
+			t.Fatalf("WASI setting affected native target: %v", err)
+		}
 	}
 }
 
@@ -2860,6 +3235,17 @@ func TestDoReportsAltPackageLocalityDirectiveError(t *testing.T) {
 	if err := os.MkdirAll(runtimePkgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// Keep the source-reuse entry points so this minimal runtime reaches the
+	// invalid locality directive below instead of failing source selection.
+	for _, name := range []string{"utf8.go", "utf8_index.go", "utf8_index_go127.go"} {
+		data, err := os.ReadFile(filepath.Join(env.LLGoRuntimeDir(), "internal", "runtime", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(runtimePkgDir, name), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := os.WriteFile(filepath.Join(runtimeDir, "go.mod"), []byte("module github.com/xgo-dev/llgo/runtime\n\ngo 1.24.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -2904,5 +3290,85 @@ func TestFormatPackageError(t *testing.T) {
 				t.Fatalf("formatPackageError() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestLinkExecutionKeepsSitePolicyAfterBackendDisposal(t *testing.T) {
+	t.Setenv("LLGO_PCLNPOST", "1")
+	for _, test := range []struct {
+		mode       Mode
+		goos       string
+		dwarf      bool
+		entrySites bool
+	}{
+		{mode: ModeBuild, goos: "linux", entrySites: true},
+		{mode: ModeBuild, goos: "linux", dwarf: true, entrySites: true},
+		{mode: ModeBuild, goos: "darwin", entrySites: true},
+		{mode: ModeBuild, goos: "darwin", dwarf: true},
+		{mode: ModeTest, goos: "linux", entrySites: true},
+		{mode: ModeTest, goos: "linux", dwarf: true, entrySites: true},
+		{mode: ModeTest, goos: "darwin", entrySites: true},
+		{mode: ModeTest, goos: "darwin", dwarf: true},
+	} {
+		for _, enabled := range []bool{false, true} {
+			t.Run(fmt.Sprintf("mode=%d/%s/dwarf=%v/sites=%v", test.mode, test.goos, test.dwarf, enabled), func(t *testing.T) {
+				prog := llssa.NewProgram(nil)
+				defer prog.Dispose()
+				prog.EnableFuncInfoSites(enabled)
+				ctx := &context{
+					prog: prog,
+					buildConf: &Config{Mode: test.mode, BuildMode: BuildModeExe,
+						Goos: test.goos, Goarch: "amd64", PCLNMode: PCLNEmbedded,
+						OmitDWARFByDefault: !test.dwarf},
+					initial: []*packages.Package{{}},
+				}
+				plan := &mainLinkPlan{runtimeSites: shouldEmitRuntimeSites(ctx)}
+				ctx.releaseSingleExecutableBackend()
+				if ctx.prog != nil {
+					t.Fatal("released context still exposes the backend Program")
+				}
+				linkCtx := newLinkExecutionContext(ctx, plan)
+				if got := shouldEmitRuntimeSites(linkCtx); got != enabled {
+					t.Fatalf("runtime sites = %v, want %v", got, enabled)
+				}
+				out := filepath.Join(t.TempDir(), "missing")
+				args, cleanup, err := funcInfoSiteLayoutArgs(linkCtx, out)
+				cleanup()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if (len(args) != 0) != (enabled && test.goos == "linux") {
+					t.Fatalf("sites enabled=%v: linker args = %v", enabled, args)
+				}
+				wantEntrySites := enabled && test.entrySites
+				if got := shouldEmitRuntimeEntrySites(linkCtx); got != wantEntrySites {
+					t.Fatalf("entry sites = %v, want %v", got, wantEntrySites)
+				}
+				if got, want := needsLinuxExportDynamic(linkCtx), test.goos == "linux" && !enabled; got != want {
+					t.Fatalf("legacy dynamic exports after backend disposal = %v, want %v", got, want)
+				}
+				// A missing output must reach the rewriter when entry sites are enabled.
+				// Checking the diagnostic also catches silently skipping the rewrite
+				// because the released context no longer has a Program.
+				stderr, err := os.CreateTemp(t.TempDir(), "stderr")
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer stderr.Close()
+				oldStderr := os.Stderr
+				func() {
+					os.Stderr = stderr
+					defer func() { os.Stderr = oldStderr }()
+					rewritePrebuiltFuncTab(linkCtx, out, true)
+				}()
+				got, err := os.ReadFile(stderr.Name())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strings.Contains(string(got), "prebuilt functab rewrite skipped:") != wantEntrySites {
+					t.Fatalf("sites enabled=%v: rewrite diagnostic = %q", enabled, got)
+				}
+			})
+		}
 	}
 }

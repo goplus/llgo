@@ -5,6 +5,7 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -366,6 +367,88 @@ printf '%s\n' '{"kind":"TranslationUnitDecl"}'
 			compiler := llclang.NewCompiler(llclang.Config{CC: clangPath})
 			if _, err := genExternDeclsByClang(compiler, nil, "", nil, nil, false); err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Fatalf("genExternDeclsByClang() error = %v, want %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGenExternDeclsSkipsMissingAddressPlaceholders(t *testing.T) {
+	gllvm.InitializeAllTargets()
+	gllvm.InitializeAllTargetMCs()
+	gllvm.InitializeAllTargetInfos()
+	prog := llssa.NewProgram(nil)
+	defer prog.Dispose()
+	lpkg := prog.NewPackage("p", "example.com/p")
+	pkg := &aPackage{LPkg: lpkg}
+	const existing = "example.com/p.__cgo_callback"
+	placeholder := lpkg.NewVar(existing, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.GoDecl)
+	keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.GoDecl)
+	keep.Init(placeholder.Expr)
+	compiler := llclang.NewCompiler(llclang.Config{})
+	for pass := range 2 {
+		// The second file can list an already-lowered placeholder, or an
+		// address that executable compilation did not materialize at all.
+		symbols := map[string]string{
+			existing:                      "__cgo_callback",
+			"example.com/p.__cgo_missing": "__cgo_missing",
+		}
+		if _, err := genExternDeclsByClang(compiler, pkg, "void callback(void);", nil, symbols, false); err != nil {
+			t.Fatal(err)
+		}
+		if len(symbols) != 0 {
+			t.Fatalf("pass %d retained resolved symbols: %v", pass, symbols)
+		}
+		if lpkg.VarOf(existing) != nil || lpkg.FuncOf("callback") == nil {
+			t.Fatalf("pass %d lost the real callback address replacement", pass)
+		}
+		if lpkg.Module().NamedGlobal("example.com/p.keep").Initializer() != lpkg.Module().NamedFunction("callback") {
+			t.Fatalf("pass %d did not preserve the callback address", pass)
+		}
+		if lpkg.FuncOf("missing") != nil || !lpkg.Module().NamedFunction("missing").IsNil() {
+			t.Fatalf("pass %d created a C declaration for a missing placeholder:\n%s", pass, lpkg.Module().String())
+		}
+		if err := gllvm.VerifyModule(lpkg.Module(), gllvm.ReturnStatusAction); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestGenExternDeclsUsesPublicExportAddress(t *testing.T) {
+	gllvm.InitializeAllTargets()
+	gllvm.InitializeAllTargetMCs()
+	gllvm.InitializeAllTargetInfos()
+	for _, test := range []struct {
+		name, exportGoName, want string
+	}{
+		{name: "ordinary Go function", want: "example.com/p.callback"},
+		{name: "exported Go function", exportGoName: "example.com/p.callback", want: "callback"},
+		{name: "renamed export shadows private Go function", exportGoName: "example.com/p.Exported", want: "callback"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			prog := llssa.NewProgram(nil)
+			defer prog.Dispose()
+			lpkg := prog.NewPackage("p", "example.com/p")
+			lpkg.NewFunc("example.com/p.callback", llssa.NoArgsNoRet, llssa.GoDecl)
+			if test.exportGoName != "" {
+				if test.exportGoName != "example.com/p.callback" {
+					lpkg.NewFunc(test.exportGoName, llssa.NoArgsNoRet, llssa.GoDecl)
+				}
+				lpkg.SetExport(test.exportGoName, "callback")
+			}
+			const name = "example.com/p.__cgo_callback"
+			placeholder := lpkg.NewVar(name, types.NewPointer(types.Typ[types.UnsafePointer]), llssa.GoDecl)
+			keep := lpkg.NewVar("example.com/p.keep", types.NewPointer(types.NewPointer(types.Typ[types.UnsafePointer])), llssa.GoDecl)
+			keep.Init(placeholder.Expr)
+			compiler := llclang.NewCompiler(llclang.Config{})
+			if _, err := genExternDeclsByClang(compiler, &aPackage{LPkg: lpkg}, "void callback(void);", nil,
+				map[string]string{name: "__cgo_callback"}, false); err != nil {
+				t.Fatal(err)
+			}
+			if got, want := lpkg.Module().NamedGlobal("example.com/p.keep").Initializer(), lpkg.Module().NamedFunction(test.want); got != want {
+				t.Fatalf("C callback address = %s, want %s", got.Name(), test.want)
+			}
+			if err := gllvm.VerifyModule(lpkg.Module(), gllvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}

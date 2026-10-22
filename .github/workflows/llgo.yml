@@ -11,7 +11,7 @@ on:
     branches: ["**"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}
+  group: llgo.yml-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
@@ -21,8 +21,8 @@ jobs:
   ci-gate:
     name: CI gate (LLGo)
     needs: prepare
-    if: always()
-    runs-on: ubuntu-24.04
+    if: always() && !cancelled()
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner || '["ubuntu-24.04"]') }}
     steps:
       - name: Verify CI preparation succeeded
         run: test "${{ needs.prepare.result }}" = "success"
@@ -190,6 +190,22 @@ jobs:
             -Profile "${{ matrix.windows_abi }}" `
             -GoArch "${{ matrix.windows_arch || 'amd64' }}"
 
+      - name: Check BDWGC collection under the Windows heap lock
+        if: runner.os == 'Windows' && matrix.windows_abi == 'mingw' && matrix.windows_arch == '386'
+        shell: python {0}
+        run: |
+          import os
+          from pathlib import Path
+          import subprocess
+
+          compiler = Path(os.environ["LLGO_MINGW_TARGET_BIN"]) / "i686-w64-mingw32-clang.exe"
+          prefix = Path(os.environ["LLGO_MINGW_TARGET_VCPKG_ROOT"])
+          executable = Path(os.environ["RUNNER_TEMP"]) / "bdwgc-heap-lock.exe"
+          subprocess.run([str(compiler), "-O2", ".github/windows/test-bdwgc-heap-lock.c",
+                          "-I" + str(prefix / "include"), "-L" + str(prefix / "lib"),
+                          "-lgc", "-o", str(executable)], check=True)
+          subprocess.run([str(executable)], check=True, timeout=30)
+
       - name: Run Go 1.27 LLGo core tests
         env:
           LLGO_BUILD_CACHE: "1"
@@ -212,10 +228,25 @@ jobs:
 
           python .github/scripts/check_llgo_coverage.py coverage-llgo.txt
 
-          if [[ "$RUNNER_OS" == Windows ]]; then
-            # The TLS regression lives in the runtime submodule, outside test/.
-            (cd runtime && "$LLGO" test -v -run '^TestSlotGCAllocation$' -count=20 -timeout=2m ./internal/clite/tls)
+          # Native thread and TLS regressions live outside test/.
+          (cd runtime && "$LLGO" test -v -run '^TestSlot(GCAllocation|DestructorGCRegistration)$' -count=20 -timeout=2m ./internal/clite/tls)
+          if [[ "$RUNNER_OS" != Windows ]]; then
+            (cd runtime && "$LLGO" test -v -run '^Test(KeyNativeLayout|DetachedStateNativeValue)$' -timeout=2m ./internal/thread)
           fi
+
+      - name: Install Codecov CLI with Windows host Python
+        if: ${{ runner.os == 'Windows' && !cancelled() && hashFiles('coverage-llgo.txt') != '' }}
+        id: windows_codecov
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $pythonRoot = $env:LLGO_WINDOWS_PYTHON_HOME
+          & (Join-Path $pythonRoot 'python.exe') -m pip install --only-binary=:all: codecov-cli==11.3.1
+          if ($LASTEXITCODE -ne 0) { throw "Installing Codecov CLI failed: $LASTEXITCODE" }
+          $binary = Join-Path $pythonRoot 'Scripts/codecovcli.exe'
+          & $binary --version
+          if ($LASTEXITCODE -ne 0) { throw "Codecov CLI version probe failed: $LASTEXITCODE" }
+          "binary=$binary" >> $env:GITHUB_OUTPUT
 
       - name: Upload LLGo test coverage to Codecov
         # Preserve any profile emitted by failing tests, without uploading
@@ -223,6 +254,9 @@ jobs:
         if: ${{ !cancelled() && hashFiles('coverage-llgo.txt') != '' }}
         uses: codecov/codecov-action@v7
         with:
+          binary: ${{ steps.windows_codecov.outputs.binary }}
+          use_pypi: true
+          version: "11.3.1"
           token: ${{ secrets.CODECOV_TOKEN }}
           use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           files: coverage-llgo.txt
@@ -254,6 +288,12 @@ jobs:
       - name: Test runtime module compatibility
         if: matrix.os == 'ubuntu-latest'
         run: dev/test_runtime_go_versions.sh
+
+      - name: Run caller regressions in C shared libraries and archives
+        if: runner.os != 'Windows'
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+        run: dev/test_std_buildmodes.sh ./test/std/runtime
 
       - name: Validate the native Windows toolchain profile
         if: runner.os == 'Windows'
@@ -289,6 +329,26 @@ jobs:
           export LLGO_FULL_RPATH=false
           pkg-config --libs cargs
           (cd ./_demo/c/cargs && llgo run .)
+
+      - name: Test SIMD behavior with Go and LLGo
+        id: native_simd
+        if: matrix.windows_arch != '386'
+        shell: bash
+        env:
+          GOEXPERIMENT: simd
+          LLGO_SIMD_ARTIFACT_DIR: ${{ runner.temp }}/llgo-simd-matrix
+        run: |
+          (cd runtime && go test -count=1 -timeout=2m ./internal/runtime/math)
+          go test -count=1 -timeout=2m ./test/simd/...
+          bash dev/test_native_simd.sh
+
+      - name: Upload failed native SIMD executables
+        if: failure() && steps.native_simd.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-simd-${{ matrix.os }}-${{ matrix.windows_abi || 'native' }}-${{ matrix.windows_arch || 'host' }}
+          path: ${{ runner.temp }}/llgo-simd-matrix
+          retention-days: 3
 
       - name: Test demos
         run: bash .github/workflows/test_demo.sh
@@ -383,7 +443,27 @@ jobs:
 
       - name: Install LLDB for integration tests
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo apt-get install -y lldb-${{matrix.llvm}}
+        run: |
+          sudo apt-get install -y lldb-${{matrix.llvm}} gdb
+          # Ubuntu's /etc/lldb/lldbinit enables its symbol server even when
+          # DEBUGINFOD_URLS is empty. Keep this job's debugger tests offline
+          # without changing the runner's shared initialization files.
+          wrapper="$RUNNER_TEMP/llgo-ci-lldb"
+          cat > "$wrapper" <<'EOF'
+          #!/usr/bin/env bash
+          exec /usr/bin/lldb-${{ matrix.llvm }} --no-lldbinit \
+            -O 'settings clear plugin.symbol-locator.debuginfod.server-urls' "$@"
+          EOF
+          chmod +x "$wrapper"
+          "$wrapper" --batch -o 'settings show plugin.symbol-locator.debuginfod.server-urls'
+          echo "LLGO_LLDB=$wrapper" >> "$GITHUB_ENV"
+
+      - name: GDB values, registry and complete worker unwind (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        timeout-minutes: 15
+        env:
+          LLGO_GDB_INTEGRATION: "1"
+        run: go test ./cmd/internal/gdb -run '^TestGDB(Integration|CompleteWorkerUnwind)$' -count=1 -v
 
       - name: Install MinGW LLDB for integration tests
         # R12 qualifies debugger behavior for the new GNU architectures. Keep
@@ -414,19 +494,14 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash cmd/llgo/lldbtest/runtest.sh -v
+          bash test/debug/runtime/runtest.sh -v
 
       - name: LLDB integration tests (MSVC)
         if: ${{ matrix.windows_abi == 'msvc' }}
         shell: pwsh
         run: |
-          $env:PYTHONHOME = $env:LLGO_WINDOWS_LLDB_PYTHON_HOME
-          $env:PYTHONPATH = $env:LLGO_WINDOWS_LLDB_PYTHONPATH
-          $env:PYTHONUTF8 = "1"
-          $env:PYTHONIOENCODING = "utf-8"
-          $env:PATH = "$env:LLGO_WINDOWS_LLDB_PYTHON_HOME;$env:PATH"
           Write-Host "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash cmd/llgo/lldbtest/runtest.sh -v
+          bash test/debug/runtime/runtest.sh -v
           if ($LASTEXITCODE -ne 0) {
             throw "LLDB integration tests failed with exit code $LASTEXITCODE"
           }
@@ -438,22 +513,21 @@ jobs:
           # Git Bash prepends its own MinGW runtime DLLs to PATH. Use the
           # CLANG64 shell so the debuggee loads its ABI-matching dependencies.
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash cmd/llgo/lldbtest/runtest.sh -v
+          bash test/debug/runtime/runtest.sh -v
 
       - name: LLDB integration tests (MinGW cross-architecture)
         if: ${{ matrix.windows_abi == 'mingw' && matrix.windows_arch != 'amd64' }}
         shell: pwsh
         run: |
-          $env:PYTHONHOME = $env:LLGO_WINDOWS_LLDB_PYTHON_HOME
-          $env:PYTHONPATH = $env:LLGO_WINDOWS_LLDB_PYTHONPATH
-          $env:PYTHONUTF8 = "1"
-          $env:PYTHONIOENCODING = "utf-8"
-          $env:PATH = "$env:LLGO_WINDOWS_LLDB_PYTHON_HOME;$env:PATH"
           Write-Host "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash cmd/llgo/lldbtest/runtest.sh -v
+          bash test/debug/runtime/runtest.sh -v
           if ($LASTEXITCODE -ne 0) {
             throw "LLDB integration tests failed with exit code $LASTEXITCODE"
           }
+
+      - name: Native source-debug acceptance tests
+        if: runner.os != 'Windows'
+        run: bash test/debug/native/runtest.sh
 
       - name: Native debug metadata tests
         if: ${{ startsWith(matrix.os, 'macos') && matrix.os != 'macos-15-intel' }}
@@ -487,6 +561,7 @@ jobs:
           msystem: MSYS
           path-type: inherit
           update: false
+          cache: false
 
       - name: Test from the MSYS2 host shell
         if: ${{ runner.os == 'Windows' }}
@@ -518,13 +593,153 @@ jobs:
             throw "Cygwin host-shell qualification failed with exit code $LASTEXITCODE"
           }
 
+      # Install the debugger in an isolated MSYS2 tree after shell/LLDB
+      # qualification: rolling GDB dependencies must not update pinned LLVM
+      # packages or replace the compiler lane's shell configuration early.
+      - name: Install Windows GDB
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/setup-gdb
+
+      - name: GDB native values and registry (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 15
+        shell: pwsh
+        env:
+          LLGO_GDB_INTEGRATION: "1"
+        run: |
+          Remove-Item Env:PYTHONHOME, Env:PYTHONPATH -ErrorAction SilentlyContinue
+          # This package is pure Go. Its target-native driver can run on 386
+          # without linking the x64 host LLVM libraries; CC retains the
+          # selected target ABI, architecture and CRT for C fallback fixtures.
+          go test ./cmd/internal/gdb -run '^TestGDBIntegration$' -count=1 -v
+          if ($LASTEXITCODE -ne 0) {
+            throw "GDB integration tests failed with exit code $LASTEXITCODE"
+          }
+
+      - name: GDB complete worker unwind (Windows amd64 and 386)
+        # ARM64 native GDB 18 lacks PAC masks. Its values/registry gate above
+        # remains required; blocked-worker unwind is an explicit limitation.
+        if: runner.os == 'Windows' && matrix.windows_arch != 'arm64'
+        timeout-minutes: 15
+        shell: pwsh
+        env:
+          LLGO_GDB_INTEGRATION: "1"
+        run: |
+          Remove-Item Env:PYTHONHOME, Env:PYTHONPATH -ErrorAction SilentlyContinue
+          go test ./cmd/internal/gdb -run '^TestGDBCompleteWorkerUnwind$' -count=1 -v
+          if ($LASTEXITCODE -ne 0) {
+            throw "Complete GDB worker unwind failed with exit code $LASTEXITCODE"
+          }
+
+  runtime-arm64:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: prepare
+    name: runtime regressions (Linux ARM64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      LLGO_ROOT: ${{ github.workspace }}
+      LLGO_BUILD_CACHE: "1"
+      LLGO_DYNUNWIND: "1"
+      LLGO_DYNUNWIND_DEBUG: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 22
+      - uses: ./.github/actions/setup-go
+      - uses: ./.github/actions/setup-llgo-cache
+      - name: Install GNU libunwind for the changed fault-unwind path
+        run: sudo timeout 5m apt-get install -y libunwind8
+      - name: Build LLGo
+        run: |
+          go build -o "$RUNNER_TEMP/llgo" ./cmd/llgo
+          echo "LLGO=$RUNNER_TEMP/llgo" >> "$GITHUB_ENV"
+      - name: Run captured closures, hardware faults and synchronization
+        run: |
+          set -euo pipefail
+          "$LLGO" test -v -count=1 -timeout=2m \
+            -run '^(TestReflectCallCapturedClosure|TestRuntimeCallersDeepFault)$' ./test/go \
+            2>&1 | tee "$RUNNER_TEMP/arm64-faults.log"
+          # Ensure the changed GNU libunwind path actually ran.
+          grep -Eq '\[dynunwind\] flavor=linux-nongnu frames=[1-9]' "$RUNNER_TEMP/arm64-faults.log"
+          "$LLGO" test -v -count=1 -timeout=2m ./test/std/runtime ./test/std/sync
+      - name: Run C ABI regressions
+        env:
+          LLGO_TEST_LLGO: ${{ runner.temp }}/llgo
+          # The preceding fault test asserts debug diagnostics; callback
+          # fixtures here assert their own exact native output instead.
+          LLGO_DYNUNWIND_DEBUG: "0"
+        run: |
+          "$LLGO" test -v -count=1 -timeout=2m ./test/cgo
+          "$LLGO" test -v -count=1 -timeout=2m \
+            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/llgoext
+      - name: Run caller regressions in C shared libraries and archives
+        run: dev/test_std_buildmodes.sh ./test/std/runtime
+
+  native-debuggers-intel:
+    name: Native debuggers (macOS Intel, GDB values and registry)
+    needs: prepare
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    permissions:
+      contents: read
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install compiler dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: "22"
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+      - name: Build LLGo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/llgo-bin"
+          go build -o "$RUNNER_TEMP/llgo-bin/llgo" ./cmd/llgo
+          echo "$RUNNER_TEMP/llgo-bin" >> "$GITHUB_PATH"
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Run narrow C ABI regressions
+        run: |
+          llgo test -v -count=1 -timeout=2m \
+            -run '^(TestNarrowC|TestLinknameNarrowC)' ./test/cgo ./test/llgoext
+      - name: Install GDB
+        uses: ./.github/actions/setup-gdb
+      - name: Enable native GDB on the ephemeral Intel runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          # GDB's Darwin fork/exec can block in wait4 at _dyld_start. Spawn
+          # suspended, then use native attach with the same test assertions.
+          # Elevate only GDB to obtain task ports on the ephemeral runner.
+          wrapper="$RUNNER_TEMP/llgo-gdb-native"
+          printf '#!/bin/bash\nexec python3 %q %q "$@"\n' \
+            "$GITHUB_WORKSPACE/test/debug/runtime/gdb_darwin.py" "$LLGO_GDB" > "$wrapper"
+          chmod +x "$wrapper"
+          "$wrapper" --batch --nx -ex 'python import gdb; print(gdb.VERSION)'
+          echo "LLGO_GDB=$wrapper" >> "$GITHUB_ENV"
+      - name: LLDB runtime adapter integration tests
+        env:
+          LLGO_LLDB: /usr/bin/lldb
+        run: bash test/debug/runtime/runtest.sh -v
+      # GDB 17/18 cannot load dyld 17 shared libraries or unwind blocked
+      # system frames here; a plain pthread C control reproduces the failure.
+      # Keep TestGDBCompleteWorkerUnwind strict and separately runnable.
+      - name: GDB native values and registry (Intel, worker unwind unavailable)
+        timeout-minutes: 15
+        env:
+          LLGO_GDB_INTEGRATION: "1"
+        run: go test ./cmd/internal/gdb -run '^TestGDBIntegration$' -count=1 -v
+
   cross-compile:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
     timeout-minutes: 30
     strategy:
       matrix:
-        # WASI output is host-independent; keep this source build on Ubuntu.
+        # WASI output is host-independent; keep this qualification on Ubuntu.
         # Native Darwin coverage remains in the primary LLGo lanes and release
         # artifact smoke tests.
         os: [ubuntu-latest]
@@ -543,14 +758,14 @@ jobs:
       - name: Set up Binaryen
         uses: ./.github/actions/setup-binaryen
 
-      - name: Restore LLGo and cache WAMR
+      - name: Restore LLGo and cache Wasmer
         uses: ./.github/actions/setup-llgo-cache
         with:
-          wamr-cache-mode: readwrite
+          wasmer-cache-mode: readwrite
 
-      - name: Install WAMR
+      - name: Install Wasmer
         shell: bash
-        run: bash dev/build_iwasm.sh
+        run: bash dev/install_wasmer.sh
 
       - name: Install llgo
         run: |
@@ -569,22 +784,49 @@ jobs:
           # Check file type
           file hello.wasm
 
-          iwasm --stack-size=819200000 --heap-size=800000000 hello.wasm
+          RUST_LOG=off wasmer run --enable-exceptions --enable-simd --stack-size=1048576 hello.wasm
 
-      - name: Test WASI pthread backend (WAMR)
+      - name: Set up wasm-tools for EH fixtures
+        uses: bytecodealliance/actions/wasm-tools/setup@v1
+        with:
+          version: "1.243.0"
+
+      - name: Test WASI pthread backend and threaded GC (Wasmer)
         shell: bash
         run: python3 dev/test_wasm_wasi_threads.py
+
+      - name: Test dev WASI Thin and Full LTO (Wasmer)
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -tags=dev -o "$RUNNER_TEMP/llgo-dev" ./cmd/llgo
+          LLGO="$RUNNER_TEMP/llgo-dev" python3 dev/test_wasm_wasi_lto.py
+
+      - name: Test WASI size-build LTO regressions (Wasmer)
+        shell: bash
+        run: |
+          python3 -m unittest discover -s test/sizebuild -p '*_test.py'
+          python3 test/sizebuild/runtest.py --target=wasi
 
   windows-gnu-cross:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    name: windows GNU cross (${{ matrix.os }}, ${{ matrix.windows_arch }})
+    name: windows GNU cross (${{ matrix.os }}, ${{ matrix.windows_arch == 'all' && 'amd64 + arm64 + 386' || matrix.windows_arch }})
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-latest]
-        windows_arch: [amd64, arm64, "386"]
+        include:
+          - os: ubuntu-24.04
+            windows_arch: amd64
+          - os: ubuntu-24.04
+            windows_arch: arm64
+          - os: ubuntu-24.04
+            windows_arch: "386"
+          # Share the host compiler, llvm-mingw archive and vcpkg bootstrap
+          # across targets while retaining every macOS-to-Windows build.
+          - os: macos-latest
+            windows_arch: all
     runs-on: ${{ startsWith(matrix.os, 'ubuntu') && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -600,6 +842,7 @@ jobs:
           go-version: "1.27.0"
 
       - name: Build Unix host compiler
+        id: host_compiler
         shell: bash
         run: |
           go build -p=2 -o "$RUNNER_TEMP/llgo-host" ./cmd/llgo
@@ -608,21 +851,89 @@ jobs:
           # available to the following cross-host builds.
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
-      - name: Test cross-host windows/${{ matrix.windows_arch }}
+      - name: Test cross-host windows/amd64
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == 'amd64') }}
         uses: ./.github/actions/test-windows-cross
         with:
           llgo: ${{ runner.temp }}/llgo-host
-          windows-arch: ${{ matrix.windows_arch }}
+          windows-arch: amd64
+
+      - name: Test cross-host windows/arm64
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == 'arm64') }}
+        uses: ./.github/actions/test-windows-cross
+        with:
+          llgo: ${{ runner.temp }}/llgo-host
+          windows-arch: arm64
+
+      - name: Test cross-host windows/386
+        if: ${{ !cancelled() && steps.host_compiler.outcome == 'success' && (matrix.windows_arch == 'all' || matrix.windows_arch == '386') }}
+        uses: ./.github/actions/test-windows-cross
+        with:
+          llgo: ${{ runner.temp }}/llgo-host
+          windows-arch: "386"
+
+  wasm-browser-debug:
+    permissions:
+      contents: read
+      id-token: write
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: prepare
+    name: wasm-browser-debug
+    timeout-minutes: 20
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 22
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: "6.0.8"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Set up Chrome for Testing
+        id: chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: "152.0.7977.54"
+          install-dependencies: true
+      - uses: ./.github/actions/setup-binaryen
+      - uses: ./.github/actions/setup-go
+      - name: Install llgo
+        run: dev/build_ci_tools.sh "$RUNNER_TEMP/llgo-bin"
+      - name: Test real browser source breakpoints and paused variables
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+          LLGO_BROWSER_CHROME: ${{ steps.chrome.outputs.chrome-path }}
+          LLGO_BROWSER_CHROME_NO_SANDBOX: "1"
+          LLGO_BROWSER_COVERAGE_DIR: coverage-browser
+        run: python3 dev/test_wasm_browser_debug.py
+      - name: Upload browser debugger coverage to Codecov
+        if: ${{ !cancelled() && hashFiles('coverage-browser/*.out') != '' }}
+        uses: codecov/codecov-action@v7
+        with:
+          use_pypi: true
+          version: "11.3.1"
+          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          files: coverage-browser/j32-embedded.out,coverage-browser/j32-external.out,coverage-browser/j64-embedded.out,coverage-browser/j64-external.out,coverage-browser/j32-goroutines-1.out,coverage-browser/j32-goroutines-2.out,coverage-browser/j32-goroutines-4.out,coverage-browser/j32-goroutines-2-optimized.out,coverage-browser/j64-goroutines-1.out,coverage-browser/j64-goroutines-2.out,coverage-browser/j64-goroutines-4.out,coverage-browser/j64-goroutines-2-optimized.out
+          flags: go-tests
+          disable_search: true
+          fail_ci_if_error: true
 
   wasm-runtime:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
     name: wasm-runtime (${{ matrix.suite }})
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        suite: [runtime, test-command]
+        suite: [runtime, workers, test-command]
     runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     steps:
       - uses: actions/checkout@v7
@@ -643,7 +954,7 @@ jobs:
           node-version: "24"
 
       - name: Set up Chrome for browser acceptance
-        if: matrix.suite == 'runtime'
+        if: matrix.suite != 'test-command'
         id: setup-chrome
         uses: browser-actions/setup-chrome@v2
         with:
@@ -653,22 +964,53 @@ jobs:
         uses: ./.github/actions/setup-binaryen
 
       - name: Set up Wasmtime
+        if: matrix.suite != 'workers'
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
           version: "39.0.1"
+
+      - name: Set up Go for building llgo
+        uses: ./.github/actions/setup-go
+
+      - name: Cache LLGo builds and WebAssembly toolchains
+        uses: ./.github/actions/setup-llgo-cache
+        with:
+          build-cache-mode: readwrite
+          build-cache-scope: wasm-${{ matrix.suite }}
+          crosscompile-cache-mode: readwrite
+          wasmer-cache-mode: ${{ matrix.suite != 'workers' && 'readwrite' || 'off' }}
+
+      - name: Install Wasmer for W32
+        if: matrix.suite != 'workers'
+        run: bash dev/install_wasmer.sh
 
       - name: Set up wasm-tools
         uses: bytecodealliance/actions/wasm-tools/setup@v1
         with:
           version: "1.243.0"
 
-      - name: Set up Go for building llgo
-        uses: ./.github/actions/setup-go
-
       - name: Install llgo
         run: |
           dev/build_ci_tools.sh "$RUNNER_TEMP/llgo-bin"
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      - name: Test reflected method calls and large initializers
+        if: matrix.suite == 'runtime'
+        shell: bash
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+        run: |
+          for fixture in reflect-method-value reflect-method-alias; do
+            for target in wasi emscripten emscripten-memory64; do
+              "$LLGO" run -O2 -target "$target" -emulator "./test/wasm/$fixture"
+            done
+          done
+          for profile in J32-GoJS J32-Emscripten J64-Emscripten W32-WASI; do
+            go test ./test/goroot -run '^TestGoRootRunCases$' -count=1 -timeout=4m -v -args \
+              -llgo "$LLGO" -goroot "$(go env GOROOT)" -directive-mode ci \
+              -case '^cmplxdivide\.go$' -wasm-profile "$profile"
+          done
 
       - name: Compare WebAssembly EH encodings and Go/C++ boundary
         if: matrix.suite == 'runtime'
@@ -693,7 +1035,19 @@ jobs:
         env:
           LLGO: ${{ runner.temp }}/llgo-bin/llgo
           LLGO_BUILD_CACHE: "1"
-        run: python3 dev/test_wasm_debug_info.py --profile j32 --profile j64 --profile w32
+        run: |
+          python3 -m unittest discover -s dev -p test_wasm_debug_info_test.py
+          python3 dev/test_wasm_debug_info.py --profile j32 --profile j64 --profile w32 --artifact embedded --artifact external
+
+      - name: Test optimized Emscripten runtime boundaries
+        if: matrix.suite == 'runtime'
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+          CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: |
+          node --test test/wasm/optimization/asyncify-exports.test.mjs
+          python3 test/wasm/optimization/test.py --browser
 
       - name: Build standard runtime for wasm
         if: matrix.suite == 'runtime'
@@ -709,6 +1063,7 @@ jobs:
         run: dev/wasm_ci_report_test.sh
 
       - name: Test single-worker wasm schedulers
+        if: matrix.suite != 'workers'
         shell: bash
         env:
           CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
@@ -717,13 +1072,34 @@ jobs:
         run: dev/test_wasm_single_worker.sh "${{ matrix.suite }}"
 
       - name: Test bounded browser workers
-        if: matrix.suite == 'runtime'
+        if: matrix.suite == 'workers'
         shell: bash
         env:
           CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
           LLGO: ${{ runner.temp }}/llgo-bin/llgo
           LLGO_BUILD_CACHE: "1"
         run: dev/test_wasm_workers.sh
+
+      - name: Test SIMD behavior on WebAssembly
+        if: matrix.suite == 'test-command'
+        shell: bash
+        env:
+          GOEXPERIMENT: simd
+        run: |
+          GOOS=wasip1 GOARCH=wasm go test -exec=wasmtime -count=1 -timeout=2m ./test/simd/...
+          for opt in 0 2; do
+            "$RUNNER_TEMP/llgo-bin/llgo" test "-O${opt}" -target wasi -emulator \
+              -v -count=1 -timeout=2m ./test/simd/...
+          done
+          LLGO="$RUNNER_TEMP/llgo-bin/llgo" bash dev/test_portable_simd_wasi.sh
+
+      - name: Test SIMD on JavaScript targets with off, Thin and Full LTO
+        if: matrix.suite == 'test-command'
+        shell: bash
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+        run: dev/test_wasm_simd.sh
 
       - name: Compare JavaScript call semantics with Go
         if: matrix.suite == 'test-command'
@@ -744,3 +1120,21 @@ jobs:
         run: |
           bash dev/test_wasm_stdlib_test.sh
           bash dev/test_wasm_stdlib.sh
+
+      - name: Run caller and large-function regressions on browser targets
+        if: matrix.suite == 'test-command'
+        timeout-minutes: 15
+        env:
+          LLGO: ${{ runner.temp }}/llgo-bin/llgo
+          LLGO_BUILD_CACHE: "1"
+        run: |
+          set -euo pipefail
+          for target in emscripten emscripten-memory64; do
+            "$LLGO" test -target "$target" -emulator -v -count=1 -timeout=90s ./test/std/runtime
+          done
+          GOOS=js GOARCH=wasm "$LLGO" test -v -count=1 -timeout=90s ./test/std/runtime
+          for profile in J32-Emscripten J64-Emscripten J32-GoJS; do
+            go test ./test/goroot -v -run '^TestGoRootRunCases$' -count=1 -timeout=10m -args \
+              -goroot "$(go env GOROOT)" -llgo "$LLGO" -wasm-profile "$profile" -directive-mode ci -dirs .,fixedbugs \
+              -case '^(clearfat\.go|fixedbugs/issue(22662|5856)\.go)$' -min-swap-free-mib=0
+          done

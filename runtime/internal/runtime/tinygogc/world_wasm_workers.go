@@ -4,8 +4,9 @@ package tinygogc
 
 import _ "unsafe"
 
-func gcStopWorld() {
+func gcStopWorld() bool {
 	wasmStopWorld()
+	return true
 }
 
 func gcResumeWorld() {

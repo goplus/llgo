@@ -26,8 +26,9 @@ type initialBuildGroup struct {
 // A plan crosses the analysis lifetime boundary without retaining its graph.
 // Trace ownership moves to Build so its parent span still encloses the children.
 type initialBuildPlan struct {
-	invocations []Invocation
-	finishTrace func()
+	invocations       []Invocation
+	finishTrace       func()
+	sourceOverlayFile string
 }
 
 func groupInitialBuilds(ctx *context, alts []*packages.Package) []initialBuildGroup {
@@ -43,7 +44,7 @@ func groupInitialBuilds(ctx *context, alts []*packages.Package) []initialBuildGr
 		}
 		if target.GOARCH == "wasm" {
 			use := analyzeWasmInitialUse(ctx.progSSA, pkg.Types)
-			features.reflectBridges = target.WasmProvider == "wasi" && use.usesWasmReflectBridges()
+			features.reflectBridges = wasmReflectBridgeProvider(ctx) && use.usesWasmReflectBridges()
 			features.funcInfoEntries = ctx.buildConf.BuildMode != BuildModeExe || use.usesRuntimeFuncForPC()
 		}
 		index, ok := indexes[features]

@@ -17,6 +17,8 @@
 package funcinfo
 
 import (
+	"fmt"
+	"reflect"
 	"strconv"
 	"testing"
 	"unsafe"
@@ -286,4 +288,46 @@ func legacySizeBytes(records []Record) int {
 		buckets <<= 1
 	}
 	return len(records)*20 + stringsBytes + buckets*4
+}
+
+func TestBuildStringTableSharing(t *testing.T) {
+	// The embedded NUL checks encoded layout only, not a cstring round trip.
+	values := []string{"", "prefix-suffix", "suffix", "suffix", "prefix", "日本語.go", "語.go", "other-suffix", "embedded\x00value", "value"}
+	ids, offsets, data, err := buildStringTable(values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantData := "\x00prefix-suffix\x00prefix\x00日本語.go\x00other-suffix\x00embedded\x00value\x00"
+	if string(data) != wantData {
+		t.Fatalf("data = %q, want %q", data, wantData)
+	}
+	wantIDs := map[string]uint32{"": 0, "prefix-suffix": 1, "suffix": 2, "prefix": 3, "日本語.go": 4, "語.go": 5, "other-suffix": 6, "embedded\x00value": 7, "value": 8}
+	if !reflect.DeepEqual(ids, wantIDs) {
+		t.Fatalf("ids = %v, want %v", ids, wantIDs)
+	}
+	// Suffixes reuse an existing entry's tail, including its NUL terminator.
+	// A prefix without a NUL terminator needs its own entry.
+	// Offsets count bytes, not runes.
+	wantOffsets := []uint32{0, 1, 8, 15, 22, 28, 35, 48, 57}
+	if !reflect.DeepEqual(offsets, wantOffsets) {
+		t.Fatalf("offsets = %v, want %v", offsets, wantOffsets)
+	}
+}
+
+func BenchmarkBuildStringTable(b *testing.B) {
+	for _, count := range []int{100, 1000, 5000} {
+		b.Run(strconv.Itoa(count), func(b *testing.B) {
+			values := make([]string, count)
+			for i := range values {
+				values[i] = fmt.Sprintf("github.com/example/compiler/package%d.Function%06d", i%100, i)
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, _, _, err := buildStringTable(values); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

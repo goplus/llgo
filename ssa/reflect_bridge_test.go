@@ -17,7 +17,9 @@ func TestWasmReflectBridgeProviderSelection(t *testing.T) {
 		target   *Target
 		expected bool
 	}{
-		{"GoJS J32", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "gojs", WasmReflectBridges: true}, false},
+		{"GoJS J32", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "gojs", WasmReflectBridges: true}, true},
+		{"active Emscripten J32", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "emscripten", WasmReflectBridges: true}, true},
+		{"active Emscripten J64", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j64", WasmProvider: "emscripten", WasmReflectBridges: true}, true},
 		{"WASI W32", &Target{GOOS: "wasip1", GOARCH: "wasm", WasmProfile: "w32", WasmProvider: "wasi", WasmReflectBridges: true}, true},
 		{"unused GoJS J32", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "gojs"}, false},
 		{"Emscripten J32", &Target{GOOS: "js", GOARCH: "wasm", WasmProfile: "j32", WasmProvider: "emscripten"}, false},
@@ -186,7 +188,7 @@ func TestWasmReflectTypeDescriptorsCarryBridges(t *testing.T) {
 	buildContext := build.Default
 	build.Default.GOOS = "wasip1"
 	build.Default.GOARCH = "wasm"
-	build.Default.BuildTags = []string{"llgo"}
+	build.Default.BuildTags = []string{"llgo", "llgo.wasi_threads"}
 	t.Cleanup(func() { build.Default = buildContext })
 	prog.SetRuntime(func() *types.Package {
 		pkg, err := importer.For("source", nil).Import(PkgRuntime)
@@ -205,7 +207,7 @@ func TestWasmReflectTypeDescriptorsCarryBridges(t *testing.T) {
 	named.AddMethod(types.NewFunc(token.NoPos, goPkg, "M", types.NewSignatureType(receiver, nil, nil, callback.Params(), callback.Results(), false)))
 
 	pkg := prog.NewPackageEx("p", goPkg.Path(), true)
-	fn := pkg.NewFunc("use", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("use", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	b.abiType(callback)
 	b.abiType(named)
@@ -232,7 +234,7 @@ func TestWasmReflectRootShape(t *testing.T) {
 
 	shape := func(typ types.Type) string {
 		var value strings.Builder
-		prog.appendWasmRootShape(&value, prog.Type(typ, InC))
+		prog.appendWasmRootShape(&value, prog.Type(typ, CDecl))
 		return value.String()
 	}
 	ptr := types.NewPointer(types.Typ[types.Int])
@@ -284,7 +286,7 @@ func TestExtractConstStringFromWideWasmStorage(t *testing.T) {
 	defer prog.Dispose()
 	setTestRuntime(t, prog)
 	pkg := prog.NewPackage("p", "example.com/p")
-	fn := pkg.NewFunc("f", NoArgsNoRet, InGo)
+	fn := pkg.NewFunc("f", NoArgsNoRet, GoDecl)
 	b := fn.MakeBody(1)
 	defer b.Dispose()
 	value := b.Str("Add")

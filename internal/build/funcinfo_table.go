@@ -370,6 +370,9 @@ func emitFuncInfoTable(ctx *context, pkg llssa.Package, records []funcInfoRecord
 	if err != nil {
 		panic(err)
 	}
+	if canPruneEmbeddedPCLN(ctx) {
+		ctx.pclnEmbedded = funcInfoPCLNData(ctx, records, encoded)
+	}
 	if len(encoded.Records) == 0 && len(encoded.PCLines) == 0 {
 		tablePtr.SetInitializer(llvm.ConstPointerNull(tablePtr.GlobalValueType()))
 		pcLinePtr.SetInitializer(llvm.ConstPointerNull(pcLinePtr.GlobalValueType()))
@@ -582,6 +585,20 @@ func initExternalFuncInfoGlobals(g externalFuncInfoGlobals, countType llvm.Type)
 	}
 }
 
+func funcInfoPCLNData(ctx *context, records []funcInfoRecord, encoded buildfuncinfo.Table) *pclnmap.Data {
+	symbolRecords := collectFuncInfoSymbolIndexRecords(records)
+	symbolIndex := make([]pclnmap.SymbolIndexEntry, 0, len(symbolRecords))
+	for _, rec := range symbolRecords {
+		if rec.funcIndex != 0 && int(rec.funcIndex) <= len(encoded.Records) {
+			symbolIndex = append(symbolIndex, pclnmap.SymbolIndexEntry{SymbolID: rec.symbolID, FuncIndex: rec.funcIndex})
+		}
+	}
+	return &pclnmap.Data{
+		GOOS: ctx.buildConf.Goos, GOARCH: ctx.buildConf.Goarch,
+		PointerSize: ctx.prog.PointerSize(), Table: encoded, SymbolIndex: symbolIndex,
+	}
+}
+
 // emitExternalFuncInfoTable emits only writable runtime ABI globals, final-PC
 // site boundaries and a post-link identity slot. The table payload is kept in
 // the build context and serialized beside the linked executable; it is never
@@ -592,20 +609,7 @@ func emitExternalFuncInfoTable(ctx *context, mod llvm.Module, records []funcInfo
 	if err != nil {
 		panic(err)
 	}
-	symbolRecords := collectFuncInfoSymbolIndexRecords(records)
-	symbolIndex := make([]pclnmap.SymbolIndexEntry, 0, len(symbolRecords))
-	for _, rec := range symbolRecords {
-		if rec.funcIndex != 0 && int(rec.funcIndex) <= len(encoded.Records) {
-			symbolIndex = append(symbolIndex, pclnmap.SymbolIndexEntry{SymbolID: rec.symbolID, FuncIndex: rec.funcIndex})
-		}
-	}
-	ctx.pclnExternal = &pclnmap.Data{
-		GOOS:        ctx.buildConf.Goos,
-		GOARCH:      ctx.buildConf.Goarch,
-		PointerSize: ctx.prog.PointerSize(),
-		Table:       encoded,
-		SymbolIndex: symbolIndex,
-	}
+	ctx.pclnExternal = funcInfoPCLNData(ctx, records, encoded)
 
 	identityType := llvm.ArrayType(typ.i8, 32)
 	identity := llvm.AddGlobal(mod, identityType, pclnIdentitySymbol)
@@ -714,18 +718,27 @@ func shouldEmitRuntimeWasmSites(ctx *context) bool {
 // references (the anchor inside the function body) is live, which is the same
 // records-follow-function semantics. COFF uses associative COMDAT sections,
 // which follow the function section containing the anchor under /OPT:REF.
-// Sites are additionally gated per Program:
-// debug builds keep the funcinfo tables but drop the body-embedded site records
-// (see Program.EnableFuncInfoSites).
+// Sites are additionally gated per Program (see Program.EnableFuncInfoSites).
 func shouldEmitRuntimeSites(ctx *context) bool {
+	if ctx != nil && ctx.linkRuntimeSites != nil {
+		return *ctx.linkRuntimeSites
+	}
 	if ctx == nil || ctx.prog == nil || !ctx.prog.FuncInfoSitesEnabled() {
 		return false
 	}
 	return runtimeSiteObjectFormat(ctx) != siteObjectUnsupported
 }
 
+// Entry-block inline assembly disturbs LLDB's initial lexical scope on Darwin.
+// PC-line anchors carry no source location and remain safe with DWARF. External
+// pclntab still needs final entry addresses to construct its sidecar.
 func shouldEmitRuntimeEntrySites(ctx *context) bool {
-	return shouldEmitRuntimeSites(ctx)
+	if !shouldEmitRuntimeSites(ctx) {
+		return false
+	}
+	conf := ctx.buildConf
+	return conf.Goos != "darwin" || conf.PCLNMode == PCLNExternal ||
+		!shouldEmitDebugInfo(conf, &ctx.crossCompile)
 }
 
 // siteSectionInfo names one metadata site section in each supported object format.

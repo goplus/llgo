@@ -17,6 +17,7 @@
 package funcinfo
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"sort"
@@ -192,7 +193,6 @@ func buildStringTable(strings []string) (map[string]uint32, []uint32, []byte, er
 	pool := stringPool{
 		offsets: map[string]uint32{"": 0},
 		data:    []byte{0},
-		text:    "\x00",
 	}
 	offsets := make([]uint32, len(values))
 	for id, s := range values {
@@ -251,14 +251,16 @@ func splitFileName(file string) (root, name string) {
 type stringPool struct {
 	offsets map[string]uint32
 	data    []byte
-	text    string
+	scratch []byte
 }
 
 func (p *stringPool) offset(s string) (uint32, error) {
 	if off, ok := p.offsets[s]; ok {
 		return off, nil
 	}
-	if off := strings.Index(p.text, s+"\x00"); off >= 0 {
+	p.scratch = append(p.scratch[:0], s...)
+	p.scratch = append(p.scratch, 0)
+	if off := bytes.Index(p.data, p.scratch); off >= 0 {
 		uoff := uint32(off)
 		p.offsets[s] = uoff
 		return uoff, nil
@@ -269,7 +271,6 @@ func (p *stringPool) offset(s string) (uint32, error) {
 	off := uint32(len(p.data))
 	p.data = append(p.data, s...)
 	p.data = append(p.data, 0)
-	p.text = string(p.data)
 	p.offsets[s] = off
 	return off, nil
 }

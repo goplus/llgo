@@ -93,6 +93,37 @@ func TestSourceGoToolTagsAcrossSIMDTargets(t *testing.T) {
 	}
 }
 
+func TestSourceGoCGOSelection(t *testing.T) {
+	for _, enabled := range []string{"0", "1"} {
+		t.Run(enabled, func(t *testing.T) {
+			commands := experimentCommands(t, "")
+			commands.environ = withEnv(commands.environ, "CGO_ENABLED="+enabled)
+			cfg := mustResolveSourceGo(t, commands, "")
+			if cfg.CGO_ENABLED != enabled {
+				t.Fatalf("CGO_ENABLED = %q, want %q", cfg.CGO_ENABLED, enabled)
+			}
+			isCgo := cfg.CGO_ENABLED == "1"
+			ctx, err := newSourcePatchMatchContext(cfg.GOROOT, sourcePatchBuildContext{
+				goos: "linux", goarch: "amd64", goversion: cfg.GOVERSION, cgoEnabled: &isCgo})
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "cgo.go"), []byte("//go:build cgo\n\npackage p\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			match, err := ctx.MatchFile(dir, "cgo.go")
+			if err != nil || match != isCgo {
+				t.Fatalf("cgo source selection = %v, %v", match, err)
+			}
+			commands.environ = cfg.apply(withEnv(commands.environ, "CGO_ENABLED="+map[string]string{"0": "1", "1": "0"}[enabled]))
+			if next := mustResolveSourceGo(t, commands, ""); next.CGO_ENABLED != enabled {
+				t.Fatalf("resolved CGO selection changed to %q", next.CGO_ENABLED)
+			}
+		})
+	}
+}
+
 func TestGOEXPERIMENTSnapshotFromGOENV(t *testing.T) {
 	for _, initial := range []string{"", "simd"} {
 		t.Run(initial, func(t *testing.T) {
@@ -311,6 +342,38 @@ func TestBuildSelectsGOEXPERIMENTSources(t *testing.T) {
 
 // runGoConfigHelper runs in a copy of the test executable named go (or go.exe).
 func runGoConfigHelper(mode string) {
+	if mode == "package-driver" || mode == "toolchain-driver" {
+		if os.Getenv("GO111MODULE") == "off" {
+			fmt.Fprintln(os.Stderr, "old launcher cannot handle selected GOEXPERIMENT")
+			os.Exit(19)
+		}
+		name := "go"
+		if runtime.GOOS == "windows" {
+			name += ".exe"
+		}
+		root := runtime.GOROOT()
+		if mode == "toolchain-driver" {
+			tool, err := os.Executable()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			data, err := os.ReadFile(tool + ".root")
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			root = string(data)
+		}
+		cmd := exec.Command(filepath.Join(root, "bin", name), os.Args[1:]...)
+		cmd.Env = withEnv(os.Environ(), "GOROOT="+root)
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "list" {
 		fmt.Fprintln(os.Stderr, "tool tags unavailable")
 		os.Exit(7)
@@ -324,8 +387,12 @@ func runGoConfigHelper(mode string) {
 		fmt.Println(`{"GOROOT":"test-root"}`)
 	case "list-failure":
 		json.NewEncoder(os.Stdout).Encode(sourceGoConfig{GOROOT: os.Getenv("LLGO_TEST_SOURCE_GOROOT"), GOVERSION: "go1.27.0"})
-	case "selected-root":
-		json.NewEncoder(os.Stdout).Encode(sourceGoConfig{GOROOT: runtime.GOROOT(), GOVERSION: runtime.Version()})
+	case "selected-root", "invalid-goflags":
+		cfg := sourceGoConfig{GOROOT: runtime.GOROOT(), GOVERSION: runtime.Version()}
+		if mode == "invalid-goflags" {
+			cfg.GOFLAGS = "'-modfile=unterminated"
+		}
+		json.NewEncoder(os.Stdout).Encode(cfg)
 	}
 }
 

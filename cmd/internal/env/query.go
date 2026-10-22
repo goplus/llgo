@@ -191,7 +191,7 @@ func llgoVariables(targetName string) (map[string]func() string, error) {
 	for _, name := range []string{
 		"LLGO_AR", "LLGO_BUILD_CACHE", "LLGO_FULL_RPATH", "LLGO_FUNCINFO",
 		"LLGO_FUNCINFO_SITES", "LLGO_LLDB", "LLGO_OPTIMIZE", "LLGO_PCLNPOST",
-		"LLGO_PLAN9ASM_PKGS", "LLGO_SHADOW_STACK", "LLGO_STDIO_NOBUF",
+		"LLGO_PLAN9ASM_PKGS", "LLGO_STDIO_NOBUF",
 		"LLGO_TRACE", "LLGO_WASI_THREADS", "LLGO_WASM_RUNTIME",
 	} {
 		name := name

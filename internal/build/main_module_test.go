@@ -41,6 +41,9 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		t.Fatalf("unexpected export file: %s", mod.ExportFile)
 	}
 	ir := mod.LPkg.String()
+	if strings.Contains(ir, "__llgo_allthreads_executable") {
+		t.Fatal("an executable cannot prove ownership of foreign C thread creators")
+	}
 	checks := []string{
 		"define i32 @" + processEntrySymbol + "(",
 		"define void @runtime.main()",
@@ -96,8 +99,44 @@ func TestGenMainModuleWindowsExitsAfterMain(t *testing.T) {
 	ir := mod.LPkg.String()
 	assertInOrder(t, ir,
 		`call void @"example.com/foo.main"()`,
+		`call i32 @fflush(ptr null)`,
 		`call void @runtime.exit(i32 0)`,
 	)
+}
+
+func TestGenMainModuleExecutableRegistersCExportThread(t *testing.T) {
+	for _, goos := range []string{"darwin", "linux", "windows"} {
+		t.Run(goos, func(t *testing.T) {
+			ctx := &context{
+				prog:      llssa.NewProgram(nil),
+				buildConf: &Config{BuildMode: BuildModeExe, Goos: goos, Goarch: "amd64"},
+			}
+			defer ctx.prog.Dispose()
+			pkg := &packages.Package{PkgPath: "main", ExportFile: "main.a"}
+			ir := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
+				rtInit:       true,
+				packageInits: []string{"example.com/dep.init"},
+				cExports: []cExport{{
+					goName: "example.com/dep.Callback", cName: "callback",
+					sig: newSignature([]types.Type{types.Typ[types.Int32]}, []types.Type{types.Typ[types.Int32]}),
+				}},
+			}).LPkg.String()
+			wrapper := ir[strings.Index(ir, "define i32 @callback(i32 %0)"):]
+			assertInOrder(t, wrapper,
+				`call i1 @"github.com/xgo-dev/llgo/runtime/internal/runtime.EnterForeignThread"()`,
+				`call i32 @"example.com/dep.Callback"(i32 %0)`,
+				`call void @"github.com/xgo-dev/llgo/runtime/internal/runtime.ExitForeignThread"(i1`,
+				"ret i32",
+			)
+			if goos != "windows" {
+				assertInOrder(t, ir,
+					`call void @"github.com/xgo-dev/llgo/runtime/internal/runtime.init"()`,
+					`call void @"github.com/xgo-dev/llgo/runtime/internal/runtime.EnableForeignThreadRegistration"()`,
+					`call void @"example.com/dep.init"()`,
+				)
+			}
+		})
+	}
 }
 
 func TestGenMainModuleCoverageExit(t *testing.T) {
@@ -131,7 +170,7 @@ func TestGenMainModuleCoverageExit(t *testing.T) {
 					`call void @runtime.runCoverageExitHook(i64 0)`,
 				}
 				if goos == "windows" {
-					order = append(order, `call void @runtime.exit(i32 0)`)
+					order = append(order, `call i32 @fflush(ptr null)`, `call void @runtime.exit(i32 0)`)
 				}
 				assertInOrder(t, ir, order...)
 			}
@@ -491,6 +530,9 @@ func TestGenMainModuleLibrary(t *testing.T) {
 	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
 	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{})
 	ir := mod.LPkg.String()
+	if strings.Contains(ir, "__llgo_allthreads_executable") {
+		t.Fatal("C archive must not enable standalone all-thread ownership")
+	}
 	if strings.Contains(ir, "define i32 @main") {
 		t.Fatalf("library mode should not emit main function:\n%s", ir)
 	}
@@ -781,6 +823,30 @@ func TestGenMainModuleInstallsLocalContextWhenNeeded(t *testing.T) {
 	assertInOrder(t, ir,
 		"EnterLocalContext",
 		"call void @runtime.main()",
+		"LeaveLocalContext",
+	)
+}
+
+func TestGenMainModuleWASIThreadsInstallsLocalContextWithoutUserLocality(t *testing.T) {
+	llvm.InitializeAllTargets()
+	t.Setenv(llgoWasiThreads, "1")
+	prog := llssa.NewProgram(&llssa.Target{GOOS: "wasip1", GOARCH: "wasm", Target: "wasi"})
+	installLocalContextTestRuntime(prog)
+	ctx := &context{
+		prog: prog,
+		buildConf: &Config{
+			BuildMode: BuildModeExe,
+			Goos:      "wasip1",
+			Goarch:    "wasm",
+			Target:    "wasi",
+		},
+	}
+	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
+	ir := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{rtInit: true}).LPkg.String()
+	assertInOrder(t, ir,
+		"EnterLocalContext",
+		`call void @"github.com/xgo-dev/llgo/runtime/internal/runtime.init"()`,
+		`call void @"example.com/foo.main"()`,
 		"LeaveLocalContext",
 	)
 }

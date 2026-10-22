@@ -6,7 +6,9 @@ import (
 	"go/token"
 	"go/types"
 
+	"github.com/xgo-dev/llgo/internal/debugabi"
 	"github.com/xgo-dev/llgo/internal/debuginfo"
+	ssaabi "github.com/xgo-dev/llgo/ssa/abi"
 	"github.com/xgo-dev/llvm"
 )
 
@@ -24,11 +26,16 @@ type aDIBuilder struct {
 type diBuilder = *aDIBuilder
 
 func newDIBuilder(prog Program, pkg Package, positioner Positioner) diBuilder {
+	byteOrder := debugabi.ByteOrderLittle
+	if prog.TargetData().ByteOrder() == llvm.BigEndian {
+		byteOrder = debugabi.ByteOrderBig
+	}
 	return &aDIBuilder{
 		di: debuginfo.New(pkg.mod, debuginfo.Config{
-			Producer:     "LLGo",
-			Optimized:    prog.debugInfoOptimized,
-			EmitCodeView: prog.emitCodeViewDebugInfo,
+			Producer:       "LLGo",
+			Optimized:      prog.debugInfoOptimized,
+			EmitCodeView:   prog.emitCodeViewDebugInfo,
+			DebuggerRecord: debugabi.NewRecord(uint8(prog.PointerSize()), byteOrder),
 		}),
 		prog:       prog,
 		types:      make(map[*aType]DIType),
@@ -257,9 +264,9 @@ func (b diBuilder) createType(name string, ty Type, pos token.Position) DIType {
 	case *types.Array:
 		return b.createArrayType(ty, t.Len())
 	case *types.Chan:
-		return b.createOpaquePointerType(name, ty)
+		return b.createChanType(name, ty, t)
 	case *types.Map:
-		return b.createOpaquePointerType(name, ty)
+		return b.createMapType(name, ty, t)
 	case *types.Tuple:
 		return b.createTupleType(name, ty, pos)
 	default:
@@ -380,7 +387,14 @@ func (b diBuilder) createTypedefType(name string, ty Type, pos token.Position) D
 	)}
 	b.types[ty] = ret
 
-	underlyingType := b.diType(b.prog.rawType(ty.RawType().(*types.Named).Underlying()), pos)
+	underlying := ty.RawType().(*types.Named).Underlying()
+	rawUnderlying := b.prog.rawType(underlying)
+	if signature, ok := underlying.(*types.Signature); ok {
+		// Keep the shared LLVM cache unchanged, but preserve the source
+		// signature for DWARF. Go type identity ignores __llgo_va_list's name.
+		rawUnderlying = b.prog.toType(signature)
+	}
+	underlyingType := b.diType(rawUnderlying, pos)
 	typ := b.di.CreateTypedef(llvm.DITypedef{
 		Name:        name,
 		Type:        underlyingType.ll,
@@ -460,14 +474,6 @@ func (b diBuilder) createMemberTypeEx(name string, tyStruct, tyField Type, idxFi
 	)
 }
 
-func (b diBuilder) createOpaquePointerType(name string, ty Type) DIType {
-	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
-		Name:        name,
-		SizeInBits:  b.prog.SizeOf(ty) * 8,
-		AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
-	})}
-}
-
 func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) DIType {
 	ptrType := b.prog.VoidPtr()
 	return &aDIType{ll: b.di.CreatePointerType(llvm.DIPointerType{
@@ -476,6 +482,222 @@ func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) D
 		SizeInBits:  b.prog.SizeOf(ptrType) * 8,
 		AlignInBits: uint32(b.prog.sizes.Alignof(ptrType.RawType())) * 8,
 	})}
+}
+
+func (b diBuilder) createMapType(name string, ty Type, mapType *types.Map) DIType {
+	pos := token.Position{}
+	ptr := b.prog.VoidPtr()
+	runtimeMap := b.prog.rtType("Map")
+	key := b.prog.rawType(mapType.Key())
+	elem := b.prog.rawType(mapType.Elem())
+	hashName := fmt.Sprintf("hash<%s,%s>", diTypeName(mapType.Key()), diTypeName(mapType.Elem()))
+	hash := b.createSyntheticStructPlaceholder(hashName, runtimeMap, pos)
+	hashPtr := b.di.CreatePointerType(llvm.DIPointerType{
+		Name:        "*" + hashName,
+		Pointee:     hash.ll,
+		SizeInBits:  b.prog.SizeOf(ptr) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
+	})
+	ret := &aDIType{ll: b.createRuntimeContainerTypedef(name, hashPtr, pos)}
+	// Map values may be recursive through their key or element type. Cache the
+	// pointer before constructing the typed bucket, as the Go linker does when
+	// synthesizing map DWARF.
+	b.types[ty] = ret
+
+	bucket := b.createMapBucketType(mapType, key, elem, pos)
+	bucketPtr := b.createDIPointerType(
+		fmt.Sprintf("*bucket<%s,%s>", diTypeName(mapType.Key()), diTypeName(mapType.Elem())),
+		bucket.ll,
+	)
+	replacements := map[string]llvm.Metadata{
+		"buckets":    bucketPtr,
+		"oldbuckets": bucketPtr,
+	}
+	b.finishSyntheticStruct(hash, hashName, runtimeMap,
+		b.syntheticStructFields(hash, runtimeMap, replacements, pos), pos)
+	return ret
+}
+
+func (b diBuilder) createMapBucketType(mapType *types.Map, key, elem Type,
+	pos token.Position) DIType {
+	bucketStorage := b.prog.rawType(ssaabi.MapBucketType(mapType, b.prog.sizes))
+	bucketStruct := bucketStorage.RawType().Underlying().(*types.Struct)
+	name := fmt.Sprintf("bucket<%s,%s>", diTypeName(key.RawType()), diTypeName(elem.RawType()))
+	bucket := b.createSyntheticStructPlaceholder(name, bucketStorage, pos)
+	overflow := b.createDIPointerType("*"+name, bucket.ll)
+	fields := make([]llvm.Metadata, bucketStruct.NumFields())
+	for index := range fields {
+		field := bucketStruct.Field(index)
+		fieldName := field.Name()
+		fieldType := b.prog.rawType(field.Type())
+		diType := b.diType(fieldType, pos).ll
+		switch fieldName {
+		case "topbits":
+			fieldName = "tophash"
+		case "keys":
+			if b.prog.SizeOf(key) > ssaabi.MAXKEYSIZE {
+				fieldName = "indirectkeys"
+			}
+		case "elems":
+			fieldName = "values"
+			if b.prog.SizeOf(elem) > ssaabi.MAXELEMSIZE {
+				fieldName = "indirectvalues"
+			}
+		case "overflow":
+			diType = overflow
+		}
+		fields[index] = b.createDIMemberType(bucket, fieldName,
+			b.prog.SizeOf(fieldType), b.prog.sizes.Alignof(field.Type()),
+			b.prog.OffsetOf(bucketStorage, index), diType)
+	}
+	b.finishSyntheticStruct(bucket, name, bucketStorage, fields, pos)
+	return bucket
+}
+
+func (b diBuilder) createChanType(name string, ty Type, chanType *types.Chan) DIType {
+	pos := token.Position{}
+	ptr := b.prog.VoidPtr()
+	runtimeChan := b.prog.rtType("Chan")
+	chanName := fmt.Sprintf("hchan<%s>", diTypeName(chanType.Elem()))
+	channel := b.createSyntheticStructPlaceholder(chanName, runtimeChan, pos)
+	channelPtr := b.di.CreatePointerType(llvm.DIPointerType{
+		Name:        "*" + chanName,
+		Pointee:     channel.ll,
+		SizeInBits:  b.prog.SizeOf(ptr) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
+	})
+	ret := &aDIType{ll: b.createRuntimeContainerTypedef(name, channelPtr, pos)}
+	b.types[ty] = ret
+
+	chanStruct := runtimeChan.RawType().Underlying().(*types.Struct)
+	queueIndex := structFieldIndex(chanStruct, "recvq")
+	queue := b.prog.rawType(chanStruct.Field(queueIndex).Type())
+	queueStruct := queue.RawType().Underlying().(*types.Struct)
+	waiterPtrType := queueStruct.Field(structFieldIndex(queueStruct, "first")).Type().(*types.Pointer)
+	waiter := b.prog.rawType(waiterPtrType.Elem())
+
+	waiterName := fmt.Sprintf("sudog<%s>", diTypeName(chanType.Elem()))
+	typedWaiter := b.createSyntheticStructPlaceholder(waiterName, waiter, pos)
+	typedWaiterPtr := b.createDIPointerType("*"+waiterName, typedWaiter.ll)
+	elem := b.prog.rawType(chanType.Elem())
+	elemPtr := b.createDIPointerType("*"+diTypeName(chanType.Elem()), b.diType(elem, pos).ll)
+	waiterReplacements := map[string]llvm.Metadata{
+		"prev": typedWaiterPtr,
+		"next": typedWaiterPtr,
+		"all":  typedWaiterPtr,
+		"ch":   ret.ll,
+		"elem": elemPtr,
+	}
+	b.finishSyntheticStruct(typedWaiter, waiterName, waiter,
+		b.syntheticStructFields(typedWaiter, waiter, waiterReplacements, pos), pos)
+
+	queueName := fmt.Sprintf("waitq<%s>", diTypeName(chanType.Elem()))
+	typedQueue := b.createSyntheticStructPlaceholder(queueName, queue, pos)
+	queueReplacements := map[string]llvm.Metadata{
+		"first": typedWaiterPtr,
+		"last":  typedWaiterPtr,
+	}
+	b.finishSyntheticStruct(typedQueue, queueName, queue,
+		b.syntheticStructFields(typedQueue, queue, queueReplacements, pos), pos)
+
+	channelReplacements := map[string]llvm.Metadata{
+		"sendq": typedQueue.ll,
+		"recvq": typedQueue.ll,
+	}
+	b.finishSyntheticStruct(channel, chanName, runtimeChan,
+		b.syntheticStructFields(channel, runtimeChan, channelReplacements, pos), pos)
+	return ret
+}
+
+func (b diBuilder) createSyntheticStructPlaceholder(name string, ty Type,
+	pos token.Position) DIType {
+	scope := b.file(pos.Filename)
+	return &aDIType{ll: b.di.CreateReplaceableCompositeType(
+		scope.ll,
+		llvm.DIReplaceableCompositeType{
+			Tag:         dwarf.TagStructType,
+			Name:        name,
+			File:        scope.ll,
+			Line:        pos.Line,
+			SizeInBits:  b.prog.SizeOf(ty) * 8,
+			AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
+		},
+	)}
+}
+
+func (b diBuilder) createRuntimeContainerTypedef(name string,
+	typeMeta llvm.Metadata, pos token.Position) llvm.Metadata {
+	ptr := b.prog.VoidPtr()
+	return b.di.CreateTypedef(llvm.DITypedef{
+		Name:        name,
+		Type:        typeMeta,
+		File:        b.file(pos.Filename).ll,
+		Line:        pos.Line,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
+	})
+}
+
+func (b diBuilder) finishSyntheticStruct(placeholder DIType, name string, ty Type,
+	fields []llvm.Metadata, pos token.Position) {
+	scope := b.file(pos.Filename)
+	value := b.di.CreateStructType(scope.ll, llvm.DIStructType{
+		Name:        name,
+		File:        scope.ll,
+		Line:        pos.Line,
+		SizeInBits:  b.prog.SizeOf(ty) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ty.RawType()) * 8),
+		Elements:    fields,
+	})
+	placeholder.ll.ReplaceAllUsesWith(value)
+	placeholder.ll = value
+}
+
+func (b diBuilder) syntheticStructFields(owner DIType, ty Type,
+	replacements map[string]llvm.Metadata, pos token.Position) []llvm.Metadata {
+	structure := ty.RawType().Underlying().(*types.Struct)
+	fields := make([]llvm.Metadata, structure.NumFields())
+	for index := 0; index < structure.NumFields(); index++ {
+		field := structure.Field(index)
+		fieldType := b.prog.rawType(field.Type())
+		diType := b.diType(fieldType, pos).ll
+		if replacement, ok := replacements[field.Name()]; ok {
+			diType = replacement
+		}
+		fields[index] = b.createDIMemberType(owner, field.Name(),
+			b.prog.SizeOf(fieldType), b.prog.sizes.Alignof(field.Type()),
+			b.prog.OffsetOf(ty, index), diType)
+	}
+	return fields
+}
+
+func (b diBuilder) createDIPointerType(name string, pointee llvm.Metadata) llvm.Metadata {
+	ptr := b.prog.VoidPtr()
+	return b.di.CreatePointerType(llvm.DIPointerType{
+		Name:        name,
+		Pointee:     pointee,
+		SizeInBits:  b.prog.SizeOf(ptr) * 8,
+		AlignInBits: uint32(b.prog.sizes.Alignof(ptr.RawType()) * 8),
+	})
+}
+
+func (b diBuilder) createDIMemberType(owner DIType, name string, size uint64,
+	align int64, offset uint64, ty llvm.Metadata) llvm.Metadata {
+	return b.di.CreateMemberType(owner.ll, llvm.DIMemberType{
+		Name:         name,
+		SizeInBits:   size * 8,
+		AlignInBits:  uint32(align * 8),
+		OffsetInBits: offset * 8,
+		Type:         ty,
+	})
+}
+
+func structFieldIndex(structure *types.Struct, name string) int {
+	for index := 0; index < structure.NumFields(); index++ {
+		if structure.Field(index).Name() == name {
+			return index
+		}
+	}
+	panic(fmt.Sprintf("runtime field %q not found in %s", name, structure))
 }
 
 func (b diBuilder) doCreateStructType(name string, ty Type, pos token.Position, fn func(ty DIType) []llvm.Metadata) (ret DIType) {
@@ -520,6 +742,11 @@ func (b diBuilder) createStructType(name string, ty Type, pos token.Position) (r
 		for i := 0; i < structType.NumFields(); i++ {
 			field := structType.Field(i)
 			tyField := b.prog.rawType(field.Type())
+			if signature, ok := field.Type().(*types.Signature); ok {
+				// A closure's $f must retain its own variadic convention even
+				// when a C callback with a Go-identical signature was cached first.
+				tyField = b.prog.toType(signature)
+			}
 			flags := 0
 			pos := b.positioner.Position(field.Pos())
 			fields[i] = b.createMemberTypeEx(field.Name(), ty, tyField, i, pos, flags)
@@ -554,7 +781,13 @@ func (b diBuilder) createFuncPtrType(name string, ty Type, pos token.Position) D
 	if results := sig.Results(); results.Len() != 0 {
 		params[0] = b.diType(b.prog.rawType(results), pos).ll
 	}
-	for i := 0; i < sig.Params().Len(); i++ {
+	n := sig.Params().Len()
+	if HasNameValist(sig) {
+		// A trailing null type emits DW_TAG_unspecified_parameters. The
+		// __llgo_va_list marker is not a fixed []any parameter.
+		n--
+	}
+	for i := 0; i < n; i++ {
 		params[i+1] = b.diType(b.prog.rawType(sig.Params().At(i).Type()), pos).ll
 	}
 	subroutine := b.di.CreateSubroutineType(llvm.DISubroutineType{
@@ -602,11 +835,16 @@ func (b diBuilder) dbgValue(v Expr, dv DIVar, scope DIScope, pos token.Position,
 	)
 }
 
+// Match runtime metadata, including main packages and source overlays.
+func diTypeName(t types.Type) string {
+	return types.TypeString(t, ssaabi.PathOf)
+}
+
 func (b diBuilder) diType(t Type, pos token.Position) DIType {
 	if hasTypeParam(t.RawType()) {
 		return &aDIType{}
 	}
-	name := t.RawType().String()
+	name := diTypeName(t.RawType())
 	return b.diTypeEx(name, t, pos)
 }
 
@@ -652,13 +890,22 @@ func (b diBuilder) createExpression(ops []uint64) DIExpression {
 // -----------------------------------------------------------------------------
 
 // Copy to alloca'd memory to get declareable address.
-func (b Builder) constructDebugAddr(v Expr) (dbgPtr Expr, dbgVal Expr, exists bool) {
+func (b Builder) constructDebugAddr(v Expr) Expr {
 	t := v.Type.RawType().Underlying()
-	dbgPtr, dbgVal = b.doConstructDebugAddr(v, t)
-	return dbgPtr, dbgVal, false
+	return b.doConstructDebugAddr(v, t)
 }
 
-func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal Expr) {
+func (b Builder) constructDebugAddrWithStore(v Expr) (Expr, Expr) {
+	t := v.Type.RawType().Underlying()
+	return b.doConstructDebugAddrWithStore(v, t)
+}
+
+func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr) {
+	dbgPtr, _ = b.doConstructDebugAddrWithStore(v, t)
+	return dbgPtr
+}
+
+func (b Builder) doConstructDebugAddrWithStore(v Expr, t types.Type) (dbgPtr, store Expr) {
 	var ty Type
 	switch t := t.(type) {
 	case *types.Basic:
@@ -676,37 +923,82 @@ func (b Builder) doConstructDebugAddr(v Expr, t types.Type) (dbgPtr Expr, dbgVal
 	case *types.Struct:
 		ty = v.Type
 	case *types.Slice:
-		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), InGo)
+		ty = b.Prog.Type(b.Prog.rtType("Slice").RawType().Underlying(), GoDecl)
 	case *types.Signature:
-		ty = b.Prog.Closure(t)
+		if v.kind == vkFuncPtr {
+			// Native entries already have pointer storage. A debug snapshot must
+			// not adapt them into Go closures, especially for C ellipsis entries.
+			ty = v.Type
+		} else {
+			ty = b.Prog.Closure(t)
+		}
 	case *types.Named:
-		ty = b.Prog.Type(t.Underlying(), InGo)
-	case *types.Map:
-		ty = b.Prog.Type(b.Prog.rtType("Map").RawType().Underlying(), InGo)
+		ty = b.Prog.Type(t.Underlying(), GoDecl)
 	default:
 		ty = v.Type
 	}
-	dbgPtr = b.AllocaT(ty)
+	// Empty aggregates have no SelectionDAG value. LLVM 22 can crash when
+	// promoting their debug snapshots to dbg.value(empty zeroinitializer).
+	// Back the debug-only address with a byte while keeping the source type
+	// in the variable metadata; there are no source value bits to copy.
+	storedValue := v
+	if b.Prog.SizeOf(ty) == 0 {
+		ty = b.Prog.Byte()
+		storedValue = b.Prog.IntVal(0, ty)
+	}
+	// A debug snapshot reserves one slot per function invocation. Allocating
+	// it at a DebugRef inside a loop grows the stack on every iteration at O0.
+	// Keep the value update at its source position, but reserve the slot with
+	// the same entry-block builder used for ordinary stack locals.
+	entryBuilder := *b
+	entryBuilder.impl = b.Func.entryAllocaBuilder()
+	dbgPtr = entryBuilder.AllocaT(ty)
+	// Store through the allocated type so closure snapshots also initialize
+	// their data field before exposing the source-typed debug address.
+	store = b.Store(dbgPtr, storedValue)
 	dbgPtr.Type = b.Prog.Pointer(v.Type)
-	b.Store(dbgPtr, v)
-	dbgVal = b.Load(dbgPtr)
-	return dbgPtr, dbgVal
+	return dbgPtr, store
 }
 
 func (b Builder) di() diBuilder {
 	return b.Pkg.di
 }
 
+// DIParam emits parameter debug information without exposing its storage. Its
+// original signature is retained for callers that use Builder method values.
 func (b Builder) DIParam(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
-	if b.Prog.Target().effectiveGOOS() == "windows" {
-		if _, ok := v.Type.RawType().Underlying().(*types.Pointer); ok {
-			addr := b.AllocaT(v.Type)
-			b.Store(addr, v)
-			b.DIDeclare(variable, addr, dv, scope, pos, blk)
-			return
+	b.diParam(variable, v, dv, scope, pos, blk)
+}
+
+// DIParamWithHome returns the stable O0 storage backing the parameter.
+func (b Builder) DIParamWithHome(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) Expr {
+	return b.diParam(variable, v, dv, scope, pos, blk)
+}
+
+func (b Builder) diParam(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) Expr {
+	if b.Prog.debugInfoOptimized {
+		// Preserve the Windows pointer location policy for optimized CodeView.
+		if b.Prog.Target().effectiveGOOS() == "windows" {
+			if _, ok := v.Type.RawType().Underlying().(*types.Pointer); ok {
+				addr := b.AllocaT(v.Type)
+				b.Store(addr, v)
+				b.DIDeclare(variable, addr, dv, scope, pos, blk)
+				return Nil
+			}
 		}
+		b.DIValue(variable, v, dv, scope, pos, blk)
+		return Nil
 	}
-	b.DIValue(variable, v, dv, scope, pos, blk)
+	dbgPtr, store := b.constructDebugAddrWithStore(v)
+	store.impl.InstructionSetDebugLoc(llvm.Metadata{})
+	b.DIDeclare(variable, dbgPtr, dv, scope, pos, blk)
+	return dbgPtr
+}
+
+// DIStore updates the stable debug-only storage for an O0 parameter.
+func (b Builder) DIStore(ptr, value Expr) {
+	store := b.Store(ptr, value)
+	store.impl.InstructionSetDebugLoc(llvm.Metadata{})
 }
 
 func (b Builder) DIDeclare(variable *types.Var, v Expr, dv DIVar, scope DIScope, pos token.Position, blk BasicBlock) {
@@ -720,7 +1012,7 @@ func (b Builder) DIValue(variable *types.Var, v Expr, dv DIVar, scope DIScope, p
 		expr := b.di().createExpression(nil)
 		b.di().dbgValue(v, dv, scope, pos, expr, blk)
 	} else {
-		dbgPtr, _, _ := b.constructDebugAddr(v)
+		dbgPtr := b.constructDebugAddr(v)
 		expr := b.di().createExpression([]uint64{opDeref})
 		b.di().dbgValue(dbgPtr, dv, scope, pos, expr, blk)
 	}
@@ -753,7 +1045,10 @@ func needConstructAddr(t types.Type) bool {
 			return true
 		}
 		return false
-	case *types.Pointer:
+	case *types.Pointer, *types.Map, *types.Chan:
+		// Map and channel values are pointers to runtime headers. Like other
+		// pointers, describe the value itself; a snapshot plus DW_OP_deref can
+		// lose its location when LLVM promotes the entry-block slot on Wasm.
 		return false
 	default:
 		return true
@@ -859,11 +1154,14 @@ func (b Builder) DebugFunction(f Function, funcScope *types.Scope, pos token.Pos
 	p := f
 	if p.diFunc == nil {
 		sig := p.Type.raw.Type.(*types.Signature)
-		rt := p.Prog.Type(sig.Results(), InGo)
+		rt := p.Prog.Type(sig.Results(), GoDecl)
 		paramTypes := make([]llvm.Metadata, len(p.params)+1)
 		paramTypes[0] = b.di().diType(rt, pos).ll
 		for i, t := range p.params {
 			paramTypes[i+1] = b.di().diType(t, pos).ll
+		}
+		if p.hasVArg {
+			paramTypes = append(paramTypes, llvm.Metadata{})
 		}
 		diFuncType := b.di().di.CreateSubroutineType(llvm.DISubroutineType{
 			File:       b.di().file(pos.Filename).ll,

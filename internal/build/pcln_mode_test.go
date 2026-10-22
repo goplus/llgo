@@ -119,28 +119,27 @@ func TestEffectivePCLNModeLegacyPrecedence(t *testing.T) {
 func TestShouldEnablePCLNSites(t *testing.T) {
 	t.Setenv(llgoFuncInfoSites, "1")
 	tests := []struct {
-		name      string
-		conf      Config
-		funcInfo  bool
-		debugInfo bool
-		want      bool
+		name     string
+		conf     Config
+		funcInfo bool
+		want     bool
 	}{
 		{name: "embedded without debug", conf: Config{Goos: "darwin", PCLNMode: PCLNEmbedded}, funcInfo: true, want: true},
-		{name: "darwin embedded debug", conf: Config{Goos: "darwin", PCLNMode: PCLNEmbedded}, funcInfo: true, debugInfo: true},
-		{name: "linux embedded debug", conf: Config{Goos: "linux", PCLNMode: PCLNEmbedded}, funcInfo: true, debugInfo: true, want: true},
-		{name: "windows embedded debug", conf: Config{Goos: "windows", PCLNMode: PCLNEmbedded}, funcInfo: true, debugInfo: true, want: true},
-		{name: "external debug", conf: Config{Goos: "darwin", PCLNMode: PCLNExternal}, funcInfo: true, debugInfo: true, want: true},
-		{name: "metadata disabled", conf: Config{Goos: "linux", PCLNMode: PCLNEmbedded}, debugInfo: true},
+		{name: "darwin embedded debug", conf: Config{Goos: "darwin", PCLNMode: PCLNEmbedded}, funcInfo: true, want: true},
+		{name: "linux embedded debug", conf: Config{Goos: "linux", PCLNMode: PCLNEmbedded}, funcInfo: true, want: true},
+		{name: "windows embedded debug", conf: Config{Goos: "windows", PCLNMode: PCLNEmbedded}, funcInfo: true, want: true},
+		{name: "external debug", conf: Config{Goos: "darwin", PCLNMode: PCLNExternal}, funcInfo: true, want: true},
+		{name: "metadata disabled", conf: Config{Goos: "linux", PCLNMode: PCLNEmbedded}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldEnablePCLNSites(&tt.conf, tt.funcInfo, tt.debugInfo); got != tt.want {
+			if got := shouldEnablePCLNSites(&tt.conf, tt.funcInfo); got != tt.want {
 				t.Fatalf("shouldEnablePCLNSites() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 	t.Setenv(llgoFuncInfoSites, "0")
-	if shouldEnablePCLNSites(&Config{Goos: "linux", PCLNMode: PCLNExternal}, true, true) {
+	if shouldEnablePCLNSites(&Config{Goos: "linux", PCLNMode: PCLNExternal}, true) {
 		t.Fatal("LLGO_FUNCINFO_SITES=0 did not disable sites")
 	}
 }
@@ -155,8 +154,8 @@ func TestNewDefaultConfMetadataDefaults(t *testing.T) {
 	if conf.PCLNModeSet {
 		t.Fatal("NewDefaultConf().PCLNModeSet = true, want unresolved legacy default")
 	}
-	if !conf.OmitDWARFByDefault {
-		t.Fatal("NewDefaultConf().OmitDWARFByDefault = false, want safe provisional-DWARF default")
+	if conf.OmitDWARFByDefault {
+		t.Fatal("native builds should preserve DWARF by default")
 	}
 	genConf := NewDefaultConf(ModeGen)
 	if genConf.OmitDWARFByDefault {

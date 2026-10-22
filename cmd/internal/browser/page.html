@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>LLGo WebAssembly Debug Session</title>
+<pre id="status">Preparing debug session</pre>
+<button id="run" type="button" disabled>Run</button>
+<pre id="output"></pre>
+<script type="module">
+const config = __LLGO_DEBUG_CONFIG__;
+const status = document.getElementById('status');
+const runButton = document.getElementById('run');
+const output = document.getElementById('output');
+const write = value => { output.textContent += String(value) + '\n'; };
+const finish = code => {
+  globalThis.__llgoDebugStatus = {state: 'exited', code};
+  status.textContent = 'LLGo WebAssembly exited with code ' + code;
+};
+const fail = error => {
+  if (error?.name === 'ExitStatus' && Number.isInteger(error.status)) {
+    finish(error.status);
+    return;
+  }
+  const message = String(error?.stack || error);
+  globalThis.__llgoDebugStatus = {state: 'error', message};
+  status.textContent = message;
+  console.error(error);
+};
+globalThis.addEventListener('error', event => {
+  if (event.error?.name === 'ExitStatus') event.preventDefault();
+  fail(event.error || event.message);
+});
+globalThis.addEventListener('unhandledrejection', event => {
+  if (event.reason?.name === 'ExitStatus') event.preventDefault();
+  fail(event.reason);
+});
+
+function ready(instance, run) {
+  globalThis.__llgoDebugInstance = instance;
+  globalThis.__llgoDebugStatus = {state: 'ready'};
+  status.textContent = 'Set breakpoints in Sources, then click Run.';
+  globalThis.__llgoDebugRun = async () => {
+    if (globalThis.__llgoDebugStatus.state !== 'ready') return;
+    globalThis.__llgoDebugStatus = {state: 'running'};
+    runButton.disabled = true;
+    status.textContent = 'LLGo WebAssembly running';
+    try {
+      for (let attempt = 0; ; ++attempt) {
+        const response = await fetch('/__llgo/worker-state', {cache: 'no-store'});
+        if (!response.ok) throw new Error('Cannot read browser worker control state');
+        const state = await response.json();
+        if (state.error) throw new Error(state.error);
+        if (!state.enabled || state.ready) break;
+        if (attempt === 200) throw new Error('Browser worker control did not become ready');
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      await run();
+    } catch (error) { fail(error); }
+  };
+  runButton.addEventListener('click', globalThis.__llgoDebugRun);
+  runButton.disabled = false;
+  fetch('/__llgo/runtime-ready', {cache: 'no-store'}).catch(console.error);
+}
+
+try {
+  const devToolsMode = new URLSearchParams(location.search).get('llgo-devtools');
+  if (devToolsMode !== 'disabled' && !globalThis.__llgoLanguageExtensionReady) {
+    status.textContent = 'Waiting for the LLGo DevTools extension';
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(
+        'LLGo DevTools extension did not become ready within 5 seconds. Open DevTools, then reload, or use -browser-devtools=false to run without it.')), 5000);
+      globalThis.addEventListener('__llgoLanguageExtensionReady', () => {
+        clearTimeout(timer);
+        resolve();
+      }, {once: true});
+    });
+  }
+  if (config.glue) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/wasm_fs.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    const loaded = await import(config.glue);
+    if (typeof loaded.default !== 'function') throw new Error('Emscripten host has no module factory');
+    // Delay delivery to the real host until Run. The compiled module is
+    // visible to DevTools before constructors and the Go entry point run.
+    Promise.resolve(loaded.default({
+      print: write, printErr: write, onExit: finish,
+      instantiateWasm(imports, receiveInstance) {
+        WebAssembly.instantiateStreaming(fetch(config.module, {cache: 'no-store'}), imports)
+          .then(result => ready(result.instance, () => receiveInstance(result.instance, result.module)))
+          .catch(fail);
+        return {};
+      },
+    })).catch(fail);
+  } else {
+    // Import-free standalone modules (including C debugger fixtures) need no
+    // host glue. Modules with host imports fail rather than receive fake stubs.
+    const result = await WebAssembly.instantiateStreaming(fetch(config.module, {cache: 'no-store'}), {});
+    ready(result.instance, () => {
+      const entry = result.instance.exports._start || result.instance.exports.main || result.instance.exports.answer;
+      if (entry) entry();
+      finish(0);
+    });
+  }
+} catch (error) { fail(error); }
+</script>

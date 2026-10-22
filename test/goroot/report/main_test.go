@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestRenderReportIncludesOnlyMismatchCasesWithAllLanes(t *testing.T) {
+func TestRenderReportIncludesFailuresAndUnexpectedPassesWithAllLanes(t *testing.T) {
 	input := strings.Join([]string{
 		"darwin/arm64\t1.26.7\t0\tfixedbugs/regression.go\trun\tpass",
 		"darwin/arm64\t1.27.0\t0\tfixedbugs/regression.go\trun\tpass",
@@ -32,6 +32,8 @@ func TestRenderReportIncludesOnlyMismatchCasesWithAllLanes(t *testing.T) {
 		"linux/amd64\t1.26.7\t1\tfixedbugs/stale.go\trun\texpected-fail",
 		"linux/amd64\t1.27.0\t1\tfixedbugs/stale.go\trun\tflaky-fail",
 		"darwin/arm64\t1.26.7\t2\tfixedbugs/healthy.go\trun\tpass",
+		"darwin/arm64\t1.26.7\t2\tfixedbugs/known.go\trun\texpected-fail",
+		"darwin/arm64\t1.26.7\t2\tfixedbugs/flaky.go\trun\tflaky-fail",
 	}, "\n")
 	results, err := parseResults(strings.NewReader(input))
 	if err != nil {
@@ -45,6 +47,9 @@ func TestRenderReportIncludesOnlyMismatchCasesWithAllLanes(t *testing.T) {
 		"| Case | 🍎 🦾<br>1.26 | 🍎 🦾<br>1.27 | 🐧 🖥️<br>1.26 | 🐧 🖥️<br>1.27 |",
 		"| `fixedbugs/regression.go` | ✅ | ✅ | ✅ | ❌ |",
 		"| `fixedbugs/stale.go` | ⚠️ | 🟡 | 🟡 | 🔀❌ |",
+		"| `fixedbugs/known.go` | 🟡 | · | · | · |",
+		"| `fixedbugs/flaky.go` | 🔀❌ | · | · | · |",
+		"| darwin/arm64 / 1.26.7 | 2 | 1 | 1 | 1 | 0 | 0 | 0 |",
 		"[Workflow run](https://example.com/run)",
 	} {
 		if !strings.Contains(report, want) {
@@ -134,8 +139,8 @@ func TestRenderReportMentionOnMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(reportWithMention, "@fennoai") || !strings.Contains(reportWithMention, "PR") {
-		t.Fatalf("expected mention @fennoai with PR triage instruction, got:\n%s", reportWithMention)
+	if !strings.Contains(reportWithMention, "@fennoai") || !strings.Contains(reportWithMention, "investigate") {
+		t.Fatalf("expected mention @fennoai with failure triage instruction, got:\n%s", reportWithMention)
 	}
 	if !strings.Contains(reportWithMention, "infrastructure/configuration failures") {
 		t.Fatalf("expected warning to describe all mismatch classes, got:\n%s", reportWithMention)
@@ -156,5 +161,42 @@ func TestRenderReportMentionOnMismatch(t *testing.T) {
 	}
 	if strings.Contains(reportNoMismatch, "@fennoai") {
 		t.Fatalf("unexpected mention when no mismatches:\n%s", reportNoMismatch)
+	}
+}
+
+func TestReportOutcomeCounts(t *testing.T) {
+	var results []caseResult
+	for result := range knownResults {
+		results = append(results, caseResult{
+			lane:     lane{platform: "linux/amd64", version: "1.27.0"},
+			casePath: result + ".go", directive: "run", result: result,
+		})
+	}
+	report, err := renderReport(results, []string{"linux/amd64"}, []string{"1.27.0"}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(report, "| linux/amd64 / 1.27.0 | 2 | 1 | 1 | 1 | 1 | 2 | 2 |") {
+		t.Fatalf("outcomes were not counted separately:\n%s", report)
+	}
+}
+
+func TestReportKnownFailureAndStaleExpectationTriage(t *testing.T) {
+	for _, result := range []string{"expected-fail", "flaky-fail", "unexpected-pass"} {
+		t.Run(result, func(t *testing.T) {
+			report, err := renderReport([]caseResult{{
+				lane:     lane{platform: "linux/amd64", version: "1.27.0"},
+				casePath: "case.go", directive: "run", result: result,
+			}}, []string{"linux/amd64"}, []string{"1.27.0"}, "", "fennoai")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(report, "`case.go`") || strings.Contains(report, "investigate") {
+				t.Fatalf("known outcome is hidden or treated as a new failure:\n%s", report)
+			}
+			if got := strings.Contains(report, "@fennoai"); got != (result == "unexpected-pass") {
+				t.Fatalf("unexpected mention for %s:\n%s", result, report)
+			}
+		})
 	}
 }

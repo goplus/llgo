@@ -55,8 +55,9 @@ type Config struct {
 	RP2040BootPatch bool `json:"rp2040-boot-patch"`
 
 	// Debug and emulation configuration
-	Emulator string   `json:"emulator"`
-	GDB      []string `json:"gdb"`
+	Emulator    string   `json:"emulator"`
+	DebugServer string   `json:"debug-server"`
+	GDB         []string `json:"gdb"`
 
 	// OpenOCD configuration
 	OpenOCDInterface string `json:"openocd-interface"`

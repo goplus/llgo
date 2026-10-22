@@ -73,6 +73,7 @@ func getg() *g {
 	if gp := (*g)(unsafe.Pointer(currentG)); gp != nil {
 		return gp
 	}
+	registerWasiGCThread()
 	gp := initRuntimeContext(allocRuntimeContext(), nil, _Grunning)
 	if ret := setAutoG(gp); ret != 0 {
 		destroyG(c.Pointer(unsafe.Pointer(gp)))
@@ -122,7 +123,9 @@ func destroyG(ptr c.Pointer) {
 	if gp == nil {
 		return
 	}
-	releaseGAndCheckDeadlock()
+	if !gp.context.platform.systemG {
+		releaseGAndCheckDeadlock()
+	}
 	if gp.panic_ != nil {
 		c.Free(gp.panic_)
 	}

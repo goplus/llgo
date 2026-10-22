@@ -1,8 +1,10 @@
 package goroot
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -18,7 +20,7 @@ func TestGOROOTWasmProfiles(t *testing.T) {
 		"J32-GoJS":       {"", "js", ".mjs", "emscripten-runner.mjs"},
 		"J32-Emscripten": {"emscripten", "js", ".mjs", "emscripten-runner.mjs"},
 		"J64-Emscripten": {"emscripten-memory64", "js", ".mjs", "emscripten-memory64-runner.mjs"},
-		"W32-WASI":       {"wasi", "wasip1", ".wasm", "wasmtime"},
+		"W32-WASI":       {"wasi", "wasip1", ".wasm", "wasmer"},
 	}
 	for name, expected := range want {
 		got, ok, err := selectGOROOTWasmProfile(name)
@@ -45,7 +47,7 @@ func TestGOROOTWasmBuildAndRunCommands(t *testing.T) {
 		t.Fatalf("build args: %v", got)
 	}
 	app, args, targetEnv, err := gorootArtifactCommand("/work", "out.mjs", true, env, "one")
-	if err != nil || app != "node" || !reflect.DeepEqual(args, []string{filepath.Join("/llgo", "targets", "emscripten-memory64-runner.mjs"), "out.mjs", "one"}) {
+	if err != nil || app != "node" || !reflect.DeepEqual(args, []string{"--stack-size=8192", filepath.Join("/llgo", "targets", "emscripten-memory64-runner.mjs"), "out.mjs", "one"}) {
 		t.Fatalf("LLGo command: %q %v %v", app, args, err)
 	}
 	if envEntry(targetEnv, "GOOS") != "js" || envEntry(targetEnv, "GOARCH") != "wasm" || envEntry(targetEnv, "CGO_ENABLED") != "0" || envEntry(targetEnv, "GOMAXPROCS") != "1" {
@@ -57,11 +59,41 @@ func TestGOROOTWasmBuildAndRunCommands(t *testing.T) {
 	}
 }
 
+func TestGOROOTBuildArgsKeepGCBackendControlsOnBaseline(t *testing.T) {
+	withGOROOTWasmProfile(t, "")
+	for _, payload := range []string{"-l=4", "-d=ssa/check/on", "-d=softfloat", "-d=checkptr", "all=-d=checkptr"} {
+		for _, flags := range [][]string{{"-gcflags", payload}, {"-gcflags=" + payload}} {
+			baseline := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+			if got := gorootBuildArgs(false, flags, "out", "source.go"); !reflect.DeepEqual(got, baseline) {
+				t.Fatalf("Go baseline flags changed: %v", got)
+			}
+			want := []string{"build", "-o", "out", "source.go"}
+			if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+				t.Fatalf("LLVM build retained gc-only backend controls: %v", got)
+			}
+		}
+	}
+	for _, flags := range [][]string{
+		{"-gcflags=-N -l=4"},
+		{"-gcflags", "-l=2"},
+		{"-gcflags=-d=unknown"},
+		{"-gcflags=-d=converthash=qy"},
+		{"-gcflags=-d=checkptr -N"},
+		{"-ldflags", "-gcflags=-l=4"},
+		{"-tags", "-gcflags=-l=4"},
+	} {
+		want := append(append([]string{"build"}, flags...), "-o", "out", "source.go")
+		if got := gorootBuildArgs(true, flags, "out", "source.go"); !reflect.DeepEqual(got, want) {
+			t.Fatalf("unrelated payload changed: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestGOROOTGoJSRunCommandModelsBrowser(t *testing.T) {
 	withGOROOTWasmProfile(t, "J32-GoJS")
 	env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo"}
 	app, args, _, err := gorootArtifactCommand("/work", "out.mjs", true, env, "arg")
-	want := []string{filepath.Join("/llgo", "targets", "emscripten-runner.mjs"), "--browser-only", "out.mjs", "arg"}
+	want := []string{"--stack-size=8192", filepath.Join("/llgo", "targets", "emscripten-runner.mjs"), "--browser-only", "out.mjs", "arg"}
 	if err != nil || app != "node" || !reflect.DeepEqual(args, want) {
 		t.Fatalf("GoJS command: %q %v %v", app, args, err)
 	}
@@ -69,11 +101,46 @@ func TestGOROOTGoJSRunCommandModelsBrowser(t *testing.T) {
 
 func TestGOROOTWasiRunCommand(t *testing.T) {
 	withGOROOTWasmProfile(t, "W32-WASI")
-	env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo"}
-	app, args, targetEnv, err := gorootArtifactCommand("/work", "out.wasm", true, env, "arg")
-	want := []string{"run", "-W", "exceptions=y", "--dir=.", "out.wasm", "arg"}
-	if err != nil || app != "wasmtime" || !reflect.DeepEqual(args, want) || envEntry(targetEnv, "GOWASIRUNTIME") != "wasmtime" {
-		t.Fatalf("WASI command: %q %v %v %v", app, args, targetEnv, err)
+	dir := t.TempDir()
+	for _, llgo := range []bool{false, true} {
+		for _, threads := range []string{"", "1"} {
+			env := []string{"GOROOT=/go", "LLGO_ROOT=/llgo", "LLGO_WASI_THREADS=" + threads, "RUST_LOG=warn", "PATH=/tools/bin:/usr/bin"}
+			app, args, targetEnv, err := gorootArtifactCommand(dir, "out.wasm", llgo, env, "-test.v")
+			workVolume, tempVolume, guestCwd := dir, "/tmp", dir
+			if runtime.GOOS == "windows" {
+				workVolume, tempVolume, guestCwd = dir+":/work", os.TempDir()+":/tmp", "/work"
+			}
+			rootVolume, guestRoot := "/go", "/go"
+			if runtime.GOOS == "windows" {
+				rootVolume, guestRoot = "/go:/goroot", "/goroot"
+			}
+			want := []string{"run", "--env=PATH=/tools/bin:/usr/bin", "--volume=" + rootVolume, "--env=GOROOT=" + guestRoot, "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
+				"--volume=" + workVolume, "--volume=" + tempVolume, "--env=PWD=" + guestCwd, "out.wasm", "--", "-test.v"}
+			if err != nil || app != "wasmer" || !reflect.DeepEqual(args, want) || envEntry(targetEnv, "GOWASIRUNTIME") != "wasmtime" || envEntry(targetEnv, "RUST_LOG") != "off" {
+				t.Fatalf("llgo=%v threads=%q: WASI command: %q %v %v %v", llgo, threads, app, args, targetEnv, err)
+			}
+		}
+	}
+}
+
+func TestGOROOTWASIHostArgs(t *testing.T) {
+	for _, tt := range []struct {
+		name, cwd, temp string
+		windows         bool
+		want            []string
+	}{
+		{"unix", "/project with spaces", "/host-temp", false,
+			[]string{"run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
+				"--volume=/project with spaces", "--volume=/tmp", "--env=PWD=/project with spaces", "out.wasm", "--"}},
+		{"windows", `C:\project with spaces`, `D:\Temp dir`, true,
+			[]string{"run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
+				`--volume=C:\project with spaces:/work`, `--volume=D:\Temp dir:/tmp`, "--env=PWD=/work", "out.wasm", "--"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := gorootWASIArgs(tt.cwd, tt.temp, "out.wasm", tt.windows); !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("WASI arguments = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

@@ -17,6 +17,7 @@
 package build
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -35,7 +36,7 @@ var (
 )
 */
 
-func Clean(patterns []string, conf *Config) {
+func Clean(patterns []string, conf *Config) error {
 	if conf.Goos == "" {
 		conf.Goos = runtime.GOOS
 	}
@@ -50,53 +51,80 @@ func Clean(patterns []string, conf *Config) {
 		Mode:       loadSyntax | packages.NeedExportFile,
 		BuildFlags: []string{"-tags=" + tags},
 	}
+	if conf.GoFlagsParsed {
+		cfg.Env = withEnv(os.Environ(), "GOFLAGS= ")
+	}
 
 	if patterns == nil {
 		patterns = []string{"."}
 	}
 	initial, err := packages.LoadEx(nil, nil, cfg, patterns...)
-	check(err)
+	if err != nil {
+		return err
+	}
+	if err := initialPackageListErrors(initial); err != nil {
+		return err
+	}
 
-	cleanPkgs(initial, conf.Verbose)
+	err = cleanPkgs(initial, conf.Verbose)
 
 	for _, pkg := range initial {
 		if pkg.Name == "main" {
-			cleanMainPkg(pkg, conf, conf.Verbose)
+			err = errors.Join(err, cleanMainPkg(pkg, conf, conf.Verbose))
 		}
 	}
+	return err
 }
 
-func cleanMainPkg(pkg *packages.Package, conf *Config, verbose bool) {
+func cleanMainPkg(pkg *packages.Package, conf *Config, verbose bool) error {
 	pkgPath := pkg.PkgPath
 	name := path.Base(pkgPath)
 	fname := name + conf.AppExt
 	app := filepath.Join(conf.BinPath, fname)
-	removeExecutableArtifacts(app, verbose)
+	err := removeExecutableArtifacts(app, verbose)
 	if len(pkg.CompiledGoFiles) > 0 {
 		dir := filepath.Dir(pkg.CompiledGoFiles[0])
 		buildApp := filepath.Join(dir, fname)
-		removeExecutableArtifacts(buildApp, verbose)
+		err = errors.Join(err, removeExecutableArtifacts(buildApp, verbose))
 	}
+	return err
 }
 
-func removeExecutableArtifacts(executable string, verbose bool) {
-	removeFile(executable, verbose)
-	removeFile(pclnSidecarPath(executable), verbose)
+func removeExecutableArtifacts(executable string, verbose bool) error {
+	return errors.Join(removeFile(executable, verbose), removeFile(pclnSidecarPath(executable), verbose), removeFile(dwarfSidecarPath(executable), verbose), removeArtifactDirectory(darwinLTOObjectDir(executable), verbose), removeArtifactDirectory(executable+".dSYM", verbose))
 }
 
-func cleanPkgs(initial []*packages.Package, verbose bool) {
+func removeArtifactDirectory(dir string, verbose bool) error {
+	if verbose {
+		fmt.Fprintln(os.Stderr, "Remove", dir)
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("clean %s: %w", dir, err)
+	}
+	return nil
+}
+
+func cleanPkgs(initial []*packages.Package, verbose bool) error {
+	var err error
 	packages.Visit(initial, nil, func(p *packages.Package) {
+		if p.ExportFile == "" {
+			return
+		}
 		file := p.ExportFile + ".ll"
-		removeFile(file, verbose)
+		err = errors.Join(err, removeFile(file, verbose))
 	})
+	return err
 }
 
-func removeFile(file string, verbose bool) {
+func removeFile(file string, verbose bool) error {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return
+		return nil
 	}
 	if verbose {
 		fmt.Fprintln(os.Stderr, "Remove", file)
 	}
-	os.Remove(file)
+	if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("clean %s: %w", file, err)
+	}
+	return nil
 }

@@ -1,4 +1,4 @@
-//go:build llgo && js && wasm
+//go:build llgo && js && wasm && llgo.wasm.reflect.libffi
 
 package reflect
 

@@ -29,6 +29,13 @@ func pclnSidecarPath(executable string) string {
 	return executable + pclnSidecarSuffix
 }
 
+func dwarfSidecarPath(executable string) string {
+	if strings.HasSuffix(executable, ".wasm") {
+		return strings.TrimSuffix(executable, ".wasm") + ".debug.wasm"
+	}
+	return executable + ".debug.wasm"
+}
+
 func genTempOutputFile(prefix, ext string) (string, error) {
 	tmpFile, err := os.CreateTemp("", prefix+"-*"+ext)
 	if err != nil {
@@ -89,8 +96,8 @@ func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseN
 			// This preserves the information that user specified an output file
 			return baseName, dir
 		}
-		if conf.CompileOnly {
-			// -c without -o: write pkg.test in current directory
+		if conf.CompileOnly || conf.RetainTestBinary {
+			// -c or profiling without -o: write pkg.test in current directory
 			// pkgName for test packages already includes .test suffix
 			return pkgName, "."
 		}
@@ -115,7 +122,7 @@ func implicitExecutionTempPrefix(conf *Config) string {
 	case ModeRun, ModeCmpTest:
 		return "llgo-run-*"
 	case ModeTest:
-		if !conf.CompileOnly {
+		if !conf.CompileOnly && !conf.RetainTestBinary {
 			return "llgo-test-*"
 		}
 	}
@@ -157,19 +164,66 @@ func applyPrefix(baseName string, buildMode BuildMode, target string, goos strin
 	return baseName
 }
 
+func isEmscriptenJSTarget(conf *Config) bool {
+	if conf == nil {
+		return false
+	}
+	if conf.Goos == "js" {
+		return true
+	}
+	switch conf.Target {
+	case "emscripten", "emscripten-memory64", "wasm":
+		return true
+	}
+	return false
+}
+
+func requestedEmscriptenAppExt(outFile string) string {
+	switch ext := filepath.Ext(outFile); ext {
+	case ".js", ".mjs", ".html", ".wasm":
+		return ext
+	default:
+		return ""
+	}
+}
+
+// emscriptenDriverOutput is the path passed to emcc. A .wasm -o still needs JS
+// glue (Fiber, Embind, syscall/js), so emcc is invoked with a sibling .mjs;
+// that also writes the requested .wasm module.
+func emscriptenDriverOutput(conf *Config, output string) string {
+	if output == "" || !isEmscriptenJSTarget(conf) || filepath.Ext(output) != ".wasm" {
+		return output
+	}
+	return strings.TrimSuffix(output, ".wasm") + ".mjs"
+}
+
+func explicitOutputFile(conf *Config, multiPkg bool) bool {
+	if conf == nil || multiPkg || conf.OutFile == "" {
+		return false
+	}
+	if strings.HasSuffix(conf.OutFile, "/") || strings.HasSuffix(conf.OutFile, `\`) || isDir(conf.OutFile) {
+		return false
+	}
+	switch conf.Mode {
+	case ModeBuild, ModeTest:
+	default:
+		return false
+	}
+	if conf.Target == "" {
+		return true
+	}
+	return isEmscriptenJSTarget(conf) && requestedEmscriptenAppExt(conf.OutFile) != ""
+}
+
 // buildOutputPath creates the final output path from baseName, dir and other parameters
 func buildOutputPath(baseName, dir string, conf *Config, multiPkg bool, appExt string) (string, error) {
 	// As with cmd/go, an explicit native -o file name is exact. Default
 	// executable and library suffixes apply only to implicit outputs (or to an
 	// output directory), while named embedded targets retain LLGo's existing
-	// format-specific extension behavior.
-	if conf.Target == "" && !multiPkg && conf.OutFile != "" &&
-		!strings.HasSuffix(conf.OutFile, "/") &&
-		!strings.HasSuffix(conf.OutFile, `\`) && !isDir(conf.OutFile) {
-		switch conf.Mode {
-		case ModeBuild, ModeTest:
-			return conf.OutFile, nil
-		}
+	// format-specific extension behavior. Emscripten is the exception: emcc
+	// selects the product from the requested suffix (.js/.mjs/.html/.wasm).
+	if explicitOutputFile(conf, multiPkg) {
+		return conf.OutFile, nil
 	}
 	baseName = applyPrefix(baseName, conf.BuildMode, conf.Target, conf.Goos)
 
@@ -182,7 +236,7 @@ func buildOutputPath(baseName, dir string, conf *Config, multiPkg bool, appExt s
 		return filepath.Join(dir, baseName+appExt), nil
 	} else if (conf.Mode == ModeBuild && multiPkg) || (conf.Mode != ModeBuild && conf.Mode != ModeInstall && conf.Mode != ModeTest) {
 		return genTempOutputFile(baseName, appExt)
-	} else if conf.Mode == ModeTest && !conf.CompileOnly && conf.OutFile == "" {
+	} else if conf.Mode == ModeTest && !conf.CompileOnly && !conf.RetainTestBinary && conf.OutFile == "" {
 		// Only create temp file for test mode when:
 		// - Not compile-only (-c flag not set)
 		// - No output file specified (-o flag not set)
@@ -219,6 +273,16 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 	details.Out = outputPath
 	if conf.PCLNMode == PCLNExternal {
 		details.PCLN = pclnSidecarPath(details.Out)
+	}
+	if conf.DebugArtifactMode == DebugArtifactExternal {
+		details.DWARF = dwarfSidecarPath(debugWasmModulePath(conf, details.Out))
+	}
+	compressDSYM := conf.Target == "" && conf.Mode != ModeGen && conf.BuildMode != BuildModeCArchive &&
+		conf.LinkOptions.DWARFCompression == DWARFCompressionEnabled && crossCompile.Toolchain.ObjectFormat == crosscompile.ObjectFormatMachO
+	if conf.Goos == "darwin" && (shouldStripNativeSymbols(conf, crossCompile) || compressDSYM) && shouldEmitDebugInfo(conf, crossCompile) {
+		// Stripping with retained DWARF and explicit native compression both
+		// publish an adjacent bundle that cleanup and artifact reports own.
+		details.DSYM = details.Out + ".dSYM"
 	}
 
 	if conf.Target == "" {
@@ -304,6 +368,9 @@ func (details *OutFmtDetails) ToEnvMap() map[string]string {
 	if details.PCLN != "" {
 		envMap["pclntab"] = details.PCLN
 	}
+	if details.DWARF != "" {
+		envMap["dwarf"] = details.DWARF
+	}
 
 	return envMap
 }
@@ -323,11 +390,8 @@ func defaultAppExt(conf *Config) string {
 			return ".so"
 		}
 	case BuildModeExe:
-		if conf.Goos == "js" && conf.OutFile != "" {
-			switch ext := filepath.Ext(conf.OutFile); ext {
-			case ".js", ".mjs":
-				return ext
-			}
+		if ext := requestedEmscriptenAppExt(conf.OutFile); ext != "" && isEmscriptenJSTarget(conf) {
+			return ext
 		}
 		if conf.Target == "" && conf.Goos == "js" &&
 			(conf.Mode == ModeRun || conf.Mode == ModeTest && !conf.CompileOnly) {
@@ -341,8 +405,8 @@ func defaultAppExt(conf *Config) string {
 			switch conf.Target {
 			case "emscripten", "emscripten-memory64", "wasm":
 				// Emscripten uses the requested output suffix to select its
-				// product. ES-module glue is the executable; emcc emits the
-				// sibling .wasm module that it loads.
+				// product. ES-module glue is the default executable; emcc
+				// emits the sibling .wasm module that it loads.
 				return ".mjs"
 			case "wasi", "wasip1":
 				return ".wasm"

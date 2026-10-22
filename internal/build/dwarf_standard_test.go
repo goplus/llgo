@@ -319,12 +319,7 @@ func assertDWARFCoreTypes(t *testing.T, data *dwarf.Data, cu *dwarfNode) {
 	if array.Count != 3 || array.Type.Size() != 2 {
 		t.Errorf("Fixed = count %d, element size %d; want 3 and 2", array.Count, array.Type.Size())
 	}
-	for _, name := range []string{"Lookup", "Queue"} {
-		pointer := unwrapDWARFTypedef(fields[name].Type).(*dwarf.PtrType)
-		if _, ok := pointer.Type.(*dwarf.VoidType); pointer.Type != nil && !ok {
-			t.Errorf("Sample.%s pointee = %T, want void or unspecified", name, pointer.Type)
-		}
-	}
+	assertDWARFRuntimeContainerTypes(t, fields)
 
 	assertDWARFWordStruct(t, "string", fields["Text"].Type, ptrSize, "data", "len")
 	assertDWARFWordStruct(t, "slice", fields["Values"].Type, ptrSize, "data", "len", "cap")
@@ -375,6 +370,92 @@ func assertDWARFCoreTypes(t *testing.T, data *dwarf.Data, cu *dwarfNode) {
 	if _, ok := unwrapDWARFTypedef(recursive.Field[1].Type).(*dwarf.PtrType); !ok {
 		t.Fatalf("Recursive.Next = %T, want pointer", recursive.Field[1].Type)
 	}
+}
+
+func assertDWARFRuntimeContainerTypes(t *testing.T,
+	fields map[string]*dwarf.StructField) {
+	t.Helper()
+	mapPointer := unwrapDWARFTypedef(fields["Lookup"].Type).(*dwarf.PtrType)
+	hash, ok := unwrapDWARFTypedef(mapPointer.Type).(*dwarf.StructType)
+	if !ok {
+		t.Fatalf("Sample.Lookup pointee = %T, want synthesized map struct", mapPointer.Type)
+	}
+	hashFields := dwarfStructFields(hash)
+	for _, name := range []string{"count", "flags", "B", "buckets", "oldbuckets"} {
+		if hashFields[name] == nil {
+			t.Errorf("map runtime field %q not found", name)
+		}
+	}
+	bucketPointer, ok := unwrapDWARFTypedef(hashFields["buckets"].Type).(*dwarf.PtrType)
+	if !ok {
+		t.Fatalf("map buckets type = %T, want pointer", hashFields["buckets"].Type)
+	}
+	bucket, ok := unwrapDWARFTypedef(bucketPointer.Type).(*dwarf.StructType)
+	if !ok {
+		t.Fatalf("map bucket pointee = %T, want struct", bucketPointer.Type)
+	}
+	bucketFields := dwarfStructFields(bucket)
+	for _, name := range []string{"tophash", "keys", "values", "overflow"} {
+		if bucketFields[name] == nil {
+			t.Errorf("map bucket field %q not found", name)
+		}
+	}
+	for _, name := range []string{"tophash", "keys", "values"} {
+		array, ok := unwrapDWARFTypedef(bucketFields[name].Type).(*dwarf.ArrayType)
+		if !ok || array.Count != 8 {
+			t.Errorf("map bucket %s = %T count %d, want [8] array",
+				name, bucketFields[name].Type, arrayCount(array))
+		}
+	}
+	if _, ok := unwrapDWARFTypedef(bucketFields["overflow"].Type).(*dwarf.PtrType); !ok {
+		t.Errorf("map bucket overflow = %T, want pointer", bucketFields["overflow"].Type)
+	}
+
+	channelPointer := unwrapDWARFTypedef(fields["Queue"].Type).(*dwarf.PtrType)
+	channel, ok := unwrapDWARFTypedef(channelPointer.Type).(*dwarf.StructType)
+	if !ok {
+		t.Fatalf("Sample.Queue pointee = %T, want synthesized channel struct", channelPointer.Type)
+	}
+	channelFields := dwarfStructFields(channel)
+	for _, name := range []string{
+		"qcount", "dataqsiz", "buf", "closed", "recvx", "sendq", "recvq",
+	} {
+		if channelFields[name] == nil {
+			t.Errorf("channel runtime field %q not found", name)
+		}
+	}
+	queue, ok := unwrapDWARFTypedef(channelFields["recvq"].Type).(*dwarf.StructType)
+	if !ok {
+		t.Fatalf("channel recvq = %T, want synthesized waitq", channelFields["recvq"].Type)
+	}
+	queueFields := dwarfStructFields(queue)
+	first, ok := unwrapDWARFTypedef(queueFields["first"].Type).(*dwarf.PtrType)
+	if !ok {
+		t.Fatalf("channel recvq.first = %T, want waiter pointer", queueFields["first"].Type)
+	}
+	waiter, ok := unwrapDWARFTypedef(first.Type).(*dwarf.StructType)
+	if !ok {
+		t.Fatalf("channel waiter = %T, want struct", first.Type)
+	}
+	element, ok := unwrapDWARFTypedef(dwarfStructFields(waiter)["elem"].Type).(*dwarf.PtrType)
+	if !ok || element.Type == nil {
+		t.Errorf("channel waiter element = %T, want typed pointer", element)
+	}
+}
+
+func dwarfStructFields(structure *dwarf.StructType) map[string]*dwarf.StructField {
+	fields := make(map[string]*dwarf.StructField, len(structure.Field))
+	for _, field := range structure.Field {
+		fields[field.Name] = field
+	}
+	return fields
+}
+
+func arrayCount(array *dwarf.ArrayType) int64 {
+	if array == nil {
+		return -1
+	}
+	return array.Count
 }
 
 func assertDWARFProgramStructure(t *testing.T, data *dwarf.Data, cu *dwarfNode) {

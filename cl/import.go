@@ -90,6 +90,12 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 	}
 }
 
+// IsCPackage reports whether name selects LLGo's package C export convention.
+// This depends on the declared package name, not its import path.
+func IsCPackage(name string) bool {
+	return name == "C"
+}
+
 // PkgKindOf returns the kind of a package.
 func PkgKindOf(pkg *types.Package) (int, string) {
 	scope := pkg.Scope()
@@ -671,10 +677,8 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		fnName = fn.Name()
 	}
 	if recv != nil {
-		// funcName's pkg is the receiver named type's package for wrappers.
-		// Keep it identical to the receiver package passed by abiUncommonMethods
-		// when it declares the itab target, or definition and reference symbols
-		// will diverge for promoted unexported methods.
+		// Keep ordinary methods and interface metadata on the same symbol,
+		// including the declaring package of promoted unexported methods.
 		if method, ok := fn.Object().(*types.Func); ok {
 			fnName = llssa.MethodSymbolName(pkg, method, fnName)
 			if genmethod.SupportsGenericMethods && genmethod.IsGenericMethod(method.Type()) {
@@ -683,9 +687,19 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 				}
 			}
 		}
-		// Synthesized $thunk/$bound functions have no Object. Their references
-		// are produced through this same funcName path, so the wrapper name is
-		// already internally consistent and needs no declaring-package suffix.
+		// Bound methods and thunks can be emitted in the consuming package.
+		// Preserve the receiver's package when imported types share a name.
+		if strings.HasSuffix(name, "$bound") || strings.HasSuffix(name, "$thunk") {
+			if named := recvNamedOk(recv.Type()); named != nil && named.Obj().Pkg() != nil {
+				recvPath := llssa.PathOf(named.Obj().Pkg())
+				if recvPath != llssa.PathOf(pkg) {
+					prefix := recvPath + "."
+					if !strings.HasPrefix(fnName, prefix) {
+						fnName = prefix + fnName
+					}
+				}
+			}
+		}
 	}
 	return llssa.FuncName(pkg, fnName, recv, org)
 }
@@ -710,10 +724,10 @@ func cgoIgnored(fnName string) bool {
 
 const (
 	ignoredFunc = iota
-	goFunc      = int(llssa.InGo)
-	cFunc       = int(llssa.InC)
-	pyFunc      = int(llssa.InPython)
-	stdcallFunc = int(llssa.InStdcall)
+	goFunc      = int(llssa.GoDecl)
+	cFunc       = int(llssa.CDecl)
+	pyFunc      = int(llssa.PyDecl)
+	stdcallFunc = int(llssa.Stdcall)
 	llgoInstr   = -1
 
 	llgoInstrBase   = 0x80
@@ -781,6 +795,7 @@ const (
 	llgoFloat64FromBits    = llgoInstrBase + 0x4b
 	llgoFloat64Bits        = llgoInstrBase + 0x4c
 	llgoUMulOverflow       = llgoInstrBase + 0x4d
+	llgoSIMD               = llgoInstrBase + 0x4e
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -878,6 +893,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		}
 		return pkg, v, goFunc
 	}
+	if _, ok := p.simdOperation(fn); ok {
+		return nil, "simd", llgoInstr
+	}
 	// Stdlib compiler intrinsics that are defined as `panic("intrinsic")` in
 	// source form. LLGo doesn't run Go escape analysis, so we can lower these to
 	// a no-op.
@@ -908,9 +926,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 
 const (
 	ignoredVar = iota
-	goVar      = int(llssa.InGo)
-	cVar       = int(llssa.InC)
-	pyVar      = int(llssa.InPython)
+	goVar      = int(llssa.GoDecl)
+	cVar       = int(llssa.CDecl)
+	pyVar      = int(llssa.PyDecl)
 )
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
@@ -918,6 +936,9 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 	// TODO(lijie): need a bettery way to process linkname (maybe alias)
 	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
 		if v, ok := p.prog.Linkname(name); ok {
+			if strings.HasPrefix(v, "C.") {
+				return v[2:], cVar, false
+			}
 			if strings.HasPrefix(v, "stdcall.") {
 				panic(fmt.Errorf("stdcall linkname namespace applies only to functions: %s", name))
 			}
@@ -954,7 +975,7 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {
-		ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.Background(vtype))
+		ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.CallConv(vtype))
 	}
 	return ret.Expr
 }
@@ -1004,6 +1025,7 @@ func ParsePkgSyntaxWithOptions(prog llssa.Program, fset *token.FileSet, pkg *typ
 	}
 	ctx := &context{prog: prog, options: options}
 	pkgPath := llssa.PathOf(pkg)
+	cPkg := IsCPackage(pkg.Name())
 	aliases := receiverAliases(files)
 	syms := make(map[string]string)
 	linkDocs := make(map[*ast.CommentGroup]bool)
@@ -1029,7 +1051,7 @@ func ParsePkgSyntaxWithOptions(prog llssa.Program, fset *token.FileSet, pkg *typ
 				if err != nil {
 					return err
 				}
-				if !hasLinkname && pkg.Name() == "C" && decl.Recv == nil && token.IsExported(inPkgName) {
+				if !hasLinkname && cPkg && decl.Recv == nil && token.IsExported(inPkgName) {
 					exportName := strings.TrimPrefix(inPkgName, "X")
 					prog.SetLinkname(fullName, exportName)
 					prog.SetPackageExport(fullName, exportName)
@@ -1066,7 +1088,9 @@ func ParsePkgSyntaxWithOptions(prog llssa.Program, fset *token.FileSet, pkg *typ
 					return err
 				}
 				if decl.Tok == token.TYPE {
-					handleTypeDecl(prog, pkg, decl)
+					if err := handleTypeDecl(prog, fset, pkg, decl); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -1095,43 +1119,101 @@ func validateInternalDirectives(fset *token.FileSet, pkgPath string, files []*as
 	return nil
 }
 
-func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
-	if len(decl.Specs) == 1 {
-		if bg := typeBackground(decl.Doc); bg != "" {
-			inPkgName := decl.Specs[0].(*ast.TypeSpec).Name.Name
-			prog.SetTypeBackground(pkg.Path()+"."+inPkgName, toBackground(bg))
-		}
+func handleTypeDecl(prog llssa.Program, fset *token.FileSet, pkg *types.Package, decl *ast.GenDecl) error {
+	cc, err := typeCallConv(fset, decl.Doc)
+	if err != nil {
+		return err
 	}
+	if cc.bg == "" {
+		return nil
+	}
+	if len(decl.Specs) != 1 {
+		return fmt.Errorf("%s: %s applies to a single type declaration, not a grouped type block", fset.Position(cc.pos), cc.name)
+	}
+	spec, ok := decl.Specs[0].(*ast.TypeSpec)
+	if !ok {
+		return fmt.Errorf("%s: %s applies to a type declaration", fset.Position(cc.pos), cc.name)
+	}
+	// Emit the deprecation warning only after placement is validated, so an
+	// invalid use of a deprecated directive reports the placement error without
+	// also suggesting a replacement that would be equally invalid.
+	if cc.replacement != "" {
+		fmt.Fprintf(os.Stderr, "DEPRECATED: %s is deprecated at %s; use %s instead\n", cc.name, fset.Position(cc.pos), cc.replacement)
+	}
+	prog.SetTypeCallConv(pkg.Path()+"."+spec.Name.Name, toCallConv(cc.bg))
+	return nil
 }
 
+// Directive names, normalized by the directive package (the "//" / "// "
+// prefix and any arguments are stripped). These identify directive spellings;
+// they are distinct from the background values ("C" / "stdcall") they map to.
 const (
-	llgotype  = "//llgo:type "
-	llgotype2 = "// llgo:type "
+	nameType    = "llgo:type"
+	nameCdecl   = "llgo:cdecl"
+	nameStdcall = "llgo:stdcall"
 )
 
-func typeBackground(doc *ast.CommentGroup) (bg string) {
-	if doc != nil {
-		if n := len(doc.List); n > 0 {
-			line := doc.List[n-1].Text
-			if strings.HasPrefix(line, llgotype) {
-				return strings.TrimSpace(line[len(llgotype):])
-			}
-			if strings.HasPrefix(line, llgotype2) {
-				return strings.TrimSpace(line[len(llgotype2):])
-			}
-		}
-	}
-	return
+// callConv is the calling-convention directive resolved for a type declaration.
+type callConv struct {
+	bg          string    // normalized background value: "C", "stdcall", or ""
+	name        string    // human-readable directive spelling for diagnostics
+	pos         token.Pos // position of the directive comment
+	replacement string    // non-empty when the directive is deprecated: the spelling to use instead
 }
 
-func toBackground(bg string) llssa.Background {
-	switch bg {
-	case "C":
-		return llssa.InC
-	case "stdcall":
-		return llssa.InStdcall
+// typeCallConv scans doc for calling-convention directives on a type
+// declaration. It recognizes the new //llgo:cdecl and //llgo:stdcall forms as
+// well as the deprecated //llgo:type C / //llgo:type stdcall forms. For the
+// deprecated forms it records the replacement spelling in the returned
+// callConv; the caller emits the deprecation warning only once placement is
+// validated. More than one calling-convention directive on the same
+// declaration is reported as an error.
+func typeCallConv(fset *token.FileSet, doc *ast.CommentGroup) (cc callConv, err error) {
+	seen := false
+	for _, d := range directive.ParseGroup(doc) {
+		var bg, name, replacement string
+		switch d.Name {
+		case nameCdecl:
+			if d.Args != "" {
+				return cc, fmt.Errorf("%s: //llgo:cdecl does not accept arguments", fset.Position(d.Pos))
+			}
+			bg, name = "C", "//llgo:cdecl"
+		case nameStdcall:
+			if d.Args != "" {
+				return cc, fmt.Errorf("%s: //llgo:stdcall does not accept arguments", fset.Position(d.Pos))
+			}
+			bg, name = "stdcall", "//llgo:stdcall"
+		case nameType:
+			// //llgo:type has other forms beyond the two calling-convention
+			// values; only C and stdcall are affected by this task.
+			switch d.Args {
+			case "C":
+				bg, name, replacement = "C", "//llgo:type C", "//llgo:cdecl"
+			case "stdcall":
+				bg, name, replacement = "stdcall", "//llgo:type stdcall", "//llgo:stdcall"
+			default:
+				continue
+			}
+		default:
+			continue
+		}
+		if seen {
+			return cc, fmt.Errorf("%s: conflicting calling-convention directives on one type: %s and %s", fset.Position(d.Pos), cc.name, name)
+		}
+		cc = callConv{bg: bg, name: name, pos: d.Pos, replacement: replacement}
+		seen = true
 	}
-	return llssa.InGo
+	return cc, nil
+}
+
+func toCallConv(cc string) llssa.CallConv {
+	switch cc {
+	case "C":
+		return llssa.CDecl
+	case "stdcall":
+		return llssa.Stdcall
+	}
+	return llssa.GoDecl
 }
 
 // -----------------------------------------------------------------------------

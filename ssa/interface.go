@@ -179,7 +179,7 @@ func (b Builder) imethod(intf Expr, method *types.Func, recoverToken bool) Expr 
 			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
 		}
 	}
-	tclosure := prog.Type(sig, InGo)
+	tclosure := prog.Type(sig, GoDecl)
 	i := iMethodOf(rawIntf, method)
 	b.recordUseIfaceMethod(rawIntf, i)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
@@ -230,7 +230,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
 	dbgInstrf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	if x.kind == vkFuncDecl {
-		typ := b.Prog.Type(x.raw.Type, InGo)
+		typ := b.Prog.Type(x.raw.Type, GoDecl)
 		x = checkExpr(x, typ.raw.Type, b)
 	}
 	prog := b.Prog

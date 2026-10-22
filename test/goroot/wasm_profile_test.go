@@ -3,6 +3,7 @@ package goroot
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -27,7 +28,7 @@ func selectGOROOTWasmProfile(name string) (gorootWasmProfile, bool, error) {
 	case "J64-Emscripten":
 		return gorootWasmProfile{name: name, target: "emscripten-memory64", goos: "js", llgoSuffix: ".mjs", runner: "emscripten-memory64-runner.mjs"}, true, nil
 	case "W32-WASI":
-		return gorootWasmProfile{name: name, target: "wasi", goos: "wasip1", llgoSuffix: ".wasm", runner: "wasmtime"}, true, nil
+		return gorootWasmProfile{name: name, target: "wasi", goos: "wasip1", llgoSuffix: ".wasm", runner: "wasmer"}, true, nil
 	case "J32-GoJS":
 		return gorootWasmProfile{name: name, goos: "js", llgoSuffix: ".mjs", runner: "emscripten-runner.mjs", browserOnly: true}, true, nil
 	default:
@@ -61,10 +62,8 @@ func gorootTargetEnv(env []string) []string {
 func gorootRuntimeEnv(env []string) []string {
 	out := gorootTargetEnv(env)
 	if _, ok := activeGOROOTWasmProfile(); ok {
-		// Official Go's current js/wasm and wasip1/wasm ports do not create
-		// operating-system threads. These profiles intentionally exercise the
-		// same single-worker contract in LLGo while the native driver and the
-		// compiler may continue to use the CI job's wider GOMAXPROCS setting.
+		// Keep the official Go baseline deterministic. The LLGo pthread backend
+		// uses Wasmer and can still create Ms.
 		out = upsertEnv(out, "GOMAXPROCS=1")
 	}
 	return out
@@ -92,8 +91,31 @@ func gorootBuildArgs(llgo bool, flags []string, output, target string) []string 
 			args = append(args, "-target", p.target)
 		}
 	}
-	args = append(args, flags...)
+	for i := 0; i < len(flags); i++ {
+		// These gc backend controls stay on the official Go baseline;
+		// LLVM runs the same source assertions with its own backend.
+		// Keep other payloads intact so unsupported options still fail.
+		if payload, ok := strings.CutPrefix(flags[i], "-gcflags="); llgo && ok && gorootGCBackendOnlyFlags(payload) {
+			continue
+		}
+		if (flags[i] == "-gcflags" || flags[i] == "-tags" || flags[i] == "-ldflags") && i+1 < len(flags) {
+			if !llgo || flags[i] != "-gcflags" || !gorootGCBackendOnlyFlags(flags[i+1]) {
+				args = append(args, flags[i], flags[i+1])
+			}
+			i++
+			continue
+		}
+		args = append(args, flags[i])
+	}
 	return append(args, "-o", output, target)
+}
+
+func gorootGCBackendOnlyFlags(payload string) bool {
+	switch payload {
+	case "-l=4", "-d=ssa/check/on", "-d=softfloat", "-d=checkptr", "all=-d=checkptr":
+		return true
+	}
+	return false
 }
 
 func envEntry(env []string, key string) string {
@@ -119,6 +141,31 @@ func gorootArtifactCommand(dir, artifact string, llgo bool, env []string, progra
 	if !ok {
 		return artifact, programArgs, env, nil
 	}
+	if p.runner == "wasmer" {
+		cwd, err := filepath.Abs(dir)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("resolve Wasmer working directory: %w", err)
+		}
+		args := gorootWASIArgs(cwd, os.TempDir(), artifact, runtime.GOOS == "windows")
+		// Source-tree tests such as winbatch.go read runtime.GOROOT(). WASI
+		// guests need that directory preopened in addition to their workdir.
+		if goroot := envEntry(env, "GOROOT"); goroot != "" {
+			volume, guest := goroot, goroot
+			if runtime.GOOS == "windows" {
+				volume, guest = goroot+":/goroot", "/goroot"
+			}
+			args = append([]string{"run", "--volume=" + volume, "--env=GOROOT=" + guest}, args[1:]...)
+		}
+		// Wasmer does not inherit the host environment into the WASI guest.
+		// Keep PATH explicit, as in the public runner, so both baselines see it.
+		if path := envEntry(env, "PATH"); path != "" {
+			args = append([]string{"run", "--env=PATH=" + path}, args[1:]...)
+		}
+		// Suppress engine tracing at its source while preserving the module
+		// cache and guest stdout/stderr, including log-shaped guest output.
+		runEnv := upsertEnv(gorootRuntimeEnv(env), "RUST_LOG=off")
+		return "wasmer", append(args, programArgs...), runEnv, nil
+	}
 	if !llgo {
 		goroot := envEntry(env, "GOROOT")
 		if goroot == "" {
@@ -131,14 +178,10 @@ func gorootArtifactCommand(dir, artifact string, llgo bool, env []string, progra
 	if root == "" {
 		return "", nil, nil, errors.New("target LLGo execution requires LLGO_ROOT")
 	}
-	if p.runner == "wasmtime" {
-		args := []string{"run", "-W", "exceptions=y", "--dir=."}
-		args = append(args, artifact)
-		args = append(args, programArgs...)
-		return "wasmtime", args, gorootRuntimeEnv(env), nil
-	}
 	runner := filepath.Join(root, "targets", p.runner)
-	args := []string{runner}
+	// Match Go's go_js_wasm_exec wrapper: the default 984 KiB V8 stack
+	// cannot run deep-recursion cases such as stackobj2.go.
+	args := []string{"--stack-size=8192", runner}
 	if p.browserOnly {
 		args = append(args, "--browser-only")
 	}
@@ -155,4 +198,17 @@ func gorootWasmCaseBuildFlags(casePath string, flags []string) []string {
 		return append(append([]string(nil), flags...), "-goroutine-stack-size=8MB")
 	}
 	return flags
+}
+
+// gorootWASIArgs applies the same host directory contract as the
+// public WASI runner. The host is explicit so both contracts can be tested.
+func gorootWASIArgs(cwd, tempDir, artifact string, windows bool) []string {
+	workVolume, tempVolume, guestCwd := cwd, "/tmp", cwd
+	if windows {
+		// Map drive-letter paths to POSIX guest names, including Go's default
+		// temporary directory. Wasmer selects its available backend itself.
+		workVolume, tempVolume, guestCwd = cwd+":/work", tempDir+":/tmp", "/work"
+	}
+	return []string{"run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576",
+		"--volume=" + workVolume, "--volume=" + tempVolume, "--env=PWD=" + guestCwd, artifact, "--"}
 }

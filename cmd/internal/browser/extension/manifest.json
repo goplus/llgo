@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "LLGo WebAssembly Debugger",
+  "version": "0.1.0",
+  "description": "Source and runtime presentation for LLGo WebAssembly DWARF",
+  "devtools_page": "devtools.html",
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ]
+}

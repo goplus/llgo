@@ -13,6 +13,7 @@ import (
 )
 
 func TestFullChildCommandProfiles(t *testing.T) {
+	t.Setenv("LLGO_WASI_THREADS", "")
 	for _, name := range []string{"J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI", "GoJS-reference", "GoWASI-reference"} {
 		p, err := fullProfile(name)
 		if err != nil {
@@ -35,13 +36,37 @@ func TestFullChildCommandProfiles(t *testing.T) {
 				t.Fatalf("%s must use the official Go host helper: %+v", name, cmd)
 			}
 		case p.Target == "wasi":
-			if !slices.Contains(cmd.Args, "wasmtime") || !slices.Contains(cmd.Args, "exceptions=y") {
+			if !slices.Contains(cmd.Args, "wasmer") || !slices.Contains(cmd.Args, "--enable-exceptions") {
 				t.Fatalf("%s missing WASI runner: %+v", name, cmd)
 			}
 		default:
 			if !slices.Contains(cmd.Args, "node") || !strings.Contains(joined, "emscripten") {
 				t.Fatalf("%s missing JS runner: %+v", name, cmd)
 			}
+			want := []string{"--kill-after=10s", "30s", "node", filepath.Join("/repo", "targets", "emscripten-runner.mjs")}
+			if name == "J32-GoJS" {
+				want = append(want, "--browser-only")
+			} else if name == "J64-Emscripten" {
+				want[3] = filepath.Join("/repo", "targets", "emscripten-memory64-runner.mjs")
+			}
+			want = append(want, "/compiled-test", "-llgo.caller-panic-child")
+			if !slices.Equal(cmd.Args, want) {
+				t.Fatalf("%s child command = %v, want %v", name, cmd.Args, want)
+			}
+		}
+	}
+}
+
+func TestFullChildCommandWASIThreads(t *testing.T) {
+	t.Setenv("LLGO_WASI_THREADS", "1")
+	p, err := fullProfile("W32-WASI")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := fullPanicCommand(p, "/repo", "/goroot", "/compiled-test")
+	for _, want := range []string{"wasmer", "--enable-exceptions", "--enable-simd", "--volume=/tmp", "/compiled-test"} {
+		if !slices.Contains(cmd.Args, want) {
+			t.Fatalf("threaded W32 child command missing %q: %+v", want, cmd)
 		}
 	}
 }

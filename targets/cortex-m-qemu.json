@@ -6,5 +6,6 @@
 	"extra-files": [
 		"targets/cortex-m-qemu.s"
 	],
-	"emulator": "qemu-system-arm -machine lm3s6965evb -semihosting -nographic -kernel {}"
+	"emulator": "qemu-system-arm -machine lm3s6965evb -semihosting -nographic -kernel {}",
+	"debug-server": "qemu-system-arm -machine lm3s6965evb -semihosting -nographic -serial null -monitor none -S -gdb {debug-stdio} -kernel {}"
 }

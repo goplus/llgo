@@ -25,43 +25,33 @@ without `-target` on Darwin/Linux amd64/arm64. `ModeGen`, `c-archive`,
 
 The policy is deliberately separate from Go's `-ldflags=-s` and `-w`:
 
-- LLGo temporarily omits DWARF by default because the existing DI path is not
-  yet safe for broad use. `-w=false` explicitly enables it; `-w` explicitly
-  omits it.
+- Native executable and archive builds preserve DWARF by default. As with
+  cmd/link, Darwin `c-shared` defaults to omitting DWARF. `-w=false` explicitly
+  preserves it and `-w` explicitly omits it.
+- Wasm and named embedded targets retain their default omission policy.
+  `-w=false` enables metadata when the selected target supports it.
 - `-s` records native symbol-table omission intent and implies `-w` unless
-  `-w` is explicitly set; the explicit `-w` value wins regardless of argument
-  order. Native symbol-table deletion remains a later phase.
-- `-pclntab` controls LLGo runtime symbolization metadata.
+  `-w` is explicitly set; the explicit value wins regardless of argument order.
+- `-pclntab` controls LLGo runtime symbolization metadata independently.
 
-The explicit `-w` semantics above are Go-compatible, but the temporary
-DWARF-free default is not: Go behaves as if `-w=false` when the flag is absent.
-LLGo currently behaves as if `-w=true`; explicit `-w=false` overrides that
-default. Once the dedicated DI fixes make broad DWARF use safe, the default can
-be changed without changing flag parsing or backend precedence.
+`ModeGen` remains DWARF-free by default and emits it only for an explicit
+`-w=false`. Fixed targets that always omit DWARF reject preservation; backends
+without an omit capability reject omission. Archives do not have a final
+linker step: `-w` controls their compiled members.
 
-`ModeGen` remains DWARF-free by default and emits DWARF only when `-w=false`
-is explicitly requested and supported.
-Effective DWARF omission (`-w`, or bare `-s`) is rejected for `c-archive` and
-`c-shared`. Fixed targets that always omit DWARF reject `-w=false`, while
-backends without an omit capability reject `-w`. Because native `-s`
-stripping is not implemented yet, `-s -w=false` does not strip shared or
-archive outputs.
-
+Use `-O0` for stable parameter and local-variable homes. Optimized builds run
+LLVM and C ABI lowering while retaining source metadata; debugger variables
+can still be optimized out. At O0, C ABI lowering preserves authoritative
+aggregate homes so assignments and declarations agree. Optimized builds retain
+parameter-home reuse even when DWARF is enabled.
 The former `LLGO_DEBUG` and `LLGO_DEBUG_SYMBOLS` environment switches are not
-part of this policy. Use `-w=false` to retain DWARF, `-w` to omit it,
-and `-O0` when a debugger-friendly unoptimized build is required.
+part of this policy.
 
-This change deliberately reuses LLGo's existing runnable DWARF path; it does
-not repair or redesign the debug metadata implementation. That path currently
-disables LLGo's LLVM and C ABI optimization steps while emitting DWARF, so
-`-w` can still affect optimization in addition to artifact metadata. Go's
-optimization-independent DWARF behavior requires a separate implementation
-PR and is explicitly out of scope here.
-
-Broad CI uses the DWARF-free default until the corresponding DI limitations
-are fixed. Targeted native integration, the debug IR fixture, and the full
-LLDB suite explicitly select `-w=false` to protect the currently supported
-runnable path.
+The build tests verify default DWARF. The LLDB suite verifies O0 parameter
+updates and mixed Go/C callbacks; the native acceptance suite verifies runtime
+panic source locations and O2 inline frames. Darwin
+cold and warm cache builds both use persistent archive paths in their debug
+maps, and runtime PC-line anchors remain present when DWARF is enabled.
 
 Consequently all combinations are meaningful. For example,
 `-ldflags=-s -pclntab=embedded` keeps Go-compatible runtime symbolization,
@@ -93,8 +83,8 @@ existing `-gcflags` frontend subset (`-lang`, `-N`, and `-l`) is separate.
 
 IR golden tests remain non-debug unless a fixture explicitly selects
 `-w=false`, so their `CHECK-NEXT` fixtures continue to describe stable LLVM IR
-and do not depend on the provisional DI implementation. Native integration
-and LLDB suites exercise the explicit-DWARF executable path separately.
+and do not depend on incidental debug metadata. Native integration and LLDB
+suites exercise both default and explicit-DWARF executable paths.
 
 `internal/build` validates the selected target, enables compiler metadata,
 coordinates link finalization, and owns output paths. `internal/pclnpost`
@@ -135,11 +125,12 @@ a later native-strip mutation is added.
 sites are not produced. `-pclntab=embedded` keeps the existing post-link
 prebuilt-table rewrite.
 
-Darwin embedded builds that emit DWARF keep the historical site-free path so
-inline PC anchors do not disturb LLDB lexical scopes. Linux retains sites with
-DWARF because most Go symbols are intentionally absent from ELF `.dynsym`, so
-`dlsym` alone cannot reconstruct every function entry. External mode needs
-the final-PC sites on both platforms before it can construct the sidecar.
+Darwin builds with embedded pclntab and DWARF suppress function-entry address
+sites, whose inline assembly disturbs LLDB's initial lexical scope. PC-line
+anchors retain precise runtime source locations and carry no debug location.
+Linux and Windows retain entry sites because they cannot reconstruct every
+function address through a dynamic symbol lookup. External mode retains both
+categories to construct the sidecar.
 
 ## Sidecar identity and addressing
 

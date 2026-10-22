@@ -1,0 +1,122 @@
+name: Setup GDB
+# Keep the debugger's rolling MSYS2 dependencies isolated from the pinned
+# compiler/LLDB installation. Only the absolute executable path is exported.
+description: Install Python-enabled multiarch GDB without changing the compiler toolchain
+outputs:
+  path:
+    description: Absolute path to the Python-enabled GDB executable
+    value: ${{ steps.windows.outputs.path || steps.unix.outputs.path }}
+runs:
+  using: composite
+  steps:
+    - name: Install Linux GDB
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y gdb-multiarch
+
+    - name: Install macOS GDB
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        # Intel runners retain bottled versions from their image; refreshing
+        # metadata can force a source build on this Homebrew Tier 3 host.
+        HOMEBREW_NO_AUTO_UPDATE: "1"
+        HOMEBREW_NO_INSTALL_UPGRADE: "1"
+      run: brew list --versions gdb || brew install gdb
+
+    - name: Export Unix GDB
+      if: runner.os != 'Windows'
+      id: unix
+      shell: bash
+      run: |
+        set -euo pipefail
+        gdb_path="$(command -v gdb-multiarch || command -v gdb)"
+        "$gdb_path" --version
+        "$gdb_path" --batch --nx -ex 'python import json; print("GDB Python ready")'
+        echo "path=$gdb_path" >> "$GITHUB_OUTPUT"
+        echo "LLGO_GDB=$gdb_path" >> "$GITHUB_ENV"
+
+    - name: Initialize isolated Windows GDB environment
+      if: runner.os == 'Windows'
+      id: msys2
+      uses: msys2/setup-msys2@v2
+      env:
+        __SETUP_MSYS2_USE_MAIN_MIRROR_ONLY: "true"
+      with:
+        location: ${{ runner.temp }}/llgo-gdb-msys2
+        msystem: ${{ runner.arch == 'ARM64' && 'CLANGARM64' || 'CLANG64' }}
+        path-type: minimal
+        update: false
+        # Cache dependency downloads below instead of bootstrap packages.
+        # Avoid Bash-based pruning, which has failed intermittently on ARM64.
+        cache: false
+
+    - name: Cache Windows GDB packages
+      uses: actions/cache@v6
+      if: runner.os == 'Windows'
+      with:
+        path: ${{ steps.msys2.outputs.msys2-location }}/var/cache/pacman/pkg
+        key: llgo-msys2-gdb-${{ runner.arch }}-${{ github.run_id }}
+        restore-keys: |
+          llgo-msys2-gdb-${{ runner.arch }}-
+
+    - name: Populate Windows GDB package trust
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        set -euo pipefail
+        # MSYS2's first-login script ignores a failed --populate operation.
+        # Require trusted package keys before the first package transaction.
+        pacman-key --populate msys2
+
+    - name: Upgrade Windows GDB core packages
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        GDB_MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+      run: |
+        $ErrorActionPreference = "Stop"
+        # First pass of the two-pass MSYS2 upgrade. The install step below
+        # completes the remaining upgrade in a fresh shell after this pass.
+        # A runtime upgrade deliberately terminates its MSYS2 shell. Capture
+        # that specific shutdown; every other package failure remains fatal.
+        & msys2 -c 'set -o pipefail; LC_ALL=C pacman --noconfirm -Syu 2>&1 | tee /var/log/llgo-gdb-core-update.log'
+        $status = $LASTEXITCODE
+        if ($status -ne 0) {
+          $log = Get-Content -Raw (Join-Path $env:GDB_MSYS2_ROOT "var/log/llgo-gdb-core-update.log")
+          if ($status -ne 1 -or $log -notmatch 'To complete this update all MSYS2 processes including this terminal will be closed' -or $log -match '(?m)^error:') {
+            throw "MSYS2 core upgrade failed: $status"
+          }
+          exit 0
+        }
+
+    - name: Install Windows GDB packages
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      env:
+        GDB_PACKAGE: ${{ runner.arch == 'ARM64' && 'mingw-w64-clang-aarch64-gdb-multiarch' || 'mingw-w64-clang-x86_64-gdb-multiarch' }}
+      run: |
+        set -euo pipefail
+        # A core upgrade can terminate its MSYS2 shell. Complete the upgrade
+        # in a fresh process before installing the debugger.
+        pacman --noconfirm -Syu
+        pacman --noconfirm -S --needed "$GDB_PACKAGE"
+
+    - name: Export Windows GDB
+      if: runner.os == 'Windows'
+      id: windows
+      shell: pwsh
+      env:
+        GDB_MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+      run: |
+        $ErrorActionPreference = "Stop"
+        $subdir = if ("${{ runner.arch }}" -eq "ARM64") { "clangarm64" } else { "clang64" }
+        $gdb = Join-Path $env:GDB_MSYS2_ROOT "$subdir/bin/gdb-multiarch.exe"
+        # Python belongs to this GDB installation, not the LLVM LLDB runtime.
+        Remove-Item Env:PYTHONHOME, Env:PYTHONPATH -ErrorAction SilentlyContinue
+        & $gdb --version
+        if ($LASTEXITCODE -ne 0) { throw "GDB version probe failed: $LASTEXITCODE" }
+        & $gdb --batch --nx -ex 'python import json; print("GDB Python ready")'
+        if ($LASTEXITCODE -ne 0) { throw "GDB Python probe failed: $LASTEXITCODE" }
+        "path=$gdb" >> $env:GITHUB_OUTPUT
+        "LLGO_GDB=$gdb" >> $env:GITHUB_ENV

@@ -17,6 +17,8 @@ func TestParse(t *testing.T) {
 		{text: "//go:noinline", name: "go:noinline", ok: true},
 		{text: "//llgointernal:tls", name: "llgointernal:tls", ok: true},
 		{text: "// llgo:type C", name: "llgo:type", args: "C", ok: true},
+		{text: "//llgo:cdecl", name: "llgo:cdecl", ok: true},
+		{text: "// llgo:stdcall", name: "llgo:stdcall", ok: true},
 		{text: "//llgo:link\tF C.f", name: "llgo:link", args: "F C.f", ok: true},
 		{text: "//export F", name: "export", args: "F", ok: true},
 	}

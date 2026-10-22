@@ -47,6 +47,24 @@ func TestTracebackFrameUnknown(t *testing.T) {
 	}
 }
 
+func TestTracebackFrameEntryArguments(t *testing.T) {
+	for _, name := range []string{"main.main", "runtime.main", "runtime.goexit"} {
+		t.Run(name, func(t *testing.T) {
+			got := string(AppendFrame(nil, Frame{Function: name, File: "main.go", Line: 27}))
+			if want := name + "()\n\tmain.go:27\n"; got != want {
+				t.Fatalf("got %q, want %q", got, want)
+			}
+		})
+	}
+	// A method or closure with a similar name may still have arguments.
+	for _, name := range []string{"main.main.func1", "main.(*T).main", "example.main"} {
+		got := string(AppendFrame(nil, Frame{Function: name, File: "main.go", Line: 27}))
+		if want := name + "(...)\n\tmain.go:27\n"; got != want {
+			t.Fatalf("got %q, want %q", got, want)
+		}
+	}
+}
+
 func TestAppendNumbers(t *testing.T) {
 	maxInt := int(^uint(0) >> 1)
 	for _, v := range []int{0, 1, -1, 100, -100, maxInt, -maxInt - 1} {

@@ -197,7 +197,10 @@ static int dynunw_resolve(void)
     dynunw_reg_fp = 6;  /* UNW_X86_64_RBP */
 #else
     static const char *pfx = "_ULaarch64_";
-    dynunw_reg_ip = 32; /* UNW_AARCH64_PC */
+    /* nongnu's UNW_REG_IP aliases X30: unw_get_reg returns the cursor's
+     * current IP for that alias. UNW_AARCH64_PC reads the original context
+     * PC instead and would repeat the fault address for every frame. */
+    dynunw_reg_ip = 30; /* UNW_REG_IP / UNW_AARCH64_X30 */
     dynunw_reg_fp = 29; /* UNW_AARCH64_X29 */
 #endif
     /* 1) nongnu libunwind: arch-prefixed local-only symbols; ucontext in;

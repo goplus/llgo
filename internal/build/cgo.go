@@ -201,17 +201,31 @@ func genExternDeclsByClang(compiler *llclang.Cmd, pkg *aPackage, src string, cfl
 	var toRemove []string
 	for cgoName, symbolName := range cgoSymbols {
 		if strings.HasPrefix(symbolName, "__cgo_") {
-			gofuncName := strings.Replace(cgoName, ".__cgo_", ".", 1)
-			gofn := pkg.LPkg.FuncOf(gofuncName)
-			cgoVar := pkg.LPkg.VarOf(cgoName)
-			if gofn != nil {
-				cgoVar.ReplaceAllUsesWith(gofn.Expr)
-			} else {
-				cfuncName := symbolName[len("__cgo_"):]
-				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InC)
-				cgoVar.ReplaceAllUsesWith(cfn.Expr)
-			}
+			// These globals are generated address placeholders, not C storage.
+			// Delete them after replacement so DWARF cannot retain a relocation
+			// to their undefined symbols. Alternate cgo files may revisit them.
 			toRemove = append(toRemove, cgoName)
+			if pkg.LPkg.VarOf(cgoName) == nil {
+				continue
+			}
+			gofuncName := strings.Replace(cgoName, ".__cgo_", ".", 1)
+			cfuncName := symbolName[len("__cgo_"):]
+			gofn := pkg.LPkg.FuncOf(gofuncName)
+			// C takes the address of the public export, whose final-link wrapper
+			// registers foreign threads. A same-named Go implementation (or a
+			// private Go function shadowing a renamed export) must not bypass it.
+			for _, exportName := range pkg.LPkg.ExportFuncs() {
+				if exportName == cfuncName {
+					gofn = pkg.LPkg.FuncOf(cfuncName)
+					break
+				}
+			}
+			if gofn != nil {
+				pkg.LPkg.ReplaceVarWith(cgoName, gofn.Expr)
+			} else {
+				cfn := pkg.LPkg.NewFunc(cfuncName, types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.CDecl)
+				pkg.LPkg.ReplaceVarWith(cgoName, cfn.Expr)
+			}
 		} else {
 			usePtr := ""
 			if symbolNames[symbolName] {

@@ -31,12 +31,12 @@ func TestDeferInLoopIR(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("foo", "foo")
 
-	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 
@@ -65,7 +65,7 @@ func TestDeferAtomicInLoopIR(t *testing.T) {
 	int64PtrType := types.NewPointer(types.Typ[types.Int64])
 	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", int64PtrType))
 	IntPtrArgSig := types.NewSignatureType(nil, nil, nil, params, nil, false)
-	fn := pkg.NewFunc("main", IntPtrArgSig, ssa.InGo)
+	fn := pkg.NewFunc("main", IntPtrArgSig, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 
@@ -98,12 +98,12 @@ func TestDeferInLoopMaterializesArgsBeforeFree(t *testing.T) {
 
 	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Int64]))
 	int64ArgSig := types.NewSignatureType(nil, nil, nil, params, nil, false)
-	callee := pkg.NewFunc("callee", int64ArgSig, ssa.InGo)
+	callee := pkg.NewFunc("callee", int64ArgSig, ssa.GoDecl)
 	cb := callee.MakeBody(1)
 	cb.Return()
 	cb.EndBuild()
 
-	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	fn.SetRecover(fn.MakeBlock())
 

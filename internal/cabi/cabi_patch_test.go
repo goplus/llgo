@@ -2,6 +2,7 @@ package cabi
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -10,6 +11,71 @@ import (
 	llssa "github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
+
+func TestTransformModuleSkipsLLVMScalableIntrinsic(t *testing.T) {
+	const childEnv = "LLGO_CABI_SCALABLE_INTRINSIC_TEST_CHILD"
+	if os.Getenv(childEnv) != "1" {
+		cmd := exec.Command(os.Args[0], "-test.run=^TestTransformModuleSkipsLLVMScalableIntrinsic$")
+		cmd.Env = append(os.Environ(), childEnv+"=1")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("C ABI transformer crashed on an LLVM scalable intrinsic: %v\n%s", err, output)
+		}
+		return
+	}
+
+	const testIR = `
+declare void @llvm.test.scalable(<vscale x 2 x i64>)
+declare void @llvm.test.metadata(metadata)
+
+define void @probe() {
+entry:
+  call void @llvm.test.scalable(<vscale x 2 x i64> poison)
+  call void @llvm.test.metadata(metadata !0)
+  ret void
+}
+
+!0 = !{}
+`
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+	path := filepath.Join(t.TempDir(), "scalable-intrinsic.ll")
+	if err := os.WriteFile(path, []byte(testIR), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	buf, err := llvm.NewMemoryBufferFromFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mod.Dispose()
+
+	llvm.InitializeAllTargets()
+	llvm.InitializeAllTargetMCs()
+	llvm.InitializeAllTargetInfos()
+	prog := llssa.NewProgram(&llssa.Target{GOOS: "darwin", GOARCH: "arm64"})
+	defer prog.Dispose()
+	NewTransformer(prog, "aarch64-apple-darwin", "", true).TransformModule("test", mod)
+	if mod.NamedFunction("probe").IsNil() {
+		t.Fatal("probe function disappeared")
+	}
+}
+
+func TestShouldSkipLLVMIntrinsic(t *testing.T) {
+	transformer := &Transformer{}
+	for _, name := range []string{"llvm.test.scalable", "llvm.test.metadata"} {
+		if !transformer.shouldSkipFunc(name) {
+			t.Fatalf("LLVM intrinsic %q must bypass C ABI sizing", name)
+		}
+	}
+	for _, name := range []string{"ordinary.function", "example.com/myllvm.Helper"} {
+		if transformer.shouldSkipFunc(name) {
+			t.Fatalf("ordinary function %q was skipped", name)
+		}
+	}
+}
 
 func TestTargetArchAndNewTransformerArchSelection(t *testing.T) {
 	if got := targetArch("riscv64-unknown-linux-gnu"); got != "riscv64" {
@@ -262,7 +328,7 @@ func TestMSVCAggregateClassification(t *testing.T) {
 				checkTypeInfo(t, tr, odd, 1, AttrWidthType, "i64")
 				hfa := ctx.StructType([]llvm.Type{ctx.FloatType(), ctx.FloatType(), ctx.FloatType(), ctx.FloatType()}, false)
 				checkTypeInfo(t, tr, hfa, 0, AttrNone, hfa.String())
-				checkTypeInfo(t, tr, hfa, 1, AttrNone, hfa.String())
+				checkTypeInfo(t, tr, hfa, 1, AttrWidthType, "[4 x float]")
 				large := ctx.StructType([]llvm.Type{ctx.Int64Type(), ctx.Int64Type(), ctx.Int64Type()}, false)
 				checkTypeInfo(t, tr, large, 0, AttrPointer, "ptr")
 				checkTypeInfo(t, tr, large, 1, AttrPointer, "ptr")

@@ -28,13 +28,12 @@ func collectDebugAllocVariables(fn *ssa.Function) map[*ssa.Alloc]*types.Var {
 	return variables
 }
 
-func hasDebugAlloc(variables map[*ssa.Alloc]*types.Var, variable *types.Var) bool {
-	for _, candidate := range variables {
-		if candidate == variable {
-			return true
-		}
+func collectDebugAllocObjects(variables map[*ssa.Alloc]*types.Var) map[*types.Var]bool {
+	objects := make(map[*types.Var]bool, len(variables))
+	for _, variable := range variables {
+		objects[variable] = true
 	}
-	return false
+	return objects
 }
 
 func (p *context) debugAlloc(b llssa.Builder, alloc *ssa.Alloc, addr llssa.Expr) {
@@ -45,7 +44,7 @@ func (p *context) debugAlloc(b llssa.Builder, alloc *ssa.Alloc, addr llssa.Expr)
 	pos := p.goProg.Fset.Position(variable.Pos())
 	var dbgVar llssa.DIVar
 	if argNo := debugParameterArgNo(p.goFn, variable); argNo != 0 {
-		dbgVar = b.DIVarParam(p.fn, pos, variable.Name(), p.type_(variable.Type(), llssa.InGo), argNo)
+		dbgVar = b.DIVarParam(p.fn, pos, variable.Name(), p.type_(variable.Type(), llssa.GoDecl), argNo)
 		p.debugDIVars[variable] = dbgVar
 	} else {
 		dbgVar = p.getLocalVariable(b, p.goFn, variable)

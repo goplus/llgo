@@ -188,6 +188,9 @@ func (l *Loader) mergeConfig(dst, src *Config) {
 	if src.Emulator != "" {
 		dst.Emulator = src.Emulator
 	}
+	if src.DebugServer != "" {
+		dst.DebugServer = src.DebugServer
+	}
 	if src.OpenOCDInterface != "" {
 		dst.OpenOCDInterface = src.OpenOCDInterface
 	}

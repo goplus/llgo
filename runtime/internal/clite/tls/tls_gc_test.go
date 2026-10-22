@@ -19,7 +19,9 @@
 package tls
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 	"unsafe"
 
 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
@@ -47,6 +49,9 @@ func TestSlotGCAllocation(t *testing.T) {
 			return
 		}
 		slotDestructor[*[8]uint64](unsafe.Pointer(s))
+		if bdwgc.ThreadIsRegistered() == 0 {
+			t.Error("manual slot destruction removed the caller's GC registration")
+		}
 		if destroyed != wantDestroyed {
 			t.Errorf("destructor value = %#x, want %#x", destroyed, wantDestroyed)
 		}
@@ -89,4 +94,39 @@ func TestSlotGCAllocation(t *testing.T) {
 	if destroyed != 0 {
 		t.Error("slot destructor ran before release")
 	}
+}
+
+func TestSlotDestructorGCRegistration(t *testing.T) {
+	var state atomic.Int32
+	var result atomic.Pointer[[8]int]
+	h := Alloc[int](func(value *int) {
+		if bdwgc.ThreadIsRegistered() == 0 {
+			state.Store(-1)
+			return
+		}
+		// The callback may allocate, defer, collect, and publish Go pointers.
+		// A defer also lazily creates a G on this already-exiting thread;
+		// its later lifecycle destructor must keep participating in GC.
+		result.Store(slotDestructorValueAfterGC(*value))
+		state.Store(1)
+	})
+	go func() { h.Set(42) }()
+	deadline := time.Now().Add(2 * time.Second)
+	for state.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if got := state.Load(); got != 1 {
+		t.Fatalf("TLS destructor GC registration state = %d, want 1", got)
+	}
+	if got := result.Load(); got == nil || got[0] != 42 || got[1] != 42 {
+		t.Fatalf("TLS destructor result = %v, want [42 42 ...]", got)
+	}
+}
+
+func slotDestructorValueAfterGC(value int) *[8]int {
+	result := new([8]int)
+	result[0] = value
+	defer func() { result[1] = result[0] }()
+	bdwgc.Gcollect()
+	return result
 }

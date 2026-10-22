@@ -2604,9 +2604,17 @@ var typelist []*abi.Type
 
 func typesByString(s string) (typs []*abi.Type) {
 	for _, t := range typelist {
-		if t.String() == s {
-			typs = append(typs, t)
+		// Type.String constructs a new string for ExtraStar types. Avoid an
+		// allocation for every pointer type in this whole-program lookup: a
+		// concurrent forced GC can otherwise stop the scan at each allocation.
+		if t.TFlag&abi.TFlagExtraStar != 0 {
+			if len(s) == 0 || s[0] != '*' || t.Str_ != s[1:] {
+				continue
+			}
+		} else if t.Str_ != s {
+			continue
 		}
+		typs = append(typs, t)
 	}
 	return
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	intllvm "github.com/xgo-dev/llgo/internal/xtool/llvm"
 	"github.com/xgo-dev/llgo/ssa"
 	"github.com/xgo-dev/llvm"
 )
@@ -66,7 +67,7 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 		case "amd64":
 			tr.sys = &TypeInfoWindowsAmd64{tr}
 		case "arm64":
-			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{tr}}
+			tr.sys = &TypeInfoWindowsArm64{&TypeInfoArm64{Transformer: tr}}
 		case "386":
 			tr.sys = &TypeInfoWindows386{tr}
 		}
@@ -82,7 +83,11 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, optim
 	case "amd64":
 		tr.sys = &TypeInfoAmd64{tr}
 	case "arm64":
-		tr.sys = &TypeInfoArm64{tr}
+		triple := llvmTarget
+		if triple == "" || !strings.Contains(triple, "-") {
+			triple = intllvm.GetTargetTriple(target.GOOS, arch)
+		}
+		tr.sys = &TypeInfoArm64{Transformer: tr, hfaStackAlign: !intllvm.IsDarwinTarget(triple)}
 	case "arm":
 		tr.sys = &TypeInfoArm{tr}
 	case "wasm":
@@ -116,6 +121,14 @@ func (p *Transformer) SetSkipFuncs(names []string) {
 }
 
 func (p *Transformer) shouldSkipFunc(name string) bool {
+	// LLVM intrinsics use LLVM's own calling convention and can carry metadata
+	// or scalable-vector parameters. Neither is a C ABI value to size or wrap.
+	// Some llvm.* declarations have IntrinsicID() == 0 (for example, an
+	// unrecognized intrinsic in a test module), so the ID checks at the ABI
+	// rewrite sites alone cannot keep them out of C ABI processing.
+	if strings.HasPrefix(name, "llvm.") {
+		return true
+	}
 	if name == "" || len(p.skipFns) == 0 {
 		return false
 	}
@@ -140,12 +153,16 @@ type CallInstr struct {
 }
 
 func (p *Transformer) TransformModule(path string, m llvm.Module) {
+	p.transformModule(m, nil)
+}
+
+func (p *Transformer) transformModule(m llvm.Module, acceptCallConv func(llvm.CallConv) bool) {
 	ctx := m.Context()
 	var fns []llvm.Value
 	var callInstrs []CallInstr
 	fn := m.FirstFunction()
 	for !fn.IsNil() {
-		if !p.shouldSkipFunc(fn.Name()) && p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
+		if !p.shouldSkipFunc(fn.Name()) && (acceptCallConv == nil || acceptCallConv(fn.FunctionCallConv())) && p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 			fns = append(fns, fn)
 		}
 		bb := fn.FirstBasicBlock()
@@ -153,7 +170,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 			instr := bb.FirstInstruction()
 			for !instr.IsNil() {
 				if call := instr.IsACallInst(); !call.IsNil() {
-					if p.shouldSkipCall(call) {
+					if p.shouldSkipCall(call) || (acceptCallConv != nil && !acceptCallConv(call.InstructionCallConv())) {
 						instr = llvm.NextInstruction(instr)
 						continue
 					}
@@ -232,6 +249,7 @@ type TypeInfo struct {
 	Size       int
 	Align      int
 	ByValAlign int // explicit stack alignment for AttrPointer parameters
+	StackAlign int // alignstack attribute for direct HFA parameters
 }
 
 func (p *TypeInfo) nativeType() llvm.Type {
@@ -315,12 +333,19 @@ func (p *Transformer) Alignof(typ llvm.Type) int {
 }
 
 func (p *Transformer) GetFuncInfo(ctx llvm.Context, typ llvm.Type) (info FuncInfo) {
+	return p.getFuncInfo(ctx, typ, nil)
+}
+
+func (p *Transformer) getFuncInfo(ctx llvm.Context, typ llvm.Type, getAttr func(int, uint) llvm.Attribute) (info FuncInfo) {
 	info.Type = typ
 	info.Return = p.GetTypeInfo(ctx, typ, typ.ReturnType(), 0)
 	params := typ.ParamTypes()
 	info.Params = make([]*TypeInfo, len(params))
 	for i, t := range params {
 		info.Params[i] = p.GetTypeInfo(ctx, typ, t, i+1)
+	}
+	if _, ok := p.sys.(*TypeInfoAmd64); ok {
+		p.allocateSysVAggregateRegisters(&info, getAttr)
 	}
 	return
 }
@@ -359,6 +384,9 @@ func (p *Transformer) transformFuncType(
 			// skip
 		case AttrNone, AttrWidthType:
 			paramTypes = append(paramTypes, ti.Type1)
+			if ti.StackAlign != 0 {
+				addAttr(len(paramTypes), ctx.CreateEnumAttribute(llvm.AttributeKindID("alignstack"), uint64(ti.StackAlign)))
+			}
 		case AttrPointer:
 			paramTypes = append(paramTypes, ti.Type1)
 			if p.sys.SupportByVal() {
@@ -383,7 +411,7 @@ func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
 	if fn.IntrinsicID() != 0 {
 		return false
 	}
-	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
+	info := p.getFuncInfo(ctx, fn.GlobalValueType(), fn.GetEnumAttributeAtIndex)
 	if !info.HasWrap() {
 		return false
 	}
@@ -397,7 +425,7 @@ func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
 			nfn.AddAttributeAtIndex(i, attr)
 		}
 	}
-	copyClosureEnvFunctionAttrs(fn, nfn, paramMap)
+	copyFunctionABIAttrs(fn, nfn, paramMap)
 	if !preloweredSRet.IsNil() {
 		nfn.AddAttributeAtIndex(1, preloweredSRet)
 	}
@@ -582,17 +610,21 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				if ti.ByValAlign != 0 {
 					storageAlign = ti.ByValAlign
 				}
-				reuseParamHome(fn.Param(i), params[index], nfn.EntryBasicBlock(), ti.Align, storageAlign)
+				p.reuseParamHome(fn.Param(i), params[index], nfn.EntryBasicBlock(), ti.Align, storageAlign)
 			}
 		case AttrWidthType:
-			iptr := llvm.CreateAlloca(b, ti.Type1)
+			storageType := ti.Type1
+			if p.Sizeof(ti.nativeType()) > p.Sizeof(storageType) {
+				storageType = ti.nativeType() // An aligned HFA can have trailing padding.
+			}
+			iptr := llvm.CreateAlloca(b, storageType)
 			storageAlign := max(ti.Align, p.Alignof(ti.Type1))
 			iptr.SetAlignment(storageAlign)
 			b.CreateStore(params[index], iptr)
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.nativeType(), 0), "")
 			nv = aggregateFromNative(b, ti, b.CreateLoad(ti.nativeType(), ptr, ""))
 			if p.optimize && !ti.hasNativeLayoutConversion() {
-				reuseParamHome(fn.Param(i), ptr, nfn.EntryBasicBlock(), ti.Align, storageAlign)
+				p.reuseParamHome(fn.Param(i), ptr, nfn.EntryBasicBlock(), ti.Align, storageAlign)
 			}
 		case AttrWidthType2:
 			typ := ctx.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
@@ -605,7 +637,7 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.nativeType(), 0), "")
 			nv = aggregateFromNative(b, ti, b.CreateLoad(ti.nativeType(), ptr, ""))
 			if p.optimize && !ti.hasNativeLayoutConversion() {
-				reuseParamHome(fn.Param(i), ptr, nfn.EntryBasicBlock(), ti.Align, storageAlign)
+				p.reuseParamHome(fn.Param(i), ptr, nfn.EntryBasicBlock(), ti.Align, storageAlign)
 			}
 		case AttrExtract:
 			nsubs := ti.nativeType().StructElementTypesCount()
@@ -694,7 +726,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 	if nfn.IntrinsicID() != 0 {
 		return false
 	}
-	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
+	info := p.getFuncInfo(ctx, call.CalledFunctionType(), call.GetCallSiteEnumAttribute)
 	if !info.HasWrap() {
 		return false
 	}
@@ -770,6 +802,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 	}
 
 	updateCallAttr := func(replacement llvm.Value) {
+		replacement.InstructionSetDebugLoc(call.InstructionDebugLoc())
 		replacement.SetInstructionCallConv(call.InstructionCallConv())
 		for i, list := range attrs {
 			for _, attr := range list {
@@ -787,7 +820,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 				"llgo.reflect.methodbyname.name", "1",
 			))
 		}
-		copyClosureEnvCallAttrs(call, replacement, paramMap)
+		copyCallABIAttrs(call, replacement, paramMap)
 	}
 
 	var instr llvm.Value
@@ -823,33 +856,64 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 	return true
 }
 
-var closureEnvAttributeKinds = []uint{
+var integerExtensionAttributeKinds = [...]uint{
+	llvm.AttributeKindID("signext"),
+	llvm.AttributeKindID("zeroext"),
+}
+
+var closureEnvAttributeKinds = [...]uint{
 	llvm.AttributeKindID("nest"),
 	llvm.AttributeKindID("swiftself"),
 }
 
-func copyClosureEnvFunctionAttrs(from, to llvm.Value, paramMap []int) {
-	for oldIndex, newIndex := range paramMap {
-		if newIndex == 0 {
-			continue
-		}
-		for _, kind := range closureEnvAttributeKinds {
-			if attr := from.GetEnumAttributeAtIndex(oldIndex+1, kind); !attr.IsNil() {
-				to.AddAttributeAtIndex(newIndex, attr)
+func copyFunctionABIAttrs(from, to llvm.Value, paramMap []int) {
+	fromType, toType := from.GlobalValueType(), to.GlobalValueType()
+	copyABIAttrs(fromType, toType, paramMap, from.GetEnumAttributeAtIndex, to.AddAttributeAtIndex)
+}
+
+func copyCallABIAttrs(from, to llvm.Value, paramMap []int) {
+	fromType, toType := from.CalledFunctionType(), to.CalledFunctionType()
+	copyABIAttrs(fromType, toType, paramMap, from.GetCallSiteEnumAttribute, to.AddCallSiteAttribute)
+	if fromType.IsFunctionVarArg() {
+		// transformCallInstr appends promoted variadic arguments unchanged.
+		// Only the fixed parameter count shifts their attribute indices; the
+		// final call operand is the callee, not an argument.
+		fixed := fromType.ParamTypesCount()
+		offset := toType.ParamTypesCount() - fixed
+		for i := fixed; i < from.OperandsCount()-1; i++ {
+			for _, kind := range integerExtensionAttributeKinds {
+				if attr := from.GetCallSiteEnumAttribute(i+1, kind); !attr.IsNil() {
+					to.AddCallSiteAttribute(i+offset+1, attr)
+				}
 			}
 		}
 	}
 }
 
-func copyClosureEnvCallAttrs(from, to llvm.Value, paramMap []int) {
+// copyABIAttrs remaps existing attributes when aggregate lowering replaces a
+// function or call: sret insertion, empty parameter elision and aggregate
+// expansion can change parameter positions. SSA codegen has already emitted
+// integer extension attributes from Go signedness and the target ABI. Preserve
+// them where the physical type survives lowering; closure environment markers
+// follow the environment parameter.
+func copyABIAttrs(from, to llvm.Type, paramMap []int, get func(int, uint) llvm.Attribute, add func(int, llvm.Attribute)) {
+	copyIndex := func(oldIndex, newIndex int, kinds []uint) {
+		for _, kind := range kinds {
+			if attr := get(oldIndex, kind); !attr.IsNil() {
+				add(newIndex, attr)
+			}
+		}
+	}
+	fromParams, toParams := from.ParamTypes(), to.ParamTypes()
+	// paramMap uses zero-based source positions and one-based LLVM attribute
+	// indices, reserving zero for elided parameters. Attribute index 0 is return.
 	for oldIndex, newIndex := range paramMap {
 		if newIndex == 0 {
 			continue
 		}
-		for _, kind := range closureEnvAttributeKinds {
-			if attr := from.GetCallSiteEnumAttribute(oldIndex+1, kind); !attr.IsNil() {
-				to.AddCallSiteAttribute(newIndex, attr)
-			}
+		copyIndex(oldIndex+1, newIndex, closureEnvAttributeKinds[:])
+		if fromParams[oldIndex] == toParams[newIndex-1] {
+			copyIndex(oldIndex+1, newIndex, integerExtensionAttributeKinds[:])
 		}
 	}
 }
@@ -864,7 +928,15 @@ func (p *Transformer) callMemcpy(_ llvm.Module, ctx llvm.Context, b llvm.Builder
 // reuseParamHome replaces at most one local copy of param with storage. The
 // incoming ABI storage can stand in for one parameter home, but independent
 // copies must remain distinct objects.
-func reuseParamHome(param, storage llvm.Value, entry llvm.BasicBlock, naturalAlign, storageAlign int) {
+func (p *Transformer) reuseParamHome(param, storage llvm.Value, entry llvm.BasicBlock, naturalAlign, storageAlign int) {
+	// Debug declarations must keep referring to the authoritative aggregate
+	// storage after assignments. Replacing it with an indirect ABI parameter
+	// can make a debugger apply an extra dereference at O0. Optimized debug
+	// information uses value tracking and must not disable this optimization
+	// merely because native builds retain DWARF by default.
+	if !p.prog.DebugInfoOptimized() && !entry.Parent().Subprogram().IsNil() {
+		return
+	}
 	seen := make(map[llvm.Value]bool)
 	for instr := entry.FirstInstruction(); !instr.IsNil(); instr = llvm.NextInstruction(instr) {
 		store := instr.IsAStoreInst()

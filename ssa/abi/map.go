@@ -32,13 +32,17 @@ func makefield(name string, t types.Type) *types.Var {
 }
 
 func (b *Builder) mapBucketType(t *types.Map) types.Type {
-	sizes := b.Sizes
+	return MapBucketType(t, b.Sizes)
+}
+
+// MapBucketType shares the collector's actual bucket layout with DWARF.
+func MapBucketType(t *types.Map, sizes types.Sizes) types.Type {
 	keytype := t.Key()
 	elemtype := t.Elem()
-	if b.Size(keytype) > MAXKEYSIZE {
+	if sizes.Sizeof(keytype) > MAXKEYSIZE {
 		keytype = types.NewPointer(keytype)
 	}
-	if b.Size(elemtype) > MAXELEMSIZE {
+	if sizes.Sizeof(elemtype) > MAXELEMSIZE {
 		elemtype = types.NewPointer(elemtype)
 	}
 

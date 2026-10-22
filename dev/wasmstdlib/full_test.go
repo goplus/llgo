@@ -506,10 +506,11 @@ func TestFullHostArtifactMustBeNonEmptyRegularFile(t *testing.T) {
 func TestFullAuditClassifiesUnknownSelectionAndWitnessFailures(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"test/goroot/runner_test.go": "package goroot\n",
-		"test/missing/a_test.go":     "package missing\nimport \"testing\"\nfunc TestMissing(t *testing.T) {}\n",
-		"test/empty/a_test.go":       "package empty\n",
-		"test/bad/a_test.go":         "package bad\nfunc TestBad(\n",
+		"test/goroot/runner_test.go":   "package goroot\n",
+		"test/sizereport/size_test.go": "package sizereport\n",
+		"test/missing/a_test.go":       "package missing\nimport \"testing\"\nfunc TestMissing(t *testing.T) {}\n",
+		"test/empty/a_test.go":         "package empty\n",
+		"test/bad/a_test.go":           "package bad\nfunc TestBad(\n",
 	}
 	for name, contents := range files {
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(root, name)), 0o755); err != nil {
@@ -547,10 +548,11 @@ func TestFullAuditClassifiesUnknownSelectionAndWitnessFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]string{
-		"test/bad":     "unresolved",
-		"test/empty":   "source-excluded",
-		"test/goroot":  "separate-suite",
-		"test/missing": "source-excluded",
+		"test/bad":        "unresolved",
+		"test/empty":      "source-excluded",
+		"test/goroot":     "separate-suite",
+		"test/sizereport": "separate-suite",
+		"test/missing":    "source-excluded",
 	}
 	for _, pkg := range report.Packages {
 		if pkg.Status != want[pkg.Package] || pkg.Reason == "" {
@@ -585,6 +587,50 @@ func TestFullProfileCommandsKeepLLGoAndReferenceDistinct(t *testing.T) {
 	}
 }
 
+func TestFullAuditClassifiesExperimentalSIMDSeparately(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "test", "simd")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "simd_test.go"), []byte("//go:build goexperiment.simd\n\npackage simd\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	structured := func(_ string, c command) ([]byte, error) {
+		if c.Args[0] == "env" {
+			return []byte("/goroot"), nil
+		}
+		return nil, nil // The experiment is disabled in the default source context.
+	}
+	run := func(_ string, c command) ([]byte, error) {
+		t.Fatalf("separate SIMD suite was executed as standard-library acceptance: %+v", c)
+		return nil, nil
+	}
+	for _, name := range []string{"J32-GoJS", "J32-Emscripten", "J64-Emscripten", "W32-WASI", "GoJS-reference", "GoWASI-reference"} {
+		t.Run(name, func(t *testing.T) {
+			report := filepath.Join(root, "report.json")
+			if err := runFullAt(root, name, report, "go", "llgo", 0, 1, structured, run); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(report)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var result struct{ Packages []fullPackage }
+			if err := json.Unmarshal(data, &result); err != nil {
+				t.Fatal(err)
+			}
+			if len(result.Packages) != 1 {
+				t.Fatalf("SIMD disappeared from the inventory: %s", data)
+			}
+			entry := result.Packages[0]
+			if entry.Package != "test/simd" || entry.Status != "separate-suite" || entry.Tests != 0 || !strings.Contains(entry.Reason, "W32-WASI") {
+				t.Fatalf("SIMD execution scope misreported: %+v", entry)
+			}
+		})
+	}
+}
+
 func TestFullStressCommandsUseQuickProfile(t *testing.T) {
 	p, err := fullProfile("J32-Emscripten")
 	if err != nil {
@@ -603,6 +649,7 @@ func TestFullStressCommandsUseQuickProfile(t *testing.T) {
 }
 
 func TestFullSourceContextMatchesCompilerProfiles(t *testing.T) {
+	t.Setenv("LLGO_WASI_THREADS", "")
 	tests := []struct {
 		name, wantCGO string
 		wantTags      []string
@@ -610,7 +657,7 @@ func TestFullSourceContextMatchesCompilerProfiles(t *testing.T) {
 		{"J32-GoJS", "0", []string{"llgo", "osusergo", "llgo.wasm.gc.linear"}},
 		{"J32-Emscripten", "1", []string{"llgo", "osusergo", "llgo.wasm.gc.linear", "llgo.wasm.emscripten"}},
 		{"J64-Emscripten", "1", []string{"llgo", "osusergo", "llgo.wasm.gc.linear", "llgo.wasm.emscripten", "llgo.wasm.emscripten.memory64"}},
-		{"W32-WASI", "1", []string{"llgo", "osusergo", "llgo.wasm.gc.linear", "llgo.wasm.wasi"}},
+		{"W32-WASI", "1", []string{"llgo", "osusergo", "llgo.wasm.gc.linear", "llgo.wasm.wasi", "llgo.wasi_threads"}},
 		{"GoJS-reference", "0", nil},
 		{"GoWASI-reference", "0", nil},
 	}
@@ -665,15 +712,30 @@ func TestFullSourceExclusionsAreProfileSpecific(t *testing.T) {
 }
 
 func TestFullLongTimeoutIsTargeted(t *testing.T) {
-	for _, pkg := range []string{"test/std/crypto/dsa", "test/std/crypto/rsa", "test/std/go/types", "test/std/os", "test/std/runtime/pprof", "test/_stress/runtime/example"} {
-		if got := fullTestTimeout(pkg); got != "3m" {
+	wasi := profile{Name: "W32-WASI"}
+	for _, pkg := range []string{"test/std/crypto/dsa", "test/std/crypto/rsa", "test/std/go/types", "test/std/os", "test/std/runtime/pprof", "test/std/testing", "test/_stress/runtime/example"} {
+		if got := fullTestTimeout(wasi, pkg); got != "3m" {
 			t.Fatalf("%s timeout = %q", pkg, got)
 		}
 	}
-	if got := fullTestTimeout("test/std/crypto/aes"); got != "60s" {
+	if got := fullTestTimeout(wasi, "test/go"); got != "12m" {
+		t.Fatalf("W32 test/go timeout = %q", got)
+	}
+	if got := fullTestTimeout(wasi, "test/std/crypto/ecdh"); got != "3m" {
+		t.Fatalf("W32 test/std/crypto/ecdh timeout = %q", got)
+	}
+	for _, pkg := range []string{"test/std/net/http/httptest", "test/std/crypto/x509"} {
+		if got := fullTestTimeout(wasi, pkg); got != "3m" {
+			t.Fatalf("W32 %s timeout = %q", pkg, got)
+		}
+		if got := fullTestTimeout(profile{Name: "J32-Emscripten"}, pkg); got != "60s" {
+			t.Fatalf("J32 %s timeout = %q", pkg, got)
+		}
+	}
+	if got := fullTestTimeout(wasi, "test/std/crypto/aes"); got != "60s" {
 		t.Fatalf("default timeout = %q", got)
 	}
-	if got := fullTestTimeout("test/_stress/runtime/timer"); got != "3m" {
+	if got := fullTestTimeout(wasi, "test/_stress/runtime/timer"); got != "3m" {
 		t.Fatalf("stress timeout = %q", got)
 	}
 }
@@ -687,7 +749,10 @@ func TestFullCommandTimeoutIsTargeted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, pkg := range []string{"test/std/net/rpc", "test/std/net/rpc/jsonrpc"} {
+	if got := fullCommandTimeout(wasi, "test/go"); got != "20m" {
+		t.Fatalf("W32 test/go command timeout = %q", got)
+	}
+	for _, pkg := range []string{"test/std/net/rpc", "test/std/net/rpc/jsonrpc", "test/std/crypto/rsa", "test/std/crypto/ecdh"} {
 		if got := fullCommandTimeout(wasi, pkg); got != "10m" {
 			t.Errorf("W32 %s command timeout = %q, want 10m", pkg, got)
 		}

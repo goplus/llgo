@@ -146,3 +146,33 @@ func TestHashBinaryMarshaling(t *testing.T) {
 		t.Fatalf("post-unmarshal Sum32=%#x want %#x", h1.Sum32(), ieee)
 	}
 }
+
+// Cover the 64-byte folding boundary and the 1024-byte AVX512 transition
+// against a scalar polynomial reference, including streaming CRC state.
+func TestIEEELargeBuffers(t *testing.T) {
+	for _, n := range []int{63, 64, 65, 1023, 1024, 1025, 2048, 4095, 4096} {
+		for _, offset := range []int{0, 1, 7, 15} {
+			data := make([]byte, n+offset)[offset:]
+			for i := range data {
+				data[i] = byte(i*31 + 7)
+			}
+			for _, seed := range []uint32{0, 0x12345678, 0xffffffff} {
+				want := ^seed
+				for _, b := range data {
+					want ^= uint32(b)
+					for range 8 {
+						if want&1 != 0 {
+							want = want>>1 ^ crc32.IEEE
+						} else {
+							want >>= 1
+						}
+					}
+				}
+				want = ^want
+				if got := crc32.Update(seed, crc32.IEEETable, data); got != want {
+					t.Fatalf("length=%d offset=%d seed=%08x: got %08x, want %08x", n, offset, seed, got, want)
+				}
+			}
+		}
+	}
+}

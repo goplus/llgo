@@ -1,16 +1,19 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { spawnBrowser } from "./browser-process.mjs";
 
 const [browser, url] = process.argv.slice(2);
 if (!browser || !url) {
   throw new Error("usage: node browser-runner.mjs <chrome> <url>");
 }
 
-const deadline = Date.now() + 30_000;
+// The dedicated filesystem stress runs 128 collections across concurrent Gs;
+// allow its Memory64 root scans more time than ordinary worker smoke tests.
+const fsStress = new URL(url).searchParams.get("module")?.startsWith("fs-");
+const deadline = Date.now() + (fsStress ? 240_000 : 90_000);
 const profile = await mkdtemp(join(tmpdir(), "llgo-wasm-chrome-"));
-const chrome = spawn(browser, [
+const { child: chrome, stop: stopChrome } = spawnBrowser(browser, [
   "--headless=new",
   "--no-sandbox",
   "--disable-gpu",
@@ -19,8 +22,7 @@ const chrome = spawn(browser, [
   `--user-data-dir=${profile}`,
   "--remote-debugging-port=0",
   "about:blank",
-], { stdio: ["ignore", "ignore", "pipe"] });
-const chromeExit = new Promise(resolve => chrome.once("exit", resolve));
+]);
 
 let chromeLog = "";
 chrome.stderr.setEncoding("utf8");
@@ -148,14 +150,7 @@ try {
   process.exitCode = 1;
 } finally {
   client?.socket.close();
-  if (chrome.exitCode === null && chrome.signalCode === null) {
-    chrome.kill("SIGTERM");
-    await Promise.race([chromeExit, delay(2_000)]);
-    if (chrome.exitCode === null && chrome.signalCode === null) {
-      chrome.kill("SIGKILL");
-      await chromeExit;
-    }
-  }
+  stopChrome();
   // Chrome's child processes can still flush profile files after its main
   // process exits. Node retries ENOTEMPTY for a recursive removal here.
   await rm(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });

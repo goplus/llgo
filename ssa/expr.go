@@ -133,6 +133,9 @@ func pyVarExpr(mod Expr, name string) Expr {
 
 // Zero returns a zero constant expression.
 func (p Program) Zero(t Type) Expr {
+	if t.kind == vkSIMD {
+		return Expr{llvm.ConstNull(t.ll), t}
+	}
 	var ret llvm.Value
 	switch u := t.raw.Type.Underlying().(type) {
 	case *types.Basic:
@@ -310,6 +313,17 @@ func (b Builder) InlineAsm(instruction string) {
 	typ := llvm.FunctionType(b.Prog.tyVoid(), nil, false)
 	asm := llvm.InlineAsm(typ, instruction, "", true, false, llvm.InlineAsmDialectATT, false)
 	b.impl.CreateCall(typ, asm, nil, "")
+}
+
+// InlineAsmNoDebug emits inline assembly without attaching the builder's
+// current source location. The builder location itself is left unchanged.
+func (b Builder) InlineAsmNoDebug(instruction string) {
+	dbgInstrf("InlineAsm %s\n", instruction)
+
+	typ := llvm.FunctionType(b.Prog.tyVoid(), nil, false)
+	asm := llvm.InlineAsm(typ, instruction, "", true, false, llvm.InlineAsmDialectATT, false)
+	call := b.impl.CreateCall(typ, asm, nil, "")
+	call.InstructionSetDebugLoc(llvm.Metadata{})
 }
 
 func (b Builder) InlineAsmFull(instruction, constraints string, retType Type, exprs []Expr) Expr {
@@ -931,7 +945,7 @@ func (b Builder) callArrayEqual(x, y, xaddr, yaddr Expr, t *types.Array) Expr {
 		ret = b.Call(b.Pkg.rtFunc("memequal"), xaddr, yaddr, prog.IntVal(prog.SizeOf(x.Type), prog.Uintptr()))
 	} else {
 		equal := b.Pkg.rtEnvFunc("arrayequal")
-		equal = b.aggregateValue(prog.Type(equalFunc, InGo), equal.impl, b.abiType(x.raw.Type).impl)
+		equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, b.abiType(x.raw.Type).impl)
 		ret = b.Call(equal, xaddr, yaddr)
 	}
 	if !sp.IsNil() {
@@ -1007,10 +1021,19 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 //
 //	t1 = changetype *int <- IntPtr (t0)
 func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
+	if t.kind == vkSIMD {
+		if x.kind == vkSIMD {
+			return Expr{x.impl, t}
+		}
+		return Expr{b.simdFromStorage(x.impl, t), t}
+	}
 	dbgInstrf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	if t.kind == vkClosure {
 		if b.needsStdcallFuncval(x) {
 			return b.stdcallFuncval(t, x)
+		}
+		if b.needsNativeIntegerFuncval(x) {
+			return b.nativeFuncval(t, x, llvm.CCallConv, "c")
 		}
 		if b.Prog.isStdcallType(x.raw.Type) {
 			return checkExpr(x, t.raw.Type, b)
@@ -1033,7 +1056,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	}
 	if t.kind == vkClosure {
 		switch x.kind {
-		case vkFuncDecl:
+		case vkFuncDecl, vkFuncPtr:
 			ret.impl = checkExpr(x, t.raw.Type, b).impl
 		case vkClosure:
 			// TODO(xsw): change type should be a noop instruction
@@ -1462,6 +1485,35 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 	return b.Call(fn, args...)
 }
 
+// CanForwardVarargs checks the unlowered ABI of a direct variadic forwarding
+// call. The physical result must equal the logical Go result so Call cannot
+// insert a result conversion between the tail call and its return.
+func (b Builder) CanForwardVarargs(fn Expr) bool {
+	if fn.kind != vkFuncDecl || !b.Func.hasVArg || fn.ll != b.Func.ll ||
+		fn.impl.FunctionCallConv() != b.Func.impl.FunctionCallConv() {
+		return false
+	}
+	sig := fn.raw.Type.(*types.Signature)
+	return fn.ll.ReturnType() == b.Prog.retType(sig).ll
+}
+
+// CallForwardVarargs forwards a variadic thunk's incoming ellipsis unchanged.
+// CanForwardVarargs must hold, the caller must return the result immediately,
+// and later ABI lowering must preserve the call and return without rewrites.
+func (b Builder) CallForwardVarargs(fn Expr, args ...Expr) Expr {
+	if !b.CanForwardVarargs(fn) {
+		panic(fmt.Sprintf("cannot forward C variadic arguments from %s to %s: incompatible ABI",
+			b.Func.Name(), fn.impl.Name()))
+	}
+	ret := b.Call(fn, args...)
+	// The preflight result check guarantees Call returns its raw instruction.
+	// LLVM's thunk attribute makes musttail forward the incoming ellipsis,
+	// including arguments that have no explicit operands in the call IR.
+	b.Func.impl.AddFunctionAttr(b.Prog.ctx.CreateStringAttribute("thunk", ""))
+	ret.impl.SetTailCallKind(llvm.TailCallKindMustTail)
+	return ret
+}
+
 // The Call instruction represents a function call.
 //
 // The Call instruction yields the function result if there is exactly
@@ -1504,7 +1556,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
-		ll = b.Prog.FuncDecl(sig, InC).ll
+		ll = b.Prog.FuncDecl(sig, CDecl).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
 		ll = fn.ll
@@ -1535,6 +1587,7 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		}
 	}
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, params)
+	b.setNativeIntegerCallAttrs(ret.impl, fn, sig, params)
 	if ret.Type != b.Prog.Void() {
 		ret.impl = b.fitLLVMResult(ret.impl, ret.Type)
 	}
@@ -2115,6 +2168,9 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		if b.needsStdcallFuncval(v) {
 			return b.stdcallFuncval(tclosure, v)
 		}
+		if b.needsNativeIntegerFuncval(v) {
+			return b.nativeFuncval(tclosure, v, llvm.CCallConv, "c")
+		}
 		if v.kind == vkClosure {
 			return v
 		}
@@ -2133,7 +2189,7 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	}
 	if v.kind == vkClosure {
 		if _, ok := t.Underlying().(*types.Signature); ok {
-			if dst := b.Prog.Type(t, InGo); dst.kind == vkFuncPtr {
+			if dst := b.Prog.Type(t, GoDecl); dst.kind == vkFuncPtr {
 				return b.ChangeType(dst, v)
 			}
 		}
@@ -2144,7 +2200,7 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if b.Prog.isStdcallType(t) {
 		return b.stdcallCallback(t, v)
 	}
-	dst := b.Prog.Type(t, InGo)
+	dst := b.Prog.Type(t, GoDecl)
 	// Range and assignment lowering can produce a value whose source type is
 	// assignable but not identical to the destination, so preserve the value
 	// while retagging it with the destination runtime type.

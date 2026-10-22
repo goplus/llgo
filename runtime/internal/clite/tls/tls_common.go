@@ -17,11 +17,11 @@
  */
 
 // Package tls provides generic storage backed by the host thread-local
-// storage API. GC-enabled builds (llgo && !baremetal && !wasm && !nogc) use
-// scanned, uncollectable BDWGC slots so their pointers stay visible until the
-// thread-local destructor releases the slot. Non-baremetal llgo builds with nogc or
-// wasm use ordinary calloc/free allocations. Baremetal builds and builds
-// without llgo use no-op handles.
+// storage API. Native GC builds use scanned, uncollectable BDWGC slots;
+// linear-memory wasm GC builds use explicit TinyGo GC roots. Both keep Go
+// pointers in host TLS visible until the thread-local destructor runs.
+// Builds without GC use calloc/free. Baremetal builds and builds without llgo
+// use no-op handles.
 //
 // Basic usage:
 //
@@ -39,7 +39,8 @@
 //
 // Build tags:
 //   - llgo && !baremetal && !wasm && !nogc: GC-managed slots via BDWGC
-//   - llgo && !baremetal && (nogc || wasm): Plain host TLS via calloc/free
+//   - llgo && !baremetal && wasm && llgo.wasm.gc.linear && !nogc: Explicit GC roots
+//   - llgo && !baremetal && (nogc || (wasm && !llgo.wasm.gc.linear)): calloc/free
 //   - !llgo || baremetal: No-op handles
 package tls
 
@@ -114,8 +115,10 @@ func (h Handle[T]) ensureSlot() *slot[T] {
 }
 
 func slotDestructor[T any](ptr c.Pointer) {
+	registered := enterSlotDestructor()
 	s := (*slot[T])(ptr)
 	if s == nil {
+		leaveSlotDestructor(registered)
 		return
 	}
 	if s.destructor != nil {
@@ -125,4 +128,5 @@ func slotDestructor[T any](ptr c.Pointer) {
 	s.value = zero
 	s.destructor = nil
 	freeSlot(ptr)
+	leaveSlotDestructor(registered)
 }

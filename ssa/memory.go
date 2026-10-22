@@ -61,6 +61,10 @@ func (b Builder) Aggregate(t Type, flds ...Expr) Expr {
 
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
+	if t.kind == vkSIMD {
+		stored := b.aggregateValue(b.Prog.rawType(t.RawType().Underlying()), flds...)
+		return Expr{b.simdFromStorage(stored.impl, t), t}
+	}
 	agg := llvm.Undef(t.ll)
 	for i, fld := range flds {
 		agg = b.impl.CreateInsertValue(agg, b.wrapStructField(t, i, fld), i, "")
@@ -76,6 +80,9 @@ func (b Builder) aggregateInit(ptr llvm.Value, t Type, flds ...llvm.Value) {
 }
 
 func (b Builder) wrapStructField(t Type, index int, value llvm.Value) llvm.Value {
+	if t.kind == vkTuple && t.ll.StructElementTypes()[index] == b.Prog.aggregateElementType(t, index).ll {
+		return value
+	}
 	value = b.toStorageValue(b.Prog.aggregateElementType(t, index), value)
 	layout, ok := b.Prog.structLayout(t)
 	if !ok || index >= len(layout.wrapped) || !layout.wrapped[index] {
@@ -483,6 +490,11 @@ func (b Builder) Load(ptr Expr) Expr {
 		b.AssertNilDeref(ptr)
 		return b.Prog.Zero(telem)
 	}
+	if storageType.kind == vkSIMD {
+		stored := llvm.CreateLoad(b.impl, telem.ll, ptr.impl)
+		stored.SetAlignment(int(b.Prog.AlignOf(storageType)))
+		return Expr{stored, telem}
+	}
 	if b.Prog.needsWidePointerStorage(storageType) {
 		stored := llvm.CreateLoad(b.impl, b.Prog.tyInt(), ptr.impl)
 		return Expr{b.fromAtomicStorageValue(storageType, stored), telem}
@@ -495,9 +507,22 @@ func (b Builder) Load(ptr Expr) Expr {
 func (b Builder) Store(ptr, val Expr) Expr {
 	raw := ptr.raw.Type
 	dbgInstrf("Store %v, %v, %v\n", raw, ptr.impl, val.impl)
-	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
-	b.assertStaticNilDeref(ptr)
 	storageType := b.Prog.Elem(ptr.Type)
+	if storageType.kind == vkFuncPtr && val.kind == vkClosure {
+		// The raw signature alone does not distinguish a C pointer slot from
+		// a Go funcval. Use the actual storage representation so a two-word
+		// Go value cannot overwrite the next native variable. ChangeType also
+		// rejects closure environments that a native callback cannot carry.
+		val = b.ChangeType(storageType, val)
+	} else {
+		val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
+	}
+	b.assertStaticNilDeref(ptr)
+	if storageType.kind == vkSIMD {
+		stored := b.impl.CreateStore(val.impl, ptr.impl)
+		stored.SetAlignment(int(b.Prog.AlignOf(storageType)))
+		return Expr{stored, b.Prog.Void()}
+	}
 	if b.Prog.needsWidePointerStorage(storageType) {
 		return Expr{b.impl.CreateStore(b.toAtomicStorageValue(storageType, val.impl), ptr.impl), b.Prog.Void()}
 	}

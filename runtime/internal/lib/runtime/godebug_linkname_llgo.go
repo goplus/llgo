@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	godebugDefault string // compile-time defaults (empty for now)
+	godebugDefault string // populated by the generated entry before package init
 	godebugEnv     string
 	godebugUpdate  func(string, string)
 )

@@ -1,4 +1,4 @@
-//go:build !llgo || !js || !wasm || !llgo.wasm.gc.linear || !llgo.wasm.workers
+//go:build !llgo || !wasm || !llgo.wasm.gc.linear || ((!js || !llgo.wasm.workers) && (!wasip1 || !llgo.wasi_threads))
 
 package tinygogc
 
@@ -8,3 +8,5 @@ type mutex struct{}
 func lock(m *mutex) {}
 
 func unlock(m *mutex) {}
+
+func unlockForGC(m *mutex) { unlock(m) }

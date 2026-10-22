@@ -158,3 +158,47 @@ func TestBackendProgramsReleaseOnErrorAndPanic(t *testing.T) {
 		t.Fatal("panic unwind retained a backend Program")
 	}
 }
+
+func TestReleaseSingleExecutableBackendPreservesOtherConsumers(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		mode      Mode
+		buildMode BuildMode
+		roots     int
+		release   bool
+	}{
+		{"single executable", ModeBuild, BuildModeExe, 1, true},
+		{"multiple executables", ModeBuild, BuildModeExe, 2, false},
+		{"shared library header", ModeBuild, BuildModeCShared, 1, false},
+		{"archive header", ModeBuild, BuildModeCArchive, 1, false},
+		{"generated module", ModeGen, BuildModeExe, 1, false},
+		{"single test executable", ModeTest, BuildModeExe, 1, true},
+		{"test DAG", ModeTest, BuildModeExe, 2, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			coordinator := llssa.NewProgram(nil)
+			defer coordinator.Dispose()
+			backend := llssa.NewProgram(nil)
+			defer backend.Dispose()
+			ctx := &context{
+				prog:      coordinator,
+				pkgs:      make(map[*packages.Package]Package),
+				initial:   make([]*packages.Package, test.roots),
+				buildConf: &Config{Mode: test.mode, BuildMode: test.buildMode},
+			}
+			entry := addBackendProgramPackage(ctx, coordinator, "example.com/main")
+			dep := addBackendProgramPackage(ctx, backend, "example.com/dep")
+			ctx.releaseSingleExecutableBackend()
+			for _, pkg := range []*aPackage{entry, dep} {
+				if (pkg.LPkg == nil) != test.release {
+					t.Fatalf("%s backend released = %v, want %v", pkg.PkgPath, pkg.LPkg == nil, test.release)
+				}
+				if !test.release && pkg.LPkg.Module().IsNil() {
+					t.Fatalf("%s lost module needed by later consumers", pkg.PkgPath)
+				}
+			}
+			// Deferred cleanup must remain safe after the early release.
+			ctx.disposeBackendPrograms()
+		})
+	}
+}

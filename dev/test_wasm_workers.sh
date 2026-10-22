@@ -6,11 +6,12 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export LLGO_ROOT="${LLGO_ROOT:-${repo_root}}"
 llgo_cmd="${LLGO:-llgo}"
 node_cmd="${NODE:-node}"
-wasmtime_cmd="${WASMTIME:-wasmtime}"
 wasm_tools_cmd="${WASM_TOOLS:-wasm-tools}"
 wasm_opt_cmd="${WASMOPT:-wasm-opt}"
 worker_fixture="${repo_root}/internal/build/testdata/wasm-workers"
 hardening_fixture="${repo_root}/internal/build/testdata/wasm-hardening"
+js_worker_fixture="${repo_root}/test/wasm/js-workers"
+reflect_worker_fixture="${repo_root}/test/wasm/reflect-workers"
 test_fixture="${repo_root}/internal/build/testdata/wasm-test"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/llgo-wasm-workers.XXXXXX")"
 browser_server=
@@ -25,8 +26,14 @@ cleanup() {
 trap cleanup EXIT
 
 run_with_timeout() {
+	run_with_timeout_limit 300 "$@"
+}
+
+run_with_timeout_limit() {
+	local seconds="$1"
+	shift
 	if command -v timeout >/dev/null 2>&1; then
-		timeout 300s "$@"
+		timeout "${seconds}s" "$@"
 	else
 		"$@"
 	fi
@@ -40,16 +47,17 @@ require_tool() {
 }
 
 run_emscripten() {
-	local target="$1"
-	local runner="$2"
-	local fixture="$3"
-	local expected="$4"
-	local name="$5"
-	shift 5
+	local workers="$1"
+	local target="$2"
+	local runner="$3"
+	local fixture="$4"
+	local expected="$5"
+	local name="$6"
+	shift 6
 	local module="${work_dir}/${name}.mjs"
 	local output="${work_dir}/${name}.out"
 
-	LLGO_WASM_WORKERS=2 "${llgo_cmd}" build -target "${target}" -o "${module}" "${fixture}"
+	LLGO_WASM_WORKERS="${workers}" "${llgo_cmd}" build -target "${target}" -o "${module}" "${fixture}"
 	"${wasm_tools_cmd}" validate --features all "${work_dir}/${name}.wasm"
 	run_with_timeout env "$@" "${node_cmd}" "${repo_root}/targets/${runner}" "${module}" "${name}" 2>&1 | tee "${output}"
 	grep -Fxq "${expected}" "${output}"
@@ -76,10 +84,104 @@ run_worker_llgo_test() {
 	local name="$2"
 	local output="${work_dir}/${name}.out"
 
+	# The worker test fixture runs multiple Wasm tests in one binary. Keep
+	# its Go test alarm below the outer 300s process limit but allow CI variance.
 	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
-		-target "${target}" -emulator -v -count=1 -timeout=30s \
+		-target "${target}" -emulator -v -count=1 -timeout=180s \
 		"${test_fixture}" 2>&1 | tee "${output}"
 	grep -Fq "PASS" "${output}"
+}
+
+run_worker_go_test() {
+	local target="$1"
+	local output="${work_dir}/test-go-${target}.out"
+	local module="${work_dir}/test-go-${target}.mjs"
+	# Run the full Go-language package: the small reflection fixture alone
+	# does not exercise continuous collection after the larger live heap.
+	# Collection-heavy cases can exceed three minutes after the larger live
+	# heap. Budget this package separately, including compilation, while
+	# retaining the shorter limits on the small acceptance fixtures.
+	run_with_timeout_limit 600 env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
+		-target "${target}" -emulator -o "${module}" -v -count=1 -timeout=480s \
+		-skip '^TestRuntimeNumGoroutineIncludesNewProc$' \
+		"${repo_root}/test/go" 2>&1 | tee "${output}"
+	grep -Fxq "PASS" "${output}"
+	# Native tests isolate this assertion with os/exec. Wasm cannot spawn
+	# that subprocess itself; reuse the compiled module in a fresh process so
+	# exiting goroutines cannot cancel the measured count increment.
+	run_with_timeout env LLGO_WASM_WORKERS=2 \
+		"${node_cmd}" "${repo_root}/targets/${target}-runner.mjs" "${module}" \
+		-test.v -test.count=1 -test.timeout=180s \
+		-test.run '^TestRuntimeNumGoroutineIncludesNewProc$' \
+		2>&1 | tee "${output}.numgoroutine"
+	grep -Fxq "PASS" "${output}.numgoroutine"
+}
+
+run_libffi_go_test() {
+	local target="$1"
+	local output="${work_dir}/test-go-libffi-${target:-gojs}.out"
+	local target_args=()
+	local env_args=(LLGO_WASM_WORKERS=1)
+	if [[ -n "${target}" ]]; then
+		target_args=(-target "${target}" -emulator)
+	else
+		env_args+=(GOOS=js GOARCH=wasm)
+	fi
+	run_with_timeout env "${env_args[@]}" "${llgo_cmd}" test "${target_args[@]}" \
+		-tags=llgo.wasm.reflect.libffi -v -count=1 -timeout=180s \
+		"${repo_root}/test/go" 2>&1 | tee "${output}"
+	grep -Fxq "PASS" "${output}"
+}
+
+run_libffi_reflect() {
+	local target="$1"
+	local runner="$2"
+	local name="$3"
+	local module="${work_dir}/${name}.mjs"
+	LLGO_WASM_WORKERS=1 "${llgo_cmd}" build -target "${target}" \
+		-tags=llgo.wasm.reflect.libffi -o "${module}" "${repo_root}/benchmark/wasm/testdata/reflectcall"
+	"${wasm_tools_cmd}" validate --features all "${module%.mjs}.wasm"
+	run_with_timeout "${node_cmd}" "${repo_root}/targets/${runner}" "${module}" 2>&1 | tee "${module}.out"
+	grep -Fxq "42 42" "${module}.out"
+}
+
+reject_libffi_workers() {
+	local output="${work_dir}/libffi-workers-rejected.out"
+	if LLGO_WASM_WORKERS=2 "${llgo_cmd}" build -target emscripten \
+		-tags=llgo.wasm.reflect.libffi -o "${work_dir}/libffi-workers.mjs" \
+		"${reflect_worker_fixture}" >"${output}" 2>&1; then
+		echo "libffi reflection unexpectedly accepted multiple workers" >&2
+		exit 1
+	fi
+	grep -Fq "llgo.wasm.reflect.libffi does not support WebAssembly workers" "${output}"
+}
+
+run_worker_pool_gc_test() {
+	local output="${work_dir}/test-pool-gc-emscripten.out"
+	run_with_timeout env LLGO_WASM_WORKERS=2 "${llgo_cmd}" test \
+		-target emscripten -emulator -v -count=1 -timeout=180s \
+		-run '^TestPoolAfterGC$' "${repo_root}/test/std/sync" 2>&1 | tee "${output}"
+	grep -Fq "PASS" "${output}"
+}
+
+run_filesystem_acceptance() {
+	local target runner workers mode module
+	for target in emscripten emscripten-memory64; do
+		runner="${target}-runner.mjs"
+		for workers in 1 2; do
+			mode=single
+			if [[ "${workers}" = 2 ]]; then mode=workers; fi
+			module="${work_dir}/fs-${mode}-${target}.mjs"
+			LLGO_WASM_WORKERS="${workers}" "${llgo_cmd}" build -target "${target}" \
+				-o "${module}" "${repo_root}/internal/build/testdata/wasm-browser-fs"
+			"${wasm_tools_cmd}" validate --features all "${module%.mjs}.wasm"
+			local stress_args=()
+			if [[ "${workers}" = 2 ]]; then stress_args=(--gc-stress); fi
+			run_with_timeout "${node_cmd}" "${repo_root}/targets/${runner}" "${module}" "fs-${mode}" "${stress_args[@]}" \
+				2>&1 | tee "${module}.out"
+			grep -Fxq "wasm filesystem ok" "${module}.out"
+		done
+	done
 }
 
 find_browser() {
@@ -120,7 +222,12 @@ run_browser_acceptance() {
 	curl -fsS http://127.0.0.1:8123/ >/dev/null
 
 	local module
-	for module in workers-emscripten.mjs workers-memory64.mjs hardening-workers-emscripten.mjs hardening-workers-memory64.mjs; do
+	for module in workers-emscripten.mjs workers-memory64.mjs hardening-workers-emscripten.mjs hardening-workers-memory64.mjs \
+		js-workers-2-emscripten.mjs js-workers-2-memory64.mjs js-workers-4-emscripten.mjs js-workers-4-memory64.mjs \
+		reflect-workers-2-emscripten.mjs reflect-workers-2-memory64.mjs reflect-workers-4-emscripten.mjs reflect-workers-4-memory64.mjs \
+		fs-single-emscripten.mjs fs-workers-emscripten.mjs fs-single-emscripten-memory64.mjs fs-workers-emscripten-memory64.mjs \
+		libffi-reflect-emscripten.mjs libffi-reflect-memory64.mjs; do
+		echo "browser worker acceptance: ${module}"
 		run_with_timeout "${node_cmd}" "${worker_fixture}/browser-runner.mjs" \
 			"${browser}" "http://127.0.0.1:8123/browser.html?module=${module}"
 	done
@@ -132,38 +239,52 @@ run_browser_acceptance() {
 
 require_tool "${llgo_cmd}"
 require_tool "${node_cmd}"
-require_tool "${wasmtime_cmd}"
 require_tool "${wasm_tools_cmd}"
 require_tool "${wasm_opt_cmd}"
 require_tool curl
 export WASMOPT="${wasm_opt_cmd}"
 
+"${node_cmd}" --test "${repo_root}/test/wasm/workers/browser-process.test.mjs"
+reject_libffi_workers
+
 # Preserve the single-worker R2 behavior while adding the worker backend.
 run_single_hardening emscripten emscripten-runner.mjs hardening-single-emscripten
 run_single_hardening emscripten-memory64 emscripten-memory64-runner.mjs hardening-single-memory64
-"${llgo_cmd}" build -target wasi -o "${work_dir}/hardening-single-wasi.wasm" "${hardening_fixture}"
-"${wasm_tools_cmd}" validate --features all "${work_dir}/hardening-single-wasi.wasm"
-run_with_timeout "${wasmtime_cmd}" run -W exceptions=y \
-	--env LLGO_WASM_EXPECT_ARG=hardening-single-wasi \
-	--env LLGO_WASM_BLOCKED_G=1000 \
-	"${work_dir}/hardening-single-wasi.wasm" hardening-single-wasi 2>&1 | tee "${work_dir}/hardening-single-wasi.out"
-grep -Fxq "wasm hardening ok" "${work_dir}/hardening-single-wasi.out"
 
 # EC32 and EC64 run the same scheduler, GC, C-boundary, and lifecycle probes.
-run_emscripten emscripten emscripten-runner.mjs \
+run_emscripten 2 emscripten emscripten-runner.mjs \
 	"${worker_fixture}" "wasm workers ok" workers-emscripten
-run_emscripten emscripten-memory64 emscripten-memory64-runner.mjs \
+run_emscripten 2 emscripten-memory64 emscripten-memory64-runner.mjs \
 	"${worker_fixture}" "wasm workers ok" workers-memory64
-run_emscripten emscripten emscripten-runner.mjs \
+for workers in 2 4; do
+	run_emscripten "${workers}" emscripten emscripten-runner.mjs \
+		"${js_worker_fixture}" "wasm js workers ok" "js-workers-${workers}-emscripten"
+	run_emscripten "${workers}" emscripten-memory64 emscripten-memory64-runner.mjs \
+		"${js_worker_fixture}" "wasm js workers ok" "js-workers-${workers}-memory64"
+	run_emscripten "${workers}" emscripten emscripten-runner.mjs \
+		"${reflect_worker_fixture}" "wasm reflect workers ok" "reflect-workers-${workers}-emscripten"
+	run_emscripten "${workers}" emscripten-memory64 emscripten-memory64-runner.mjs \
+		"${reflect_worker_fixture}" "wasm reflect workers ok" "reflect-workers-${workers}-memory64"
+done
+run_emscripten 2 emscripten emscripten-runner.mjs \
 	"${hardening_fixture}" "wasm hardening ok" hardening-workers-emscripten \
 	LLGO_WASM_EXPECT_ARG=hardening-workers-emscripten LLGO_WASM_BLOCKED_G=1000
-run_emscripten emscripten-memory64 emscripten-memory64-runner.mjs \
+run_emscripten 2 emscripten-memory64 emscripten-memory64-runner.mjs \
 	"${hardening_fixture}" "wasm hardening ok" hardening-workers-memory64 \
 	LLGO_WASM_EXPECT_ARG=hardening-workers-memory64 LLGO_WASM_BLOCKED_G=1000
 
 # Verify that the public test command selects and executes the worker runtime.
 run_worker_llgo_test emscripten test-workers-emscripten
 run_worker_llgo_test emscripten-memory64 test-workers-memory64
+run_worker_pool_gc_test
+run_worker_go_test emscripten
+run_worker_go_test emscripten-memory64
+run_libffi_go_test emscripten
+run_libffi_go_test emscripten-memory64
+run_libffi_go_test ""
+run_libffi_reflect emscripten emscripten-runner.mjs libffi-reflect-emscripten
+run_libffi_reflect emscripten-memory64 emscripten-memory64-runner.mjs libffi-reflect-memory64
+run_filesystem_acceptance
 
 run_browser_acceptance "$(find_browser)"
 

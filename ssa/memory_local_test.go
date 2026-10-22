@@ -19,7 +19,7 @@ func TestLocalLoopAllocReservesOneSlotPerCall(t *testing.T) {
 				if debug {
 					pkg.InitDebug("localalloc", "localalloc", token.NewFileSet())
 				}
-				fn := pkg.NewFunc("loop", NoArgsNoRet, InGo)
+				fn := pkg.NewFunc("loop", NoArgsNoRet, GoDecl)
 				b := fn.MakeBody(2)
 				if debug {
 					pos := token.Position{Filename: "local.go", Line: 1, Column: 1}
@@ -37,7 +37,7 @@ func TestLocalLoopAllocReservesOneSlotPerCall(t *testing.T) {
 					types.NewArray(types.Typ[types.Byte], 96),
 					types.NewArray(types.Typ[types.Int64], 4),
 				} {
-					typ := prog.Type(elem, InGo)
+					typ := prog.Type(elem, GoDecl)
 					slot := b.Alloc(typ, false).impl
 					if _, exists := slots[slot]; exists {
 						t.Fatal("distinct locals share one reservation")

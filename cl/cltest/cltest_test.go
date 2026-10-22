@@ -8,6 +8,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/xgo-dev/llgo/internal/build"
 	"github.com/xgo-dev/llgo/internal/littest"
 )
 
@@ -118,5 +119,23 @@ func TestReadGoldenReturnsVersionedReadError(t *testing.T) {
 
 	if _, _, err := readGolden(file); err == nil {
 		t.Fatal("readGolden() succeeded for a versioned golden directory")
+	}
+}
+
+func TestCaptureDWARFMode(t *testing.T) {
+	for _, mode := range []build.DWARFMode{build.DWARFDefault, build.DWARFPreserve, build.DWARFOmit} {
+		conf := build.NewDefaultConf(build.ModeRun)
+		conf.LinkOptions.DWARF = mode
+		got, _, _, _ := withModuleCapture(conf, t.TempDir())
+		want := mode
+		if want == build.DWARFDefault {
+			want = build.DWARFOmit
+		}
+		if got.LinkOptions.DWARF != want {
+			t.Fatalf("capture DWARF = %v, want %v", got.LinkOptions.DWARF, want)
+		}
+		if conf.LinkOptions.DWARF != mode {
+			t.Fatal("capture changed caller options")
+		}
 	}
 }

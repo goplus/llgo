@@ -156,37 +156,37 @@ const (
 	runtimeFuncInfoLineMask    = runtimeFuncInfoLineWrapper - 1
 )
 
-//go:linkname runtimeFuncInfoTable __llgo_funcinfo_table
+//go:linkname runtimeFuncInfoTable C.__llgo_funcinfo_table
 var runtimeFuncInfoTable *runtimeFuncInfoRecord
 
-//go:linkname runtimeFuncInfoStrings __llgo_funcinfo_strings
+//go:linkname runtimeFuncInfoStrings C.__llgo_funcinfo_strings
 var runtimeFuncInfoStrings *c.Char
 
-//go:linkname runtimeFuncInfoStringOffsets __llgo_funcinfo_string_offsets
+//go:linkname runtimeFuncInfoStringOffsets C.__llgo_funcinfo_string_offsets
 var runtimeFuncInfoStringOffsets *uint32
 
-//go:linkname runtimeFuncInfoStringCount __llgo_funcinfo_string_count
+//go:linkname runtimeFuncInfoStringCount C.__llgo_funcinfo_string_count
 var runtimeFuncInfoStringCount uintptr
 
-//go:linkname runtimeFuncInfoHash __llgo_funcinfo_hash
+//go:linkname runtimeFuncInfoHash C.__llgo_funcinfo_hash
 var runtimeFuncInfoHash *uint16
 
-//go:linkname runtimeFuncInfoCount __llgo_funcinfo_count
+//go:linkname runtimeFuncInfoCount C.__llgo_funcinfo_count
 var runtimeFuncInfoCount uintptr
 
-//go:linkname runtimeFuncInfoHashMask __llgo_funcinfo_hash_mask
+//go:linkname runtimeFuncInfoHashMask C.__llgo_funcinfo_hash_mask
 var runtimeFuncInfoHashMask uintptr
 
-//go:linkname runtimeFuncInfoSymbolIndex __llgo_funcinfo_symbol_index
+//go:linkname runtimeFuncInfoSymbolIndex C.__llgo_funcinfo_symbol_index
 var runtimeFuncInfoSymbolIndex *runtimeFuncInfoSymbolIndexRecord
 
-//go:linkname runtimeFuncInfoSymbolIndexCount __llgo_funcinfo_symbol_index_count
+//go:linkname runtimeFuncInfoSymbolIndexCount C.__llgo_funcinfo_symbol_index_count
 var runtimeFuncInfoSymbolIndexCount uintptr
 
-//go:linkname runtimeFuncInfoEntryStart __llgo_funcinfo_entry_start
+//go:linkname runtimeFuncInfoEntryStart C.__llgo_funcinfo_entry_start
 var runtimeFuncInfoEntryStart *runtimeFuncInfoEntryRecord
 
-//go:linkname runtimeFuncInfoEntryEnd __llgo_funcinfo_entry_end
+//go:linkname runtimeFuncInfoEntryEnd C.__llgo_funcinfo_entry_end
 var runtimeFuncInfoEntryEnd *runtimeFuncInfoEntryRecord
 
 type runtimePCLineRecord struct {
@@ -197,16 +197,16 @@ type runtimePCLineRecord struct {
 	line      uint32
 }
 
-//go:linkname runtimePCLineTable __llgo_pcline_table
+//go:linkname runtimePCLineTable C.__llgo_pcline_table
 var runtimePCLineTable *runtimePCLineRecord
 
-//go:linkname runtimePCLineCount __llgo_pcline_count
+//go:linkname runtimePCLineCount C.__llgo_pcline_count
 var runtimePCLineCount uintptr
 
-//go:linkname runtimePCSiteStart __llgo_pcsite_start
+//go:linkname runtimePCSiteStart C.__llgo_pcsite_start
 var runtimePCSiteStart *runtimePCSiteRecord
 
-//go:linkname runtimePCSiteEnd __llgo_pcsite_end
+//go:linkname runtimePCSiteEnd C.__llgo_pcsite_end
 var runtimePCSiteEnd *runtimePCSiteRecord
 
 type runtimePCLineFrame struct {
@@ -708,6 +708,7 @@ func initRuntimeFuncPCFramesSlow() {
 				return
 			}
 		}
+		pollRuntimeTableWait()
 		c.Usleep(1)
 	}
 }
@@ -853,6 +854,7 @@ func materializePrebuiltEntries() {
 			latomic.StoreUint32(&runtimePrebuiltEntriesOnce, 2)
 			return
 		default:
+			pollRuntimeTableWait()
 			c.Usleep(1)
 		}
 	}
@@ -938,6 +940,7 @@ func appendRuntimeFuncInfoEntryFrames(frames []runtimeFuncPCFrame, entries []uin
 	entryBase := unsafe.Pointer(&entries[0])
 	nframes := base
 	used := false
+	var nativeEntries map[uintptr]bool
 	for i := uintptr(0); i < nsite; i++ {
 		site := (*runtimeFuncInfoEntryRecord)(unsafe.Pointer(start + i*size))
 		if site == nil || site.pc == 0 || site.symbolID == 0 {
@@ -948,6 +951,25 @@ func appendRuntimeFuncInfoEntryFrames(frames []runtimeFuncPCFrame, entries []uin
 			continue
 		}
 		pc := rtdebug.FunctionPC(unsafe.Pointer(site.pc))
+		if runtimeFuncPCDedupBySiteEntry {
+			// LTO carries an inlinee's entry-site asm into its caller. COFF
+			// keeps the caller's own record first, but the anchors can have
+			// identical PCs; sorting and arbitrary duplicate removal then
+			// loses the caller's identity. Keep the first record per physical
+			// PE function before sorting, and publish its true entry.
+			pc = runtimeFuncPCSiteEntry(pc)
+			if nativeEntries == nil {
+				// This temporary map is only used when building the cached
+				// Windows table, never in Wasm's fixed-stack materialization loop.
+				nativeEntries = make(map[uintptr]bool)
+			}
+			if nativeEntries[pc] {
+				// An inline copy is not an entry for its source function.
+				// Leave entries[funcIndex] for that function's own record.
+				continue
+			}
+			nativeEntries[pc] = true
+		}
 		// Write the fields directly. A composite assignment here used to lower
 		// through a fresh stack temporary on every loop iteration, exhausting a
 		// fixed WebAssembly goroutine stack while indexing a large program.
@@ -1511,7 +1533,10 @@ func funcPCFrameForEntryPC(pc uintptr) (pcSymbol, bool) {
 	}
 	frame := frames[lo]
 	if frame.entry != pc {
-		if frame.entry-pc > runtimeFuncPCEntrySlack || !runtimeFuncPCMayUseEntrySlack(pc) {
+		// dlsym entries already point at the real function start. Looking
+		// ahead from a caller PC would select the next function, especially
+		// for byte-aligned amd64 return addresses.
+		if !runtimeFuncPCFramesFromSites || frame.entry-pc > runtimeFuncPCEntrySlack || !runtimeFuncPCMayUseEntrySlack(pc) {
 			return pcSymbol{}, false
 		}
 	}
@@ -1590,6 +1615,7 @@ func initRuntimePCLineFramesSlow() {
 				return
 			}
 		}
+		pollRuntimeTableWait()
 		c.Usleep(1)
 	}
 }
@@ -1605,6 +1631,8 @@ func initRuntimePCLineFramesOnce() {
 		runtimeFuncInfoStringOffsets == nil {
 		return
 	}
+	// Bound distinct source rows per function; shared physical sites do not
+	// contribute additional rows to this limit.
 	if runtimePCLineCount > 1<<20 || runtimePCLineCount > runtimeFuncInfoCount*1024 {
 		return
 	}
@@ -1615,7 +1643,10 @@ func initRuntimePCLineFramesOnce() {
 		return
 	}
 	nsite := (end - start) / size
-	if nsite > runtimePCLineCount*1024 || nsite > 1<<22 {
+	// A source row can be shared by arbitrarily many code ranges, including
+	// generated branches with repeated //line directives. Bound the allocation
+	// by the number of physical sites, not their ratio to shared source rows.
+	if nsite > 1<<22 {
 		return
 	}
 	frames := make([]runtimePCLineFrame, nsite)

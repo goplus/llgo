@@ -125,16 +125,16 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, gl
 	var equal Expr
 	switch name := ab.EqualName(t); name {
 	case "":
-		equal = prog.Nil(prog.Type(equalFunc, InGo))
+		equal = prog.Nil(prog.Type(equalFunc, GoDecl))
 	case "structequal", "arrayequal":
 		equal = b.Pkg.rtEnvFunc(name)
 		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
 		env := b.abiType(t)
-		equal = b.aggregateValue(prog.Type(equalFunc, InGo), equal.impl, env.impl)
+		equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, env.impl)
 	default:
 		equal = b.Pkg.rtFunc(name)
 		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
-		typ := b.Prog.Type(equal.raw.Type, InGo)
+		typ := b.Prog.Type(equal.raw.Type, GoDecl)
 		equal = checkExpr(equal, typ.raw.Type, b)
 	}
 	fields = append(fields, equal.impl)
@@ -328,7 +328,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string, global llvm.Value)
 		hash := b.Pkg.rtEnvFunc("typehash")
 		b.Pkg.recordAbiTypeFakeUse(global, hash.impl)
 		env := b.abiType(t.Key())
-		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
+		hasher := b.aggregateValue(prog.Type(hashFunc, GoDecl), hash.impl, env.impl)
 		fields = []llvm.Value{
 			b.abiType(abi.PublicType(t.Key())).impl,
 			// Map operations use Elem for physical copies during bucket
@@ -631,7 +631,7 @@ func (b Builder) abiInterfaceMethods(mset *types.MethodSet) []*types.Selection {
 
 // closure func type
 func funcType(prog Program, typ types.Type) types.Type {
-	ftyp := prog.Type(typ, InGo)
+	ftyp := prog.Type(typ, GoDecl)
 	return ftyp.raw.Type.(*types.Struct).Field(0).Type()
 }
 
@@ -668,7 +668,7 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	if b.Pkg.fnlink != nil {
 		fullName = b.Pkg.fnlink(fullName)
 	}
-	return b.Pkg.NewFunc(fullName, mSig, InGo) // TODO(xsw): use rawType to speed up
+	return b.Pkg.NewFunc(fullName, mSig, GoDecl) // TODO(xsw): use rawType to speed up
 }
 
 /*
@@ -711,7 +711,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			}
 			typ = types.NewStruct(structFields, nil)
 		}
-		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
+		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), GoDecl))
 		commonFields := b.abiCommonFields(t, name, hasUncommon, g.impl)
 		extendedFields := b.abiExtendedFields(t, name, g.impl)
 		fields := commonFields
@@ -722,7 +722,7 @@ func (b Builder) abiType(t types.Type) Expr {
 		}
 		if hasUncommon {
 			fields = []llvm.Value{
-				prog.constStructValue(prog.Type(rt, InGo), fields),
+				prog.constStructValue(prog.Type(rt, GoDecl), fields),
 				b.abiUncommonType(t, methods),
 				b.abiUncommonMethods(t, methods),
 			}
@@ -730,11 +730,11 @@ func (b Builder) abiType(t types.Type) Expr {
 				pkg.abiTypeWithUncommon[g.impl] = struct{}{}
 			}
 		}
-		g.impl.SetInitializer(prog.constStructValueAs(prog.Type(typ, InGo), g.impl.GlobalValueType(), fields))
+		g.impl.SetInitializer(prog.constStructValueAs(prog.Type(typ, GoDecl), g.impl.GlobalValueType(), fields))
 		g.impl.SetGlobalConstant(true)
 		b.Pkg.setODRLinkage(g.impl, llvm.WeakODRLinkage)
 		if prog.enableGoGlobalDCE {
-			prog.addMethodTypeMetadata(g.impl, prog.Type(typ, InGo), methods)
+			prog.addMethodTypeMetadata(g.impl, prog.Type(typ, GoDecl), methods)
 		}
 		prog.abiSymbol[name] = &AbiSymbol{Name: name, PkgPath: pkg.Path(), Raw: t, Typ: g.Type, MSet: mset}
 	}
@@ -801,7 +801,7 @@ func (p Package) RegisterAbiTypes(infos []AbiTypeInfo) {
 			Name:    info.Name,
 			PkgPath: p.Path(),
 			Raw:     t,
-			Typ:     p.Prog.Type(types.NewPointer(typ), InGo),
+			Typ:     p.Prog.Type(types.NewPointer(typ), GoDecl),
 			MSet:    mset,
 		}
 	}
@@ -865,7 +865,7 @@ func (p Package) InitAbiTypesFor(fname string, filter func(sym *AbiSymbol) bool)
 		return nil
 	}
 	prog := p.Prog
-	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
+	initFn := p.NewFunc(fname, NoArgsNoRet, CDecl)
 	b := initFn.MakeBody(1)
 	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
 	b.Store(g.Expr, b.Load(p.getAbiTypesFor(fname, filter)))

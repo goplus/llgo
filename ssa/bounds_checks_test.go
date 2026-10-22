@@ -16,7 +16,7 @@ func TestBoundsCheckModesIR(t *testing.T) {
 
 	for _, helper := range []string{
 		"PanicIndex",
-		"StringSlice2",
+		"StringSlice",
 		"NewSlice2",
 		"NewSlice3Bounds",
 		"PanicSliceConvert",
@@ -41,6 +41,65 @@ func TestBoundsCheckModesIR(t *testing.T) {
 	}
 }
 
+func TestStringSliceIndexABI(t *testing.T) {
+	for _, arch := range []string{"amd64", "386"} {
+		t.Run(arch, func(t *testing.T) {
+			t.Setenv("GOOS", "windows")
+			t.Setenv("GOARCH", arch)
+			prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "windows", GOARCH: arch})
+			t.Cleanup(prog.Dispose)
+			for _, test := range []struct {
+				name               string
+				low, high          types.BasicKind
+				omitLow, omitHigh  bool
+				native32, native64 bool
+			}{
+				{"native", types.Int, types.Int, false, false, true, true},
+				{"narrow", types.Int8, types.Int16, false, false, true, true},
+				{"wideLow", types.Int64, types.Int, false, false, false, true},
+				{"wideHigh", types.Int, types.Int64, false, false, false, true},
+				{"unsignedLow", types.Uint, types.Int, false, false, false, false},
+				{"unsignedHigh", types.Int, types.Uint, false, false, false, false},
+				{"wideUnsignedLow", types.Uint64, types.Int, false, false, false, false},
+				{"wideUnsignedHigh", types.Int, types.Uint64, false, false, false, false},
+				{"omittedLow", types.Int64, types.Int, true, false, true, true},
+				{"omittedHigh", types.Int, types.Int64, false, true, true, true},
+				{"omittedBoth", types.Int64, types.Int64, true, true, true, true},
+			} {
+				t.Run(test.name, func(t *testing.T) {
+					params := types.NewTuple(
+						types.NewVar(0, nil, "s", types.Typ[types.String]),
+						types.NewVar(0, nil, "low", types.Typ[test.low]),
+						types.NewVar(0, nil, "high", types.Typ[test.high]),
+					)
+					results := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.String]))
+					sig := types.NewSignatureType(nil, nil, nil, params, results, false)
+					pkg := prog.NewPackage("bounds", "example.com/bounds/"+test.name)
+					fn := pkg.NewFunc(test.name, sig, ssa.GoDecl)
+					b := fn.MakeBody(1)
+					low, high := fn.Param(1), fn.Param(2)
+					if test.omitLow {
+						low = ssa.Expr{}
+					}
+					if test.omitHigh {
+						high = ssa.Expr{}
+					}
+					b.Return(b.Slice(fn.Param(0), low, high, ssa.Expr{}))
+					b.EndBuild()
+					want, other := "StringSlice2", "StringSlice"
+					if (arch == "386" && test.native32) || (arch == "amd64" && test.native64) {
+						want, other = other, want
+					}
+					ir := pkg.String()
+					if !strings.Contains(ir, want+"\"(") || strings.Contains(ir, other+"\"(") {
+						t.Fatalf("string slice must use %s without truncating or reinterpreting its indices:\n%s", want, ir)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestSignedIndexUsesUnsignedCompare(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	t.Cleanup(prog.Dispose)
@@ -56,7 +115,7 @@ func TestSignedIndexUsesUnsignedCompare(t *testing.T) {
 	)
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
 	pkg := prog.NewPackage("bounds", "example.com/bounds")
-	fn := pkg.NewFunc("signedIndex", sig, ssa.InGo)
+	fn := pkg.NewFunc("signedIndex", sig, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	b.IndexAddr(fn.Param(0), fn.Param(2))
 	b.IndexAddr(fn.Param(1), fn.Param(2))
@@ -98,7 +157,7 @@ func TestWideIndexBoundsCheck386(t *testing.T) {
 	)
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
 	pkg := prog.NewPackage("bounds", "example.com/bounds")
-	fn := pkg.NewFunc("wideIndex", sig, ssa.InGo)
+	fn := pkg.NewFunc("wideIndex", sig, ssa.GoDecl)
 	b := fn.MakeBody(1)
 	b.IndexAddr(fn.Param(0), fn.Param(1))
 	b.IndexAddr(fn.Param(0), fn.Param(2))
@@ -142,7 +201,7 @@ func boundsCheckModeIR(t *testing.T, disable bool) string {
 	)
 	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
 	pkg := prog.NewPackage("bounds", "example.com/bounds")
-	fn := pkg.NewFunc("modes", sig, ssa.InGo)
+	fn := pkg.NewFunc("modes", sig, ssa.GoDecl)
 	b := fn.MakeBody(1)
 
 	str := fn.Param(0)
@@ -159,7 +218,7 @@ func boundsCheckModeIR(t *testing.T, disable bool) string {
 	b.Slice(slice, low, high, none)
 	b.Slice(slice, low, high, max)
 	b.Slice(array, none, none, none)
-	b.SliceToArrayPointer(slice, prog.Type(byteArrayPtr, ssa.InGo))
+	b.SliceToArrayPointer(slice, prog.Type(byteArrayPtr, ssa.GoDecl))
 	b.Return()
 	b.EndBuild()
 	return pkg.String()

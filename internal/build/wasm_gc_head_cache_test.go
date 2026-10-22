@@ -23,7 +23,8 @@ func TestWasmGCHeadCacheWorkloads(t *testing.T) {
 	dir := filepath.Join("..", "..", "runtime", "internal", "runtime", "tinygogc")
 	functions := map[string]bool{
 		"gcFindHead": true, "gcFindHeadForMark": true,
-		"gcStateByteOf": true, "gcStateFromByte": true, "gcStateOf": true,
+		"gcStateByteOfIn": true, "gcStateFromByteIn": true, "gcStateOf": true,
+		"gcFindHeadIn": true, "gcStateOfIn": true,
 	}
 	var source bytes.Buffer
 	source.WriteString(gcHeadCacheWorkloadSource)
@@ -35,10 +36,17 @@ func TestWasmGCHeadCacheWorkloads(t *testing.T) {
 		for _, decl := range file.Decls {
 			if name == "gc_tinygo.go" {
 				fn, ok := decl.(*ast.FuncDecl)
-				if !ok || !functions[fn.Name.Name] {
-					continue
+				if ok {
+					if !functions[fn.Name.Name] {
+						continue
+					}
+					delete(functions, fn.Name.Name)
+				} else {
+					gen, ok := decl.(*ast.GenDecl)
+					if !ok || gen.Tok != token.CONST || gen.Specs[0].(*ast.ValueSpec).Names[0].Name != "blocksPerStateWord" {
+						continue
+					}
 				}
-				delete(functions, fn.Name.Name)
 			}
 			if err := format.Node(&source, fset, decl); err != nil {
 				t.Fatal(err)
@@ -81,11 +89,14 @@ const (
   blocksPerStateByte = 4
 )
 var metadataStart unsafe.Pointer
+type heapSegment struct { first, metadata uintptr }
+var testSegment heapSegment
+func segmentForBlock(block uintptr) *heapSegment { return &testSegment }
 var markHeads markHeadCache
 var c = struct { Str func(string) string }{func(s string) string { return s }}
 func gcPanic(message string) { panic(message) }
 
-func makeMetadata(objects int, blocks uintptr) []byte {
+func makeMetadataAt(objects int, blocks, first uintptr) []byte {
   data := make([]byte, (uintptr(objects)*blocks+3)/4)
   for i := range data { data[i] = blockStateByteAllTails }
   for object := 0; object < objects; object++ {
@@ -96,8 +107,14 @@ func makeMetadata(objects int, blocks uintptr) []byte {
     data[head/4] = data[head/4] &^ (3 << ((head%4)*2)) | state << ((head%4)*2)
   }
   metadataStart = unsafe.Pointer(&data[0])
+  testSegment.first = first
+  testSegment.metadata = uintptr(metadataStart)
   markHeads.reset()
   return data
+}
+
+func makeMetadata(objects int, blocks uintptr) []byte {
+  return makeMetadataAt(objects, blocks, 0)
 }
 
 func TestInterleavedHeads(t *testing.T) {
@@ -118,6 +135,21 @@ func TestInterleavedHeads(t *testing.T) {
       markHeads.reset()
       runtime.KeepAlive(data)
     }
+  }
+}
+
+func TestHeadsAfterUnalignedSegmentBoundary(t *testing.T) {
+  for _, first := range []uintptr{1, 2, 3} {
+    data := makeMetadataAt(3, 256, first)
+    for object := uintptr(0); object < 3; object++ {
+      head := first + object*256
+      for _, offset := range []uintptr{0, 1, 127, 255} {
+        if got := gcFindHeadForMark(head+offset); got != head {
+          t.Fatalf("first=%d object=%d offset=%d: head=%d, want %d", first, object, offset, got, head)
+        }
+      }
+    }
+    runtime.KeepAlive(data)
   }
 }
 

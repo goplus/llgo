@@ -164,11 +164,11 @@ func (p Package) ownsGlobal(name string) bool {
 }
 
 // NewVar creates a new global variable.
-func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
+func (p Package) NewVar(name string, typ types.Type, cc CallConv) Global {
 	if v, ok := p.vars[name]; ok {
 		return v
 	}
-	t := p.Prog.Type(typ, bg)
+	t := p.Prog.Type(typ, cc)
 	return p.doNewVar(name, t)
 }
 
@@ -183,12 +183,12 @@ func (p Package) NewVarEx(name string, t Type) Global {
 // NewThreadLocalVar creates a native TLS variable. Unlike NewVar, it keeps
 // independent storage for zero-sized values instead of using the module-wide
 // zero-sized allocation sentinel.
-func (p Package) NewThreadLocalVar(name string, typ types.Type, bg Background) Global {
+func (p Package) NewThreadLocalVar(name string, typ types.Type, cc CallConv) Global {
 	if v, ok := p.vars[name]; ok {
 		v.impl.SetThreadLocal(true)
 		return v
 	}
-	t := p.Prog.Type(typ, bg)
+	t := p.Prog.Type(typ, cc)
 	return p.doNewVarEx(name, t, true)
 }
 
@@ -232,6 +232,24 @@ func (p Package) doNewVarEx(name string, t Type, threadLocal bool) Global {
 // VarOf returns a global variable by name.
 func (p Package) VarOf(name string) Global {
 	return p.vars[name]
+}
+
+// ReplaceVarWith replaces a non-alias global with an existing value, removing
+// the original global and its attached debug information. It returns false if
+// a previous lowering pass already removed the variable.
+func (p Package) ReplaceVarWith(name string, replacement Expr) bool {
+	global := p.vars[name]
+	if global == nil {
+		return false
+	}
+	if global.isZeroSizedAlias {
+		panic("ReplaceVarWith: cannot replace a shared zero-sized alias")
+	}
+	global.impl.ReplaceAllUsesWith(replacement.impl)
+	global.impl.EraseFromParentAsGlobal()
+	delete(p.glbDbgVars, global.Expr)
+	delete(p.vars, name)
+	return true
 }
 
 // Init initializes the global variable with the given value.
@@ -352,56 +370,94 @@ type aFunction struct {
 type Function = *aFunction
 
 // NewFunc creates a new function.
-func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Function {
-	return p.NewFuncEx(name, sig, bg, false, false)
+func (p Package) NewFunc(name string, sig *types.Signature, cc CallConv) Function {
+	return p.NewFuncEx(name, sig, cc, false, false)
 }
 
 // NewFuncEx creates a new function.
-func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool, instantiated bool) Function {
+func (p Package) NewFuncEx(name string, sig *types.Signature, cc CallConv, hasFreeVars bool, instantiated bool) Function {
 	if hasFreeVars {
 		panic("ssa: NewFuncEx cannot represent an environment; use NewEnvFunc")
 	}
-	return p.newFunc(name, sig, bg, nil, instantiated)
+	return p.newFunc(name, sig, cc, nil, instantiated)
 }
 
 // NewEnvFunc creates a function whose Go signature is sig and whose physical
 // LLVM entry has an additional compiler-owned environment parameter.
 func (p Package) NewEnvFunc(
-	name string, sig *types.Signature, bg Background, env *types.Var, instantiated bool,
+	name string, sig *types.Signature, cc CallConv, env *types.Var, instantiated bool,
 ) Function {
 	if env == nil {
 		panic("ssa: nil closure environment")
 	}
-	return p.newFunc(name, sig, bg, env, instantiated)
+	return p.newFunc(name, sig, cc, env, instantiated)
 }
 
 func (p Package) newFunc(
-	name string, sig *types.Signature, bg Background, env *types.Var, instantiated bool,
+	name string, sig *types.Signature, cc CallConv, env *types.Var, instantiated bool,
 ) Function {
+	isLLVMName := strings.HasPrefix(name, "llvm.")
+	var cached Function
 	if v, ok := p.fns[name]; ok {
 		if v.NeedsEnv() != (env != nil) {
 			panic("ssa: conflicting closure environment ABI for " + name)
 		}
-		return v
+		if !isLLVMName || v.impl.IntrinsicID() == 0 {
+			return v
+		}
+		cached = v
 	}
-	t := p.Prog.FuncDecl(sig, bg)
+	t := p.Prog.FuncDecl(sig, cc)
+	entrySig := t.raw.Type.(*types.Signature)
 	var envType Type
 	if env != nil {
-		envType = p.Prog.Type(env.Type(), InGo)
+		envType = p.Prog.Type(env.Type(), GoDecl)
 		rawEnv := types.NewParam(env.Pos(), env.Pkg(), env.Name(), envType.raw.Type)
-		entrySig := FuncAddCtx(rawEnv, t.raw.Type.(*types.Signature))
-		entry := Type(&aType{p.Prog.toLLVMFuncBackground(entrySig, bg), t.raw, vkFuncDecl})
-		if isNativeFuncBackground(bg) {
+		entrySig = FuncAddCtx(rawEnv, entrySig)
+		entry := Type(&aType{p.Prog.toLLVMFuncBackground(entrySig, cc), t.raw, vkFuncDecl})
+		if isNativeCallConv(cc) {
 			entry = p.Prog.withNativeStorage(entry)
 		}
 		t = entry
 	}
 	dbgInstrln("NewFunc", name, t.raw.Type, "needsEnv:", envType != nil)
+	if isLLVMName {
+		fn := p.mod.NamedFunction(name)
+		if !fn.IsNil() && fn.IntrinsicID() != 0 {
+			// LLVM's intrinsic builder bypasses p.fns. Keep its canonical symbol
+			// and attributes: AddFunction would rename it to e.g. llvm.trap.1.
+			var conflict string
+			switch {
+			case cc != CDecl:
+				conflict = "calling convention must be CDecl"
+			case env != nil:
+				conflict = "closure environment"
+			case instantiated:
+				conflict = "instantiation"
+			case fn.GlobalValueType().C != t.ll.C:
+				conflict = "function type"
+			case fn.FunctionCallConv() != llvm.CCallConv:
+				conflict = "LLVM calling convention must be C"
+			}
+			if conflict != "" {
+				panic("ssa: conflicting LLVM intrinsic declaration for " + name + ": " + conflict)
+			}
+			if cached != nil {
+				return cached
+			}
+			ret := newFunction(fn, t, p, p.Prog, nil)
+			p.fns[name] = ret
+			return ret
+		}
+	}
 	llvmName := name
-	if bg == InStdcall {
+	if cc == Stdcall {
 		llvmName = p.Prog.stdcallSymbolName(name)
 	}
 	fn := llvm.AddFunction(p.mod, llvmName, t.ll)
+	if isNativeCallConv(cc) {
+		p.Prog.nativeIntegerAttrs(entrySig, t.ll, fn.AddAttributeAtIndex)
+	}
 	switch name {
 	case "github.com/xgo-dev/llgo/runtime/internal/runtime.AllocU",
 		"github.com/xgo-dev/llgo/runtime/internal/runtime.AllocZ",
@@ -411,7 +467,7 @@ func (p Package) newFunc(
 		// definitions so every module can use it without LTO or inlining.
 		fn.AddAttributeAtIndex(0, p.Prog.ctx.CreateEnumAttribute(llvm.AttributeKindID("nonnull"), 0))
 	}
-	if bg == InStdcall {
+	if cc == Stdcall {
 		fn.SetFunctionCallConv(p.Prog.stdcallCallConv())
 	}
 	if envType != nil {
@@ -423,7 +479,7 @@ func (p Package) newFunc(
 		// registers are not linked records; RtlVirtualUnwind needs .pdata.
 		fn.AddFunctionAttr(p.Prog.ctx.CreateEnumAttribute(llvm.AttributeKindID("uwtable"), 2))
 	}
-	if bg == InGo {
+	if cc == GoDecl {
 		fn.AddFunctionAttr(p.nullPointerIsValidAttr)
 		// Keep frame pointers so the runtime can walk real stacks (FP chain)
 		// for Callers/panic tracebacks instead of shadow-stack bookkeeping.
@@ -472,9 +528,9 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 			n--
 		}
 		params = make([]Type, n)
-		bg := InGo
+		bg := GoDecl
 		if prog.isNativeStorage(fn) {
-			bg = InC
+			bg = CDecl
 		}
 		for i := 0; i < n; i++ {
 			params[i] = prog.Type(in.At(i).Type(), bg)
@@ -523,10 +579,12 @@ func (p Function) closureCtx(b Builder) Expr {
 		}
 		ptr := p.Env()
 		if b.blk.Index() != 0 {
-			blk := b.impl.GetInsertBlock()
+			blk := *b.blk
+			// A synthetic branch can be ahead of the logical block's tail.
+			blk.last = b.impl.GetInsertBlock()
 			b.SetBlockEx(p.blks[0], AtStart, false)
 			p.freeVars = b.Load(ptr)
-			b.impl.SetInsertPointAtEnd(blk)
+			b.SetBlockEx(&blk, AtEnd, false)
 		} else {
 			p.freeVars = b.Load(ptr)
 		}
@@ -609,8 +667,7 @@ func (p Function) HasBody() bool {
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
-	b.blk = p.blks[0]
-	b.impl.SetInsertPointAtEnd(b.blk.last)
+	b.SetBlock(p.blks[0])
 	return b
 }
 

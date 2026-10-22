@@ -32,13 +32,15 @@ __declspec(dllimport) void *WINAPI RtlVirtualUnwind(DWORD, uint64_t, uint64_t, v
 typedef struct thread_node {
     struct thread_node *next, *prev;
     uint64_t id, parent;
+    uint64_t debugger_thread_id;
     uintptr_t created;
     HANDLE thread;
     DWORD thread_id;
     uint32_t state;
 } thread_node;
 static void *registry_lock;
-static thread_node *threads;
+/* Read only while all debugger threads are stopped. Owned by registry_lock. */
+__declspec(dllexport) thread_node *llgo_debugger_threads_v1;
 static _Thread_local thread_node *current;
 static _Thread_local uintptr_t *fault_buffer;
 
@@ -71,9 +73,9 @@ void *llgo_traceback_register(uint64_t id, uint64_t parent, uintptr_t created)
     if (!n) return 0;
     n->id = id; n->parent = parent; n->created = created; n->state = 1;
     AcquireSRWLockExclusive(&registry_lock);
-    n->next = threads;
-    if (threads) threads->prev = n;
-    threads = n;
+    n->next = llgo_debugger_threads_v1;
+    if (llgo_debugger_threads_v1) llgo_debugger_threads_v1->prev = n;
+    llgo_debugger_threads_v1 = n;
     ReleaseSRWLockExclusive(&registry_lock);
     return n;
 }
@@ -87,6 +89,7 @@ void llgo_traceback_attach(void *raw)
     DWORD tid = GetCurrentThreadId();
     HANDLE thread = OpenThread(0x0002 | 0x0008 | 0x0040, 0, tid);
     AcquireSRWLockExclusive(&registry_lock);
+    n->debugger_thread_id = tid;
     n->thread_id = tid; n->thread = thread; n->state = 2;
     current = n;
     ReleaseSRWLockExclusive(&registry_lock);
@@ -99,7 +102,7 @@ void llgo_traceback_unregister(void *raw)
     __atomic_store_n(&n->state, 6, __ATOMIC_RELEASE);
     AcquireSRWLockExclusive(&registry_lock);
     if (n->prev) n->prev->next = n->next;
-    else threads = n->next;
+    else llgo_debugger_threads_v1 = n->next;
     if (n->next) n->next->prev = n->prev;
     ReleaseSRWLockExclusive(&registry_lock);
     if (n->thread) CloseHandle(n->thread);
@@ -296,7 +299,7 @@ llgo_traceback_snapshot *llgo_traceback_capture(uint64_t except)
     if (!scratch) return 0;
     llgo_traceback_snapshot *head = 0, **tail = &head;
     AcquireSRWLockExclusive(&registry_lock);
-    for (thread_node *n = threads; n; n = n->next) {
+    for (thread_node *n = llgo_debugger_threads_v1; n; n = n->next) {
         uint32_t state = __atomic_load_n(&n->state, __ATOMIC_ACQUIRE);
         if (n->id == except || state == 6 || n->thread_id == GetCurrentThreadId())
             continue;

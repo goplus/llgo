@@ -48,7 +48,7 @@ func TestMakeInterface(t *testing.T) {
 		return pkg
 	})
 	pkg := prog.NewPackage("foo", "foo")
-	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InC)
+	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.CDecl)
 	b := fn.MakeBody(1)
 	b.MakeInterface(prog.Any(), prog.IntVal(100, prog.Int64()))
 	b.MakeInterface(prog.Any(), prog.FloatVal(100, prog.Float64()))

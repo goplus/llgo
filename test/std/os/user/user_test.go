@@ -4,9 +4,11 @@ package user_test
 
 import (
 	"errors"
+	"os"
 	"os/user"
 	"runtime"
 	"slices"
+	"strings"
 	"syscall"
 	"testing"
 )
@@ -21,6 +23,23 @@ func currentUser(t *testing.T) *user.User {
 		t.Fatal("Current returned nil user")
 	}
 	return u
+}
+
+func hasCurrentUser(t *testing.T) bool {
+	t.Helper()
+	if runtime.GOOS != "wasip1" {
+		return true
+	}
+	_, err := user.Current()
+	if err == nil {
+		return true
+	}
+	if strings.Contains(err.Error(), "Current requires cgo or") {
+		t.Logf("WASI host does not provide the user and home environment: %v", err)
+		return false
+	}
+	t.Fatalf("unexpected Current error: %v", err)
+	return false
 }
 
 func compareUsers(t *testing.T, got, want *user.User) {
@@ -56,6 +75,13 @@ func checkLookupError[T error](t *testing.T, err error) {
 	if err == nil {
 		t.Fatal("lookup unexpectedly succeeded")
 	}
+	var pathErr *os.PathError
+	if runtime.GOOS == "wasip1" && errors.As(err, &pathErr) && pathErr.Op == "open" &&
+		(pathErr.Path == "/etc/passwd" || pathErr.Path == "/etc/group") &&
+		(errors.Is(err, syscall.EBADF) || errors.Is(err, os.ErrNotExist)) {
+		t.Logf("WASI host does not expose the user and group database: %v", pathErr)
+		return
+	}
 	if runtime.GOOS == "windows" {
 		// Windows account APIs return the underlying Win32 lookup error. This is
 		// also the behavior of the official Go os/user implementation.
@@ -66,11 +92,14 @@ func checkLookupError[T error](t *testing.T, err error) {
 		return
 	}
 	if _, ok := err.(T); !ok {
-		t.Errorf("error type = %T, want %T", err, *new(T))
+		t.Errorf("error = %v (%T), want %T", err, err, *new(T))
 	}
 }
 
 func TestCurrent(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	u := currentUser(t)
 
 	if u.Uid == "" {
@@ -83,6 +112,9 @@ func TestCurrent(t *testing.T) {
 }
 
 func TestLookup(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	want := currentUser(t)
 	u, err := user.Lookup(want.Username)
 	if err != nil {
@@ -97,6 +129,9 @@ func TestLookupNonexistent(t *testing.T) {
 }
 
 func TestLookupId(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	want := currentUser(t)
 	u, err := user.LookupId(want.Uid)
 	if err != nil {
@@ -115,6 +150,9 @@ func TestLookupIdNonexistent(t *testing.T) {
 }
 
 func TestUserGroupIds(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	u := currentUser(t)
 	gids, err := u.GroupIds()
 	if err != nil {
@@ -126,6 +164,9 @@ func TestUserGroupIds(t *testing.T) {
 }
 
 func TestLookupGroup(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	want := currentGroup(t)
 	g, err := user.LookupGroup(want.Name)
 	if err != nil {
@@ -142,6 +183,9 @@ func TestLookupGroupNonexistent(t *testing.T) {
 }
 
 func TestLookupGroupId(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	want := currentGroup(t)
 	g, err := user.LookupGroupId(want.Gid)
 	if err != nil {
@@ -162,6 +206,9 @@ func TestLookupGroupIdNonexistent(t *testing.T) {
 }
 
 func TestUserFields(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	u := currentUser(t)
 
 	if u.Uid == "" {
@@ -176,6 +223,9 @@ func TestUserFields(t *testing.T) {
 }
 
 func TestGroupFields(t *testing.T) {
+	if !hasCurrentUser(t) {
+		return
+	}
 	g := currentGroup(t)
 
 	if g.Gid == "" {

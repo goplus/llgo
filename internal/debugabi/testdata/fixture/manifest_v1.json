@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source": "main.go",
+  "categories": [
+    "primitives",
+    "aliases",
+    "named_types",
+    "recursive_types",
+    "aggregates",
+    "strings",
+    "slices",
+    "maps",
+    "channels",
+    "interfaces",
+    "functions",
+    "closures",
+    "bound_methods",
+    "goroutines"
+  ],
+  "breakpoints": [
+    {
+      "name": "all_values",
+      "marker": "DEBUGGER_BREAK: all_values",
+      "values": {
+        "integer": 42,
+        "truth": true,
+        "floating": 3.5,
+        "alias": 17,
+        "named": 18,
+        "recursive.Value": 1,
+        "recursive.Next.Value": 2,
+        "aggregate.Name": "local",
+        "text": "hello 世界",
+        "values": [7, 8, 9],
+        "mapResult": 42,
+        "plainResult": 2,
+        "closureResult": 22,
+        "boundResult": 33,
+        "interfaceResult": "hello LLGo"
+      }
+    }
+  ]
+}

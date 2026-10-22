@@ -36,14 +36,27 @@ const (
 	DWARFOmit
 )
 
+// DWARFCompressionMode distinguishes platform defaults from an explicit
+// -compressdwarf request. Mach-O/PE compression is experimental and opt-in.
+type DWARFCompressionMode uint8
+
+const (
+	DWARFCompressionDefault DWARFCompressionMode = iota
+	DWARFCompressionEnabled
+	DWARFCompressionDisabled
+)
+
 // LinkOptions is the typed linker intent consumed by the build backend.
 // Command packages are responsible for parsing user-facing flag syntax into
 // this representation.
 type LinkOptions struct {
-	// OmitSymbolTable records the requested -s intent. Phase one uses it for
-	// Go's implied -w rule; native symbol-table omission is implemented later.
+	// OmitSymbolTable implements -s for native ELF/Mach-O linked outputs,
+	// after runtime PCLN has consumed the linker's ordinary symbols.
 	OmitSymbolTable bool
 	DWARF           DWARFMode
+	// Native Linux links compress retained DWARF by default. Other native
+	// formats require an explicit -compressdwarf=true request.
+	DWARFCompression DWARFCompressionMode
 	// ExternalLinker and ExternalLinkerFlags retain the Go linker's -extld
 	// command and -extldflags argument-list spelling. The native toolchain
 	// resolver applies Go's quoted command parsing after target selection.
@@ -52,6 +65,11 @@ type LinkOptions struct {
 }
 
 func (o LinkOptions) validate() error {
+	switch o.DWARFCompression {
+	case DWARFCompressionDefault, DWARFCompressionEnabled, DWARFCompressionDisabled:
+	default:
+		return fmt.Errorf("invalid DWARF compression mode %d", o.DWARFCompression)
+	}
 	switch o.DWARF {
 	case DWARFDefault, DWARFPreserve, DWARFOmit:
 		return nil
@@ -76,17 +94,30 @@ func (o LinkOptions) EffectiveOmitDWARF() bool {
 // omitDWARFRequested combines explicit Go linker flags with LLGo's typed
 // default. The default never overrides an explicit -w value.
 func omitDWARFRequested(conf *Config) bool {
-	if conf.LinkOptions.DWARF == DWARFDefault && conf.OmitDWARFByDefault {
+	if conf.LinkOptions.DWARF != DWARFDefault {
+		return conf.LinkOptions.EffectiveOmitDWARF()
+	}
+	if conf.OmitDWARFByDefault {
 		return true
+	}
+	if conf.Mode != ModeGen {
+		// Keep fixed-target and Wasm artifacts opt-in for DWARF.
+		if conf.Target != "" || conf.Goarch == "wasm" {
+			return true
+		}
+		// Match cmd/link's Darwin c-shared default.
+		if conf.Goos == "darwin" && conf.BuildMode == BuildModeCShared {
+			return true
+		}
 	}
 	return conf.LinkOptions.EffectiveOmitDWARF()
 }
 
 // effectiveOmitDWARF combines command intent with the selected toolchain's
-// baseline behavior. Some fixed-target linkers always omit DWARF, so LLGo
-// should avoid generating debug metadata that cannot reach the artifact.
+// capability. LLGo avoids generating debug metadata when the linked output
+// format cannot retain it.
 func effectiveOmitDWARF(conf *Config, target *crosscompile.Export) bool {
-	return omitDWARFRequested(conf) || target.DebugInfo.AlwaysOmit
+	return omitDWARFRequested(conf) || !target.DebugInfo.CanRetain()
 }
 
 // shouldEmitDebugInfo reports whether this compilation should produce DWARF.
@@ -116,13 +147,13 @@ func validateLinkOptions(conf *Config, target *crosscompile.Export) error {
 	if err := conf.LinkOptions.validate(); err != nil {
 		return err
 	}
-	if conf.LinkOptions.DWARF == DWARFPreserve && target.DebugInfo.AlwaysOmit {
+	if conf.LinkOptions.DWARF == DWARFPreserve && !target.DebugInfo.CanRetain() {
 		return fmt.Errorf("preserving DWARF is not supported by the selected target linker")
 	}
 	if !omitDWARFRequested(conf) {
 		return nil
 	}
-	if target.DebugInfo.AlwaysOmit {
+	if !target.DebugInfo.CanRetain() {
 		return nil
 	}
 	if len(target.DebugInfo.OmitLinkFlags) == 0 {
@@ -135,7 +166,7 @@ func validateLinkOptions(conf *Config, target *crosscompile.Export) error {
 // information consistently with the compile-time policy. Some linkers, such
 // as lld-link, discard DWARF unless preservation is requested explicitly.
 func debugInfoLinkerArgs(conf *Config, target *crosscompile.Export) []string {
-	if target.DebugInfo.AlwaysOmit {
+	if !target.DebugInfo.CanRetain() {
 		return nil
 	}
 	// c-archive has no final native link step. Consumers decide how to link
@@ -154,7 +185,13 @@ func debugInfoLinkerArgs(conf *Config, target *crosscompile.Export) []string {
 	if conf.Goos == "windows" && hasCOFFDebugFlag(conf.LinkOptions.ExternalLinkerFlags) {
 		return nil
 	}
-	return slices.Clone(target.DebugInfo.PreserveLinkFlags)
+	args := slices.Clone(target.DebugInfo.PreserveLinkFlags)
+	if conf.Target == "" && conf.Goos == "linux" &&
+		target.Toolchain.ObjectFormat == crosscompile.ObjectFormatELF &&
+		conf.LinkOptions.DWARFCompression != DWARFCompressionDisabled {
+		args = append(args, "-Wl,--compress-debug-sections=zlib")
+	}
+	return args
 }
 
 // debugInfoCompilerArgs keeps package C/C++ sources on the same typed debug

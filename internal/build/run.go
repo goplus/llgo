@@ -17,17 +17,19 @@
 package build
 
 import (
-	"bytes"
 	stdcontext "context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/xgo-dev/llgo/internal/crosscompile"
 	"github.com/xgo-dev/llgo/internal/shellparse"
 )
 
@@ -48,6 +50,7 @@ type testRunResult struct {
 }
 
 type testProgramResult struct {
+	index   int
 	program testProgram
 	output  []byte
 	err     error
@@ -162,10 +165,24 @@ func runnerPhase(mode Mode) string {
 }
 
 func runNativeTest(commands commandEnv, program testProgram, conf *Config, stdout, stderr io.Writer) error {
+	if conf.TestJSON {
+		copyConf := *conf
+		copyConf.RunArgs = testJSONArgs(conf.RunArgs)
+		conf = &copyConf
+	}
 	if conf.coverage != nil {
 		return runCoveredTest(commands, program, conf, stdout, stderr)
 	}
 	defer removeOutFmts(program.temporaryOutputs)
+	if len(conf.Exec) != 0 {
+		if program.pkgDir != "" {
+			commands.dir = program.pkgDir
+			commands.environ = withEnv(commands.environ, "PWD="+program.pkgDir)
+		}
+		return runWithExec(commands, program.app, conf,
+			runnerDetails{phase: "test", target: conf.Target, profile: program.profile, artifact: program.app, packageName: program.pkgName, timeout: conf.RunnerTimeout},
+			stdout, stderr)
+	}
 	if program.runner != "" {
 		// Like native go test, execute each package in its source directory.
 		// WASI runners forward PWD explicitly into the guest environment.
@@ -176,6 +193,11 @@ func runNativeTest(commands commandEnv, program testProgram, conf *Config, stdou
 		return runEmuCmdTo(commands, program.runnerEnv, program.runner, conf.RunArgs, false, conf.PrintCommands,
 			runnerDetails{phase: "test", target: conf.Target, profile: program.profile, artifact: program.app, packageName: program.pkgName, timeout: conf.RunnerTimeout},
 			stdout, stderr)
+	}
+	if conf.Target != "" {
+		details := runnerDetails{phase: "test", target: conf.Target, profile: program.profile, artifact: program.app, packageName: program.pkgName}
+		return newRunnerFailure(details, "", runnerStatusNotConfigured, -1,
+			fmt.Errorf("target %s does not have an emulator configured", conf.Target))
 	}
 	if conf.PrintCommands {
 		fmt.Fprintf(stderr, "%s %s\n", program.app, strings.Join(conf.RunArgs, " "))
@@ -192,7 +214,7 @@ func runNativeTest(commands commandEnv, program testProgram, conf *Config, stdou
 		return nil
 	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
-		if !program.coverage {
+		if !program.coverage || !exitErr.Exited() {
 			if exitErr.Exited() {
 				fmt.Fprintf(stderr, "%s: exit code %d\n", program.app, exitErr.ExitCode())
 			} else {
@@ -204,6 +226,17 @@ func runNativeTest(commands commandEnv, program testProgram, conf *Config, stdou
 		fmt.Fprintf(stderr, "failed to run test %s: %v\n", program.app, err)
 	}
 	return err
+}
+
+func runWithExec(commands commandEnv, app string, conf *Config, details runnerDetails, stdout, stderr io.Writer) error {
+	args := make([]string, 0, len(conf.Exec)+len(conf.RunArgs))
+	args = append(args, conf.Exec[1:]...)
+	args = append(args, app)
+	args = append(args, conf.RunArgs...)
+	if conf.PrintCommands {
+		fmt.Fprintf(stderr, "%s %s\n", conf.Exec[0], strings.Join(args, " "))
+	}
+	return runRunnerCommand(commands, conf.Exec[0], args, details, stdout, stderr)
 }
 
 func runNativeTestPrograms(commands commandEnv, programs []testProgram, conf *Config, stdout, stderr io.Writer) testRunResult {
@@ -220,42 +253,25 @@ func runNativeTestPrograms(commands commandEnv, programs []testProgram, conf *Co
 	if conf.CompileOnly {
 		return testRunResult{}
 	}
+	if conf.testOutput == nil {
+		copyConf := *conf
+		copyConf.testOutput = newTestOutputPolicy(conf, false, len(programs))
+		conf = &copyConf
+	}
 	parallelism := conf.BuildParallelism
 	if conf.TestRunSequential {
 		parallelism = 1
 	}
-	return runTestPrograms(programs, parallelism, conf.TestFailFast, conf.TestJSON, stdout, stderr,
+	return runTestPrograms(programs, parallelism, conf, stdout, stderr,
 		func(program testProgram, output io.Writer) error {
 			return runNativeTest(commands, program, conf, output, output)
 		})
 }
 
-func reportTestProgramResult(stdout, stderr io.Writer, result testProgramResult, json bool) {
-	if len(result.output) != 0 {
-		_, _ = stdout.Write(result.output)
-		if result.output[len(result.output)-1] != '\n' {
-			fmt.Fprintln(stdout)
-		}
-	}
-	var failure *runnerFailure
-	if errors.As(result.err, &failure) {
-		fmt.Fprintln(stderr, failure)
-	}
-	if result.program.coverage {
-		return // Coverage reporting includes the Go-compatible package record.
-	}
-	if result.err != nil {
-		fmt.Fprintf(stderr, "FAIL\t%s\n", result.program.pkgName)
-	} else if !json {
-		fmt.Fprintf(stdout, "ok  \t%s\n", result.program.pkgName)
-	}
-}
-
 func runTestPrograms(
 	programs []testProgram,
 	parallelism int,
-	failFast bool,
-	json bool,
+	conf *Config,
 	stdout, stderr io.Writer,
 	run func(testProgram, io.Writer) error,
 ) testRunResult {
@@ -273,18 +289,23 @@ func runTestPrograms(
 	}
 
 	results := make(chan testProgramResult, parallelism)
-	start := func(program testProgram) {
+	stdout = &lockedTestWriter{w: stdout}
+	stderr = &lockedTestWriter{w: stderr}
+	report := testResultReporter(len(programs), stdout)
+	start := func(index int) {
+		program := programs[index]
 		go func() {
-			var output bytes.Buffer
-			err := run(program, &output)
-			results <- testProgramResult{program: program, output: output.Bytes(), err: err}
+			result := runTestProgram(program, conf, len(programs), stdout, stderr,
+				func(output io.Writer) error { return run(program, output) })
+			result.index = index
+			results <- result
 		}()
 	}
 
 	next := 0
 	running := 0
 	for next < len(programs) && running < parallelism {
-		start(programs[next])
+		start(next)
 		next++
 		running++
 	}
@@ -292,13 +313,13 @@ func runTestPrograms(
 	var result testRunResult
 	for running != 0 {
 		completed := <-results
-		reportTestProgramResult(stdout, stderr, completed, json)
+		report(completed.index, &completed)
 		if completed.err != nil {
 			result.failed = true
 		}
 		running--
-		if next < len(programs) && !(failFast && result.failed) {
-			start(programs[next])
+		if next < len(programs) && !(conf.TestFailFast && result.failed) {
+			start(next)
 			next++
 			running++
 		}
@@ -326,9 +347,9 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 			case "wasmtime":
 				args = append(args, "--wasm", "multi-memory=true", app)
 				args = append(args, conf.RunArgs...)
-			case "iwasm":
-				args = append(args, "--stack-size=819200000", "--heap-size=800000000", app)
-				args = append(args, conf.RunArgs...)
+			case "wasmer":
+				return runEmuCmd(ctx.commands, map[string]string{"": app}, crosscompile.WASIThreadedEmulator,
+					conf.RunArgs, false, conf.PrintCommands, details)
 			default:
 				args = append(args, wasmerArgs...)
 				args = append(args, app)
@@ -412,6 +433,47 @@ func runEmuCmdTo(commands commandEnv, envMap map[string]string, emulatorTemplate
 		return newRunnerFailure(details, "", runnerStatusInvalidCommand, -1,
 			errors.New("empty emulator command"))
 	}
+	if emulatorTemplate == crosscompile.WASIThreadedEmulator {
+		if details.phase == "test" {
+			// Wasmer tracing and guest stderr share the same stream. Disable
+			// engine tracing at its source for tests, while keeping module
+			// caching and guest output intact. Ordinary runs retain RUST_LOG.
+			commands.environ = withEnv(commands.environ, "RUST_LOG=off")
+		}
+		// Map the actual working directory so guest PWD, Getwd and Chdir
+		// agree even when a test temporarily changes its working directory.
+		cwd := commands.dir
+		if cwd == "" {
+			cwd = "."
+		}
+		cwd, err = filepath.Abs(cwd)
+		if err != nil {
+			return newRunnerFailure(details, "", runnerStatusInvalidCommand, -1,
+				fmt.Errorf("resolve Wasmer working directory: %w", err))
+		}
+		workVolume, tempVolume, guestCwd := wasiHostDirectories(cwd, os.TempDir(), runtime.GOOS == "windows")
+		for i, part := range cmdParts {
+			if part == "--volume=." {
+				cmdParts[i] = "--volume=" + workVolume
+			} else if part == "--volume=/tmp" {
+				cmdParts[i] = "--volume=" + tempVolume
+			}
+		}
+		// wasmer does not inherit host environment variables into the guest.
+		// Preserve the raw WASI run/test PWD and PATH contract without exposing
+		// every host variable. PWD follows the package directory/preopen.
+		cmdParts = slices.Insert(cmdParts, len(cmdParts)-1, "--env=PWD="+guestCwd)
+		if path := commands.lookup("PATH"); path != "" {
+			cmdParts = slices.Insert(cmdParts, len(cmdParts)-1, "--env=PATH="+path)
+		}
+		// Preserve the reviewed timer-stress profile used by the full audit.
+		if stress := commands.lookup("LLGO_STRESS_PROFILE"); stress != "" {
+			cmdParts = slices.Insert(cmdParts, len(cmdParts)-1,
+				"--env=LLGO_STRESS_PROFILE="+stress)
+		}
+		// Guest flags such as -test.v must not be parsed as Wasmer options.
+		cmdParts = append(cmdParts, "--")
+	}
 
 	// Add run arguments to the end
 	cmdParts = append(cmdParts, runArgs...)
@@ -420,6 +482,15 @@ func runEmuCmdTo(commands commandEnv, envMap map[string]string, emulatorTemplate
 	}
 
 	return runRunnerCommand(commands, cmdParts[0], cmdParts[1:], details, stdout, stderr)
+}
+
+func wasiHostDirectories(cwd, tempDir string, windows bool) (workVolume, tempVolume, guestCwd string) {
+	if windows {
+		// Wasmer splits a volume at its last colon. Give drive-letter host
+		// paths explicit POSIX guest names, including Go's default /tmp.
+		return cwd + ":/work", tempDir + ":/tmp", "/work"
+	}
+	return cwd, "/tmp", cwd
 }
 
 func runRunnerCommand(commands commandEnv, name string, args []string, details runnerDetails, stdout, stderr io.Writer) error {

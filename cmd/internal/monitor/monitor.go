@@ -17,6 +17,7 @@
 package monitor
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/xgo-dev/llgo/cmd/internal/flags"
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 	"github.com/xgo-dev/llgo/internal/lto"
+	"github.com/xgo-dev/llgo/internal/mockable"
 	"github.com/xgo-dev/llgo/internal/monitor"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 )
@@ -43,7 +45,18 @@ func init() {
 }
 
 func runMonitor(cmd *base.Command, args []string) {
-	cmd.Flag.Parse(args)
+	args, err := flags.ChangeDirectory(args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
+		return
+	}
+	if err := cmd.Flag.Parse(args); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(1)
+		}
+		return
+	}
 	args = cmd.Flag.Args()
 
 	if len(args) > 1 {

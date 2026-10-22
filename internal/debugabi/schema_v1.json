@@ -1,0 +1,181 @@
+{
+  "contract": "llgo.debugger",
+  "schema_version": 1,
+  "runtime_layout_version": 2,
+  "llgo_abi_version": 1,
+  "record": {
+    "version": 1,
+    "size": 16,
+    "magic_hex": "4c4c474f44424700",
+    "native_symbol": "__llgo_debugger_abi_v1",
+    "legacy_symbols": {},
+    "wasm_custom_section": "llgo.debugger",
+    "fields": [
+      {
+        "name": "record_version",
+        "offset": 8,
+        "size": 1
+      },
+      {
+        "name": "schema_version",
+        "offset": 9,
+        "size": 1
+      },
+      {
+        "name": "runtime_layout_version",
+        "offset": 10,
+        "size": 1
+      },
+      {
+        "name": "llgo_abi_version",
+        "offset": 11,
+        "size": 1
+      },
+      {
+        "name": "reserved_abi",
+        "offset": 12,
+        "size": 1
+      },
+      {
+        "name": "pointer_size",
+        "offset": 13,
+        "size": 1
+      },
+      {
+        "name": "byte_order",
+        "offset": 14,
+        "size": 1
+      },
+      {
+        "name": "reserved",
+        "offset": 15,
+        "size": 1
+      }
+    ]
+  },
+  "byte_orders": {
+    "1": "little",
+    "2": "big"
+  },
+  "runtime_layouts": {
+    "2": {
+      "string": {
+        "type_name": "string",
+        "data": "data",
+        "length": "len"
+      },
+      "slice": {
+        "type_pattern": "^\\[\\].+",
+        "data": "data",
+        "length": "len",
+        "capacity": "cap"
+      },
+      "interface": {
+        "type_pattern": "^interface\\{.*\\}$",
+        "type": "type",
+        "data": "data",
+        "empty_type": "interface{}",
+        "itab_type": "github.com/xgo-dev/llgo/runtime/internal/runtime.itab",
+        "itab_concrete_type": "_type"
+      },
+      "runtime_type": {
+        "type_name": "github.com/xgo-dev/llgo/runtime/abi.Type",
+        "tflag": "TFlag",
+        "extra_star_flag": 2,
+        "string": "Str_",
+        "kind": "Kind_",
+        "direct_interface_flag": 32,
+        "uncommon_flag": 1,
+        "named_flag": 4,
+        "kind_mask": 31,
+        "pointer_kind": 22,
+        "pointer_element": "Elem",
+        "uncommon_type": "github.com/xgo-dev/llgo/runtime/abi.UncommonType",
+        "package_path": "PkgPath_",
+        "kind_types": {
+          "17": "github.com/xgo-dev/llgo/runtime/abi.ArrayType",
+          "18": "github.com/xgo-dev/llgo/runtime/abi.ChanType",
+          "19": "github.com/xgo-dev/llgo/runtime/abi.FuncType",
+          "20": "github.com/xgo-dev/llgo/runtime/abi.InterfaceType",
+          "21": "github.com/xgo-dev/llgo/runtime/abi.MapType",
+          "22": "github.com/xgo-dev/llgo/runtime/abi.PtrType",
+          "23": "github.com/xgo-dev/llgo/runtime/abi.SliceType",
+          "25": "github.com/xgo-dev/llgo/runtime/abi.StructType"
+        }
+      },
+      "function": {
+        "type_pattern": "^struct\\{\\$f func.*; \\$data unsafe\\.Pointer\\}$",
+        "code": "$f",
+        "data": "$data",
+        "closure_symbol_pattern": "\\$[0-9]+(?:\\$[0-9]+)*$",
+        "bound_symbol_suffix": "$bound"
+      },
+      "map": {
+        "type_pattern": "^map\\[.+\\].+$",
+        "count": "count",
+        "flags": "flags",
+        "same_size_grow_flag": 8,
+        "bucket_bits": "B",
+        "buckets": "buckets",
+        "old_buckets": "oldbuckets",
+        "bucket_tophash": "tophash",
+        "bucket_keys": "keys",
+        "bucket_indirect_keys": "indirectkeys",
+        "bucket_values": "values",
+        "bucket_indirect_values": "indirectvalues",
+        "bucket_overflow": "overflow",
+        "evacuated_tophash_min": 2,
+        "evacuated_tophash_max": 4,
+        "occupied_tophash_min": 5
+      },
+      "channel": {
+        "type_pattern": "^(chan |chan<- |<-chan ).+",
+        "count": "qcount",
+        "capacity": "dataqsiz",
+        "buffer": "buf",
+        "closed": "closed",
+        "receive_index": "recvx",
+        "receive_queue": "recvq",
+        "queue_first": "first",
+        "waiter_element": "elem"
+      },
+      "goroutine": {
+        "head_symbol": "llgo_debugger_threads_v1",
+        "goroutine_type": "thread_node",
+        "next": "next",
+        "status": "state",
+        "id": "id",
+        "parent_id": "parent",
+        "procid": "debugger_thread_id",
+        "status_names": {
+          "1": "runnable",
+          "2": "running",
+          "4": "waiting",
+          "6": "dead"
+        }
+      },
+      "wasm_goroutine": {
+        "registry_version": 1,
+        "registry_symbol": "wasmDebuggerRegistry",
+        "version": "version",
+        "epoch": "epoch",
+        "head": "head",
+        "next": "next",
+        "sequence": "sequence",
+        "goroutine": "gp",
+        "callers": "callers",
+        "id": "goid",
+        "parent_id": "parentGoid",
+        "status": "atomicstatus",
+        "processor_id": "processorID",
+        "stack": "stack",
+        "panic_depth": "panicDepth",
+        "frame_debug": "wasmCallerFrame",
+        "frame_base": "base",
+        "function": "Function",
+        "file": "File",
+        "line": "Line"
+      }
+    }
+  }
+}

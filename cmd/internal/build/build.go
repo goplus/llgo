@@ -18,6 +18,7 @@
 package build
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -45,14 +46,18 @@ func init() {
 	flags.AddCoverageFlags(&Cmd.Flag)
 	flags.AddBuildTraceFlag(&Cmd.Flag)
 	flags.AddBuildModeFlags(&Cmd.Flag)
-	flags.AddEmulatorFlags(&Cmd.Flag)
-	flags.AddEmbeddedFlags(&Cmd.Flag)
+	flags.AddTargetFlag(&Cmd.Flag)
+	flags.AddSizeFlags(&Cmd.Flag)
 	flags.AddOutputFlags(&Cmd.Flag)
+	flags.FinalizeNativeFlags("build", &Cmd.Flag)
 }
 
 func runCmd(cmd *base.Command, args []string) {
 
-	if err := cmd.Flag.Parse(args); err != nil {
+	if err := flags.Parse(&cmd.Flag, args); err != nil {
+		if err != flag.ErrHelp {
+			mockable.Exit(1)
+		}
 		return
 	}
 

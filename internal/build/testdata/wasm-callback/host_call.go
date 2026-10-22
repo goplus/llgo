@@ -2,7 +2,11 @@
 
 package main
 
-import "syscall/js"
+import (
+	"os"
+	"runtime"
+	"syscall/js"
+)
 
 // The host harness supplies a function that grows this module's memory or
 // exits it. This supplements the ordinary Go-compatible syscall/js tests
@@ -10,6 +14,21 @@ import "syscall/js"
 func testHostCallBoundary(probe js.Value) {
 	mode := js.Global().Get("llgoHostMode").String()
 	expected := js.Global().Get("llgoHostExpected")
+	if mode == "callback-exit-0" || mode == "callback-exit-7" {
+		code := 0
+		if mode == "callback-exit-7" {
+			code = 7
+		}
+		callback := js.FuncOf(func(js.Value, []js.Value) any {
+			go func() {
+				runtime.Gosched() // Exit while rewinding an existing fiber.
+				os.Exit(code)
+			}()
+			select {} // Exit from another fiber while this JS callback is parked.
+		})
+		defer callback.Release()
+		expected.Set("callback", callback)
+	}
 	defer func() {
 		p := recover()
 		if mode == "throw" {

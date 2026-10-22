@@ -26,17 +26,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/xgo-dev/llgo/cmd/internal/base"
+	"github.com/xgo-dev/llgo/internal/debugabi"
 	"github.com/xgo-dev/llgo/internal/mockable"
 )
 
-const (
-	minimumUpstreamLLDBVersion = 18
-	configureTargetCommand     = `script llgo_plugin.configure_target(lldb.debugger)`
-)
+const minimumUpstreamLLDBVersion = 18
+const configureTargetCommand = `script llgo_plugin.configure_target(lldb.debugger)`
+const debuggerSchemaFilename = "llgo_debugger_schema_v1.json"
 
 var (
 	//go:embed llgo_plugin.py
@@ -94,6 +95,10 @@ func run(configuredPath string, args []string, stdin io.Reader, stdout, stderr i
 	if err := os.WriteFile(pluginPath, pluginSource, 0600); err != nil {
 		return fmt.Errorf("llgo lldb: write plugin: %w", err)
 	}
+	schemaPath := filepath.Join(pluginDir, debuggerSchemaFilename)
+	if err := os.WriteFile(schemaPath, debugabi.SchemaV1(), 0600); err != nil {
+		return fmt.Errorf("llgo lldb: write debugger schema: %w", err)
+	}
 
 	lldbArgs := make([]string, 0, len(args)+4)
 	lldbArgs = append(lldbArgs, "-O", lldbImportCommand(pluginPath))
@@ -101,6 +106,7 @@ func run(configuredPath string, args []string, stdin io.Reader, stdout, stderr i
 	lldbArgs = append(lldbArgs, args...)
 
 	command := exec.Command(path, lldbArgs...)
+	command.Env = lldbEnvironment(os.Environ(), runtime.GOOS)
 	command.Stdin = stdin
 	command.Stdout = stdout
 	command.Stderr = stderr
@@ -108,6 +114,11 @@ func run(configuredPath string, args []string, stdin io.Reader, stdout, stderr i
 		return fmt.Errorf("llgo lldb: %w", err)
 	}
 	return nil
+}
+
+// Run starts LLDB with the LLGo adapter for a higher-level debug session.
+func Run(configuredPath string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	return run(configuredPath, args, stdin, stdout, stderr)
 }
 
 func findLLDB(configuredPath string) (string, error) {
@@ -146,7 +157,9 @@ func validateLLDB(name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("llgo lldb: find %q: %w", name, err)
 	}
-	output, err := exec.Command(path, "--version").CombinedOutput()
+	command := exec.Command(path, "--version")
+	command.Env = lldbEnvironment(os.Environ(), runtime.GOOS)
+	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("llgo lldb: query %q version: %w", path, err)
 	}
@@ -183,4 +196,41 @@ func parseLLDBVersion(output string) (lldbVersion, bool) {
 func lldbImportCommand(path string) string {
 	path = strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(path)
 	return `command script import "` + path + `"`
+}
+
+// lldbEnvironment configures only the debugger process. LLGo may also start a
+// host Python (for example, a remote-debug transport), whose interpreter ABI
+// must not inherit the different Python home required by native Windows LLDB.
+func lldbEnvironment(environ []string, goos string) []string {
+	if goos != "windows" {
+		return environ
+	}
+	value := func(name string) string {
+		for i := len(environ) - 1; i >= 0; i-- {
+			key, val, ok := strings.Cut(environ[i], "=")
+			if ok && strings.EqualFold(key, name) {
+				return val
+			}
+		}
+		return ""
+	}
+	home := value("LLGO_WINDOWS_LLDB_PYTHON_HOME")
+	if home == "" {
+		return environ
+	}
+	result := make([]string, 0, len(environ)+5)
+	for _, item := range environ {
+		key, _, _ := strings.Cut(item, "=")
+		switch strings.ToUpper(key) {
+		case "PATH", "PYTHONHOME", "PYTHONPATH", "PYTHONUTF8", "PYTHONIOENCODING":
+			continue
+		}
+		result = append(result, item)
+	}
+	result = append(result, "PYTHONHOME="+home, "PATH="+home+";"+value("PATH"),
+		"PYTHONUTF8=1", "PYTHONIOENCODING=utf-8")
+	if pythonPath := value("LLGO_WINDOWS_LLDB_PYTHONPATH"); pythonPath != "" {
+		result = append(result, "PYTHONPATH="+pythonPath)
+	}
+	return result
 }

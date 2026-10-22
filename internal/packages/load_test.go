@@ -1,15 +1,118 @@
 package packages
 
 import (
+	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 )
+
+func TestTypedRewriteBeforeImporters(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/rewrite\ngo 1.24\n")
+	if err := os.Mkdir(filepath.Join(dir, "dep"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeLoadTestFile(t, filepath.Join(dir, "dep", "dep.go"), "package dep\nvar Value = 1\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nimport \"example.com/rewrite/dep\"\nvar Value = dep.Value\n")
+	dedup := NewDeduper()
+	var original *types.Package
+	var preloads int
+	dedup.SetPreload(func(pkg *Package) {
+		if pkg.Name == "dep" {
+			preloads++
+		}
+	})
+	dedup.SetRewrite(func(pkg *Package) (bool, error) {
+		if pkg.Name != "dep" {
+			return false, nil
+		}
+		original = pkg.Types
+		if pkg.TypesInfo == nil || pkg.Types.Scope().Lookup("Value") == nil {
+			t.Fatal("rewrite ran before initial check")
+		}
+		value := pkg.Syntax[0].Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Values[0].(*ast.BasicLit)
+		value.Kind, value.Value = token.STRING, `"rewritten"`
+		return true, nil
+	})
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := pkgs[0]
+	if pkg.IllTyped {
+		t.Fatal(pkg.Errors)
+	}
+	if got := pkg.Types.Scope().Lookup("Value").Type(); got != types.Typ[types.String] {
+		t.Fatalf("importer used stale type: %v", got)
+	}
+	dep := pkg.Imports["example.com/rewrite/dep"]
+	if dep.Types == original || preloads != 2 {
+		t.Fatalf("recheck package=%p original=%p preloads=%d", dep.Types, original, preloads)
+	}
+	if dep.ExportFile != "" {
+		t.Fatal("typed rewrite unnecessarily requested gc export data")
+	}
+}
+
+func TestTypedRewriteKeepsInitialErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/invalid\ngo 1.24\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nvar X int = \"bad\"\n")
+	dedup := NewDeduper()
+	dedup.SetRewrite(func(*Package) (bool, error) { t.Fatal("rewrite must not repair invalid input"); return false, nil })
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pkgs[0].IllTyped || !packageErrorsContain(pkgs[0], "cannot use") {
+		t.Fatalf("initial diagnostic lost: %v", pkgs[0].Errors)
+	}
+}
+
+func TestTypedRewriteErrorDoesNotCachePartialSyntax(t *testing.T) {
+	dir := t.TempDir()
+	writeLoadTestFile(t, filepath.Join(dir, "go.mod"), "module example.com/rewriteerror\ngo 1.24\n")
+	if err := os.Mkdir(filepath.Join(dir, "dep"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeLoadTestFile(t, filepath.Join(dir, "dep", "dep.go"), "package dep\nvar Value = 1\n")
+	writeLoadTestFile(t, filepath.Join(dir, "main.go"), "package main\nimport \"example.com/rewriteerror/dep\"\nvar Value = dep.Value\n")
+	dedup := NewDeduper()
+	dedup.SetRewrite(func(pkg *Package) (bool, error) {
+		if pkg.Name == "dep" {
+			value := pkg.Syntax[0].Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Values[0].(*ast.BasicLit)
+			value.Kind, value.Value = token.STRING, `"partially rewritten"`
+			return false, errors.New("rewrite failed after mutation")
+		}
+		return false, nil
+	})
+	pkgs, err := LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dep := pkgs[0].Imports["example.com/rewriteerror/dep"]
+	if !pkgs[0].IllTyped || !dep.IllTyped || !packageErrorsContain(dep, "rewrite failed after mutation") {
+		t.Fatalf("rewrite error did not propagate: root=%v dep=%v", pkgs[0].Errors, dep.Errors)
+	}
+	if dedup.Check(dep.ID) != nil || dedup.Check(pkgs[0].ID) != nil {
+		t.Fatal("cached a package containing partially rewritten syntax")
+	}
+	dedup.SetRewrite(nil)
+	pkgs, err = LoadEx(dedup, nil, loadTestConfig(dir), ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pkgs[0].IllTyped || pkgs[0].Types.Scope().Lookup("Value").Type() != types.Typ[types.Int] {
+		t.Fatalf("reload retained partial syntax: %v", pkgs[0].Errors)
+	}
+}
 
 func TestLoadExWithGoVersion(t *testing.T) {
 	dir := t.TempDir()
@@ -53,13 +156,16 @@ func TestDeduperKeepsTestPackageIdentities(t *testing.T) {
 	dir := t.TempDir()
 	baseFile := filepath.Join(dir, "helper.go")
 	testFile := filepath.Join(dir, "helper_test.go")
-	writeLoadTestFile(t, baseFile, "package helper\nconst Value = 1\n")
+	patchFile := filepath.Join(dir, "patch.go")
+	writeLoadTestFile(t, baseFile, "package helper\nconst Value = Patched\n")
 	writeLoadTestFile(t, testFile, "package helper\nconst TestOnly = 2\n")
+	writeLoadTestFile(t, patchFile, "package helper\nconst Patched = 1\n")
 	const path = "example.com/helper"
 	const testID = path + " [" + path + ".test]"
 	for _, order := range [][]string{{path, testID}, {testID, path}} {
 		t.Run(order[0], func(t *testing.T) {
 			dedup := NewDeduper()
+			dedup.SetLLGoFiles(map[string][]string{path: {patchFile}})
 			tc := &typecheckContext{dedup: dedup, cfg: loadTestConfig(dir), fset: token.NewFileSet(), origMode: NeedTypes | NeedTypesInfo}
 			makePackage := func(id string) *Package {
 				pkg := &Package{ID: id, PkgPath: path, Name: "helper", CompiledGoFiles: []string{baseFile}}
@@ -387,5 +493,34 @@ func writeLoadTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParserSourceOverlayAndMissingFiles(t *testing.T) {
+	dir := t.TempDir()
+	virtual := filepath.Join(dir, "virtual.go")
+	cfg := loadTestConfig(dir)
+	tc := &typecheckContext{cfg: cfg}
+	fset := token.NewFileSet()
+	if _, err := tc.parseFile(virtual, fset); !os.IsNotExist(err) {
+		t.Fatalf("missing file did not retain disk error: %v", err)
+	}
+	tc.sourceOverlay = map[string][]byte{virtual: []byte("package virtual\nconst Value=42\n")}
+	cfg.ParseFile = func(fset *token.FileSet, name string, src []byte) (*ast.File, error) {
+		return parser.ParseFile(fset, name, src, parser.ParseComments)
+	}
+	file, err := tc.parseFile(virtual, fset)
+	if err != nil || file.Name.Name != "virtual" {
+		t.Fatalf("virtual source: %#v %v", file, err)
+	}
+	cfg.Overlay = map[string][]byte{virtual: []byte("package instrumented\nconst Value=43\n")}
+	file, err = tc.parseFile(virtual, fset)
+	if err != nil || file.Name.Name != "instrumented" {
+		t.Fatalf("driver overlay lost precedence: %#v %v", file, err)
+	}
+	tc.sourceOverlay = nil
+	cfg.Overlay = nil
+	if _, err := tc.parseFile(virtual, fset); !os.IsNotExist(err) {
+		t.Fatalf("source hook changed missing-file diagnostic: %v", err)
 	}
 }

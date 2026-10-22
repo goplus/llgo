@@ -251,3 +251,75 @@ func TestNormalizeToArchiveFailsWithoutObjectFallback(t *testing.T) {
 		t.Fatalf("ArchiveFile = %q after failure", pkg.ArchiveFile)
 	}
 }
+
+func TestEmscriptenArchiverUsesSDK(t *testing.T) {
+	root := t.TempDir()
+	tool := func(dir, name string) string {
+		t.Helper()
+		if runtime.GOOS == "windows" {
+			if name == "emcc" || name == "emar" {
+				name += ".bat"
+			} else {
+				name += ".exe"
+			}
+		}
+		path := filepath.Join(root, dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("unused tool fixture"), 0755); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	if runtime.GOOS == "windows" {
+		t.Setenv("PATHEXT", ".EXE;.BAT;.CMD")
+	}
+	cc := tool("sdk", "emcc")
+	emar := tool("sdk", "emar")
+	hostAR := tool("host", "llvm-ar")
+	otherEMAR := tool("other-sdk", "emar")
+	// A different SDK on PATH must not override emcc's sibling emar.
+	t.Setenv("PATH", filepath.Dir(otherEMAR)+string(os.PathListSeparator)+filepath.Dir(hostAR))
+	t.Setenv("LLGO_AR", "")
+	for _, provider := range []crosscompile.WasmProvider{crosscompile.WasmProviderGoJS, crosscompile.WasmProviderEmscripten} {
+		ctx := &context{buildConf: &Config{Goarch: "wasm"}, crossCompile: crosscompile.Export{CC: cc, WasmProvider: provider}}
+		if got := ctx.archiver(); got != emar {
+			t.Fatalf("%s archiver = %q, want SDK emar %q", provider, got, emar)
+		}
+		if got, err := ctx.archiveMerger(); err != nil || got != emar {
+			t.Fatalf("%s MRI archiver = %q, %v; want %q", provider, got, err, emar)
+		}
+	}
+	// A command found through PATH should still select its own SDK first.
+	t.Setenv("PATH", filepath.Dir(cc)+string(os.PathListSeparator)+filepath.Dir(hostAR))
+	ctx := &context{crossCompile: crosscompile.Export{CC: filepath.Base(cc), WasmProvider: crosscompile.WasmProviderGoJS}}
+	if got := ctx.emscriptenArchiver(); got != emar {
+		t.Fatalf("PATH compiler archiver = %q, want %q", got, emar)
+	}
+	// A compiler wrapper outside the SDK can use emar from PATH.
+	ctx.crossCompile.CC = tool("wrapper", "emcc")
+	if got := ctx.emscriptenArchiver(); got != emar {
+		t.Fatalf("wrapped compiler archiver = %q, want %q", got, emar)
+	}
+	ctx.crossCompile.WasmProvider = crosscompile.WasmProviderNone
+	if got := ctx.emscriptenArchiver(); got != "" {
+		t.Fatalf("non-Emscripten target selected %q", got)
+	}
+	t.Setenv("PATH", filepath.Dir(hostAR))
+	ctx = &context{buildConf: &Config{Goarch: "wasm"}, crossCompile: crosscompile.Export{CC: "missing-emcc", WasmProvider: crosscompile.WasmProviderGoJS}}
+	if got := ctx.archiver(); got != hostAR {
+		t.Fatalf("missing SDK fallback = %q, want %q", got, hostAR)
+	}
+	if got, err := ctx.archiveMerger(); err != nil || got != hostAR {
+		t.Fatalf("missing SDK MRI fallback = %q, %v; want %q", got, err, hostAR)
+	}
+	t.Setenv("LLGO_AR", hostAR)
+	ctx = &context{crossCompile: crosscompile.Export{CC: cc, WasmProvider: crosscompile.WasmProviderGoJS}}
+	if got := ctx.archiver(); got != hostAR {
+		t.Fatalf("ignored explicit LLGO_AR: %q", got)
+	}
+	if got, err := ctx.archiveMerger(); err != nil || got != hostAR {
+		t.Fatalf("MRI ignored explicit LLGO_AR: %q, %v", got, err)
+	}
+}

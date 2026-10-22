@@ -30,6 +30,9 @@ const (
 	FuncInfoFlagWrapper uint32 = 1
 )
 
+// internal/llvmfmv/source.go also reads these versioned row layouts when cloning
+// functions. Update its symbol and PC-site remapping when changing the schema.
+
 // EnableFuncInfoMetadata controls emission of DCE-safe function source
 // metadata. The metadata intentionally stores symbol names as strings instead
 // of function pointer operands, so it can be consumed before materializing a
@@ -42,12 +45,9 @@ func (p Program) FuncInfoMetadataEnabled() bool {
 	return p.enableFuncInfoMetadata
 }
 
-// EnableFuncInfoSites controls emission of the per-function site records
-// (entry and PC-line inline-asm fragments inside function bodies). They are
-// gated separately from the funcinfo metadata tables because the
-// body-embedded anchors shift instruction/scope layout enough to confuse
-// debuggers; debug builds keep the tables (FuncForPC name/FileLine fidelity
-// via the dlsym path) but drop the sites.
+// EnableFuncInfoSites controls emission of per-function site records. The build
+// layer may apply a narrower target policy to function-entry address records
+// while retaining PC-line records.
 func (p Program) EnableFuncInfoSites(enable bool) {
 	p.enableFuncInfoSites = enable
 }
@@ -97,10 +97,10 @@ func (p Package) emitFuncInfo(symbol, name, file string, line, column int, flags
 	p.mod.AddNamedMetadataOperand(FuncInfoMetadataName, p.Prog.ctx.MDNode(fields))
 }
 
-// EmitPCLineInfo records a PC label id and its source position. The id names a
-// zero-byte label emitted in the function body; keeping the metadata string-only
-// lets dead functions be removed without the line table holding address
-// references to them.
+// EmitPCLineInfo records a source-row ID and its source position. Independent
+// zero-byte anchors for the same function/file/line can share the ID. Keeping
+// this metadata string-only lets dead functions be removed without the line
+// table holding address references to them.
 func (p Package) EmitPCLineInfo(id uint64, symbol, file string, line, column int) {
 	if id == 0 || symbol == "" {
 		return

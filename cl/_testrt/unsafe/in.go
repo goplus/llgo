@@ -9,7 +9,7 @@ import (
 //go:linkname cstr llgo.cstr
 func cstr(string) *int8
 
-//llgo:type C
+//llgo:cdecl
 type T func()
 
 type M struct {

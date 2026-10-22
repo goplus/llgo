@@ -133,6 +133,12 @@ func (c *Cmd) Compile(args ...string) error {
 	return c.exec(allArgs...)
 }
 
+// CompileArguments returns the effective driver arguments without executing
+// the compiler, including the command prefix and environment flags.
+func (c *Cmd) CompileArguments(args ...string) []string {
+	return slices.Concat(c.prefixArgs, c.mergeCompilerFlags(), args)
+}
+
 // Link executes a linking command with merged flags.
 func (c *Cmd) Link(args ...string) error {
 	return c.exec(c.linkArguments(args...)...)
@@ -218,7 +224,7 @@ func (c *Cmd) mergeCompilerFlags() []string {
 
 	// Add environment CCFLAGS
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envCCFlags)...)
 	}
 
 	// Add environment CFLAGS
@@ -241,12 +247,12 @@ func (c *Cmd) mergeLinkerFlags() []string {
 
 	// Add environment CCFLAGS (for linker)
 	if envCCFlags := os.Getenv("CCFLAGS"); envCCFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envCCFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envCCFlags)...)
 	}
 
 	// Add environment LDFLAGS
 	if envLDFlags := os.Getenv("LDFLAGS"); envLDFlags != "" {
-		flags = append(flags, safesplit.SplitPkgConfigFlags(envLDFlags)...)
+		flags = append(flags, safesplit.SplitDriverFlags(envLDFlags)...)
 	}
 
 	// Add config LDFLAGS

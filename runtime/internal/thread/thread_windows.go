@@ -25,10 +25,10 @@ import (
 	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 )
 
-//llgo:type C
+//llgo:cdecl
 type RoutineFunc func(c.Pointer) c.Pointer
 
-//llgo:type C
+//llgo:cdecl
 type KeyDestructor func(c.Pointer)
 
 type Key struct {
@@ -44,8 +44,13 @@ func createDetached(stackSize uintptr, routine RoutineFunc, arg c.Pointer) c.Int
 //go:linkname exit C.llgo_win_thread_exit
 func exit()
 
-//go:linkname beginProcessExit C.llgo_win_thread_begin_process_exit
-func beginProcessExit()
+// Yield lets another runnable host thread execute.
+//
+//go:linkname Yield C.llgo_win_thread_yield
+func Yield()
+
+//go:linkname exitProcess C.llgo_win_thread_exit_process
+func exitProcess(code c.Uint)
 
 //go:linkname keyCreate C.llgo_win_fls_create
 func keyCreate(index *c.Uint) c.Int
@@ -71,10 +76,10 @@ func Exit() {
 	exit()
 }
 
-// BeginProcessExit prevents Windows process shutdown from invoking Go or
-// BDWGC through the FLS lifecycle callback.
-func BeginProcessExit() {
-	beginProcessExit()
+// ExitProcess terminates the current process without DLL or FLS teardown.
+// Such callbacks can deadlock after Windows has killed their lock owners.
+func ExitProcess(code uint32) {
+	exitProcess(c.Uint(code))
 }
 
 func (key *Key) Create(destructor KeyDestructor) c.Int {

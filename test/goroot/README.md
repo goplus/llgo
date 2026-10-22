@@ -27,16 +27,22 @@ are also skipped. Each not-applicable entry documents both the
 toolchain-specific mechanism under test and why the corresponding behavior is
 not an LLGo compatibility goal.
 
+The runner keeps a small, explicit set of gc backend controls on the official
+Go baseline: `-l=4`, `-d=ssa/check/on`, `-d=softfloat`, and `-d=checkptr`
+(including `all=-d=checkptr`). LLGo executes the same source
+assertions using LLVM's backend; this does not test gc's instrumentation or
+lowering in LLGo. Both programs must satisfy the unmodified case and output
+comparison. Other compiler payloads retain their normal validation.
+
 The external [LLGo compatibility workflows](https://github.com/llgo-compat/ci)
 build LLGo and this runner from a selected repository revision, then run the
 `ci` directive set from the two most recent Go releases. Each platform/shard
 job runs those releases concurrently with isolated LLGo caches, and rotates the
 second release by half the shard count so the same expensive cases do not
-contend in both runners. The especially slow Windows MSVC/ARM64 shard is split
-once more so it does not outlive its hosted runner. The workflow therefore
-publishes 174 logical shard reports from 87 test jobs without duplicating
-toolchain setup across Go versions. Every run publishes the expectation-mismatch
-table in its Actions summary. The daily 01:00 Asia/Shanghai scheduled run
+contend in both runners. Every run publishes per-platform/version outcome counts and a
+table of failures (including expected and flaky failures) and unexpected passes
+in its Actions summary. These counts distinguish successful execution from an
+accepted failure classification. The daily 01:00 Asia/Shanghai scheduled run
 replaces the previous `[GOROOT periodic] YYYY-MM-DD` issue in the compatibility repository;
 if expectation mismatches occur, `@fennoai` is automatically mentioned for
 triage. A manual dispatch can test any LLGo repository, branch, tag, or commit.
@@ -73,7 +79,10 @@ Multiple toolchains:
 bash ./dev/test_goroot.sh /path/to/go1.23 /path/to/go1.24 -- -dirs . -case '^helloworld\.go$'
 ```
 
-Host-driven WebAssembly execution keeps discovery and result comparison in the native runner while compiling both the official Go baseline and LLGo output for WebAssembly. The four W3 paths are `J32-GoJS` (wasm32 with Go-compatible js/wasm source/API), `J32-Emscripten` (wasm32 with the Emscripten JS provider), `J64-Emscripten` (wasm64 with the Emscripten JS provider), and `W32-WASI` (wasm32 with WASI Preview 1). Generated programs run through the profile's Node or Wasmtime adapter.
+Host-driven WebAssembly execution keeps discovery and result comparison in the native runner while compiling both the official Go baseline and LLGo output for WebAssembly. The four acceptance paths are `J32-GoJS` (wasm32 with Go-compatible js/wasm source/API), `J32-Emscripten` (wasm32 with the Emscripten JS provider), `J64-Emscripten` (wasm64 with the Emscripten JS provider), and `W32-WASI` (wasm32 with WASI Preview 1). Generated browser programs run through the profile's Node adapter. W32 runs both the official Go baseline and LLGo artifact through Wasmer unconditionally, so the comparison uses the same host.
+
+Expectation `platform` selectors may name an exact Wasm profile. The generic
+`js/wasm` and `wasip1/wasm` selectors continue to match all corresponding profiles.
 
 ```bash
 go test ./test/goroot -count=1 -args \

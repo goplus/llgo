@@ -108,7 +108,23 @@ func TestLLGoEnvironment(t *testing.T) {
 	t.Setenv("LLVM_CONFIG", filepath.Join(root, "missing-llvm-config"))
 	t.Setenv("HOME", cacheHome)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(cacheHome, "cache"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(cacheHome, "config"))
+	t.Setenv("APPDATA", filepath.Join(cacheHome, "config"))
 	t.Setenv("LOCALAPPDATA", filepath.Join(cacheHome, "cache"))
+	// Resolve against the redirected HOME/XDG_CONFIG_HOME/APPDATA above.
+	// Disable Go telemetry before go env starts a sidecar that could outlive
+	// the command and race with TempDir cleanup.
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	telemetryDir := filepath.Join(configDir, "go", "telemetry")
+	if err := os.MkdirAll(telemetryDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(telemetryDir, "mode"), []byte("off"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	var output bytes.Buffer
 	args := []string{"-json", "-target", "board", "GOOS", "LLGO_ROOT", "LLGO_RUNTIME_DIR", "LLGO_EMBEDDED_CLANG_DIR", "LLGO_WASI_LIBC_DIR", "LLGO_TARGET_GOOS", "LLGO_TARGET_GOARCH", "LLGO_TARGET_CPU", "LLGO_TARGET_LIBC", "LLGO_TARGET_SERIAL", "LLGO_TARGET_SERIAL_PORTS"}
@@ -141,11 +157,14 @@ func TestLLGoEnvironment(t *testing.T) {
 	}
 
 	output.Reset()
-	if err := run([]string{"-json", "GOARCH", "LLGO_LLVM_CONFIG", "LLGO_LLVM_VERSION"}, nil, &output, &output); err != nil {
+	if err := run([]string{"-json", "GOARCH", "GOTELEMETRY", "LLGO_LLVM_CONFIG", "LLGO_LLVM_VERSION"}, nil, &output, &output); err != nil {
 		t.Fatal(err)
 	}
 	if err := json.Unmarshal(output.Bytes(), &got); err != nil {
 		t.Fatal(err)
+	}
+	if value, ok := got["GOTELEMETRY"]; !ok || value != "off" {
+		t.Fatalf("Go telemetry mode = %q (present %v), want off", value, ok)
 	}
 	if got["LLGO_LLVM_CONFIG"] != filepath.Join(root, "missing-llvm-config") || got["LLGO_LLVM_VERSION"] != "" {
 		t.Fatalf("LLVM diagnostics = %#v", got)

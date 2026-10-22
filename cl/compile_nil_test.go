@@ -17,7 +17,7 @@ func newNilCompileContext(t *testing.T) (*context, llssa.Builder) {
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("foo", "foo")
 	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	fn := pkg.NewFunc("test", sig, llssa.InGo)
+	fn := pkg.NewFunc("test", sig, llssa.GoDecl)
 	b := fn.MakeBody(1)
 	ctx := &context{
 		prog:  prog,
@@ -153,6 +153,24 @@ func iface(v int) any {
 	makeInterface.X = untypedNil
 	if ret := ctx.compileInstrOrValue(b, makeInterface, false); ret.IsNil() {
 		t.Fatal("MakeInterface untyped nil lowered to an empty expression")
+	}
+}
+
+func TestCompileUnusedAllocation(t *testing.T) {
+	const src = `package foo
+type object struct { value int }
+func unused() { value := &object{}; _ = value }
+func escaping() *object { return &object{} }
+`
+	for _, mode := range []gossa.BuilderMode{0, gossa.GlobalDebug} {
+		ir := compileWithRewritesMode(t, src, nil, mode)
+		for _, name := range []string{"unused", "escaping"} {
+			body := llvmFunction(t, ir, "foo."+name)
+			want := name == "escaping"
+			if got := strings.Contains(body, "runtime.AllocZ"); got != want {
+				t.Errorf("%s allocation with SSA mode %v = %v, want %v:\n%s", name, mode, got, want, body)
+			}
+		}
 	}
 }
 

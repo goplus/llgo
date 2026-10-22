@@ -37,7 +37,7 @@ const (
 //go:linkname hostCallOp C.llgo_js_host
 func hostCallOp(op int32, frame *hostFrame)
 
-//llgo:type C
+//llgo:cdecl
 type hostHandler func()
 
 //go:linkname hostInstall C.llgo_js_install

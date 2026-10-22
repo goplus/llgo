@@ -8,8 +8,17 @@ import (
 	"unsafe"
 
 	"github.com/xgo-dev/llgo/runtime/abi"
+	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 	"github.com/xgo-dev/llgo/runtime/internal/runtime/goarch"
 )
+
+// The map hasher does not retain its input. Use a stack slot explicitly:
+// LLGo's SSA builder otherwise treats the address-taken key as a heap object.
+func hashMapKey64(t *maptype, key uint64, seed uintptr) uintptr {
+	p := c.Alloca(unsafe.Sizeof(key))
+	*(*uint64)(p) = key
+	return t.Hasher(p, seed)
+}
 
 func mapaccess1_fast64(t *maptype, h *hmap, key uint64) unsafe.Pointer {
 	if h == nil || h.count == 0 {
@@ -23,7 +32,7 @@ func mapaccess1_fast64(t *maptype, h *hmap, key uint64) unsafe.Pointer {
 		// One-bucket table. No need to hash.
 		b = (*bmap)(h.buckets)
 	} else {
-		hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+		hash := hashMapKey64(t, key, uintptr(h.hash0))
 		m := bucketMask(h.B)
 		b = (*bmap)(add(h.buckets, (hash&m)*uintptr(t.BucketSize)))
 		if c := h.oldbuckets; c != nil {
@@ -68,7 +77,7 @@ func mapaccess2_fast64(t *maptype, h *hmap, key uint64) (unsafe.Pointer, bool) {
 		// One-bucket table. No need to hash.
 		b = (*bmap)(h.buckets)
 	} else {
-		hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+		hash := hashMapKey64(t, key, uintptr(h.hash0))
 		m := bucketMask(h.B)
 		b = (*bmap)(add(h.buckets, (hash&m)*uintptr(t.BucketSize)))
 		if c := h.oldbuckets; c != nil {
@@ -110,7 +119,7 @@ func mapassign_fast64(t *maptype, h *hmap, key uint64) unsafe.Pointer {
 	if h.flags&hashWriting != 0 {
 		fatal("concurrent map writes")
 	}
-	hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+	hash := hashMapKey64(t, key, uintptr(h.hash0))
 
 	// Set hashWriting after calling t.hasher for consistency with mapassign.
 	h.flags ^= hashWriting
@@ -294,7 +303,7 @@ func mapdelete_fast64(t *maptype, h *hmap, key uint64) {
 		fatal("concurrent map writes")
 	}
 
-	hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+	hash := hashMapKey64(t, key, uintptr(h.hash0))
 
 	// Set hashWriting after calling t.hasher for consistency with mapdelete
 	h.flags ^= hashWriting

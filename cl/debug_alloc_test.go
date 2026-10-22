@@ -58,8 +58,8 @@ func assertDebugAllocParameter(t *testing.T, fn *ssa.Function, name string) {
 		t.Fatalf("unexpected parameters for %s: %v", fn, fn.Params)
 	}
 	variable := fn.Params[0].Object().(*types.Var)
-	if !hasDebugAlloc(variables, variable) {
-		t.Fatalf("%s parameter %q has no debug alloca", fn, name)
+	if !collectDebugAllocObjects(variables)[variable] {
+		t.Fatalf("%s parameter %q is missing from the debug alloca object set", fn, name)
 	}
 	if got := debugParameterArgNo(fn, variable); got != 1 {
 		t.Fatalf("debugParameterArgNo(%s) = %d, want 1", name, got)

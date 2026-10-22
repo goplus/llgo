@@ -25,7 +25,7 @@ func TestWasmCallerLocationScalarABI(t *testing.T) {
 				prog.TypeSizes(types.SizesFor("gc", "amd64"))
 			}
 			pkg := prog.NewPackage("foo", "example.com/foo")
-			fn := pkg.NewFunc("example.com/foo.f", llssa.NoArgsNoRet, llssa.InGo)
+			fn := pkg.NewFunc("example.com/foo.f", llssa.NoArgsNoRet, llssa.GoDecl)
 			b := fn.MakeBody(1)
 			ctx := &context{prog: prog, pkg: pkg, fn: fn}
 			for _, name := range []string{"PushCallerLocationFrame", "RecordCallerLocation", "RecordPanicLocation"} {

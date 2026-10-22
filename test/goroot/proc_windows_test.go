@@ -4,58 +4,104 @@ package goroot
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
-	"reflect"
-	"sort"
 	"syscall"
-	"testing"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
-type windowsProcessInfo struct {
-	parentPID uint32
-	rss       uint64
-}
-
 func configureProcessGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_PROCESS_GROUP}
 }
 
-func killProcessTree(cmd *exec.Cmd) {
-	if cmd.Process == nil {
+type processTree struct {
+	rootPID      uint32
+	handle       windows.Handle
+	creationTime int64
+}
+
+func newProcessTree(cmd *exec.Cmd) (*processTree, error) {
+	rootPID := uint32(cmd.Process.Pid)
+	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_TERMINATE, false, rootPID)
+	if err != nil {
+		return nil, err
+	}
+	creationTime, err := windowsProcessCreationTime(handle)
+	if err != nil {
+		windows.CloseHandle(handle)
+		return nil, err
+	}
+	// Keep the process object, and therefore its PID, alive until cleanup.
+	// Cmd.Wait closes its own handle before we inspect remaining descendants.
+	return &processTree{rootPID: rootPID, handle: handle, creationTime: creationTime}, nil
+}
+
+func (tree *processTree) close() {
+	if tree.handle != 0 {
+		_ = windows.CloseHandle(tree.handle)
+		tree.handle = 0
+	}
+}
+
+func (tree *processTree) snapshot(includeNames bool) (map[uint32]windowsProcessInfo, error) {
+	if tree.handle == 0 {
+		return nil, fmt.Errorf("process tree is closed")
+	}
+	processes, err := snapshotWindowsProcesses(includeNames)
+	if err != nil {
+		return nil, err
+	}
+	if root, ok := processes[tree.rootPID]; ok {
+		if root.creationTime != tree.creationTime {
+			return nil, fmt.Errorf("process %d identity changed", tree.rootPID)
+		}
+	} else {
+		// Terminated roots are absent from the process table. The retained
+		// handle still owns their PID, so real orphaned children can be found.
+		processes[tree.rootPID] = windowsProcessInfo{creationTime: tree.creationTime}
+	}
+	return processes, nil
+}
+
+func (tree *processTree) kill() {
+	if tree.handle == 0 {
 		return
 	}
-	rootPID := uint32(cmd.Process.Pid)
-	if processes, err := snapshotWindowsProcesses(); err == nil {
-		processTree := windowsProcessTree(rootPID, processes)
-		for i := len(processTree) - 1; i > 0; i-- {
-			terminateWindowsProcess(processTree[i])
+	if processes, err := tree.snapshot(true); err == nil {
+		pids := windowsProcessTree(tree.rootPID, processes)
+		parents := make(map[uint32]bool, len(pids))
+		for _, pid := range pids {
+			parents[pid] = true
+		}
+		for pid, process := range processes {
+			if parents[process.parentPID] && !parents[pid] {
+				fmt.Fprintf(os.Stderr, "goroot cleanup ignored stale parent link: pid=%d name=%q parent=%d\n", pid, process.name, process.parentPID)
+			}
+		}
+		for i := len(pids) - 1; i > 0; i-- {
+			terminateWindowsProcess(pids[i], processes[pids[i]].creationTime)
 		}
 	}
-	_ = cmd.Process.Kill()
+	_ = windows.TerminateProcess(tree.handle, 1)
 }
 
 func resourceMonitoringSupported() bool { return true }
 
-func processGroupRSS(processGroupID int) (uint64, error) {
-	processes, err := snapshotWindowsProcesses()
+func (tree *processTree) rss() (uint64, error) {
+	processes, err := tree.snapshot(false)
 	if err != nil {
 		return 0, err
 	}
-	rootPID := uint32(processGroupID)
-	if _, ok := processes[rootPID]; !ok {
-		return 0, fmt.Errorf("process %d is no longer present", processGroupID)
-	}
 	var total uint64
-	for _, pid := range windowsProcessTree(rootPID, processes) {
+	for _, pid := range windowsProcessTree(tree.rootPID, processes) {
 		total += processes[pid].rss
 	}
 	return total, nil
 }
 
-func snapshotWindowsProcesses() (map[uint32]windowsProcessInfo, error) {
+func snapshotWindowsProcesses(includeNames bool) (map[uint32]windowsProcessInfo, error) {
 	bufferSize := uint32(1 << 20)
 	for {
 		buffer := make([]byte, bufferSize)
@@ -77,11 +123,11 @@ func snapshotWindowsProcesses() (map[uint32]windowsProcessInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		return parseWindowsProcessSnapshot(buffer)
+		return parseWindowsProcessSnapshot(buffer, includeNames)
 	}
 }
 
-func parseWindowsProcessSnapshot(buffer []byte) (map[uint32]windowsProcessInfo, error) {
+func parseWindowsProcessSnapshot(buffer []byte, includeNames bool) (map[uint32]windowsProcessInfo, error) {
 	processes := make(map[uint32]windowsProcessInfo)
 	entrySize := uint32(unsafe.Sizeof(windows.SYSTEM_PROCESS_INFORMATION{}))
 	for offset := uint32(0); ; {
@@ -90,10 +136,15 @@ func parseWindowsProcessSnapshot(buffer []byte) (map[uint32]windowsProcessInfo, 
 		}
 		entry := (*windows.SYSTEM_PROCESS_INFORMATION)(unsafe.Pointer(&buffer[offset]))
 		pid := uint32(entry.UniqueProcessID)
-		processes[pid] = windowsProcessInfo{
-			parentPID: uint32(entry.InheritedFromUniqueProcessID),
-			rss:       uint64(entry.WorkingSetSize),
+		process := windowsProcessInfo{
+			parentPID:    uint32(entry.InheritedFromUniqueProcessID),
+			rss:          uint64(entry.WorkingSetSize),
+			creationTime: entry.CreateTime,
 		}
+		if includeNames {
+			process.name = entry.ImageName.String()
+		}
+		processes[pid] = process
 		if entry.NextEntryOffset == 0 {
 			return processes, nil
 		}
@@ -104,53 +155,26 @@ func parseWindowsProcessSnapshot(buffer []byte) (map[uint32]windowsProcessInfo, 
 	}
 }
 
-func windowsProcessTree(rootPID uint32, processes map[uint32]windowsProcessInfo) []uint32 {
-	children := make(map[uint32][]uint32)
-	for pid, process := range processes {
-		if pid != rootPID {
-			children[process.parentPID] = append(children[process.parentPID], pid)
-		}
+func windowsProcessCreationTime(handle windows.Handle) (int64, error) {
+	// GetProcessTimes and SYSTEM_PROCESS_INFORMATION.CreateTime both use
+	// FILETIME: 100-nanosecond intervals since January 1, 1601 (UTC).
+	var created, exited, kernel, user windows.Filetime
+	if err := windows.GetProcessTimes(handle, &created, &exited, &kernel, &user); err != nil {
+		return 0, err
 	}
-	for parentPID := range children {
-		sort.Slice(children[parentPID], func(i, j int) bool {
-			return children[parentPID][i] < children[parentPID][j]
-		})
-	}
-	tree := []uint32{rootPID}
-	seen := map[uint32]bool{rootPID: true}
-	for i := 0; i < len(tree); i++ {
-		for _, childPID := range children[tree[i]] {
-			if !seen[childPID] {
-				seen[childPID] = true
-				tree = append(tree, childPID)
-			}
-		}
-	}
-	return tree
+	return int64(created.HighDateTime)<<32 | int64(created.LowDateTime), nil
 }
 
-func terminateWindowsProcess(pid uint32) {
-	handle, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, pid)
+func terminateWindowsProcess(pid uint32, creationTime int64) {
+	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_TERMINATE, false, pid)
 	if err != nil {
 		return
 	}
 	defer windows.CloseHandle(handle)
+	// A descendant can exit and have its PID reused between the snapshot
+	// and OpenProcess. Only terminate the exact process from the snapshot.
+	if current, err := windowsProcessCreationTime(handle); err != nil || current != creationTime {
+		return
+	}
 	_ = windows.TerminateProcess(handle, 1)
-}
-
-func TestWindowsProcessTree(t *testing.T) {
-	guardTestTimeout(t)
-	processes := map[uint32]windowsProcessInfo{
-		10: {parentPID: 1},
-		11: {parentPID: 10},
-		12: {parentPID: 10},
-		13: {parentPID: 11},
-		14: {parentPID: 99},
-		15: {parentPID: 15},
-	}
-	got := windowsProcessTree(10, processes)
-	want := []uint32{10, 11, 12, 13}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("windowsProcessTree() = %v, want %v", got, want)
-	}
 }

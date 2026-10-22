@@ -43,7 +43,7 @@ func TestShiftCountCheckedBeforeNarrowing(t *testing.T) {
 				types.NewParam(0, nil, "count", types.Typ[types.Uint64]),
 			)
 			results := types.NewTuple(types.NewParam(0, nil, "", tt.left))
-			fn := pkg.NewFunc(tt.name, types.NewSignatureType(nil, nil, nil, params, results, false), InGo)
+			fn := pkg.NewFunc(tt.name, types.NewSignatureType(nil, nil, nil, params, results, false), GoDecl)
 			body := fn.MakeBody(1)
 			body.Return(body.BinOp(tt.op, fn.Param(0), fn.Param(1)))
 			ir := fn.impl.String()

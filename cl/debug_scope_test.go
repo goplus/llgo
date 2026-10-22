@@ -8,9 +8,65 @@ import (
 	"go/types"
 	"testing"
 
+	"github.com/xgo-dev/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 )
+
+func TestDebugVariablePackageScope(t *testing.T) {
+	const source = `package scope
+var global int
+type S struct { field int }
+func f(param int) (result int) {
+	local := global
+	{ global := param; local += global }
+	closure := func() int { nested := local; return nested }
+	return closure()
+}`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "scope.go", source, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info := &types.Info{Defs: make(map[*ast.Ident]types.Object)}
+	pkg, err := new(types.Config).Check("scope", fset, []*ast.File{file}, info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func() {
+		t.Helper()
+		for ident, obj := range info.Defs {
+			variable, ok := obj.(*types.Var)
+			if !ok {
+				continue
+			}
+			want := obj == pkg.Scope().Lookup("global")
+			if got := isGlobal(variable); got != want {
+				t.Errorf("%s at %s: isGlobal = %v, want %v", ident.Name, fset.Position(ident.Pos()), got, want)
+			}
+		}
+	}
+	check()
+	// Merge copies the package scope without changing each object's Parent.
+	// Globals must remain globals after that scope identity changes.
+	before := pkg.Scope()
+	typepatch.Merge(pkg, types.NewPackage("original", "original"), nil, false)
+	if pkg.Scope() == before {
+		t.Fatal("Merge did not swap the package scope")
+	}
+	check()
+	global := pkg.Scope().Lookup("global").(*types.Var)
+	if allocs := testing.AllocsPerRun(100, func() {
+		if !isGlobal(global) {
+			t.Fatal("package variable classified as local")
+		}
+	}); allocs != 0 {
+		t.Fatalf("package-scope classification allocated %g objects", allocs)
+	}
+	if isGlobal(types.NewVar(token.NoPos, pkg, "synthetic", types.Typ[types.Int])) {
+		t.Fatal("variable without a parent scope classified as global")
+	}
+}
 
 func TestDebugFunctionScope(t *testing.T) {
 	if debugFunctionScope(nil) != nil || debugFunctionScope(new(ssa.Function)) != nil {

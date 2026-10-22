@@ -46,7 +46,7 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
-	return Expr{llvm.CreateStructGEP(b.impl, tstruc.ll, x.impl, idx), pt}
+	return Expr{llvm.CreateStructGEP(b.impl, prog.storageType(tstruc), x.impl, idx), pt}
 }
 
 // The Field instruction yields the value of Field of struct X.
@@ -56,6 +56,10 @@ func (b Builder) Field(x Expr, idx int) Expr {
 }
 
 func (b Builder) getField(x Expr, idx int) Expr {
+	if x.kind == vkSIMD {
+		storage := b.Prog.rawType(x.RawType().Underlying())
+		return b.getField(Expr{b.simdToStorage(x.impl, x.Type), storage}, idx)
+	}
 	tfld := b.Prog.Field(x.Type, idx)
 	fld := llvm.CreateExtractValue(b.impl, x.impl, idx)
 	fld = b.unwrapStructField(x.Type, idx, fld)
@@ -373,6 +377,10 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	dbgInstrf("Slice %v, %v, %v\n", x.impl, low.impl, high.impl)
 	prog := b.Prog
+	// Preserve the original widths before FitIntSize truncates wide indices.
+	// Only signed indices that fit a native int use the smaller string entry.
+	nativeIndices := (low.IsNil() || prog.SizeOf(low.Type) <= prog.SizeOf(prog.Int())) &&
+		(high.IsNil() || prog.SizeOf(high.Type) <= prog.SizeOf(prog.Int()))
 	var nCap Expr
 	var nEltSize Expr
 	var base Expr
@@ -411,6 +419,8 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		ret.Type = x.Type
 		if prog.disableBoundsChecks {
 			ret.impl = b.stringSliceUnchecked(x, low, high).impl
+		} else if nativeIndices && lowSigned && highSigned {
+			ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice"), x, low, high).impl
 		} else {
 			ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice2"), x, lowArg, highArg, prog.BoolVal(lowSigned), prog.BoolVal(highSigned)).impl
 		}
@@ -655,7 +665,7 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	// This ensures function values are correctly wrapped as closures, similar to
 	// interface assignment (see MakeInterface).
 	if v.kind == vkFuncDecl {
-		typ := b.Prog.Type(v.raw.Type, InGo)
+		typ := b.Prog.Type(v.raw.Type, GoDecl)
 		v = checkExpr(v, typ.raw.Type, b)
 	}
 	dbgInstrf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
@@ -811,7 +821,7 @@ func (b Builder) mapKeyPtr(m, x Expr) Expr {
 	if !ok {
 		panic("mapKeyPtr called with non-map value")
 	}
-	typ := b.Prog.Type(mapType.Key(), InGo)
+	typ := b.Prog.Type(mapType.Key(), GoDecl)
 	// Generic map bodies can expose either the instantiated key type or the
 	// type-parameter representation at this point. Keep the larger physical
 	// representation so runtime mapassign never reads past the temporary key.
@@ -875,8 +885,8 @@ func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
 	prog := b.Prog
-	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), InGo)
-	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), InGo)
+	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), GoDecl)
+	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), GoDecl)
 	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
 	ok := b.getField(rets, 0).impl
 	t := prog.Struct(prog.Bool(), ktyp, vtyp)

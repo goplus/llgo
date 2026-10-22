@@ -5,7 +5,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 llgo_cmd="${LLGO:-llgo}"
 node_cmd="${NODE:-node}"
-wasmtime_cmd="${WASMTIME:-wasmtime}"
+wasmer_cmd="${WASMER:-wasmer}"
 fixture="${repo_root}/internal/build/testdata/wasm-profile"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/llgo-wasm-target-profiles.XXXXXX")"
 trap 'rm -rf "${work_dir}"' EXIT
@@ -52,9 +52,9 @@ build_wasi() {
 	"${llgo_cmd}" build -target "${target}" -o "${module}" "${fixture}"
 	assert_wasm_module "${module}"
 	if command -v timeout >/dev/null 2>&1; then
-		timeout 60s "${wasmtime_cmd}" run -W exceptions=y "${module}"
+		RUST_LOG=off timeout 60s "${wasmer_cmd}" run --enable-exceptions --enable-simd --stack-size=1048576 "${module}"
 	else
-		"${wasmtime_cmd}" run -W exceptions=y "${module}"
+		RUST_LOG=off "${wasmer_cmd}" run --enable-exceptions --enable-simd --stack-size=1048576 "${module}"
 	fi
 }
 
@@ -89,9 +89,19 @@ raw_wasi="${work_dir}/raw-wasip1.wasm"
 GOOS=wasip1 GOARCH=wasm "${llgo_cmd}" build -o "${raw_wasi}" "${fixture}"
 assert_wasm_module "${raw_wasi}"
 if command -v timeout >/dev/null 2>&1; then
-	timeout 60s "${wasmtime_cmd}" run -W exceptions=y "${raw_wasi}"
+	RUST_LOG=off timeout 60s "${wasmer_cmd}" run --enable-exceptions --enable-simd --stack-size=1048576 "${raw_wasi}"
 else
-	"${wasmtime_cmd}" run -W exceptions=y "${raw_wasi}"
+	RUST_LOG=off "${wasmer_cmd}" run --enable-exceptions --enable-simd --stack-size=1048576 "${raw_wasi}"
 fi
+
+# LLGoFiles and go:linkname bypass the native-only Go cgo frontend. Execute
+# narrow C arguments, ellipsis calls and native function values on every profile.
+variadic_package="${repo_root}/test/llgoext"
+for target in emscripten emscripten-memory64 wasi; do
+	"${llgo_cmd}" test -target "${target}" -emulator -v -count=1 -timeout=90s \
+		-run '^(TestLinkname.*CVariadicCall|TestLinknameNarrowC)' "${variadic_package}"
+done
+GOOS=js GOARCH=wasm "${llgo_cmd}" test -emulator -v -count=1 -timeout=90s \
+	-run '^(TestLinkname.*CVariadicCall|TestLinknameNarrowC)' "${variadic_package}"
 
 echo "WebAssembly target profile checks passed"

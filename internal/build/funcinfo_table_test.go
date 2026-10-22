@@ -219,11 +219,11 @@ func TestFuncInfoTableMaterializesEntrySites(t *testing.T) {
 	// a function value. It is a physical function, not a separate PCLN class.
 	src.EmitFuncInfo("example.com/p.intrinsic$wrapper", "example.com/p.Live", "live.go", 17, 3)
 	src.EmitFuncInfo("example.com/p.missing", "example.com/p.Missing", "missing.go", 19, 1)
-	liveFn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InC)
+	liveFn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.CDecl)
 	liveFn.MakeBody(1).Return()
-	intrinsicWrapper := src.NewFunc("example.com/p.intrinsic$wrapper", llssa.NoArgsNoRet, llssa.InC)
+	intrinsicWrapper := src.NewFunc("example.com/p.intrinsic$wrapper", llssa.NoArgsNoRet, llssa.CDecl)
 	intrinsicWrapper.MakeBody(1).Return()
-	otherFn := src.NewFunc("example.com/p.other", llssa.NoArgsNoRet, llssa.InC)
+	otherFn := src.NewFunc("example.com/p.other", llssa.NoArgsNoRet, llssa.CDecl)
 	otherFn.MakeBody(1).Return()
 	ctx := &context{
 		prog: prog,
@@ -324,7 +324,7 @@ func TestWin32FuncInfoUsesExactEntryForAddressTakenFunction(t *testing.T) {
 	pkg := prog.NewPackage("example.com/p", "example.com/p")
 	for _, name := range []string{"example.com/p.direct", "example.com/p.addressed"} {
 		pkg.EmitFuncInfo(name, name, "p.go", 1, 1)
-		pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.InGo).MakeBody(1).Return()
+		pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.GoDecl).MakeBody(1).Return()
 	}
 	addressed := pkg.Module().NamedFunction("example.com/p.addressed")
 	keep := llvm.AddGlobal(pkg.Module(), addressed.Type(), "example.com/p.funcValue")
@@ -369,9 +369,9 @@ func TestWasmFuncInfoUsesTableIndexForAddressTakenFunction(t *testing.T) {
 	pkg := prog.NewPackage("example.com/p", "example.com/p")
 	for _, name := range []string{"example.com/p.direct", "example.com/p.addressed"} {
 		pkg.EmitFuncInfo(name, name, "p.go", 1, 1)
-		pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.InGo).MakeBody(1).Return()
+		pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.GoDecl).MakeBody(1).Return()
 	}
-	pkg.NewFunc("example.com/p.unindexed", llssa.NoArgsNoRet, llssa.InGo).MakeBody(1).Return()
+	pkg.NewFunc("example.com/p.unindexed", llssa.NoArgsNoRet, llssa.GoDecl).MakeBody(1).Return()
 	addressed := pkg.Module().NamedFunction("example.com/p.addressed")
 	keep := llvm.AddGlobal(pkg.Module(), addressed.Type(), "example.com/p.funcValue")
 	keep.SetInitializer(addressed)
@@ -449,7 +449,7 @@ func TestFuncInfoTableSitesDisabledKeepsTables(t *testing.T) {
 	src := prog.NewPackage("example.com/p", "example.com/p")
 	src.EmitFuncInfo("example.com/p.live", "example.com/p.Live", "live.go", 17, 3)
 	src.EmitPCLineInfo(0x1234, "example.com/p.live", "call.go", 23, 5)
-	liveFn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InC)
+	liveFn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.CDecl)
 	liveFn.MakeBody(1).Return()
 	ctx := &context{
 		prog: prog,
@@ -671,6 +671,74 @@ func TestFuncInfoTableIgnoresInvalidMetadata(t *testing.T) {
 	}
 }
 
+func TestRuntimeSitePolicy(t *testing.T) {
+	tests := []struct {
+		name        string
+		conf        Config
+		enableSites bool
+		wantPCLine  bool
+		wantAddress bool
+	}{
+		{
+			name:        "linux embedded dwarf",
+			conf:        Config{Goos: "linux", PCLNMode: PCLNEmbedded},
+			enableSites: true,
+			wantPCLine:  true,
+			wantAddress: true,
+		},
+		{
+			name:        "darwin embedded dwarf",
+			conf:        Config{Goos: "darwin", PCLNMode: PCLNEmbedded},
+			enableSites: true,
+			wantPCLine:  true,
+		},
+		{
+			name: "darwin embedded without dwarf",
+			conf: Config{
+				Goos:        "darwin",
+				PCLNMode:    PCLNEmbedded,
+				LinkOptions: LinkOptions{DWARF: DWARFOmit},
+			},
+			enableSites: true,
+			wantPCLine:  true,
+			wantAddress: true,
+		},
+		{
+			name:        "darwin external dwarf",
+			conf:        Config{Goos: "darwin", PCLNMode: PCLNExternal},
+			enableSites: true,
+			wantPCLine:  true,
+			wantAddress: true,
+		},
+		{
+			name:        "fixed target",
+			conf:        Config{Goos: "darwin", Target: "rp2040", PCLNMode: PCLNEmbedded},
+			enableSites: true,
+		},
+		{
+			name: "program sites disabled",
+			conf: Config{Goos: "linux", PCLNMode: PCLNEmbedded},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prog := llssa.NewProgram(nil)
+			defer prog.Dispose()
+			prog.EnableFuncInfoSites(tt.enableSites)
+			ctx := &context{prog: prog, buildConf: &tt.conf}
+			if got := shouldEmitRuntimeSites(ctx); got != tt.wantPCLine {
+				t.Fatalf("shouldEmitRuntimeSites() = %v, want %v", got, tt.wantPCLine)
+			}
+			if got := shouldEmitRuntimeEntrySites(ctx); got != tt.wantAddress {
+				t.Fatalf("shouldEmitRuntimeEntrySites() = %v, want %v", got, tt.wantAddress)
+			}
+		})
+	}
+	if shouldEmitRuntimeSites(nil) || shouldEmitRuntimeEntrySites(nil) {
+		t.Fatal("nil context enabled runtime sites")
+	}
+}
+
 // TestFuncInfoTableEmissionMatrix sweeps the OS / pointer-size / content
 // combinations so both the ELF and Mach-O directive branches, the 32-bit
 // pointer directives, and the empty-table initializers stay covered on every
@@ -708,16 +776,17 @@ func TestFuncInfoTableEmissionMatrix(t *testing.T) {
 				src.EmitFuncInfo(`example.com/p.we$ird"sym`, "example.com/p.Live", "live.go", 17, 3)
 				src.EmitFuncInfo("example.com/p.other", "example.com/p.Other", "other.go", 5, 1)
 				src.EmitPCLineInfo(0x1234, `example.com/p.we$ird"sym`, "call.go", 23, 5)
-				fn := src.NewFunc(`example.com/p.we$ird"sym`, llssa.NoArgsNoRet, llssa.InGo)
+				fn := src.NewFunc(`example.com/p.we$ird"sym`, llssa.NoArgsNoRet, llssa.GoDecl)
 				fn.MakeBody(1).Return()
 			}
 			ctx := &context{
 				prog: prog,
 				buildConf: &Config{
-					BuildMode: BuildModeExe,
-					Goos:      c.goos,
-					Goarch:    c.goarch,
-					LTO:       c.lto,
+					BuildMode:   BuildModeExe,
+					Goos:        c.goos,
+					Goarch:      c.goarch,
+					LTO:         c.lto,
+					LinkOptions: LinkOptions{DWARF: DWARFOmit},
 				},
 			}
 			records := collectFuncInfo([]Package{{LPkg: src}})
@@ -799,7 +868,7 @@ func TestCOFFFuncInfoEntrySiteIsAssociative(t *testing.T) {
 	}
 	src := prog.NewPackage("example.com/p", "example.com/p")
 	src.EmitFuncInfo("example.com/p.live", "example.com/p.Live", "live.go", 17, 3)
-	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InGo)
+	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.GoDecl)
 	fn.MakeBody(1).Return()
 	emitFuncInfoEntrySites(ctx, src)
 
@@ -867,7 +936,7 @@ func testCOFFFuncInfoMetadataLinksIntoDLL(t *testing.T) {
 
 	src := prog.NewPackage("example.com/p", "example.com/p")
 	src.EmitFuncInfo("example.com/p.live", "example.com/p.Live", "live.go", 17, 3)
-	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InGo)
+	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.GoDecl)
 	fn.MakeBody(1).Return()
 	records := collectFuncInfo([]Package{{LPkg: src}})
 	emitFuncInfoEntrySites(ctx, src)
@@ -950,7 +1019,7 @@ func testELFFuncInfoMetadataLinksIntoSharedLibrary(t *testing.T) {
 
 	src := prog.NewPackage("example.com/p", "example.com/p")
 	src.EmitFuncInfo("example.com/p.live", "example.com/p.Live", "live.go", 17, 3)
-	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InGo)
+	fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.GoDecl)
 	fn.MakeBody(1).Return()
 	records := collectFuncInfo([]Package{{LPkg: src}})
 	emitFuncInfoEntrySites(ctx, src)
@@ -1099,7 +1168,7 @@ func TestExternalFuncInfoTableKeepsPayloadOutOfIR(t *testing.T) {
 			src := prog.NewPackage("example.com/p", "example.com/p")
 			src.EmitFuncInfo("example.com/p.live", "example.com/p.Live", "external.go", 17, 3)
 			src.EmitPCLineInfo(0x1234, "example.com/p.live", "external.go", 19, 5)
-			fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.InGo)
+			fn := src.NewFunc("example.com/p.live", llssa.NoArgsNoRet, llssa.GoDecl)
 			fn.MakeBody(1).Return()
 			ctx := &context{
 				prog: prog,

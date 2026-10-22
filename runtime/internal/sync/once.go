@@ -19,5 +19,5 @@ package sync
 // OnceFunc is the native callback accepted by Once.Do. The hosted runtime uses
 // only non-capturing initialization functions at this low-level C ABI boundary.
 //
-//llgo:type C
+//llgo:cdecl
 type OnceFunc func()

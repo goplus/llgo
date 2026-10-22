@@ -66,13 +66,13 @@ type FuncInfoResult struct {
 
 // Function types for callbacks
 //
-//llgo:type C
+//llgo:cdecl
 type IntCallback func(int) int
 
-//llgo:type C
+//llgo:cdecl
 type StringCallback func(string) string
 
-//llgo:type C
+//llgo:cdecl
 type VoidCallback func()
 
 // Complex struct with mixed arrays and slices

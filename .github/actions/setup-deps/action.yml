@@ -17,13 +17,20 @@ inputs:
     description: "Windows target GOARCH: 386, amd64, or arm64"
     required: false
     default: "amd64"
+  windows-msvc-dependencies:
+    description: "MSVC dependencies: full (includes demos) or runtime (compiler and benchmarks)"
+    required: false
+    default: "full"
 
 runs:
   using: "composite"
   steps:
     - name: Validate Windows toolchain profile
       if: runner.os == 'Windows'
+      id: windows_profile
       shell: pwsh
+      env:
+        VCPKG_MANIFEST_HASH: ${{ inputs.windows-msvc-dependencies == 'runtime' && hashFiles('.github/windows/vcpkg-runtime/vcpkg.json') || hashFiles('.github/windows/vcpkg/vcpkg.json') }}
       run: |
         if ("${{ inputs.windows-abi }}" -notin @("msvc", "mingw")) {
           throw "Unsupported Windows ABI profile: ${{ inputs.windows-abi }}"
@@ -31,6 +38,12 @@ runs:
         if ("${{ inputs.windows-arch }}" -notin @("386", "amd64", "arm64")) {
           throw "Unsupported Windows target architecture: ${{ inputs.windows-arch }}"
         }
+        if ("${{ inputs.windows-msvc-dependencies }}" -notin @("full", "runtime")) {
+          throw "Unsupported MSVC dependencies: ${{ inputs.windows-msvc-dependencies }}"
+        }
+        $manifest = if ("${{ inputs.windows-msvc-dependencies }}" -eq "runtime") { ".github/windows/vcpkg-runtime" } else { ".github/windows/vcpkg" }
+        "manifest=$manifest" >> $env:GITHUB_OUTPUT
+        "manifest-hash=$env:VCPKG_MANIFEST_HASH" >> $env:GITHUB_OUTPUT
         Add-Content -Encoding utf8 $env:GITHUB_ENV "LLGO_WINDOWS_ABI=${{ inputs.windows-abi }}"
         Add-Content -Encoding utf8 $env:GITHUB_ENV "LLGO_WINDOWS_ARCH=${{ inputs.windows-arch }}"
 
@@ -230,20 +243,21 @@ runs:
       id: windows_vcpkg_cache
       uses: actions/cache@v6
       with:
-        path: ${{ runner.tool_cache }}\llgo-vcpkg\${{ hashFiles('.github/windows/vcpkg/vcpkg.json') }}
-        key: llgo-vcpkg-${{ inputs.windows-arch }}-windows-${{ runner.arch }}-${{ hashFiles('.github/windows/vcpkg/vcpkg.json') }}
+        path: ${{ runner.tool_cache }}\llgo-vcpkg\${{ steps.windows_profile.outputs.manifest-hash }}
+        key: llgo-vcpkg-${{ inputs.windows-arch }}-windows-${{ runner.arch }}-${{ steps.windows_profile.outputs.manifest-hash }}
 
     - name: Install Windows MSVC dependencies
       if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'msvc' && steps.windows_vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       env:
         VCPKG_BASELINE: ddd0023b0eee70986e42ed49d9d4afb8098f212e
-        VCPKG_MANIFEST_HASH: ${{ hashFiles('.github/windows/vcpkg/vcpkg.json') }}
+        VCPKG_MANIFEST_HASH: ${{ steps.windows_profile.outputs.manifest-hash }}
+        VCPKG_MANIFEST_DIR: ${{ steps.windows_profile.outputs.manifest }}
       run: |
         $ErrorActionPreference = "Stop"
         $sourceRoot = Join-Path $env:RUNNER_TEMP "llgo-vcpkg-source"
         $installRoot = Join-Path $env:RUNNER_TOOL_CACHE "llgo-vcpkg\$env:VCPKG_MANIFEST_HASH"
-        $manifestRoot = Join-Path $env:GITHUB_WORKSPACE ".github\windows\vcpkg"
+        $manifestRoot = Join-Path $env:GITHUB_WORKSPACE $env:VCPKG_MANIFEST_DIR
         . (Join-Path $env:GITHUB_WORKSPACE ".github\windows\msvc-target.ps1")
         $target = Get-LLGoWindowsMSVCTarget -GoArch "${{ inputs.windows-arch }}"
 
@@ -280,7 +294,7 @@ runs:
       env:
         LLVM_VERSION: "22.1.8"
         LLVM_TARGET_VERSION: "22.1.8"
-        VCPKG_MANIFEST_HASH: ${{ hashFiles('.github/windows/vcpkg/vcpkg.json') }}
+        VCPKG_MANIFEST_HASH: ${{ steps.windows_profile.outputs.manifest-hash }}
       run: |
         $ErrorActionPreference = "Stop"
 
@@ -519,7 +533,11 @@ runs:
         if (-not (Test-Path $targetBuiltins)) {
           throw "Clang's $($target.Triple) compiler-rt builtins were not found at $targetBuiltins"
         }
-        foreach ($package in @("llvm-${{ inputs.llvm-version }}", "bdw-gc", "libffi", "libuv", "openssl", "libcjson", "sqlite3", "zlib")) {
+        $packages = @("llvm-${{ inputs.llvm-version }}", "bdw-gc", "libffi", "libuv", "zlib")
+        if ("${{ inputs.windows-msvc-dependencies }}" -eq "full") {
+          $packages += @("openssl", "libcjson", "sqlite3")
+        }
+        foreach ($package in $packages) {
           & $pkgconfWrapper --modversion $package
           if ($LASTEXITCODE -ne 0) {
             throw "pkg-config metadata for $package is unavailable"
@@ -530,13 +548,31 @@ runs:
       if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'
       id: windows_mingw
       uses: msys2/setup-msys2@v2
+      env:
+        # Configure mirrors before the action's initial package upgrade.
+        __SETUP_MSYS2_USE_MAIN_MIRROR_ONLY: "true"
       with:
         # CLANGARM64 supplies an architecture-native LLVM host and target on
         # the ARM64 runner. The x64 runner keeps CLANG64 as the LLGo host even
         # when R11 activates a separate llvm-mingw 386 target afterwards.
         msystem: ${{ inputs.windows-arch == 'arm64' && 'CLANGARM64' || 'CLANG64' }}
+        # ARM64 images initialize MSYS2 before the job starts. Reuse that
+        # installation instead of bootstrapping an x64 base under emulation.
+        release: ${{ runner.arch != 'ARM64' }}
         path-type: inherit
         update: true
+        # Cache dependency downloads below instead of bootstrap packages.
+        # Avoid Bash-based pruning, which has failed intermittently on ARM64.
+        cache: false
+
+    - name: Cache Windows MinGW packages
+      if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.windows_mingw.outputs.msys2-location }}/var/cache/pacman/pkg
+        key: llgo-msys2-mingw-${{ runner.arch }}-${{ inputs.windows-arch }}-llvm${{ inputs.llvm-version }}-${{ hashFiles('.github/actions/setup-deps/action.yml') }}
+        restore-keys: |
+          llgo-msys2-mingw-${{ runner.arch }}-${{ inputs.windows-arch }}-llvm${{ inputs.llvm-version }}-
 
     - name: Test MSYS2 package retry helper
       if: runner.os == 'Windows' && inputs.install-llvm == 'true' && inputs.windows-abi == 'mingw'
@@ -796,6 +832,15 @@ runs:
           echo "linked ld.lld path: $(command -v ld.lld || true)"
         fi
         
+        # Native Darwin links use this separate absolute path. Keep the matching
+        # LLVM/LLD toolchain above on PATH for WASI and other cross-target links.
+        # Release-artifact jobs also need it when install-llvm=false.
+        if [[ "$RUNNER_ARCH" == ARM64 ]]; then
+          # Consumers may check out LLGo below their workspace root.
+          LLGO_INSTALLER_LIBRARY_ONLY=1 source "$GITHUB_ACTION_PATH/../../../install.sh"
+          install_macos_lld
+        fi
+
         # Install common dependencies
         brew_install_missing bdw-gc openssl libffi libuv
         brew link --overwrite libffi
@@ -819,21 +864,32 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        python3 "$GITHUB_ACTION_PATH/ubuntu_apt_test.py"
+        sudo python3 "$GITHUB_ACTION_PATH/ubuntu_apt.py" /etc/apt "$(dpkg --print-architecture)"
+        apt_get() {
+          local limit=10m
+          if [[ "$1" == "update" ]]; then
+            limit=5m
+          fi
+          # Per-download timeouts alone do not bound an entire mirror-list
+          # transaction. Fail with diagnostics before exhausting the job.
+          sudo timeout --kill-after=30s "$limit" apt-get "$@"
+        }
         # Install LLVM if requested
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
-          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{inputs.llvm-version}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb https://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{inputs.llvm-version}} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           # Some Linux runners resolve IPv6 addresses without an IPv6 route.
           # Retry transient DNS errors, but keep HTTPS and bounded failures.
           wget -4 --retry-on-host-error --tries=3 --timeout=15 --waitretry=2 -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-get update
-          sudo apt-get install -y llvm-${{inputs.llvm-version}}-dev clang-${{inputs.llvm-version}} libclang-${{inputs.llvm-version}}-dev lld-${{inputs.llvm-version}} libunwind-${{inputs.llvm-version}}-dev libc++-${{inputs.llvm-version}}-dev
+          apt_get update
+          apt_get install -y llvm-${{inputs.llvm-version}}-dev clang-${{inputs.llvm-version}} libclang-${{inputs.llvm-version}}-dev lld-${{inputs.llvm-version}} libunwind-${{inputs.llvm-version}}-dev libc++-${{inputs.llvm-version}}-dev
           echo "PATH=/usr/lib/llvm-${{inputs.llvm-version}}/bin:$PATH" >> $GITHUB_ENV
         else
-          sudo apt-get update
+          apt_get update
         fi
         
         # Install common dependencies
-        sudo apt-get install -y cmake pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev
+        apt_get install -y cmake pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev
 
         # Install optional deps for demos.
         #
@@ -843,4 +899,4 @@ runs:
           libsqlite3-dev # for github.com/goplus/lib/c/sqlite
           python3.12-dev # for github.com/goplus/lib/py
         )
-        sudo apt-get install -y "${opt_deps[@]}"
+        apt_get install -y "${opt_deps[@]}"

@@ -59,7 +59,16 @@ func AppendFrame(out []byte, frame Frame) []byte {
 		name = "pc=0x" + string(AppendHex(nil, frame.PC))
 	}
 	out = append(out, name...)
-	out = append(out, "(...)\n\t"...)
+	out = append(out, '(')
+	// This formatter does not capture argument values, so it uses (...) for
+	// ordinary frames. These entry and terminal functions take no arguments,
+	// so print empty parentheses to match Go's tracebacks.
+	switch name {
+	case "main.main", "runtime.main", "runtime.goexit":
+	default:
+		out = append(out, "..."...)
+	}
+	out = append(out, ")\n\t"...)
 	if frame.File == "" {
 		out = append(out, "???"...)
 	} else {

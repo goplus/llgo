@@ -53,7 +53,9 @@ var platformLabels = map[string]string{
 	"wasip1/wasm":         "🕸️ 🔌 WASI",
 }
 
-var mismatches = map[string]bool{
+var reportableResults = map[string]bool{
+	"expected-fail":      true,
+	"flaky-fail":         true,
 	"unexpected-fail":    true,
 	"unexpected-pass":    true,
 	"resource-fail":      true,
@@ -152,7 +154,9 @@ func renderReport(results []caseResult, platforms, versions []string, runURL, me
 	}
 
 	byCase := make(map[string]map[lane]caseResult)
-	mismatchCases := make(map[string]bool)
+	reportCases := make(map[string]bool)
+	counts := make(map[lane]map[string]int)
+	unexpectedFailure, unexpectedPass := false, false
 	for _, result := range results {
 		if !allowed[result.lane] {
 			return "", fmt.Errorf("result for unconfigured lane %s Go %s", result.platform, result.version)
@@ -166,22 +170,43 @@ func renderReport(results []caseResult, platforms, versions []string, runURL, me
 			return "", fmt.Errorf("duplicate result for %s on %s Go %s (shards %s and %s)", result.casePath, result.platform, result.version, previous.shard, result.shard)
 		}
 		laneResults[result.lane] = result
-		if mismatches[result.result] {
-			mismatchCases[result.casePath] = true
+		if reportableResults[result.result] {
+			reportCases[result.casePath] = true
+		}
+		if counts[result.lane] == nil {
+			counts[result.lane] = make(map[string]int)
+		}
+		counts[result.lane][result.result]++
+		switch result.result {
+		case "unexpected-fail", "resource-fail", "configuration-fail":
+			unexpectedFailure = true
+		case "unexpected-pass":
+			unexpectedPass = true
 		}
 	}
 
-	casePaths := make([]string, 0, len(mismatchCases))
-	for casePath := range mismatchCases {
+	casePaths := make([]string, 0, len(reportCases))
+	for casePath := range reportCases {
 		casePaths = append(casePaths, casePath)
 	}
 	sort.Strings(casePaths)
 
 	var out strings.Builder
-	out.WriteString("## GOROOT expectation mismatches\n\n")
+	out.WriteString("## GOROOT case results\n\n")
 	if runURL != "" {
 		fmt.Fprintf(&out, "[Workflow run](%s)\n\n", runURL)
 	}
+	out.WriteString("| Platform / Go | Passed | Unexpected pass | Expected fail | Flaky fail | Unexpected fail | Resource/configuration fail | Skipped |\n")
+	out.WriteString("|---|---:|---:|---:|---:|---:|---:|---:|\n")
+	for _, key := range lanes {
+		c := counts[key]
+		fmt.Fprintf(&out, "| %s / %s | %d | %d | %d | %d | %d | %d | %d |\n",
+			escapeMarkdown(key.platform), escapeMarkdown(key.version), c["pass"]+c["flaky-pass"],
+			c["unexpected-pass"], c["expected-fail"], c["flaky-fail"], c["unexpected-fail"],
+			c["resource-fail"]+c["configuration-fail"], c["not-applicable"]+c["host-skip"])
+	}
+	out.WriteString("\nCounts describe case outcomes, not the test runner's exit status. Passed includes flaky passes; unexpected passes are counted separately.\n\n")
+	out.WriteString("### Failures and unexpected passes\n\n")
 	out.WriteString("| Case |")
 	for _, laneKey := range lanes {
 		fmt.Fprintf(&out, " %s<br>%s |", laneLabel(laneKey), escapeMarkdown(goSeries(laneKey.version)))
@@ -203,11 +228,20 @@ func renderReport(results []caseResult, platforms, versions []string, runURL, me
 		out.WriteByte('\n')
 	}
 	if len(casePaths) == 0 {
-		out.WriteString("\nNo expected-pass failures or expected-fail passes were reported.\n")
+		out.WriteString("\nNo failures or unexpected passes were reported.\n")
 	} else {
 		out.WriteString("\n✅ pass · 🟡 expected failure · ❌ unexpected failure · ⚠️ unexpected pass · 🔀 flaky · ➖ not applicable · ⏭️ host skip · 💥 resource guard · 🛠️ configuration · `·` unavailable\n")
-		if mentionOnMismatch != "" {
-			fmt.Fprintf(&out, "\n> [!WARNING]\n> Expectation mismatches or infrastructure/configuration failures detected.\n> @%s please identify which PR introduced this issue.\n", strings.TrimPrefix(mentionOnMismatch, "@"))
+		if mentionOnMismatch != "" && (unexpectedFailure || unexpectedPass) {
+			fmt.Fprintf(&out, "\n> [!WARNING]\n> @%s ", strings.TrimPrefix(mentionOnMismatch, "@"))
+			if unexpectedFailure {
+				out.WriteString("please investigate unexpected execution or infrastructure/configuration failures.\n")
+			}
+			if unexpectedPass {
+				if unexpectedFailure {
+					out.WriteString("> ")
+				}
+				out.WriteString("Review unexpected passes for stale expected-failure entries.\n")
+			}
 		}
 	}
 	return out.String(), nil

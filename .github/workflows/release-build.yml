@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}
+  group: release-build.yml-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 env:
@@ -28,8 +28,8 @@ jobs:
   ci-gate:
     name: CI gate (Release build)
     needs: prepare
-    if: always()
-    runs-on: ubuntu-24.04
+    if: always() && !cancelled()
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner || '["ubuntu-24.04"]') }}
     steps:
       - name: Verify CI preparation succeeded
         run: test "${{ needs.prepare.result }}" = "success"
@@ -37,9 +37,18 @@ jobs:
   populate-linux-sysroot:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     timeout-minutes: 30
     steps:
+      - name: Verify Docker and privileged containers
+        run: |
+          docker info --format 'Docker server={{.ServerVersion}} driver={{.Driver}} arch={{.Architecture}}'
+          docker run --rm --privileged busybox:1.37.0 sh -eu -c '
+            mkdir /privileged-probe
+            mount -t tmpfs -o size=1m tmpfs /privileged-probe
+            umount /privileged-probe
+            echo PRIVILEGED_CONTAINER_OK
+          '
       - name: Check out code
         uses: actions/checkout@v7
       - name: Calculate cache keys
@@ -57,7 +66,7 @@ jobs:
         uses: docker/setup-qemu-action@v4
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         with:
-          image: tonistiigi/binfmt:qemu-v7.0.0-28
+          image: tonistiigi/binfmt:qemu-v10.2.3-68
       - name: Populate Linux sysroot
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         run: bash .github/workflows/populate_linux_sysroot.sh
@@ -86,7 +95,7 @@ jobs:
           retention-days: 3
   build:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
     needs: [prepare, populate-linux-sysroot]
     steps:
       - name: Check out code
@@ -102,16 +111,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{github.token}}
         run: |
+          # The docker skip also disables dockers_v2 snapshot image builds.
           docker run --rm --entrypoint go "${GORELEASER_CROSS_IMAGE}" version
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
           docker run \
             --rm \
-            -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+            -e "GITHUB_TOKEN=${GITHUB_TOKEN}" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd):/go/src/llgo \
+            -v "$PWD:/go/src/llgo" \
             -w /go/src/llgo \
             "${GORELEASER_CROSS_IMAGE}" \
-            release --verbose --skip=publish,nfpm,snapcraft --snapshot --clean
+            release --verbose --skip=publish,snapcraft,docker --snapshot --clean
 
       - name: Upload Darwin AMD64 Artifacts
         uses: actions/upload-artifact@v7
@@ -145,6 +155,30 @@ jobs:
           retention-days: 3
           include-hidden-files: true
 
+      - name: Upload Linux AMD64 packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: llgo-linux-amd64-packages
+          path: |
+            .dist/*.linux-amd64.deb
+            .dist/*.linux-amd64.rpm
+          if-no-files-found: error
+          retention-days: 3
+          include-hidden-files: true
+          compression-level: 0
+
+      - name: Upload Linux ARM64 packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: llgo-linux-arm64-packages
+          path: |
+            .dist/*.linux-arm64.deb
+            .dist/*.linux-arm64.rpm
+          if-no-files-found: error
+          retention-days: 3
+          include-hidden-files: true
+          compression-level: 0
+
       - name: Upload Checksums
         uses: actions/upload-artifact@v7
         with:
@@ -162,14 +196,13 @@ jobs:
           retention-days: 3
           include-hidden-files: true
 
-  build-windows:
+  build-windows-compiler:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: [prepare, build]
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        abi: [msvc, mingw]
         goarch: [amd64, arm64]
         include:
           - goarch: amd64
@@ -177,12 +210,12 @@ jobs:
           - goarch: arm64
             os: windows-11-arm
     runs-on: ${{ matrix.os }}
-    steps:
+    steps: &windows-compiler-steps
       - uses: actions/checkout@v7
       - name: Install build dependencies
         uses: ./.github/actions/setup-deps
         with:
-          windows-abi: ${{ matrix.abi }}
+          windows-abi: msvc
           windows-arch: ${{ matrix.goarch }}
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -190,17 +223,17 @@ jobs:
           # On windows-11-arm, both MinGW and MSVC build natively.
           architecture: ${{ matrix.os == 'windows-11-arm' && 'arm64' || 'x64' }}
       - name: Cache ARM64 MSVC release SDK archive
-        if: matrix.abi == 'msvc' && matrix.goarch == 'arm64'
+        if: matrix.goarch == 'arm64'
         uses: actions/cache@v6
         with:
           path: ${{ runner.tool_cache }}/llgo-release-downloads/llvm-arm64
           key: llgo-release-llvm-archive-v1-de718c58ebbc5f61d58c17b90457fcf42983bc2c4a4aba3e010d108713bfd7f1
-      - name: Cache ESP release archive
+      - name: Cache Windows x86 LLVM SDK archive
+        if: matrix.goarch == '386'
         uses: actions/cache@v6
         with:
-          path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
-          key: llgo-release-esp-archive-v2-${{ matrix.goarch }}-${{ hashFiles('.github/windows/build-release.ps1') }}
-          enableCrossOsArchive: true
+          path: ${{ runner.tool_cache }}/llgo-release-downloads/llvm-x86
+          key: llgo-release-llvm-x86-v1-${{ hashFiles('.github/windows/espressif-toolchain.json') }}
       - name: Download release metadata
         uses: actions/download-artifact@v8
         with:
@@ -218,11 +251,77 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'WinGet manifest tests failed' }
           ./.github/windows/release-lib_test.ps1
           ./.github/windows/release-build_test.ps1
+      - name: Build the shared host compiler
+        shell: pwsh
+        run: >-
+          ./.github/windows/build-compiler.ps1
+          -GoArch '${{ matrix.goarch }}'
+          -OutputDirectory '${{ runner.temp }}/llgo-windows-compiler'
+      - name: Upload shared host compiler
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-host-compiler-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/llgo-windows-compiler
+          if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 0
+          retention-days: 3
+
+  # Keep x86 host qualification separate while sharing compiler/packaging steps.
+  build-windows-compiler-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build]
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-compiler-steps
+
+  build-windows:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build, build-windows-compiler]
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: [amd64, arm64]
+        include:
+          - goarch: amd64
+            os: windows-2022
+          - goarch: arm64
+            os: windows-11-arm
+    runs-on: ${{ matrix.os }}
+    steps: &windows-package-steps
+      - uses: actions/checkout@v7
+      - name: Cache ESP release archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.tool_cache }}/llgo-release-downloads/esp
+          key: llgo-release-esp-archive-v3-${{ matrix.goarch }}-${{ hashFiles('.github/windows/espressif-toolchain.json') }}
+          enableCrossOsArchive: true
+      - name: Download release metadata
+        uses: actions/download-artifact@v8
+        with:
+          name: llgo-release-metadata
+          path: .windows-dist
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Download shared host compiler
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-host-compiler-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/llgo-windows-compiler
       - name: Build integrated Windows archive
         shell: pwsh
         run: >-
           ./.github/windows/build-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
+          -HostCompilerDirectory '${{ runner.temp }}/llgo-windows-compiler'
       - name: Upload Windows archive
         uses: actions/upload-artifact@v7
         with:
@@ -234,6 +333,19 @@ jobs:
           retention-days: 3
           include-hidden-files: true
           compression-level: 0
+
+  build-windows-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build, build-windows-compiler-x86]
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-package-steps
 
   test-windows-artifacts:
     if: needs.prepare.outputs.run_code_ci == 'true'
@@ -250,7 +362,7 @@ jobs:
           - goarch: arm64
             os: windows-11-arm
     runs-on: ${{ matrix.os }}
-    steps:
+    steps: &windows-test-steps
       - uses: actions/checkout@v7
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -268,6 +380,7 @@ jobs:
             throw 'Could not determine the LLGo version from the Windows archive'
           }
           $env:LLGO_VERSION = $Matches[1]
+          $env:LLGO_ARCH = '${{ matrix.goarch }}'
           $env:LLGO_ABI = '${{ matrix.abi }}'
           $env:LLGO_ARCHIVE_PATH = $archive.FullName
           $env:LLGO_INSTALL_ROOT = Join-Path $env:RUNNER_TEMP 'llgo-release-install'
@@ -319,10 +432,23 @@ jobs:
           ./.github/windows/test-release.ps1
           -Profile '${{ matrix.abi }}' -GoArch '${{ matrix.goarch }}'
 
+  test-windows-artifacts-x86:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build-windows-x86]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [msvc, mingw]
+        goarch: ['386']
+        os: [windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps: *windows-test-steps
+
   prepare-winget:
     if: needs.prepare.outputs.run_code_ci == 'true'
-    needs: [prepare, test-windows-artifacts]
-    runs-on: ubuntu-latest
+    needs: [prepare, test-windows-artifacts, test-windows-artifacts-x86]
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_runner) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -364,6 +490,11 @@ jobs:
             goos: darwin
             goarch: arm64
             go-mod-version: "1.27"
+          - os: xcode-27
+            goos: darwin
+            goarch: arm64
+            go-mod-version: "1.27"
+            require-sdk27: true
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
@@ -372,7 +503,7 @@ jobs:
             goos: linux
             goarch: arm64
             go-mod-version: "1.27"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - name: Install dependencies
@@ -412,20 +543,94 @@ jobs:
         with:
           mod-version: ${{ matrix.go-mod-version }}
 
+      - name: Install native assembly test compiler
+        if: runner.os == 'Linux'
+        run: |
+          # install-llvm=false above leaves minimal runners without clang.
+          sudo timeout --kill-after=30s 10m apt-get install -y clang
+          clang --version
+
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
+
+      - name: Test external LLD 23 with LLVM 22 output
+        if: matrix.goos == 'darwin' && matrix.goarch == 'arm64'
+        env:
+          REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          linker="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/lld@23/bin/ld64.lld"
+          "$linker" --version
+          sdk_version=$(xcrun --sdk macosx --show-sdk-version)
+          echo "Testing external LLD with SDK $sdk_version"
+          if [[ "$REQUIRE_SDK27" == 1 ]]; then
+            [[ "$sdk_version" == 27* ]]
+          fi
+          for mode in native thin full; do
+            flags=(-x)
+            if [[ "$mode" != native ]]; then flags+=("-lto=$mode"); fi
+            output="$RUNNER_TEMP/llgo-lld-$mode"
+            (cd _demo/c && llgo build "${flags[@]}" -o "$output" ./hello) 2>&1 | tee "$output.log"
+            grep -F -- "-fuse-ld=$linker" "$output.log"
+            "$output"
+          done
+
+  test-linux-distributions:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: [prepare, build]
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            goarch: amd64
+          - os: ubuntu-24.04-arm
+            goarch: arm64
+    runs-on: ${{ matrix.goarch == 'amd64' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: llgo-linux-${{ matrix.goarch }}-packages
+          path: .dist
+      - name: Test installed DEB and RPM
+        run: bash .github/linux/test-packages.sh .dist '${{ matrix.goarch }}'
+      - name: Build release container
+        run: |
+          context="$RUNNER_TEMP/llgo-container"
+          mkdir -p "$context/linux/${{ matrix.goarch }}"
+          cp Dockerfile "$context/"
+          cp .dist/*.linux-${{ matrix.goarch }}.deb "$context/linux/${{ matrix.goarch }}/"
+          docker build --tag llgo-release:test "$context"
+      - name: Test release container
+        run: |
+          docker run --rm llgo-release:test
+          docker run --rm -v "$PWD/.github/linux:/tests:ro" \
+            llgo-release:test bash /tests/test-installed.sh
 
   release:
     permissions:
       contents: write
-    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, populate-linux-sysroot]
+      packages: write
+    needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, test-windows-artifacts-x86, test-linux-distributions, populate-linux-sysroot]
     runs-on: ubuntu-latest
     if: needs.prepare.outputs.run_code_ci == 'true' && (startsWith(github.ref, 'refs/tags/'))
+    outputs:
+      stable: ${{ steps.release-type.outputs.stable }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - name: Check release type
+        id: release-type
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'stable=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'stable=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Download Linux sysroot artifact
         uses: actions/download-artifact@v8
         with:
@@ -439,21 +644,32 @@ jobs:
           pattern: llgo-windows-*
           merge-multiple: true
           path: .windows-dist
-      - name: Verify all four Windows ZIPs
+      - name: Verify all six Windows ZIPs
         shell: bash
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           cd .windows-dist
           archives=(llgo*.windows-*.zip)
-          test "${#archives[@]}" = 4
-          for arch in amd64 arm64; do
+          test "${#archives[@]}" = 6
+          for arch in 386 amd64 arm64; do
             for abi in msvc mingw; do
               archive="llgo${version}.windows-${arch}-${abi}.zip"
               test -s "$archive"
               sha256sum -c "$archive.sha256"
             done
           done
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
       - name: Run GoReleaser (Release)
         env:
           GITHUB_TOKEN: ${{github.token}}
@@ -462,11 +678,69 @@ jobs:
           echo "All artifact tests passed, proceeding with release..."
           docker run --rm --entrypoint go "${GORELEASER_CROSS_IMAGE}" version
           docker run --rm "${GORELEASER_CROSS_IMAGE}" --version
+          # Keep credentials read-only while Buildx updates its builder state.
           docker run \
             --rm \
-            -e GITHUB_TOKEN=${GITHUB_TOKEN} \
+            -e "GITHUB_TOKEN=${GITHUB_TOKEN}" \
+            -e "DOCKER_IMAGE_REPO=ghcr.io/${GITHUB_REPOSITORY,,}" \
+            -e DOCKER_CONFIG=/root/.docker \
+            -v "$HOME/.docker:/root/.docker:ro" \
+            -v "$HOME/.docker/buildx:/root/.docker/buildx" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd):/go/src/llgo \
+            -v "$PWD:/go/src/llgo" \
             -w /go/src/llgo \
             "${GORELEASER_CROSS_IMAGE}" \
-            release --clean --verbose --skip nfpm,snapcraft
+            release --clean --verbose --skip snapcraft
+
+      - name: Upload Linux packages to Fury
+        if: steps.release-type.outputs.stable == 'true'
+        env:
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          FURY_ACCOUNT: ${{ vars.FURY_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          : "${FURY_TOKEN:?Set the FURY_TOKEN Actions secret to a Gemfury Push token}"
+          if [[ -z "$FURY_ACCOUNT" ]]; then
+            FURY_ACCOUNT="$GITHUB_REPOSITORY_OWNER"
+            if [[ "$FURY_ACCOUNT" == 'xgo-dev' ]]; then
+              FURY_ACCOUNT=goplus
+            fi
+          fi
+          if [[ ! "$FURY_ACCOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo 'Invalid FURY_ACCOUNT' >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          packages=()
+          for arch in amd64 arm64; do
+            for format in deb rpm; do
+              package=".dist/llgo${version}.linux-${arch}.${format}"
+              if [[ ! -s "$package" ]]; then
+                echo "Missing release package: $package" >&2
+                exit 1
+              fi
+              packages+=("$package")
+            done
+          done
+          for package in "${packages[@]}"; do
+            echo "Uploading $package to Fury account $FURY_ACCOUNT"
+            status=$(curl --silent --show-error --connect-timeout 30 --max-time 600 \
+              --header "Authorization: ${FURY_TOKEN}" \
+              --header 'Accept: application/vnd.fury.v1' \
+              --form "file=@${package}" --form 'public=true' \
+              --output /dev/null --write-out '%{http_code}' \
+              "https://push.fury.io/uploads?as=${FURY_ACCOUNT}")
+            if [[ "$status" != 2[0-9][0-9] ]]; then
+              echo "Fury upload failed for $package (HTTP $status)" >&2
+              exit 1
+            fi
+          done
+
+  submit-winget:
+    needs: [prepare, release]
+    if: needs.prepare.outputs.run_code_ci == 'true' && github.repository == 'xgo-dev/llgo' && needs.release.outputs.stable == 'true'
+    uses: ./.github/workflows/winget.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      WINGET_PR_TOKEN: ${{ secrets.WINGET_PR_TOKEN }}

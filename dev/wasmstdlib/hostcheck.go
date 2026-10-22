@@ -21,13 +21,20 @@ func fullChildCommand(p profile, root, goRoot, artifact, arg string) command {
 		args = []string{filepath.Join(goRoot, "lib", "wasm", "go_"+p.GOOS+"_wasm_exec"), artifact, arg}
 		env["GOWASIRUNTIME"] = "wasmtime"
 	case p.Target == "wasi":
-		args = []string{"wasmtime", "run", "-W", "exceptions=y", "--dir=" + root, artifact, arg}
+		env["RUST_LOG"] = "off"
+		args = []string{"wasmer", "run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576", "--volume=" + root, "--volume=/tmp", artifact, "--", arg}
 	default:
 		runner := "emscripten-runner.mjs"
 		if p.Target == "emscripten-memory64" {
 			runner = "emscripten-memory64-runner.mjs"
 		}
-		args = []string{"node", filepath.Join(root, "targets", runner), artifact, arg}
+		args = []string{"node", filepath.Join(root, "targets", runner)}
+		if p.Target == "" {
+			// Raw GoJS glue has no Node loader. Supply its sibling wasm
+			// binary through the same browser host used by llgo test.
+			args = append(args, "--browser-only")
+		}
+		args = append(args, artifact, arg)
 	}
 	return command{"timeout", append([]string{"--kill-after=10s", "30s"}, args...), env}
 }

@@ -45,6 +45,8 @@ static constexpr char ReflectTypeMethodTypeIDPrefix[] =
 static constexpr char StaticItabSlotMetadata[] = "llgo.static.itab.slot";
 static constexpr char RuntimeStringCatSuffix[] =
     "runtime/internal/runtime.StringCat";
+static constexpr char RuntimeStringSliceSuffix[] =
+    "runtime/internal/runtime.StringSlice";
 static constexpr char RuntimeStringSlice2Suffix[] =
     "runtime/internal/runtime.StringSlice2";
 static constexpr unsigned MaxReflectMethodNames = 32;
@@ -170,11 +172,16 @@ bool isRuntimeStringCat(CallBase *CB) {
   return Callee && Callee->getName().ends_with(RuntimeStringCatSuffix);
 }
 
-bool isRuntimeStringSlice2(CallBase *CB) {
+unsigned runtimeStringSliceBoundsArgs(CallBase *CB) {
   if (!CB)
-    return false;
+    return 0;
   Function *Callee = CB->getCalledFunction();
-  return Callee && Callee->getName().ends_with(RuntimeStringSlice2Suffix);
+  if (!Callee)
+    return 0;
+  // Native signed bounds omit the two signedness flags of the generic entry.
+  if (Callee->getName().ends_with(RuntimeStringSliceSuffix))
+    return 2;
+  return Callee->getName().ends_with(RuntimeStringSlice2Suffix) ? 4 : 0;
 }
 
 bool consumeStringCallArgument(CallBase *CB, unsigned &NextArgIndex,
@@ -215,16 +222,17 @@ bool collectStringSetFromStringCat(CallBase *CB, const DataLayout &DL,
   return addConcatenatedNames(Names, Prefixes, Suffixes);
 }
 
-bool collectStringSetFromStringSlice2(CallBase *CB, const DataLayout &DL,
-                                      SmallVectorImpl<std::string> &Names,
-                                      unsigned Depth) {
-  if (!isRuntimeStringSlice2(CB))
+bool collectStringSetFromStringSlice(CallBase *CB, const DataLayout &DL,
+                                     SmallVectorImpl<std::string> &Names,
+                                     unsigned Depth) {
+  unsigned BoundsArgs = runtimeStringSliceBoundsArgs(CB);
+  if (!BoundsArgs)
     return false;
 
   SmallVector<std::string, 4> Bases;
   unsigned NextArgIndex = 0;
   if (!consumeStringCallArgument(CB, NextArgIndex, DL, Bases, Depth) ||
-      CB->arg_size() != NextArgIndex + 4)
+      CB->arg_size() != NextArgIndex + BoundsArgs)
     return false;
 
   SmallVector<uint64_t, 4> Lows;
@@ -981,7 +989,7 @@ bool collectStringSetFromStringValue(Value *StringValue, const DataLayout &DL,
     return collectStringSetFromStringConstant(C, DL, Names, Depth);
 
   if (auto *CB = dyn_cast<CallBase>(StringValue)) {
-    if (collectStringSetFromStringSlice2(CB, DL, Names, Depth))
+    if (collectStringSetFromStringSlice(CB, DL, Names, Depth))
       return true;
     if (collectStringSetFromStringCat(CB, DL, Names, Depth))
       return true;
@@ -1030,11 +1038,33 @@ bool collectExtractedStringSet(Value *Ptr, Value *Len, const DataLayout &DL,
   auto *LenExtract = dyn_cast<ExtractValueInst>(Len);
   auto PtrIndex = singleExtractValueIndex(PtrExtract);
   auto LenIndex = singleExtractValueIndex(LenExtract);
-  if (!PtrIndex || !LenIndex || *PtrIndex != 0 || *LenIndex != 1 ||
-      PtrExtract->getAggregateOperand() != LenExtract->getAggregateOperand())
+  if (!PtrIndex || *PtrIndex != 0)
     return false;
-  return collectStringSetFromStringValue(PtrExtract->getAggregateOperand(), DL,
-                                         Names, Depth + 1);
+  Value *StringValue = PtrExtract->getAggregateOperand();
+  if (LenIndex && *LenIndex == 1 &&
+      StringValue == LenExtract->getAggregateOperand())
+    return collectStringSetFromStringValue(StringValue, DL, Names, Depth + 1);
+
+  // Interprocedural constant propagation can replace just the length of a
+  // returned string. This occurs for same-length alternatives in optimized
+  // DWARF builds on x86-64. Recover the finite return set, but only accept the
+  // separate length when it agrees with every candidate: an unrelated length
+  // must not turn an unknown lookup into a different, supposedly known name.
+  auto *LenC = dyn_cast<ConstantInt>(Len);
+  if (!LenC)
+    return false;
+  SmallVector<std::string, 4> Candidates;
+  if (!collectStringSetFromStringValue(StringValue, DL, Candidates, Depth + 1))
+    return false;
+  for (const std::string &Name : Candidates) {
+    if (LenC->getValue() != Name.size())
+      return false;
+  }
+  for (const std::string &Name : Candidates) {
+    if (!addName(Names, Name))
+      return false;
+  }
+  return !Candidates.empty();
 }
 
 // Collect every possible string from a lowered (ptr, len) pair.
@@ -1539,7 +1569,7 @@ void insertMethodNameChecks(CallBase *GenericLoad, ArrayRef<std::string> Names,
   for (const std::string &Name : Names) {
     std::string TypeID = (Prefix + Name).str();
     Value *MDVal = MetadataAsValue::get(Ctx, MDString::get(Ctx, TypeID));
-    CallInst *Checked = B.CreateIntrinsic(
+    Value *Checked = B.CreateIntrinsic(
         Intrinsic::type_checked_load, {},
         {GenericLoad->getArgOperand(0), GenericLoad->getArgOperand(1), MDVal});
     OKs.push_back(B.CreateExtractValue(Checked, {1}));

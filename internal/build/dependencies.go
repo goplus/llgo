@@ -73,13 +73,18 @@ func linkedPackageClosure(ctx *context, root *packages.Package, built []*aPackag
 		for _, dep := range effectiveDependencies(aPkg) {
 			visit(dep)
 		}
-		if pkg.ExportFile != "" {
+		// Imports may retain metadata from another load of the same package.
+		// The prepared package owns the backend output, including for source
+		// transforms whose metadata has no gc export file.
+		if aPkg.ExportFile != "" {
 			order = append(order, aPkg)
 		}
 	}
 	visit(root)
 	for _, pkg := range built {
-		if pkg.PkgPath == llssa.PkgRuntime {
+		// Runtime packages are preloaded even for C-only entry points. They
+		// have a Go export file but no built archive or backend in that case.
+		if pkg.PkgPath == llssa.PkgRuntime && pkg.ArchiveFile != "" {
 			visit(pkg.Package)
 		}
 	}

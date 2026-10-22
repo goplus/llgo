@@ -24,11 +24,12 @@ func TestWasmGCRootFrameLinksRuntimeChain(t *testing.T) {
 		t.Fatalf("observed %d relevant modules, want 2", len(modules))
 	}
 	mainIR := modules["github.com/xgo-dev/llgo/internal/build/testdata/wasm-gc-liveness"]
-	if !strings.Contains(mainIR, "@llvm_gc_root_chain") {
+	const rootChain = "@\"github.com/xgo-dev/llgo/runtime/internal/gcroot.currentRootChain\""
+	if !strings.Contains(mainIR, rootChain+" = linkonce thread_local global") {
 		t.Fatalf("main package does not publish the compiler root chain:\n%s", mainIR)
 	}
 	runtimeIR := modules["github.com/xgo-dev/llgo/runtime/internal/gcroot"]
-	if !strings.Contains(runtimeIR, "@llvm_gc_root_chain") {
+	if !strings.Contains(runtimeIR, rootChain) {
 		t.Fatalf("runtime package does not consume the compiler root chain:\n%s", runtimeIR)
 	}
 	for _, name := range []string{

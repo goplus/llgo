@@ -56,7 +56,7 @@ func TestApplyGoBuildFlagsMapsFrontendGCFlags(t *testing.T) {
 		"-tags=integration",
 		"-gcflags=",
 		"-gcflags=-l",
-		"-gcflags=all=-lang=go1.17 -N -l=4",
+		"-gcflags=all=-lang=go1.17 -N -l=0",
 	}}
 	if err := ApplyGoBuildFlags(conf, nil); err != nil {
 		t.Fatal(err)
@@ -241,6 +241,52 @@ func TestBuildPCLNFlagInvalid(t *testing.T) {
 		AddBuildFlags(fs)
 		if err := fs.Parse(args); err == nil {
 			t.Fatalf("Parse(%v) expected error", args)
+		}
+	}
+}
+
+func TestBuildDebugArtifactFlags(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		want      build.DebugArtifactMode
+		specified bool
+	}{
+		{name: "default", want: build.DebugArtifactDefault},
+		{name: "embedded", args: []string{"-debug-artifact=embedded"}, want: build.DebugArtifactEmbedded, specified: true},
+		{name: "external", args: []string{"-debug-artifact=external"}, want: build.DebugArtifactExternal, specified: true},
+		{name: "host", args: []string{"-debug-artifact=host"}, want: build.DebugArtifactHost, specified: true},
+		{name: "none", args: []string{"-debug-artifact=none"}, want: build.DebugArtifactNone, specified: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := flag.NewFlagSet(tt.name, flag.ContinueOnError)
+			fs.SetOutput(new(bytes.Buffer))
+			AddBuildFlags(fs)
+			if err := fs.Parse(tt.args); err != nil {
+				t.Fatal(err)
+			}
+			if DebugArtifact.Specified != tt.specified || DebugArtifact.Mode != tt.want {
+				t.Fatalf("DebugArtifact = %+v, want mode=%v specified=%v", DebugArtifact, tt.want, tt.specified)
+			}
+			conf := &build.Config{}
+			if err := UpdateConfig(conf); err != nil {
+				t.Fatal(err)
+			}
+			if conf.DebugArtifactMode != tt.want || conf.DebugArtifactModeSet != tt.specified {
+				t.Fatalf("Config debug artifact = %v/%v, want %v/%v", conf.DebugArtifactMode, conf.DebugArtifactModeSet, tt.want, tt.specified)
+			}
+		})
+	}
+}
+
+func TestBuildDebugArtifactFlagInvalid(t *testing.T) {
+	for _, args := range [][]string{{"-debug-artifact"}, {"-debug-artifact="}, {"-debug-artifact=default"}, {"-debug-artifact=EXTERNAL"}} {
+		fs := flag.NewFlagSet("invalid-debug-artifact", flag.ContinueOnError)
+		fs.SetOutput(new(bytes.Buffer))
+		AddBuildFlags(fs)
+		if err := fs.Parse(args); err == nil {
+			t.Fatalf("Parse(%v) succeeded", args)
 		}
 	}
 }
@@ -592,7 +638,11 @@ func TestUpdateConfigVerboseCompatibility(t *testing.T) {
 		{name: "build flags can be combined", mode: build.ModeBuild, verbose: true, compilerVerbose: true, wantVerbose: true, wantPrintPackages: true},
 		{name: "test v is reserved for test binary", mode: build.ModeTest, verbose: true},
 		{name: "test verbose prints debug output", mode: build.ModeTest, compilerVerbose: true, wantVerbose: true},
-		{name: "other commands keep v behavior", mode: build.ModeRun, verbose: true, wantVerbose: true},
+		{name: "run v prints packages", mode: build.ModeRun, verbose: true, wantPrintPackages: true},
+		{name: "install v prints packages", mode: build.ModeInstall, verbose: true, wantPrintPackages: true},
+		{name: "run compiler verbosity", mode: build.ModeRun, compilerVerbose: true, wantVerbose: true},
+		{name: "install compiler verbosity", mode: build.ModeInstall, compilerVerbose: true, wantVerbose: true},
+		{name: "cmptest keeps v behavior", mode: build.ModeCmpTest, verbose: true, wantVerbose: true},
 	}
 
 	for _, tt := range tests {

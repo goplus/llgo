@@ -139,17 +139,17 @@ func TestIsLargeNonPointerValue(t *testing.T) {
 	prog := llssa.NewProgram(nil)
 	ctx := &context{prog: prog}
 
-	largeArray := prog.Type(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1), llssa.InGo)
+	largeArray := prog.Type(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1), llssa.GoDecl)
 	if !ctx.isLargeNonPointerValue(largeArray) {
 		t.Fatal("large array should require explicit nil-deref guard")
 	}
 
-	smallArray := prog.Type(types.NewArray(types.Typ[types.Byte], 16), llssa.InGo)
+	smallArray := prog.Type(types.NewArray(types.Typ[types.Byte], 16), llssa.GoDecl)
 	if ctx.isLargeNonPointerValue(smallArray) {
 		t.Fatal("small array should not require explicit nil-deref guard")
 	}
 
-	largePointer := prog.Type(types.NewPointer(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1)), llssa.InGo)
+	largePointer := prog.Type(types.NewPointer(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1)), llssa.GoDecl)
 	if ctx.isLargeNonPointerValue(largePointer) {
 		t.Fatal("pointer values should not be classified as large direct values")
 	}
@@ -200,6 +200,58 @@ func compareInterfacePtr(p *interface{}, q interface{}) bool {
 `)
 	if ir := m.String(); !strings.Contains(ir, "AssertNilDeref") {
 		t.Fatalf("compiled IR missing AssertNilDeref for interface compare deref:\n%s", ir)
+	}
+}
+
+func TestCompileInterfaceCompareDerefKeepsDominance(t *testing.T) {
+	for _, typ := range []string{"any", "interface{ M() }"} {
+		t.Run(typ, func(t *testing.T) {
+			_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+type V `+typ+`
+
+func check(pp **V, branch bool, a, b V) bool {
+	p := *pp
+	if branch {
+		return *p == a
+	}
+	return *p == b
+}
+`)
+			if err := llvm.VerifyModule(m, llvm.ReturnStatusAction); err != nil {
+				t.Fatalf("compiled IR failed verifier: %v\n%s", err, m.String())
+			}
+			if !strings.Contains(m.String(), "AssertNilDeref") {
+				t.Fatal("compiled IR missing nil-dereference guard")
+			}
+		})
+	}
+}
+
+func TestCompileZeroSizedDerefKeepsDominance(t *testing.T) {
+	for _, typ := range []string{"struct{}", "[0]int"} {
+		t.Run(typ, func(t *testing.T) {
+			_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+type V `+typ+`
+
+func check(pp **V, branch bool) V {
+	p := *pp
+	if branch {
+		return *p
+	}
+	return *p
+}
+`)
+			if err := llvm.VerifyModule(m, llvm.ReturnStatusAction); err != nil {
+				t.Fatalf("compiled IR failed verifier: %v\n%s", err, m.String())
+			}
+			if !strings.Contains(m.String(), "AssertNilDeref") {
+				t.Fatal("compiled IR missing nil-dereference guard")
+			}
+		})
 	}
 }
 
@@ -405,14 +457,14 @@ func TestCollectMethodNilDerefChecksSkipsDynamicDeferGo(t *testing.T) {
 	}
 }
 
-func TestToBackground(t *testing.T) {
-	for name, want := range map[string]llssa.Background{
-		"":        llssa.InGo,
-		"C":       llssa.InC,
-		"stdcall": llssa.InStdcall,
+func TestToCallConv(t *testing.T) {
+	for name, want := range map[string]llssa.CallConv{
+		"":        llssa.GoDecl,
+		"C":       llssa.CDecl,
+		"stdcall": llssa.Stdcall,
 	} {
-		if got := toBackground(name); got != want {
-			t.Fatalf("toBackground(%q) = %v, want %v", name, got, want)
+		if got := toCallConv(name); got != want {
+			t.Fatalf("toCallConv(%q) = %v, want %v", name, got, want)
 		}
 	}
 }

@@ -6,7 +6,7 @@ import c "github.com/xgo-dev/llgo/runtime/internal/clite"
 
 // wasiCIovec is consumed directly by the host's WASI fd_write import.
 //
-//llgo:type C
+//llgo:cdecl
 type wasiCIovec struct {
 	data c.Pointer
 	size c.SizeT

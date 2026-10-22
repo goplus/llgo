@@ -6,6 +6,7 @@ import (
 	"time"
 	"unsafe"
 
+	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 	nativesync "github.com/xgo-dev/llgo/runtime/internal/sync"
 	// The smoke package lives below the LLGo runtime root, whose packages are
 	// excluded from the ordinary need-runtime signal. Import the core runtime
@@ -366,4 +367,6 @@ func main() {
 	}()
 	<-lingeringStarted
 	println("windows runtime smoke: ok")
+	// The parent redirects stdout, so this remains buffered until main returns.
+	c.Printf(c.Str("windows C stdio smoke: ok\n"))
 }

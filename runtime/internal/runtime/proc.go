@@ -25,7 +25,7 @@ import (
 // goroutineFunc is the target-independent entry ABI between compiler-generated
 // goroutine wrappers and the runtime scheduler.
 //
-//llgo:type C
+//llgo:cdecl
 type goroutineFunc func(unsafe.Pointer) unsafe.Pointer
 
 // runtimeContext owns one G and its target-specific suspended execution state.
@@ -99,6 +99,7 @@ func freeRuntimeContext(ctx *runtimeContext) {
 		return
 	}
 	root := ctx.root
+	leaveSynctest(&ctx.g)
 	unregisterTraceback(&ctx.g)
 	ctx.root = nil
 	FreeRoot(root)
@@ -112,6 +113,7 @@ func initG(ctx *runtimeContext, callergp *g, status uint32) *g {
 		gp.parentGoid = callergp.goid
 	}
 	gp.context = ctx
+	inheritSynctest(gp, callergp)
 	registerTraceback(gp, callergp)
 	retainG()
 	return gp

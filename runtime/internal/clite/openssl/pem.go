@@ -26,7 +26,7 @@ import (
 
 // typedef int (*pem_password_cb)(char *buf, int size, int rwflag, void *userdata);
 //
-// llgo:type C
+// llgo:cdecl
 type PemPasswordCb func(buf *c.Char, size, rwflag c.Int, userdata unsafe.Pointer) c.Int
 
 // RSA *PEM_read_bio_RSAPrivateKey(BIO *bp, RSA **x, pem_password_cb *cb, void *u);

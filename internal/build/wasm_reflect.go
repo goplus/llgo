@@ -18,6 +18,7 @@ package build
 
 import (
 	"go/types"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/callgraph/rta"
@@ -27,9 +28,12 @@ import (
 )
 
 const reflectPackagePath = "reflect"
+const wasmReflectLibffiTag = "llgo.wasm.reflect.libffi"
 
-// configureWasmReflectBridges enables the typed fallback only for WASI
-// programs that can use Go's dynamic reflection entry points.
+// configureWasmReflectBridges enables typed Wasm entries for programs that
+// can use Go's dynamic reflection entry points. Emscripten workers have
+// separate function tables, so dynamically installed libffi entries cannot
+// be called by a different worker.
 // Executables are restricted to functions reachable from init and main so
 // dead reflection helpers in the standard library do not affect every build.
 // Library builds, which have no executable roots, remain conservative.
@@ -38,8 +42,13 @@ func configureWasmReflectBridges(ctx *context) {
 		return
 	}
 	target := ctx.prog.Target()
-	wasiProvider := target.GOARCH == "wasm" && target.WasmProvider == "wasi"
-	target.WasmReflectBridges = wasiProvider && wasmProgramUseFor(ctx).usesWasmReflectBridges()
+	target.WasmReflectBridges = wasmReflectBridgeProvider(ctx) && wasmProgramUseFor(ctx).usesWasmReflectBridges()
+}
+
+func wasmReflectBridgeProvider(ctx *context) bool {
+	target := ctx.prog.Target()
+	libffi := ctx.buildConf != nil && slices.Contains(splitSourcePatchBuildTags(ctx.buildConf.Tags), wasmReflectLibffiTag)
+	return target.GOARCH == "wasm" && (target.WasmProvider == "wasi" || target.GOOS == "js" && !libffi)
 }
 
 // configureWasmFuncInfoEntries keeps table-index metadata out of ordinary
@@ -210,7 +219,7 @@ func programMayCallWasmReflectBridgeIndirectly(reachable map[*ssa.Function]struc
 		// RTA creates thunks and bound wrappers only when a method is used as
 		// a function value. Plain pointer wrappers retain the original name.
 		if name, suffix, ok := strings.Cut(fn.Name(), "$"); ok {
-			if fn.Parent() == nil && suffix != "" && isWasmReflectBridgeName(name) {
+			if fn.Parent() == nil && suffix != "" && isWasmReflectBridgeSignature(name, fn.Signature) {
 				return true
 			}
 			continue
@@ -230,7 +239,7 @@ func programMayCallWasmReflectBridgeIndirectly(reachable map[*ssa.Function]struc
 					continue
 				}
 				common := call.Common()
-				if common.IsInvoke() && common.Method != nil && isWasmReflectBridgeName(common.Method.Name()) {
+				if common.IsInvoke() && common.Method != nil && isWasmReflectBridgeSignature(common.Method.Name(), common.Signature()) {
 					return true
 				}
 				if !common.IsInvoke() && functionSignatures.At(common.Signature()) != nil {
@@ -268,13 +277,26 @@ func isWasmReflectBridgeFunction(fn *ssa.Function) bool {
 	if fn == nil || ssaFunctionPackagePath(fn) != reflectPackagePath {
 		return false
 	}
-	return isWasmReflectBridgeName(fn.Name())
+	return isWasmReflectBridgeSignature(fn.Name(), fn.Signature)
 }
 
-func isWasmReflectBridgeName(name string) bool {
+func isWasmReflectBridgeSignature(name string, signature *types.Signature) bool {
 	switch name {
 	case "Call", "CallSlice", "MakeFunc", "Seq", "Seq2":
+		// Indirect calls retain the conservative name-only match: an
+		// unrelated interface method can enable extra bridges, but cannot
+		// cause a required reflection bridge to be omitted.
 		return true
+	case "Method", "MethodByName":
+		// A bound Value method can escape through Interface and be invoked as
+		// an ordinary Go function, without any explicit Call or MakeFunc. Its
+		// runtime trampoline still needs typed bridges. Type.Method returns
+		// metadata instead and must not enable bridges in metadata-only users.
+		if signature == nil || signature.Results().Len() != 1 {
+			return false
+		}
+		typ, ok := types.Unalias(signature.Results().At(0).Type()).(*types.Named)
+		return ok && typ.Obj().Pkg() != nil && typ.Obj().Pkg().Path() == reflectPackagePath && typ.Obj().Name() == "Value"
 	default:
 		return false
 	}

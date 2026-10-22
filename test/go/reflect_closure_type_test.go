@@ -190,3 +190,22 @@ func TestReflectClosureSliceClear(t *testing.T) {
 		t.Fatal("Clear left a stale function value")
 	}
 }
+
+func TestReflectCallCapturedClosure(t *testing.T) {
+	captured := new(int)
+	*captured = 7
+	fn := func(a, b, c, d, e, f, g, h, i int) int {
+		*captured += a + b + c + d + e + f + g + h + i
+		return *captured
+	}
+	args := make([]reflect.Value, 9)
+	for i := range args {
+		args[i] = reflect.ValueOf(i + 1)
+	}
+	for _, want := range []int64{52, 97} {
+		result := reflect.ValueOf(fn).Call(args)
+		if got := result[0].Int(); got != want || int64(*captured) != want {
+			t.Fatalf("captured closure returned %d, captured %d; want %d", got, *captured, want)
+		}
+	}
+}

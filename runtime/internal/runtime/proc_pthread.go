@@ -18,13 +18,19 @@
 
 package runtime
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/xgo-dev/llgo/runtime/internal/thread"
+)
 
 // The pthread backend keeps its one-to-one M/P pair in the G context without
 // exposing those fields to other execution-context backends.
 type runtimeContextPlatform struct {
 	m m
 	p p
+	// systemG is excluded from the user-goroutine deadlock count.
+	systemG bool
 
 	// foreignThreadAttached records that LLGo, rather than the selected GC
 	// backend's thread-creation API, attached this host thread. Keep ownership
@@ -81,6 +87,7 @@ func mstart(arg unsafe.Pointer) unsafe.Pointer {
 	}
 	gp := mp.curg
 	pp := mp.p
+	registerWasiGCThread()
 
 	setg(gp)
 	casgstatus(gp, _Grunnable, _Grunning)
@@ -105,7 +112,7 @@ func mexit(mp *m) {
 	// for its whole initial call. Both return and Goexit converge here.
 	releaseStartArg(gp)
 	ownedByLifecycle := currentGUsesLifecycle()
-	if !ownedByLifecycle {
+	if !ownedByLifecycle && !ctx.platform.systemG {
 		releaseGAndCheckDeadlock()
 	}
 
@@ -121,9 +128,35 @@ func mexit(mp *m) {
 	if !ownedByLifecycle {
 		freeRuntimeContext(ctx)
 	}
+	if !ownedByLifecycle {
+		unregisterWasiGCThread()
+	}
 }
 
 func goschedBackend() {
+	thread.Yield()
+}
+
+// MarkSystemGoroutine excludes a persistent runtime service from the user
+// goroutine count, so an idle service cannot suppress the main Goexit check.
+func MarkSystemGoroutine() {
+	gp := getg()
+	if gp.context.platform.systemG {
+		return
+	}
+	gp.context.platform.systemG = true
+	releaseGAndCheckDeadlock()
+}
+
+// MarkUserGoroutine counts a runtime worker while it calls user code. Such a
+// callback can still make progress after the main goroutine calls Goexit.
+func MarkUserGoroutine() {
+	gp := getg()
+	if !gp.context.platform.systemG {
+		return
+	}
+	retainG()
+	gp.context.platform.systemG = false
 }
 
 // GMPForTesting reports the current runtime ownership graph.

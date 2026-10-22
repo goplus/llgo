@@ -92,6 +92,7 @@ type aDeduper struct {
 	setpath   func(path string, name string) string
 	preload   func(pkg *packages.Package)
 	prepare   func([]*Package, *Config) error
+	rewrite   func(*Package) (bool, error)
 	llgoFiles map[string][]string
 }
 
@@ -109,6 +110,14 @@ func (p Deduper) SetPreload(fn func(pkg *packages.Package)) {
 // The hook may add generated files and their imports (for example, coverage).
 func (p Deduper) SetPrepare(fn func([]*Package, *Config) error) {
 	p.prepare = fn
+}
+
+// SetRewrite installs a typed source transformation. It runs after the initial
+// check, before importing packages are checked. A changed package is checked
+// again with fresh types and binding information; preload runs for that new
+// package as well. The callback must add metadata for any injected imports.
+func (p Deduper) SetRewrite(fn func(*Package) (bool, error)) {
+	p.rewrite = fn
 }
 
 func (p Deduper) SetPkgPath(fn func(path, name string) string) {
@@ -170,6 +179,14 @@ func LoadEx(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) 
 // LoadExWithGoVersion is LoadEx with an optional go/types language version
 // override. The version uses go/types syntax, such as "go1.22".
 func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) types.Sizes, cfg *Config, goVersion string, patterns ...string) ([]*Package, error) {
+	return LoadExWithSourceOverlay(dedup, sizes, cfg, goVersion, nil, patterns...)
+}
+
+// LoadExWithSourceOverlay supplies an additional source view to LLGo's parser
+// without changing the metadata driver's overlay. This lets a Go -overlay
+// JSON select deleted and added files while native source patches and virtual
+// files reach the parser without generating a conflicting go/packages overlay.
+func LoadExWithSourceOverlay(dedup Deduper, sizes func(sizes types.Sizes, compiler, arch string) types.Sizes, cfg *Config, goVersion string, sourceOverlay map[string][]byte, patterns ...string) ([]*Package, error) {
 	var driverCfg Config
 	if cfg != nil {
 		driverCfg = *cfg
@@ -178,11 +195,18 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 
 	// When type information or custom syntax parsing is requested, we do not let
 	// packages.Load typecheck or parse directly. We request files, imports, embed patterns,
-	// and module metadata from packages.Load (go list driver), and perform custom parsing
+	// and module metadata via LoadMetadata, and perform custom parsing
 	// and typechecking ourselves.
 	driverCfg.Mode = (origMode &^ (NeedTypes | NeedTypesSizes | NeedTypesInfo | NeedSyntax)) | NeedCompiledGoFiles | NeedImports | NeedName | NeedFiles
 	if origMode&(NeedEmbedPatterns|NeedEmbedFiles|NeedTypes|NeedTypesInfo|NeedSyntax) != 0 {
-		driverCfg.Mode |= NeedEmbedPatterns | NeedEmbedFiles | NeedExportFile
+		driverCfg.Mode |= NeedEmbedPatterns | NeedEmbedFiles
+		// A typed source transform owns compilation of the original source.
+		// Do not ask cmd/go to compile it into unused export data first: that
+		// would apply the other compiler's Midway before our initial check.
+		// Explicit export-data requests and ordinary loads keep their contract.
+		if dedup == nil || dedup.rewrite == nil {
+			driverCfg.Mode |= NeedExportFile
+		}
 	}
 	if origMode&NeedTypesSizes != 0 {
 		driverCfg.Mode |= NeedTypesSizes
@@ -191,7 +215,9 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 		driverCfg.Mode |= NeedModule
 	}
 
-	initial, err := packages.Load(&driverCfg, patterns...)
+	// TODO(golang/go#68495): Restore packages.Load here and in coverage reloads
+	// once per-load Go executable selection makes the adapter unnecessary.
+	initial, err := LoadMetadata(&driverCfg, patterns...)
 	if err != nil {
 		return nil, err
 	}
@@ -208,12 +234,13 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 
 	if origMode&(NeedTypes|NeedTypesInfo|NeedTypesSizes|NeedSyntax) != 0 {
 		tc := &typecheckContext{
-			dedup:     dedup,
-			sizesFn:   sizes,
-			cfg:       &driverCfg,
-			fset:      fset,
-			goVersion: goVersion,
-			origMode:  origMode,
+			dedup:         dedup,
+			sizesFn:       sizes,
+			cfg:           &driverCfg,
+			fset:          fset,
+			goVersion:     goVersion,
+			origMode:      origMode,
+			sourceOverlay: sourceOverlay,
 		}
 
 		// Perform bottom-up typechecking in dependency post-order
@@ -226,12 +253,13 @@ func LoadExWithGoVersion(dedup Deduper, sizes func(sizes types.Sizes, compiler, 
 }
 
 type typecheckContext struct {
-	dedup     Deduper
-	sizesFn   func(sizes types.Sizes, compiler, arch string) types.Sizes
-	cfg       *Config
-	fset      *token.FileSet
-	goVersion string
-	origMode  LoadMode
+	dedup         Deduper
+	sizesFn       func(sizes types.Sizes, compiler, arch string) types.Sizes
+	cfg           *Config
+	fset          *token.FileSet
+	goVersion     string
+	origMode      LoadMode
+	sourceOverlay map[string][]byte
 }
 
 func (tc *typecheckContext) targetGoVersion(pkg *Package) string {
@@ -255,6 +283,13 @@ func (tc *typecheckContext) parseFile(filename string, fset *token.FileSet) (*as
 		if data, ok := tc.cfg.Overlay[fullPath]; ok {
 			src, hasSrc = data, true
 		} else if data, ok := tc.cfg.Overlay[filename]; ok {
+			src, hasSrc = data, true
+		}
+	}
+	if !hasSrc && tc.sourceOverlay != nil {
+		if data, ok := tc.sourceOverlay[fullPath]; ok {
+			src, hasSrc = data, true
+		} else if data, ok := tc.sourceOverlay[filename]; ok {
 			src, hasSrc = data, true
 		}
 	}
@@ -354,10 +389,10 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 		if tc.dedup.setpath != nil {
 			pkg.PkgPath = tc.dedup.setpath(pkg.PkgPath, pkg.Name)
 		}
-		// Source-patch files are selected per import path and intentionally
-		// shared by the ordinary and test-augmented variants.
-		if _, ok := tc.dedup.checked.Load(pkg.PkgPath); !ok {
-			tc.dedup.checked.Store(pkg.PkgPath, struct{}{})
+		// Source patches are selected by import path, but each package variant
+		// needs the files. A test-augmented package has a distinct file list.
+		if _, ok := tc.dedup.checked.Load(pkg.ID); !ok {
+			tc.dedup.checked.Store(pkg.ID, struct{}{})
 			if files, ok := tc.dedup.llgoFiles[pkg.PkgPath]; ok {
 				pkg.CompiledGoFiles = append(pkg.CompiledGoFiles, files...)
 			}
@@ -444,16 +479,7 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 
 	pkg.Types = types.NewPackage(pkg.PkgPath, pkg.Name)
 
-	pkg.TypesInfo = &types.Info{
-		Types:        make(map[ast.Expr]types.TypeAndValue),
-		Defs:         make(map[*ast.Ident]types.Object),
-		Uses:         make(map[*ast.Ident]types.Object),
-		Implicits:    make(map[ast.Node]types.Object),
-		Instances:    make(map[*ast.Ident]types.Instance),
-		Scopes:       make(map[ast.Node]*types.Scope),
-		Selections:   make(map[*ast.SelectorExpr]*types.Selection),
-		FileVersions: make(map[*ast.File]string),
-	}
+	pkg.TypesInfo = newTypesInfo()
 
 	importer := importerFunc(func(path string) (*types.Package, error) {
 		if path == "unsafe" {
@@ -486,6 +512,19 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 	}
 
 	typErr := types.NewChecker(typeConf, fset, pkg.Types, pkg.TypesInfo).Files(pkg.Syntax)
+	if typErr == nil && len(pkg.Errors) == 0 && tc.dedup != nil && tc.dedup.rewrite != nil {
+		changed, err := tc.dedup.rewrite(pkg)
+		if err != nil {
+			appendError(err)
+		} else if changed {
+			pkg.Types = types.NewPackage(pkg.PkgPath, pkg.Name)
+			pkg.TypesInfo = newTypesInfo()
+			if tc.dedup.preload != nil {
+				tc.dedup.preload(pkg)
+			}
+			typErr = types.NewChecker(typeConf, fset, pkg.Types, pkg.TypesInfo).Files(pkg.Syntax)
+		}
+	}
 	if typErr != nil && len(pkg.Errors) == 0 && len(pkg.Syntax) > 0 {
 		if msg := typErr.Error(); strings.HasPrefix(msg, "package requires newer Go version") {
 			appendError(types.Error{
@@ -510,6 +549,19 @@ func (tc *typecheckContext) typecheckPackage(pkg *Package) {
 		}
 	}
 	pkg.IllTyped = illTyped
+}
+
+func newTypesInfo() *types.Info {
+	return &types.Info{
+		Types:        make(map[ast.Expr]types.TypeAndValue),
+		Defs:         make(map[*ast.Ident]types.Object),
+		Uses:         make(map[*ast.Ident]types.Object),
+		Implicits:    make(map[ast.Node]types.Object),
+		Instances:    make(map[*ast.Ident]types.Instance),
+		Scopes:       make(map[ast.Node]*types.Scope),
+		Selections:   make(map[*ast.SelectorExpr]*types.Selection),
+		FileVersions: make(map[*ast.File]string),
+	}
 }
 
 const embedPatternDriverDiagnostic = "pattern //: invalid pattern syntax"

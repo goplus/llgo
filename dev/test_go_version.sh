@@ -250,6 +250,7 @@ while IFS= read -r package; do
 			github.com/xgo-dev/llgo/test/std/fmt|\
 			github.com/xgo-dev/llgo/test/std/io|\
 			github.com/xgo-dev/llgo/test/std/math/bits|\
+			github.com/xgo-dev/llgo/test/std/runtime|\
 			github.com/xgo-dev/llgo/test/std/sort|\
 			github.com/xgo-dev/llgo/test/std/strconv|\
 			github.com/xgo-dev/llgo/test/std/strings|\

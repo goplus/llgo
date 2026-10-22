@@ -10,7 +10,110 @@ import (
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 	"github.com/xgo-dev/llgo/internal/lto"
 	llssa "github.com/xgo-dev/llgo/ssa"
+	"github.com/xgo-dev/llvm"
 )
+
+func TestWASILTOFunctionFeatures(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		profile crosscompile.WasmProfile
+		mode    lto.Mode
+		want    bool
+	}{
+		{"WASI full", crosscompile.WasmProfileW32, lto.Full, true},
+		{"WASI thin", crosscompile.WasmProfileW32, lto.Thin, true},
+		{"WASI no LTO", crosscompile.WasmProfileW32, lto.Off, false},
+		{"browser", crosscompile.WasmProfileJ32, lto.Full, false},
+		{"native", crosscompile.WasmProfileNone, lto.Full, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			lc := llvm.NewContext()
+			defer lc.Dispose()
+			mod := lc.NewModule("features")
+			defer mod.Dispose()
+			fnType := llvm.FunctionType(lc.VoidType(), nil, false)
+			fn := llvm.AddFunction(mod, "function", fnType)
+			builder := lc.NewBuilder()
+			builder.SetInsertPointAtEnd(lc.AddBasicBlock(fn, "entry"))
+			builder.CreateRetVoid()
+			plain := llvm.AddFunction(mod, "plain", fnType)
+			builder.SetInsertPointAtEnd(lc.AddBasicBlock(plain, "entry"))
+			builder.CreateRetVoid()
+			builder.Dispose()
+			fn.AddFunctionAttr(lc.CreateStringAttribute("target-features", "+simd128,-atomics,-exception-handling"))
+			llvm.AddFunction(mod, "declaration", fnType)
+			ctx := &context{buildConf: &Config{LTO: test.mode}, crossCompile: crosscompile.Export{WasmProfile: test.profile}}
+			applyWASILTOFeatures(ctx, mod)
+			ir := mod.String()
+			for _, feature := range []string{"+atomics", "+bulk-memory", "+exception-handling"} {
+				if strings.Contains(ir, feature) != test.want {
+					t.Fatalf("feature %q, want present=%v:\n%s", feature, test.want, ir)
+				}
+			}
+			if !strings.Contains(ir, "+simd128") || strings.Contains(ir, "declare void @declaration() #") {
+				t.Fatalf("existing features or declaration changed:\n%s", ir)
+			}
+			if test.want && (strings.Contains(ir, "-atomics") || strings.Contains(ir, "-exception-handling")) {
+				t.Fatalf("required features still have negative counterparts:\n%s", ir)
+			}
+			for _, attr := range plain.GetFunctionAttributes() {
+				if attr.IsString() && attr.GetStringKind() == "target-features" {
+					t.Fatal("function without target-features should inherit backend defaults")
+				}
+			}
+			applyWASILTOFeatures(ctx, mod)
+			if mod.String() != ir {
+				t.Fatal("applying LTO features twice changed the module")
+			}
+		})
+	}
+}
+
+func TestWASILTOFunctionFeaturesCodegen(t *testing.T) {
+	llssa.Initialize(llssa.InitAll)
+	target, err := llvm.GetTargetFromTriple("wasm32-unknown-wasip1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []lto.Mode{lto.Off, lto.Thin, lto.Full} {
+		t.Run(mode.String(), func(t *testing.T) {
+			mod := parseWasmAggregateIR(t, `
+target datalayout = "e-m:e-p:32:32-i64:64-n32:64-S128"
+target triple = "wasm32-unknown-wasip1"
+@counter = thread_local global i32 0, align 4
+define i32 @increment() #0 {
+  %p = call ptr @llvm.threadlocal.address.p0(ptr @counter)
+  %old = atomicrmw add ptr %p, i32 1 seq_cst
+  ret i32 %old
+}
+declare ptr @llvm.threadlocal.address.p0(ptr)
+attributes #0 = { "target-features"="+simd128" }
+`)
+			ctx := &context{buildConf: &Config{LTO: mode}, crossCompile: crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}}
+			applyWASILTOFeatures(ctx, mod)
+			machine := target.CreateTargetMachine("wasm32-unknown-wasip1", "generic",
+				"+atomics,+bulk-memory,+exception-handling", llvm.CodeGenLevelDefault,
+				llvm.RelocStatic, llvm.CodeModelDefault)
+			defer machine.Dispose()
+			buf, err := machine.EmitToMemoryBuffer(mod, llvm.AssemblyFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer buf.Dispose()
+			assembly := string(buf.Bytes())
+			// Off is the unmerged input control: backend defaults alone strip
+			// TLS and atomics when every definition already has feature attributes.
+			for _, instruction := range []string{"__tls_base", "i32.atomic.rmw.add"} {
+				if strings.Contains(assembly, instruction) != mode.Enabled() {
+					t.Fatalf("%s: expected preserved=%v:\n%s", instruction, mode.Enabled(), assembly)
+				}
+			}
+			if !strings.Contains(assembly, "simd128") {
+				t.Fatalf("SIMD feature was lost:\n%s", assembly)
+			}
+		})
+	}
+}
 
 func TestUseInMemoryNativeCodegenConf(t *testing.T) {
 	t.Run("native host", func(t *testing.T) {

@@ -35,7 +35,6 @@ TEST_DIRS = {
     "_cmptest",
     "test",
     "cl/cltest",
-    "cmd/llgo/lldbtest",
     "internal/filecheck",
     "internal/littest",
     "internal/llgen",

@@ -8,8 +8,16 @@ import (
 	"unsafe"
 
 	"github.com/xgo-dev/llgo/runtime/abi"
+	c "github.com/xgo-dev/llgo/runtime/internal/clite"
 	"github.com/xgo-dev/llgo/runtime/internal/runtime/goarch"
 )
+
+// As in hashMapKey64, the hasher only borrows the key's stack slot.
+func hashMapKey32(t *maptype, key uint32, seed uintptr) uintptr {
+	p := c.Alloca(unsafe.Sizeof(key))
+	*(*uint32)(p) = key
+	return t.Hasher(p, seed)
+}
 
 func mapaccess1_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer {
 	if h == nil || h.count == 0 {
@@ -23,7 +31,7 @@ func mapaccess1_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer {
 		// One-bucket table. No need to hash.
 		b = (*bmap)(h.buckets)
 	} else {
-		hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+		hash := hashMapKey32(t, key, uintptr(h.hash0))
 		m := bucketMask(h.B)
 		b = (*bmap)(add(h.buckets, (hash&m)*uintptr(t.BucketSize)))
 		if c := h.oldbuckets; c != nil {
@@ -68,7 +76,7 @@ func mapaccess2_fast32(t *maptype, h *hmap, key uint32) (unsafe.Pointer, bool) {
 		// One-bucket table. No need to hash.
 		b = (*bmap)(h.buckets)
 	} else {
-		hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+		hash := hashMapKey32(t, key, uintptr(h.hash0))
 		m := bucketMask(h.B)
 		b = (*bmap)(add(h.buckets, (hash&m)*uintptr(t.BucketSize)))
 		if c := h.oldbuckets; c != nil {
@@ -110,7 +118,7 @@ func mapassign_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer {
 	if h.flags&hashWriting != 0 {
 		fatal("concurrent map writes")
 	}
-	hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+	hash := hashMapKey32(t, key, uintptr(h.hash0))
 
 	// Set hashWriting after calling t.hasher for consistency with mapassign.
 	h.flags ^= hashWriting
@@ -292,7 +300,7 @@ func mapdelete_fast32(t *maptype, h *hmap, key uint32) {
 		fatal("concurrent map writes")
 	}
 
-	hash := t.Hasher(noescape(unsafe.Pointer(&key)), uintptr(h.hash0))
+	hash := hashMapKey32(t, key, uintptr(h.hash0))
 
 	// Set hashWriting after calling t.hasher for consistency with mapdelete
 	h.flags ^= hashWriting

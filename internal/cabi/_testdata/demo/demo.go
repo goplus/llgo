@@ -248,13 +248,13 @@ type ddata3 struct {
 //go:linkname dd3 C.dd3
 func dd3(d ddata3) ddata3
 
-//llgo:type C
+//llgo:cdecl
 type Callback func(array, point, point1) array
 
 //go:linkname callback C.callback
 func callback(fn Callback, ar array)
 
-//llgo:type C
+//llgo:cdecl
 type Callback1 func(array, point, point1) point
 
 //go:linkname callback1 C.callback1

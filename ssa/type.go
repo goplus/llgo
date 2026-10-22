@@ -59,6 +59,7 @@ const (
 	vkEface
 	vkIface
 	vkStruct
+	vkSIMD
 	vkChan
 )
 
@@ -132,14 +133,14 @@ retry:
 	switch t := typ.(type) {
 	case *types.Named:
 		prog := Program(unsafe.Pointer(p))
-		if background, ok := prog.packageTypeBackground(namedLinkname(t)); ok && isNativeFuncBackground(background) {
+		if background, ok := prog.packageTypeCallConv(namedLinkname(t)); ok && isNativeCallConv(background) {
 			return 0
 		}
 		typ = t.Underlying()
 		goto retry
 	case *types.Alias:
 		prog := Program(unsafe.Pointer(p))
-		if background, ok := prog.packageTypeBackground(typeNameLinkname(t.Obj())); ok && isNativeFuncBackground(background) {
+		if background, ok := prog.packageTypeCallConv(typeNameLinkname(t.Obj())); ok && isNativeCallConv(background) {
 			return 0
 		}
 		typ = t.Rhs()
@@ -216,7 +217,7 @@ func (p Program) AlignOf(typ Type) uint64 {
 
 // OffsetOf returns the offset of a field in a struct.
 func (p Program) OffsetOf(typ Type, i int) uint64 {
-	return p.td.ElementOffset(typ.ll, i)
+	return p.td.ElementOffset(p.storageType(typ), i)
 }
 
 // SizeOf returns the size of a type.
@@ -527,6 +528,13 @@ func (p Program) toLLVMFields(raw *types.Struct, native bool) (fields []llvm.Typ
 }
 
 func (p Program) toLLVMTuple(t *types.Tuple) llvm.Type {
+	// Tuples containing vectors are compiler values, not source Go structs.
+	// Preserve their vector components across multiple-result calls as well.
+	for i := 0; i < t.Len(); i++ {
+		if _, ok := SIMDVectorShape(t.At(i).Type()); ok {
+			return p.ctx.StructType(p.toLLVMTypes(t, t.Len()), false)
+		}
+	}
 	if p.target.effectiveGOARCH() != "386" && !(p.target.effectiveGOARCH() == "wasm" && p.target.WasmProfile != "") {
 		return p.ctx.StructType(p.toLLVMTypes(t, t.Len()), false)
 	}
@@ -556,15 +564,15 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 }
 
 func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
-	return p.toLLVMFuncBackground(sig, InGo)
+	return p.toLLVMFuncBackground(sig, GoDecl)
 }
 
-func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.Type {
-	valueBackground := bg
-	if bg == InStdcall {
+func (p Program) toLLVMFuncBackground(sig *types.Signature, cc CallConv) llvm.Type {
+	valueBackground := cc
+	if cc == Stdcall {
 		// Stdcall validation applies to the function type as a whole; its scalar
 		// parameter and result types use the same native storage rules as C.
-		valueBackground = InC
+		valueBackground = CDecl
 	}
 	tParams := sig.Params()
 	n := tParams.Len()
@@ -584,7 +592,7 @@ func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.
 	case 1:
 		ret = p.Type(p.patch(out.At(0).Type()), valueBackground).ll
 	default:
-		if isNativeFuncBackground(bg) {
+		if isNativeCallConv(cc) {
 			ret = p.ctx.StructType(p.toLLVMNativeTypes(out, out.Len()), false)
 		} else {
 			ret = p.toLLVMTuple(out)
@@ -596,7 +604,7 @@ func (p Program) toLLVMFuncBackground(sig *types.Signature, bg Background) llvm.
 func (p Program) toLLVMNativeTypes(t *types.Tuple, n int) []llvm.Type {
 	ret := make([]llvm.Type, n)
 	for i := range ret {
-		ret[i] = p.Type(p.patch(t.At(i).Type()), InC).ll
+		ret[i] = p.Type(p.patch(t.At(i).Type()), CDecl).ll
 	}
 	return ret
 }
@@ -647,7 +655,7 @@ func isPkgScope(parent, pkgScope *types.Scope) bool {
 }
 
 func (p Program) toNamed(raw *types.Named) Type {
-	if background, ok := p.packageTypeBackground(namedLinkname(raw)); ok && background == InStdcall {
+	if background, ok := p.packageTypeCallConv(namedLinkname(raw)); ok && background == Stdcall {
 		p.validateStdcallType(raw)
 	}
 	name := p.llvmNameOf(raw)
@@ -669,6 +677,11 @@ func (p Program) toNamed(raw *types.Named) Type {
 			}
 			break
 		}
+	}
+	if lanes, ok := SIMDVectorShape(raw); ok {
+		typ := &aType{llvm.VectorType(p.rawType(lanes.Elem()).ll, int(lanes.Len())), rawType{raw}, vkSIMD}
+		p.named[name] = typ
+		return typ
 	}
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
@@ -707,7 +720,7 @@ func namedTypeEquivalent(a, b types.Type) bool {
 }
 
 func (p Program) namedStructLayoutEquivalent(existing Type, raw *types.Named) bool {
-	if existing == nil || raw == nil {
+	if existing == nil || raw == nil || existing.ll.TypeKind() != llvm.StructTypeKind {
 		return false
 	}
 	en, ok := types.Unalias(existing.raw.Type).(*types.Named)

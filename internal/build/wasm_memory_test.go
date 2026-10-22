@@ -27,7 +27,7 @@ func TestWASIHeapReachesLinker(t *testing.T) {
 		{name: "driver response", goos: "wasip1", args: []string{"@user flags.rsp"}},
 		{name: "linker response", goos: "wasip1", args: []string{"-Wl,@user flags.rsp"}},
 		{name: "configured response", goos: "wasip1", config: []string{"-Xlinker", "@user flags.rsp"}},
-		{name: "shared memory contract", goos: "wasip1", config: []string{"-Wl,--initial-memory=67108864", "-Wl,--import-memory"}},
+		{name: "shared memory default", goos: "wasip1", config: []string{"-Wl,--import-memory", "-Wl,--max-memory=536870912"}, wantHeap: true},
 		{name: "emscripten unchanged", goos: "js"},
 	} {
 		t.Run(test.name, func(t *testing.T) {

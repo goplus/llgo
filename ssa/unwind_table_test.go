@@ -15,9 +15,9 @@ func TestWindowsUnwindTablesForNoUnwindFunctions(t *testing.T) {
 			prog := NewProgram(&Target{GOOS: "windows", GOARCH: arch})
 			defer prog.Dispose()
 			pkg := prog.NewPackage("p", "example.com/p")
-			for _, bg := range []Background{InGo, InC} {
+			for _, bg := range []CallConv{GoDecl, CDecl} {
 				name := "go_frame"
-				if bg == InC {
+				if bg == CDecl {
 					name = "c_export_frame"
 				}
 				fn := pkg.NewFunc(name, NoArgsNoRet, bg)

@@ -116,6 +116,11 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 		llgoStdioNobuf,
 		llgoFullRpath,
 	}
+	if c.buildConf.Goos == "js" && c.buildConf.Goarch == "wasm" {
+		// emcc consumes this for both LLVM IR codegen and linking. In
+		// particular, native Wasm SjLj objects cannot reuse JS SjLj objects.
+		envVars = append(envVars, "EMCC_CFLAGS")
+	}
 	for _, envVar := range envVars {
 		if v := os.Getenv(envVar); v != "" {
 			m.env.Vars = m.env.Vars.Add(envVar, v)
@@ -241,6 +246,12 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 	}
 	m.pkg.GoFiles = goFilesList
 
+	embedFiles, err := digestEmbedFiles(p.EmbedFiles)
+	if err != nil {
+		return fmt.Errorf("digest embed files: %w", err)
+	}
+	m.pkg.EmbedFiles = embedFiles
+
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
 		altPath := pkg.AltPkg.Package.PkgPath
@@ -249,6 +260,11 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 			return fmt.Errorf("digest alt go files: %w", err)
 		}
 		m.pkg.AltGoFiles = altList
+		altEmbedFiles, err := digestEmbedFiles(pkg.AltPkg.Package.EmbedFiles)
+		if err != nil {
+			return fmt.Errorf("digest alt embed files: %w", err)
+		}
+		m.pkg.AltEmbedFiles = altEmbedFiles
 	}
 
 	// Other files (C, assembly, etc.)
@@ -624,6 +640,9 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
+	// Link a cache miss from the same stable archive path used by a cache hit.
+	// Darwin records this path in its N_OSO debug map.
+	pkg.ArchiveFile = paths.Archive
 	return nil
 }
 
@@ -632,15 +651,22 @@ func copyFileAtomic(src, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
+	same, err := sameFilePath(src, dst)
+	if err != nil {
+		return err
+	}
+	if same {
+		return nil
+	}
 
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
 
 	tmp, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".tmp-*")
 	if err != nil {
+		in.Close()
 		return err
 	}
 	tmpName := tmp.Name()
@@ -653,17 +679,80 @@ func copyFileAtomic(src, dst string) error {
 	}()
 
 	if _, err := io.Copy(tmp, in); err != nil {
+		in.Close()
 		return err
 	}
-
+	if err := in.Close(); err != nil {
+		return err
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		return err
+	}
 	if err := tmp.Close(); err != nil {
 		return err
 	}
 
-	if err := os.Rename(tmpName, dst); err != nil {
+	if err := replaceFile(tmpName, dst); err != nil {
 		return err
 	}
 
 	cleanup = false
+	return nil
+}
+
+func sameFilePath(a, b string) (bool, error) {
+	absA, err := filepath.Abs(a)
+	if err != nil {
+		return false, err
+	}
+	absB, err := filepath.Abs(b)
+	if err != nil {
+		return false, err
+	}
+	if absA == absB {
+		return true, nil
+	}
+	fa, err := os.Stat(absA)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	fb, err := os.Stat(absB)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return os.SameFile(fa, fb), nil
+}
+
+func replaceFile(src, dst string) error {
+	err := os.Rename(src, dst)
+	if err == nil {
+		return nil
+	}
+	info, statErr := os.Lstat(dst)
+	if statErr != nil {
+		if os.IsNotExist(statErr) {
+			return os.Rename(src, dst)
+		}
+		return err
+	}
+	// os.Remove deletes an empty directory. Keep the original rename error so
+	// callers cannot replace a directory with a regular file.
+	if info.IsDir() {
+		return err
+	}
+	// Windows cannot replace a destination that still has an open handle, and
+	// some antivirus scanners keep one briefly after Close. Remove then retry.
+	if rmErr := os.Remove(dst); rmErr != nil && !os.IsNotExist(rmErr) {
+		return err
+	}
+	if err2 := os.Rename(src, dst); err2 != nil {
+		return err
+	}
 	return nil
 }

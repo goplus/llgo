@@ -27,9 +27,15 @@ import (
 // registered separately by AddBuildFlags.
 func CaptureGoBuildFlags(cmd *base.Command) *base.PassArgs {
 	p := base.NewPassArgs(&cmd.Flag)
-	p.Bool("n")
-	p.Bool("linkshared", "race", "msan", "asan", "trimpath", "work")
-	p.Var("p", "asmflags", "compiler", "gcflags", "gccgoflags", "installsuffix", "ldflags", "modfile", "pkgdir", "toolexec", "buildvcs")
+	p.Help = buildFlagHelp
+	p.Bool("modcacherw")
+	p.Var("p", "gcflags", "ldflags", "mod", "modfile", "overlay")
+	for _, name := range []string{"n", "linkshared", "race", "msan", "asan", "trimpath", "work"} {
+		rejectBool(&cmd.Flag, name, buildFlagHelp(name))
+	}
+	for _, name := range []string{"asmflags", "compiler", "gccgoflags", "installsuffix", "pkgdir", "toolexec", "buildvcs", "pgo"} {
+		rejectValue(&cmd.Flag, name, buildFlagHelp(name))
+	}
 	return p
 }
 
@@ -37,5 +43,9 @@ func CaptureGoBuildFlags(cmd *base.Command) *base.PassArgs {
 // by the command layer, and stores supported compiler and linker semantics in
 // typed backend configuration. Configuration remains unchanged on error.
 func ApplyGoBuildFlags(conf *build.Config, args []string) error {
-	return goflags.ApplyBuildFlags(conf, args)
+	if err := goflags.ApplyBuildFlags(conf, args); err != nil {
+		return err
+	}
+	conf.GoFlagsParsed = true
+	return nil
 }

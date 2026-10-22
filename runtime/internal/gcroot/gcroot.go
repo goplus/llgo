@@ -23,6 +23,10 @@ import "unsafe"
 type Context struct {
 	next  *Context
 	chain unsafe.Pointer
+	// Native pthreads publish these bounds before acknowledging a collection.
+	// Suspended WebAssembly fibers continue to use compiler roots alone.
+	stackBottom uintptr
+	stackTop    uintptr
 }
 
 type frameMap struct {

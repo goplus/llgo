@@ -127,7 +127,9 @@ func (prog Program) wrapStructConstant(t Type, index int, value llvm.Value) llvm
 }
 
 func (prog Program) wrapStructConstantAs(t Type, structType llvm.Type, index int, value llvm.Value) llvm.Value {
-	value = prog.toStorageConstant(prog.Field(t, index), value)
+	if t.kind != vkTuple || structType.StructElementTypes()[index] != prog.Field(t, index).ll {
+		value = prog.toStorageConstant(prog.Field(t, index), value)
+	}
 	layout, ok := prog.structLayout(t)
 	if !ok || index >= len(layout.wrapped) || !layout.wrapped[index] {
 		return value

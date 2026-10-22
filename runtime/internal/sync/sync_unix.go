@@ -82,7 +82,7 @@ func (m *Mutex) Destroy() {
 }
 
 func (m *Mutex) Lock() {
-	pthreadMutexLock(m)
+	mutexLock(m)
 }
 
 func (m *Mutex) Unlock() {
@@ -133,5 +133,5 @@ func (cond *Cond) Broadcast() c.Int {
 }
 
 func (cond *Cond) Wait(m *Mutex) c.Int {
-	return pthreadCondWait(cond, m)
+	return condWait(cond, m)
 }

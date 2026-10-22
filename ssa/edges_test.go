@@ -105,9 +105,9 @@ func TestFinishMetaCollectionDeduplicatesFunctionEdges(t *testing.T) {
 	defer prog.Dispose()
 	pkg := prog.NewPackageEx("pkg", "pkg", true)
 
-	callee := pkg.NewFunc("pkg.callee", NoArgsNoRet, InGo)
+	callee := pkg.NewFunc("pkg.callee", NoArgsNoRet, GoDecl)
 	callee.MakeBody(1).Return()
-	caller := pkg.NewFunc("pkg.caller", NoArgsNoRet, InGo)
+	caller := pkg.NewFunc("pkg.caller", NoArgsNoRet, GoDecl)
 	b := caller.MakeBody(1)
 	b.Call(caller.Expr)
 	b.Call(callee.Expr)

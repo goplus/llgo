@@ -21,17 +21,23 @@ package build
 import (
 	"bytes"
 	stdcontext "context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/targets"
 )
 
 func TestRunInEmulatorValidation(t *testing.T) {
@@ -53,6 +59,185 @@ func TestRunInEmulatorValidation(t *testing.T) {
 	}
 	if err := runEmuCmd(commands, nil, "   ", nil, false, false, details); err == nil || !strings.Contains(err.Error(), "empty") {
 		t.Fatalf("empty emulator command error = %v", err)
+	}
+}
+
+func TestWASIHostDirectories(t *testing.T) {
+	work, temp, cwd := wasiHostDirectories(`C:\project with spaces`, `D:\Temp`, true)
+	if work != `C:\project with spaces:/work` || temp != `D:\Temp:/tmp` || cwd != "/work" {
+		t.Fatalf("Windows WASI directories = %q, %q, %q", work, temp, cwd)
+	}
+	work, temp, cwd = wasiHostDirectories("/project with spaces", "/host-temp", false)
+	if work != "/project with spaces" || temp != "/tmp" || cwd != "/project with spaces" {
+		t.Fatalf("Unix WASI directories = %q, %q, %q", work, temp, cwd)
+	}
+}
+
+func TestWASIRunnerIsolatesEngineLogging(t *testing.T) {
+	dir := t.TempDir()
+	// Guest stderr may itself look like an engine log. It must survive intact;
+	// the runner controls the engine's logger instead of filtering the stream.
+	guestLog := `{"level":"WARN","target":"wasmer","fields":{"message":"guest stderr"}}`
+	script := "#!/bin/sh\n" +
+		"if [ \"$RUST_LOG\" != off ]; then echo 'engine diagnostic' >&2; fi\n" +
+		"echo 'guest stdout'\n" +
+		"echo '" + guestLog + "' >&2\nexit 7\n"
+	if err := os.WriteFile(filepath.Join(dir, "wasmer"), []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	commands := commandEnv{dir: dir, environ: withEnv(os.Environ(), "RUST_LOG=warn")}
+	for _, phase := range []string{"test", "run"} {
+		t.Run(phase, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			err := runEmuCmdTo(commands, map[string]string{"": "program.wasm"},
+				crosscompile.WASIThreadedEmulator, nil, false, false,
+				runnerDetails{phase: phase}, &stdout, &stderr)
+			var failure *runnerFailure
+			if !errors.As(err, &failure) || failure.exitCode != 7 || failure.status != runnerStatusExit {
+				t.Fatalf("runner failure = %v, want exit 7", err)
+			}
+			wantErr := guestLog + "\n"
+			if phase == "run" {
+				wantErr = "engine diagnostic\n" + wantErr
+			}
+			if stdout.String() != "guest stdout\n" || stderr.String() != wantErr {
+				t.Fatalf("stdout = %q, stderr = %q; want guest output and stderr %q", stdout.String(), stderr.String(), wantErr)
+			}
+		})
+	}
+	if commands.lookup("RUST_LOG") != "warn" {
+		t.Fatal("test runner changed the caller's logging environment")
+	}
+}
+
+func TestWASIThreadedEmulatorHostContract(t *testing.T) {
+	testWASIThreadedEmulatorHostContract(t, crosscompile.WASIThreadedEmulator)
+}
+
+func TestWASIInheritedTargetHostContract(t *testing.T) {
+	dir := t.TempDir()
+	data, err := os.ReadFile("../../targets/wasi.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "wasi.json"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "downstream.json"), []byte(`{"inherits":["wasi"]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	config, err := targets.NewLoader(dir).Load("downstream")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Exercise the resolved template through the runner: checking only the
+	// built-in target names hides template drift behind their explicit override.
+	testWASIThreadedEmulatorHostContract(t, config.Emulator)
+}
+
+func testWASIThreadedEmulatorHostContract(t *testing.T, emulator string) {
+	t.Helper()
+	dir := t.TempDir()
+	runner := filepath.Join(dir, "wasmer")
+	argsFile := filepath.Join(dir, "args")
+	script := fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$@\" > %q\n", argsFile)
+	if err := os.WriteFile(runner, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	commands := commandEnv{dir: dir, environ: append(os.Environ(), "PATH="+dir, "LLGO_STRESS_PROFILE=quick", "LLGO_PRIVATE_SENTINEL=not-forwarded")}
+	artifact := filepath.Join(dir, "program.wasm")
+	err := runEmuCmd(commands, map[string]string{"": artifact}, emulator,
+		[]string{"-test.v"}, false, false, runnerDetails{phase: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for _, flag := range []string{"--cranelift", "--v8", "--llvm", "--singlepass", "--disable-cache"} {
+		if slices.Contains(args, flag) {
+			t.Fatalf("runner overrides Wasmer defaults with %q", flag)
+		}
+	}
+	if want := "--volume=" + dir; !slices.Contains(args, want) {
+		t.Fatalf("Wasmer arguments %q omit working directory %q", args, want)
+	}
+	for _, want := range []string{"--env=PWD=" + dir, "--env=PATH=" + dir} {
+		if !slices.Contains(args, want) {
+			t.Fatalf("Wasmer arguments omit %q: %q", want, args)
+		}
+	}
+	if slices.Contains(args, "--env=LLGO_PRIVATE_SENTINEL=not-forwarded") {
+		t.Fatal("Wasmer forwarded an unrelated host environment variable")
+	}
+	if got, want := args[len(args)-4:], []string{"--env=LLGO_STRESS_PROFILE=quick", artifact, "--", "-test.v"}; !slices.Equal(got, want) {
+		t.Fatalf("runner tail = %q, want %q", got, want)
+	}
+	commands.dir = ""
+	if err := runEmuCmd(commands, map[string]string{"": artifact}, emulator,
+		nil, false, false, runnerDetails{phase: "test"}); err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args = strings.Split(strings.TrimSpace(string(data)), "\n")
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "--volume=" + cwd; !slices.Contains(args, want) {
+		t.Fatalf("Wasmer arguments %q omit default working directory %q", args, want)
+	}
+}
+
+func TestNativeWasmerRunUsesThreadedHostContract(t *testing.T) {
+	dir := t.TempDir()
+	argsFile := filepath.Join(dir, "args")
+	if err := os.WriteFile(filepath.Join(dir, "wasmer"), []byte(fmt.Sprintf("#!/bin/sh\nprintf '%%s\\n' \"$@\" > %q\n", argsFile)), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv(llgoWasmRuntime, "wasmer")
+	commands := commandEnv{dir: dir, environ: os.Environ()}
+	conf := &Config{Goos: "wasip1", Goarch: "wasm", RunArgs: []string{"hello world"}}
+	artifact := filepath.Join(dir, "app.wasm")
+	if err := runNative(&context{commands: commands}, artifact, dir, "main", conf, ModeRun); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for _, want := range []string{"run", "--enable-exceptions", "--enable-simd", "--stack-size=1048576", "--volume=" + dir, "--env=PWD=" + dir} {
+		if !slices.Contains(args, want) {
+			t.Fatalf("Wasmer arguments omit %q: %q", want, args)
+		}
+	}
+	if !slices.Equal(args[len(args)-3:], []string{artifact, "--", "hello world"}) {
+		t.Fatalf("artifact/arguments = %q", args)
+	}
+}
+
+func TestWASIThreadedEmulatorReportsInvalidWorkingDirectory(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux getcwd reports a removed working directory")
+	}
+	dir := t.TempDir()
+	t.Chdir(dir)
+	if err := os.Remove(dir); err != nil {
+		t.Fatal(err)
+	}
+	err := runEmuCmd(commandEnv{environ: os.Environ()}, map[string]string{"": "program.wasm"},
+		crosscompile.WASIThreadedEmulator, nil, false, false, runnerDetails{phase: "test"})
+	if err == nil || !strings.Contains(err.Error(), "resolve Wasmer working directory") {
+		t.Fatalf("runner error = %v, want working-directory failure", err)
 	}
 }
 
@@ -279,20 +464,22 @@ func TestRunNativeTest(t *testing.T) {
 	})
 
 	t.Run("signal exit", func(t *testing.T) {
-		var stderr bytes.Buffer
-		conf := &Config{RunArgs: append(args, "signal")}
-		program := testProgram{app: executable, pkgDir: t.TempDir(), pkgName: "signal"}
-		err := runNativeTest(commands, program, conf, io.Discard, &stderr)
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			t.Fatalf("runNativeTest error = %v, want signal termination", err)
-		}
-		status, ok := exitErr.Sys().(syscall.WaitStatus)
-		if !ok || !status.Signaled() || status.Signal() != syscall.SIGKILL {
-			t.Fatalf("process status = %v, want SIGKILL", exitErr.Sys())
-		}
-		if got := stderr.String(); !strings.Contains(got, "killed") || strings.Contains(got, "exit code") {
-			t.Fatalf("stderr = %q, want signal reason without an exit code", got)
+		for _, coverage := range []bool{false, true} {
+			var stderr bytes.Buffer
+			conf := &Config{RunArgs: append(args, "signal")}
+			program := testProgram{app: executable, pkgDir: t.TempDir(), pkgName: "signal", coverage: coverage}
+			err := runNativeTest(commands, program, conf, io.Discard, &stderr)
+			var exitErr *exec.ExitError
+			if !errors.As(err, &exitErr) {
+				t.Fatalf("coverage=%v: runNativeTest error = %v, want signal termination", coverage, err)
+			}
+			status, ok := exitErr.Sys().(syscall.WaitStatus)
+			if !ok || !status.Signaled() || status.Signal() != syscall.SIGKILL {
+				t.Fatalf("coverage=%v: process status = %v, want SIGKILL", coverage, exitErr.Sys())
+			}
+			if got := stderr.String(); !strings.Contains(got, "killed") || strings.Contains(got, "exit code") {
+				t.Fatalf("coverage=%v: stderr = %q, want signal reason without an exit code", coverage, got)
+			}
 		}
 	})
 
@@ -309,43 +496,26 @@ func TestRunNativeTest(t *testing.T) {
 }
 
 func TestGoCompatibleWasmRunner(t *testing.T) {
+	t.Setenv("LLGO_WASI_THREADS", "")
 	js := goCompatibleWasmRunner(&Config{Goos: "js", Goarch: "wasm"})
 	if !strings.Contains(js, "emscripten-runner.mjs") || !strings.Contains(js, "--browser-only") || !strings.Contains(js, "{}") {
 		t.Fatalf("js runner = %q", js)
 	}
-	for _, test := range []struct {
-		name    string
-		runtime string
-		want    string
-	}{
-		{
-			name:    "wasmtime",
-			runtime: "wasmtime",
-			want:    `wasmtime run --dir=/ --env PWD --env PATH -W exceptions=y -W multi-memory=y -W max-wasm-stack=8388608 "{}"`,
-		},
-		{
-			name:    "iwasm",
-			runtime: "iwasm",
-			want:    `iwasm --stack-size=819200000 --heap-size=800000000 "{}"`,
-		},
-		{
-			name:    "custom",
-			runtime: "wasmer run",
-			want:    `wasmer run "{}"`,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Setenv("LLGO_WASM_RUNTIME", test.runtime)
-			if got := goCompatibleWasmRunner(&Config{Goos: "wasip1", Goarch: "wasm"}); got != test.want {
-				t.Fatalf("WASI runner = %q, want %q", got, test.want)
-			}
-		})
+	if got := goCompatibleWasmRunner(&Config{Goos: "wasip1", Goarch: "wasm"}); got != crosscompile.WASIThreadedEmulator {
+		t.Fatalf("WASI runner = %q", got)
 	}
 	if got := goCompatibleWasmRunner(&Config{Target: "wasi", Goos: "wasip1", Goarch: "wasm"}); got != "" {
 		t.Fatalf("named target acquired raw runner %q", got)
 	}
 	if got := goCompatibleWasmRunner(&Config{Goos: "plan9", Goarch: "wasm"}); got != "" {
 		t.Fatalf("unsupported wasm host acquired raw runner %q", got)
+	}
+}
+
+func TestGoCompatibleWASIThreadRunner(t *testing.T) {
+	t.Setenv("LLGO_WASI_THREADS", "1")
+	if got := goCompatibleWasmRunner(&Config{Goos: "wasip1", Goarch: "wasm"}); got != crosscompile.WASIThreadedEmulator {
+		t.Fatalf("WASI thread runner = %q, want %q", got, crosscompile.WASIThreadedEmulator)
 	}
 }
 
@@ -405,6 +575,19 @@ func TestRunNativeTestHelper(t *testing.T) {
 			panic("SIGKILL returned without terminating the helper")
 		case "hang":
 			time.Sleep(time.Hour)
+		case "wait":
+			fmt.Fprintln(os.Stdout, "waiting stdout")
+			fmt.Fprintln(os.Stderr, "waiting stderr")
+			deadline := time.Now().Add(10 * time.Second)
+			for {
+				if _, err := os.Stat(args[i+2]); err == nil {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("parent did not release helper")
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
 		return
 	}
@@ -431,7 +614,7 @@ func TestRunNativeTestProgramsSequential(t *testing.T) {
 		t.Fatalf("runNativeTestPrograms result = %+v", result)
 	}
 	for _, name := range []string{"a", "b"} {
-		if !strings.Contains(stdout.String(), "ok  \t"+name+"\n") {
+		if !strings.Contains(stdout.String(), "ok  \t"+name+"\t") {
 			t.Errorf("stdout does not contain result for %s: %q", name, stdout.String())
 		}
 	}
@@ -460,7 +643,7 @@ func TestRunNativeTestProgramsReportsRunnerTimeout(t *testing.T) {
 	if !result.failed || result.skipped != 0 {
 		t.Fatalf("runNativeTestPrograms result = %+v", result)
 	}
-	for _, want := range []string{"phase=test", "profile=j32", "status=timeout", "FAIL\texample/wasm"} {
+	for _, want := range []string{"phase=test", "profile=j32", "status=timeout"} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Errorf("stderr %q does not contain %q", stderr.String(), want)
 		}
@@ -490,7 +673,7 @@ func TestRunTestProgramsLimitAndFailure(t *testing.T) {
 	var maximum atomic.Int32
 
 	go func() {
-		done <- runTestPrograms(testPrograms("a", "b", "c", "d"), 2, false, false, &stdout, &stderr,
+		done <- runTestPrograms(testPrograms("a", "b", "c", "d"), 2, &Config{RunArgs: []string{"-test.v"}}, &stdout, &stderr,
 			func(program testProgram, output io.Writer) error {
 				now := active.Add(1)
 				for {
@@ -534,13 +717,13 @@ func TestRunTestProgramsLimitAndFailure(t *testing.T) {
 			t.Errorf("stdout does not contain output for %s: %q", name, stdout.String())
 		}
 	}
-	if got, want := stderr.String(), "FAIL\td\n"; got != want {
-		t.Fatalf("stderr = %q, want %q", got, want)
+	if !strings.Contains(stdout.String(), "FAIL\td\t") || stderr.Len() != 0 {
+		t.Fatalf("result output: stdout=%q stderr=%q", stdout.String(), stderr.String())
 	}
 }
 
 func TestRunTestProgramsParallelismBoundsAndOutput(t *testing.T) {
-	if got := runTestPrograms(nil, 1, false, false, io.Discard, io.Discard, nil); got != (testRunResult{}) {
+	if got := runTestPrograms(nil, 1, &Config{}, io.Discard, io.Discard, nil); got != (testRunResult{}) {
 		t.Fatalf("empty run result = %+v", got)
 	}
 
@@ -551,7 +734,7 @@ func TestRunTestProgramsParallelismBoundsAndOutput(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			result := runTestPrograms(testPrograms("pkg"), parallelism, false, false, &stdout, &stderr,
+			result := runTestPrograms(testPrograms("pkg"), parallelism, &Config{RunArgs: []string{"-test.v"}}, &stdout, &stderr,
 				func(_ testProgram, output io.Writer) error {
 					fmt.Fprint(output, "output")
 					return nil
@@ -559,8 +742,8 @@ func TestRunTestProgramsParallelismBoundsAndOutput(t *testing.T) {
 			if result.failed || result.skipped != 0 {
 				t.Fatalf("runTestPrograms result = %+v", result)
 			}
-			if got, want := stdout.String(), "output\nok  \tpkg\n"; got != want {
-				t.Fatalf("stdout = %q, want %q", got, want)
+			if got := stdout.String(); !strings.HasPrefix(got, "output\nok  \tpkg\t") || !strings.HasSuffix(got, "s\n") {
+				t.Fatalf("stdout = %q, want output and timed package result", got)
 			}
 			if stderr.Len() != 0 {
 				t.Fatalf("stderr = %q, want empty", stderr.String())
@@ -571,7 +754,7 @@ func TestRunTestProgramsParallelismBoundsAndOutput(t *testing.T) {
 
 func TestRunTestProgramsFailFast(t *testing.T) {
 	var runs atomic.Int32
-	result := runTestPrograms(testPrograms("a", "b", "c"), 1, true, false, io.Discard, io.Discard,
+	result := runTestPrograms(testPrograms("a", "b", "c"), 1, &Config{TestFailFast: true}, io.Discard, io.Discard,
 		func(testProgram, io.Writer) error {
 			runs.Add(1)
 			return errors.New("failed")
@@ -589,17 +772,103 @@ func TestRunTestProgramsFailFast(t *testing.T) {
 
 func TestRunTestProgramsJSONOutput(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	result := runTestPrograms(testPrograms("json"), 1, false, true, &stdout, &stderr,
+	result := runTestPrograms(testPrograms("json"), 1, &Config{TestJSON: true}, &stdout, &stderr,
 		func(testProgram, io.Writer) error {
 			return nil
 		})
 	if result.failed || result.skipped != 0 {
 		t.Fatalf("runTestPrograms result = %+v", result)
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("JSON success output includes a plain-text package result: %q", stdout.String())
+	var passed bool
+	for _, line := range bytes.Split(bytes.TrimSpace(stdout.Bytes()), []byte("\n")) {
+		var event struct{ Action, Package string }
+		if err := json.Unmarshal(line, &event); err != nil {
+			t.Fatalf("invalid JSON event: %s: %v", line, err)
+		}
+		passed = passed || event.Action == "pass" && event.Package == "json"
+	}
+	if !passed {
+		t.Fatalf("missing JSON package pass event: %s", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("JSON success stderr = %q", stderr.String())
+	}
+}
+
+func TestRunNativeTestProgramsStreamsBeforeExit(t *testing.T) {
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name  string
+		count int
+		conf  Config
+	}{
+		{name: "local", count: 1, conf: Config{testOutput: &testOutputPolicy{stream: true, direct: true}}},
+		{name: "single verbose", count: 1, conf: Config{RunArgs: []string{"-test.v"}}},
+		{name: "multiple verbose p1", count: 2, conf: Config{BuildParallelism: 1, RunArgs: []string{"-test.v"}}},
+		{name: "parallel json", count: 2, conf: Config{BuildParallelism: 2, TestJSON: true}},
+	} {
+		for _, runner := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/runner=%t", tc.name, runner), func(t *testing.T) {
+				release := filepath.Join(t.TempDir(), "release")
+				defer os.WriteFile(release, nil, 0600)
+				conf := tc.conf
+				conf.RunArgs = append(slices.Clone(conf.RunArgs), "-test.run=^TestRunNativeTestHelper$", "--", "wait", release)
+				programs := testPrograms("a")
+				if tc.count == 2 {
+					programs = testPrograms("a", "b")
+				}
+				for i := range programs {
+					programs[i].app, programs[i].pkgDir = executable, t.TempDir()
+					if runner {
+						programs[i].runner = fmt.Sprintf("%q", executable)
+					}
+				}
+				stdout := &observedTestOutput{changed: make(chan struct{}, 1)}
+				stderr := &observedTestOutput{}
+				done := make(chan testRunResult, 1)
+				go func() {
+					done <- runNativeTestPrograms(commandEnv{environ: os.Environ()}, programs, &conf, stdout, stderr)
+				}()
+				deadline := time.NewTimer(5 * time.Second)
+				defer deadline.Stop()
+				for {
+					output := stdout.String()
+					// With -p=1, only the first child may start before release.
+					want := tc.count
+					if conf.BuildParallelism == 1 {
+						want = 1
+					}
+					if strings.Count(output, "waiting stdout") >= want && strings.Count(output, "waiting stderr") >= want {
+						break
+					}
+					select {
+					case <-stdout.changed:
+					case result := <-done:
+						t.Fatalf("test exited before parent release: %+v\nstdout=%s\nstderr=%s", result, stdout.String(), stderr.String())
+					case <-deadline.C:
+						t.Fatalf("output was buffered while the child waited for parent release: %s", stdout.String())
+					}
+				}
+				select {
+				case result := <-done:
+					t.Fatalf("test unexpectedly exited before release: %+v", result)
+				default:
+				}
+				if err := os.WriteFile(release, nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+				select {
+				case result := <-done:
+					if result.failed {
+						t.Fatalf("test failed after release: %+v\n%s\n%s", result, stdout.String(), stderr.String())
+					}
+				case <-deadline.C:
+					t.Fatal("test did not exit after parent release")
+				}
+			})
+		}
 	}
 }

@@ -39,6 +39,7 @@ type packageLinkSnapshot struct {
 	funcInfo        []funcInfoRecord
 	pcLineInfo      []pcLineRecord
 	hasLocalExports bool
+	cExports        []cExport
 }
 
 type packageBuildTask struct {
@@ -211,7 +212,20 @@ func buildPackage(ctx *context, task *packageBuildTask, verbose, isolated bool) 
 	if err != nil {
 		return err
 	}
-	return finalizePackageBuild(ctx, task, verbose)
+	if err := finalizePackageBuild(ctx, task, verbose); err != nil {
+		return err
+	}
+	// Ordinary builds and single-test executable links consume package snapshots
+	// and archives. Let later packages reuse each isolated backend's memory instead of retaining
+	// every LLVM context until the final link. Isolated backends are restricted
+	// to executables; library header and C export wrapper generation cannot
+	// reach this path. Deadcode overrides still inspect live modules.
+	if isolated && !ctx.buildConf.deadcodeDropEnabled() &&
+		(ctx.mode == ModeBuild || ctx.mode == ModeTest && len(ctx.initial) == 1) {
+		ctx.snapshotBackendPackage(task.pkg)
+		ctx.disposeBackendPackage(task.pkg)
+	}
+	return nil
 }
 
 func runBoundedPackageJobs(parallelism int, indexes []int, run func(index int) error) error {
@@ -341,6 +355,7 @@ func (ctx *context) snapshotBackendPackage(pkg *aPackage) {
 		abiSymbols:      linkedModuleGlobals([]Package{pkg}),
 		abiTypes:        append([]llssa.AbiTypeInfo(nil), lpkg.Prog.AbiTypes()...),
 		hasLocalExports: hasLocalCExports(lpkg),
+		cExports:        packageCExportDeclarations(lpkg),
 	}
 	for index := range lpkg.MethodByIndex {
 		snapshot.methodByIndex[index] = none{}

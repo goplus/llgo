@@ -3,20 +3,21 @@ module github.com/xgo-dev/llgo
 go 1.27.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/goplus/cobra v1.9.12 //xgo:class
 	github.com/goplus/gogen v1.24.8
-	github.com/goplus/lib v0.5.2
-	github.com/goplus/mod v0.22.0
+	github.com/goplus/lib v0.6.3
+	github.com/goplus/mod v0.22.1
 	github.com/mattn/go-tty v0.0.8
-	github.com/qiniu/x v1.18.3
+	github.com/qiniu/x v1.19.3
 	github.com/xgo-dev/llgo/runtime v0.0.0-00010101000000-000000000000
-	github.com/xgo-dev/llvm v0.10.0
-	github.com/xgo-dev/plan9asm v0.6.1
+	github.com/xgo-dev/llvm v0.10.1
+	github.com/xgo-dev/plan9asm v0.6.2
 	go.bug.st/serial v1.6.4
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.41.0
 	golang.org/x/sys v0.48.0
-	golang.org/x/tools v0.50.1-0.20260925231102-d2d3de9f066e
+	golang.org/x/tools v0.51.0
 )
 
 require (
@@ -26,5 +27,8 @@ require (
 )
 
 replace github.com/xgo-dev/llgo/runtime => ./runtime
+
+// v0.51.0 plus the generic-method wrapper fix; remove when upstream includes it.
+replace golang.org/x/tools => github.com/cpunion/tools v0.48.1-0.20261019010317-d793c18ac89b
 
 replace github.com/xgo-dev/plan9asm => github.com/cpunion/plan9asm v0.0.0-20260929013439-34a93b2081cf

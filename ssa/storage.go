@@ -161,6 +161,9 @@ func (p Program) aggregateElementType(parent Type, index int) Type {
 }
 
 func (p Program) storageType(t Type) llvm.Type {
+	if t.kind == vkSIMD {
+		return p.rawType(t.RawType().Underlying()).ll
+	}
 	if p.needsWidePointerStorage(t) {
 		return p.widePointerStorageType()
 	}
@@ -194,6 +197,9 @@ func (p Program) widePointerStorageType() llvm.Type {
 }
 
 func (b Builder) toStorageValue(t Type, value llvm.Value) llvm.Value {
+	if t.kind == vkSIMD {
+		return b.simdToStorage(value, t)
+	}
 	if b.Prog.needsWidePointerStorage(t) {
 		storage := b.Prog.widePointerStorageType()
 		parts := storage.StructElementTypes()
@@ -205,6 +211,12 @@ func (b Builder) toStorageValue(t Type, value llvm.Value) llvm.Value {
 }
 
 func (b Builder) fromStorageValue(t Type, value llvm.Value) llvm.Value {
+	if value.Type() == b.Prog.withoutNativeStorage(t).ll {
+		return value
+	}
+	if t.kind == vkSIMD {
+		return b.simdFromStorage(value, t)
+	}
 	if b.Prog.needsWidePointerStorage(t) {
 		return b.impl.CreateExtractValue(value, 0, "")
 	}
@@ -213,6 +225,15 @@ func (b Builder) fromStorageValue(t Type, value llvm.Value) llvm.Value {
 }
 
 func (p Program) toStorageConstant(t Type, value llvm.Value) llvm.Value {
+	if t.kind == vkSIMD {
+		lanes := simdLanes(t.RawType())
+		values := make([]llvm.Value, lanes.Len())
+		for i := range values {
+			values[i] = llvm.ConstExtractElement(value, llvm.ConstInt(p.tyInt32(), uint64(i), false))
+		}
+		storage := p.rawType(t.RawType().Underlying())
+		return p.constStructValue(storage, []llvm.Value{p.Zero(p.Field(storage, 0)).impl, llvm.ConstArray(p.rawType(lanes.Elem()).ll, values)})
+	}
 	if p.needsWidePointerStorage(t) {
 		storage := p.widePointerStorageType()
 		parts := storage.StructElementTypes()

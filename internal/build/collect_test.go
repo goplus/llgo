@@ -547,7 +547,7 @@ func TestCollectFingerprintIncludesEmitDWARF(t *testing.T) {
 	}
 
 	targetWithoutDWARF := newPkg()
-	if err := newContext(LinkOptions{}, crosscompile.DebugInfoPolicy{AlwaysOmit: true}).collectFingerprint(targetWithoutDWARF); err != nil {
+	if err := newContext(LinkOptions{}, crosscompile.DebugInfoPolicy{Capability: crosscompile.DebugInfoUnavailable}).collectFingerprint(targetWithoutDWARF); err != nil {
 		t.Fatal(err)
 	}
 	if withDWARF.Fingerprint == targetWithoutDWARF.Fingerprint {
@@ -558,7 +558,7 @@ func TestCollectFingerprintIncludesEmitDWARF(t *testing.T) {
 		t.Fatal(err)
 	}
 	if targetData.Common != nil && targetData.Common.EmitDWARF {
-		t.Fatalf("always-omit target manifest unexpectedly contains EMIT_DWARF=true:\n%s", targetWithoutDWARF.Manifest)
+		t.Fatalf("target without DWARF support unexpectedly contains EMIT_DWARF=true:\n%s", targetWithoutDWARF.Manifest)
 	}
 }
 
@@ -1400,6 +1400,9 @@ func TestSaveToCache_Success(t *testing.T) {
 	// Check cache was created
 	cm := ctx.ensureCacheManager()
 	paths := cm.PackagePaths("arm64-apple-darwin", "example.com/lib", "def456")
+	if pkg.ArchiveFile != paths.Archive {
+		t.Fatalf("ArchiveFile = %q, want stable cache path %q", pkg.ArchiveFile, paths.Archive)
+	}
 
 	// Check manifest contains original content and metadata in Package section
 	content, err := readManifest(paths.Manifest)

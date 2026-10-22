@@ -50,6 +50,8 @@ func (hooks wasmEventHooks) pollCallbackEvents(worker *wasmWorker) {
 	// pollCallbacks starts one G per queued host event. Mark that narrow
 	// interval so newprocBackend keeps emval handles in their originating
 	// JavaScript realm even when polling happens from a running G's safepoint.
+	// Polling also runs on a system Fiber without a G. Do not use a Go defer
+	// here: its setup enters goroutine runtime machinery on that path.
 	worker.pollingCallback = true
 	hooks.pollCallbacks()
 	worker.pollingCallback = false

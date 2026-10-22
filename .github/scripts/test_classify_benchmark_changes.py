@@ -28,6 +28,8 @@ class ClassifyPathTests(unittest.TestCase):
             "runtime/_patch/runtime/runtime.go": "stdlib",
             "runtime/internal/lib/reflect/value.go": "stdlib",
             "test/std/fmt.go": "test",
+            "test/debug/runtime/main.go": "test",
+            "test/debug/runtime/runtest.sh": "test",
             "cl/compile_test.go": "test",
             "runtime/runtime_test.go": "test",
             "runtime/_patch/_test/skipall/main.go": "test",

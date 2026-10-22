@@ -23,6 +23,7 @@ import (
 )
 
 type CallerFrame struct {
+	wasmCallerFrame
 	PC        uintptr
 	Entry     uintptr
 	Function  string
@@ -57,21 +58,36 @@ type callerLocationStore struct {
 	// Memoized synthetic PC bases for the static frames emitted around every
 	// Callers walk. Per-store because the corresponding frame metadata is.
 	callersPCBase uintptr
+	panicPCBase   uintptr
 	mainPCBase    uintptr
 	goexitPCBase  uintptr
 }
 
 func PushCallerLocationFrame(entry uintptr, name, file string, startLine int) int {
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	store := callerLocationStoreForGoroutine()
 	mark := len(store.stack)
-	store.stack = append(store.stack, CallerFrame{
+	if mark == cap(store.stack) {
+		store.stack = append(store.stack, CallerFrame{})
+	} else {
+		store.stack = store.stack[:mark+1]
+	}
+	// Reuse the slot directly. Constructing an append argument on every call
+	// makes a temporary CallerFrame escape in the current lowering.
+	store.stack[mark] = CallerFrame{
 		PC:        entry,
 		Entry:     entry,
 		Function:  name,
 		File:      file,
 		Line:      startLine,
 		StartLine: startLine,
-	})
+	}
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
+	}
 	return mark
 }
 
@@ -89,11 +105,18 @@ func PopCallerLocationFrame(mark int) {
 		// stack. Preserve that prefix across the corresponding longjmps.
 		mark = store.panicDepth
 	}
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	var zero CallerFrame
 	for i := mark; i < oldLen; i++ {
 		store.stack[i] = zero
 	}
 	store.stack = store.stack[:mark]
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
+	}
 }
 
 func RecordCallerLocation(entry uintptr, name, file string, line int) {
@@ -117,22 +140,29 @@ func updateCurrentFrame(entry uintptr, name, file string, line int) {
 	if store == nil {
 		return
 	}
+	var update unsafe.Pointer
+	if wasmDebuggerEnabled {
+		update = beginWasmCallerUpdate()
+	}
 	for i := len(store.stack) - 1; i >= 0; i-- {
 		frame := &store.stack[i]
 		if frame.Entry == entry {
+			// Line directives can change the filename while retaining the same
+			// line number. Invalidate the cached frame index before updating it.
+			if frame.Line != line || frame.File != file {
+				frame.captured = 0
+			}
 			frame.Function = name
 			frame.File = file
-			// For one entry the instrumented name/file operands are
-			// constants; only the line changes between call sites. Comparing
-			// just the line keeps this per-call path free of string
-			// comparisons while still invalidating the capture memo whenever
-			// the frame content can differ.
-			if frame.Line != line {
-				frame.Line = line
-				frame.captured = 0
+			frame.Line = line
+			if wasmDebuggerEnabled {
+				endWasmCallerUpdate(update)
 			}
 			return
 		}
+	}
+	if wasmDebuggerEnabled {
+		endWasmCallerUpdate(update)
 	}
 }
 
@@ -171,6 +201,16 @@ func Caller(skip int) (CallerFrame, bool) {
 	if store == nil || len(store.stack) == 0 {
 		return CallerFrame{}, false
 	}
+	if store.panicDepth > 0 && store.panicDepth <= len(store.stack) {
+		// Deferred calls sit above gopanic, then the frozen panic-site prefix.
+		above := len(store.stack) - store.panicDepth
+		if skip == above {
+			return store.captureFrame(runtimePanicFrame, callerPCValue), true
+		}
+		if skip > above {
+			skip--
+		}
+	}
 	if skip < len(store.stack) {
 		return store.captureFrameAt(&store.stack[len(store.stack)-1-skip], callerPCValue), true
 	}
@@ -205,6 +245,17 @@ func Callers(skip int, pcs []uintptr) int {
 		n++
 	}
 	for i := len(store.stack) - 1; i >= 0; i-- {
+		if store.panicDepth > 0 && i == store.panicDepth-1 {
+			if skip > 0 {
+				skip--
+			} else {
+				if n >= len(pcs) {
+					return n
+				}
+				pcs[n] = store.staticPC(runtimePanicFrame, &store.panicPCBase, callersPCValue)
+				n++
+			}
+		}
 		if skip > 0 {
 			skip--
 			continue
@@ -381,6 +432,7 @@ func BindCallerLocation(pc uintptr, rawName string) {
 
 var (
 	runtimeCallersFrame = CallerFrame{Function: "runtime.Callers"}
+	runtimePanicFrame   = CallerFrame{Function: "runtime.gopanic"}
 	runtimeMainFrame    = CallerFrame{Function: "runtime.main"}
 	runtimeGoexitFrame  = CallerFrame{Function: "runtime.goexit"}
 )
@@ -486,6 +538,9 @@ func callerLocationStoreForGoroutine() *callerLocationStore {
 	if store == nil {
 		store = new(callerLocationStore)
 		callerLocationStoreCurrent = store
+		if wasmDebuggerEnabled {
+			publishWasmCallerStore(store)
+		}
 	}
 	return store
 }

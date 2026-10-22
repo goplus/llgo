@@ -19,11 +19,11 @@ func TestGoClosureStartupUsesGCManagedMemory(t *testing.T) {
 	}
 	ctxStruct := types.NewStruct(ctxFields, nil)
 	ctxParam := types.NewParam(0, nil, "$env", types.NewPointer(ctxStruct))
-	inner := pkg.NewEnvFunc("inner", ssa.NoArgsNoRet, ssa.InGo, ctxParam, false)
+	inner := pkg.NewEnvFunc("inner", ssa.NoArgsNoRet, ssa.GoDecl, ctxParam, false)
 	ib := inner.MakeBody(1)
 	ib.Return()
 
-	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
 	ob := outer.MakeBody(1)
 	closure := ob.MakeClosure(inner.Expr, []ssa.Expr{prog.Val(42)})
 	ob.Go(closure, func(b ssa.Builder, fn ssa.Expr, args ...ssa.Expr) ssa.Expr {
@@ -59,7 +59,25 @@ func TestGoInstallsContextForContextBackedLocals(t *testing.T) {
 	prog.SetLocalityInfo("example.com/state.Value", ssa.LocalityInfo{Locality: ssa.GoroutineLocal})
 	prog.SetLocalStorage("example.com/state.Value", ssa.LocalStoragePackage)
 	pkg := prog.NewPackage("bar", "foo/bar")
-	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
+	b := outer.MakeBody(1)
+	b.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
+		return ssa.Expr{}
+	})
+	b.Return()
+
+	ir := pkg.String()
+	for _, want := range []string{"LocalContext", "EnterLocalContext", "LeaveLocalContext"} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("goroutine wrapper missing %q:\n%s", want, ir)
+		}
+	}
+}
+
+func TestWASIGoInstallsContextWithoutUserLocality(t *testing.T) {
+	prog := ssatest.NewProgram(t, &ssa.Target{GOOS: "wasip1", GOARCH: "wasm", Target: "wasi"})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
 	b := outer.MakeBody(1)
 	b.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
 		return ssa.Expr{}
@@ -78,7 +96,7 @@ func TestGoPanicRoutineDoesNotReturnAfterUnreachable(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
-	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
 	ob := outer.MakeBody(1)
 	ob.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
 		b.Panic(args[0])
@@ -104,7 +122,7 @@ func TestGoDoesNotPassConfiguredStackSizeToRuntime(t *testing.T) {
 	prog.SetPthreadStackSize(32 << 20)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
-	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
 	ob := outer.MakeBody(1)
 	ob.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
 		return ssa.Expr{}
@@ -130,7 +148,7 @@ func TestGoUsesTwoArgumentRuntimeEntryByDefault(t *testing.T) {
 	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
-	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.InGo)
+	outer := pkg.NewFunc("outer", ssa.NoArgsNoRet, ssa.GoDecl)
 	ob := outer.MakeBody(1)
 	ob.Go(ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
 		return ssa.Expr{}

@@ -305,6 +305,9 @@ func TestGoRootRunCases(t *testing.T) {
 		envInfo.CGOEnabled = "0"
 	}
 	targetPlatform := expectationPlatform(envInfo.GOOS, envInfo.GOARCH, os.Getenv("LLGO_WINDOWS_ABI"))
+	if wasmTarget {
+		targetPlatform = *flagWasmProfile
+	}
 	hostPlatform := expectationPlatform(runtime.GOOS, runtime.GOARCH, os.Getenv("LLGO_WINDOWS_ABI"))
 	testRoot := filepath.Join(goroot, "test")
 	info, err := os.Stat(testRoot)
@@ -379,6 +382,10 @@ func TestGoRootRunCases(t *testing.T) {
 				writeCaseResult(os.Stdout, tc, caseResultHostSkip)
 				t.Skipf("skipping host-unsafe case: %s", reason)
 			}
+			if reason := hostedThreadResourceSkip(hostPlatform, targetPlatform, os.Getenv("RUNNER_ENVIRONMENT"), tc); reason != "" {
+				writeCaseResult(os.Stdout, tc, caseResultHostSkip)
+				t.Skipf("skipping host-resource-limited case: %s", reason)
+			}
 			runTimeout := *flagRunTO
 			if timeout, reason, ok := xfails.MatchTimeout(envInfo.GOVERSION, targetPlatform, tc); ok {
 				runTimeout = timeout
@@ -402,12 +409,25 @@ func TestGoRootRunCases(t *testing.T) {
 				// different failure when a toolchain or host environment changes.
 				t.Logf("expected failure: %s\n%.4096s", reason, err)
 			case err != nil && flaky:
-				t.Logf("known flaky failure: %s", flakyReason)
+				t.Logf("known flaky failure: %s\n%.4096s", flakyReason, err)
 			case err != nil:
 				t.Fatal(err)
 			}
 		})
 	}
+}
+
+func hostedThreadResourceSkip(hostPlatform, targetPlatform, runnerEnvironment string, tc testCase) string {
+	// xfail.yaml host_skips cannot express the runner environment or native-only execution.
+	if runnerEnvironment != "github-hosted" || targetPlatform != hostPlatform ||
+		(hostPlatform != "darwin/arm64" && hostPlatform != "darwin/amd64") ||
+		tc.Directive != "run" || tc.RelPath != "gcgort.go" {
+		return ""
+	}
+	// The original source stays unchanged. Its nested goroutines can exceed
+	// hosted macOS's 2048-thread process limit with the native 1:1 backend.
+	// TestGCConcurrentTypedMutation retains GC coverage with fixed workers.
+	return "gcgort.go can exceed the hosted macOS process thread limit with LLGo's 1:1 backend; bounded coverage: TestGCConcurrentTypedMutation"
 }
 
 func classifyCaseResult(err error, xfail, flaky bool) caseResult {
@@ -822,10 +842,17 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase,
 }
 
 func boundedCaseEnv(goos, goarch string, tc testCase, extra []string) []string {
-	if goos == "linux" && goarch == "amd64" && tc.Directive == "runoutput" && tc.RelPath == "rangegen.go" {
+	if (goos == "linux" && goarch == "amd64" || goos == "windows" && goarch == "arm64") &&
+		tc.Directive == "runoutput" && tc.RelPath == "rangegen.go" {
 		// The generated compiler torture test exceeded the 4 GiB hosted
 		// runner guard. Bound Go and LLGo's heaps for this case only.
-		return upsertEnv(extra, "GOMEMLIMIT=3GiB")
+		limit := "3GiB"
+		if goos == "windows" {
+			// Leave room for ARM64 native LLVM/CodeView allocations, which
+			// are outside Go's soft memory limit.
+			limit = "1GiB"
+		}
+		return upsertEnv(extra, "GOMEMLIMIT="+limit)
 	}
 	return extra
 }
@@ -907,24 +934,28 @@ func runnerEnv(repoRoot, goroot, gopath string, extra []string) []string {
 	env := append([]string{}, os.Environ()...)
 	pathFound := false
 	for i, item := range env {
-		switch {
-		case strings.HasPrefix(item, "GOROOT="):
+		key, value, _ := strings.Cut(item, "=")
+		if runtime.GOOS == "windows" {
+			key = strings.ToUpper(key)
+		}
+		switch key {
+		case "GOROOT":
 			env[i] = "GOROOT=" + goroot
-		case strings.HasPrefix(item, "GOENV="):
+		case "GOENV":
 			env[i] = "GOENV=off"
-		case strings.HasPrefix(item, "GOFLAGS="):
+		case "GOFLAGS":
 			env[i] = "GOFLAGS="
-		case strings.HasPrefix(item, "GOTOOLCHAIN="):
+		case "GOTOOLCHAIN":
 			env[i] = "GOTOOLCHAIN=local"
-		case strings.HasPrefix(item, "LLGO_ROOT="):
+		case "LLGO_ROOT":
 			env[i] = "LLGO_ROOT=" + repoRoot
-		case strings.HasPrefix(item, "GOPATH="):
+		case "GOPATH":
 			env[i] = "GOPATH=" + gopath
-		case strings.HasPrefix(item, "GO111MODULE="):
+		case "GO111MODULE":
 			env[i] = "GO111MODULE=off"
-		case strings.HasPrefix(item, "PATH="):
+		case "PATH":
 			pathFound = true
-			env[i] = "PATH=" + filepath.Join(goroot, "bin") + string(os.PathListSeparator) + strings.TrimPrefix(item, "PATH=")
+			env[i] = "PATH=" + filepath.Join(goroot, "bin") + string(os.PathListSeparator) + value
 		}
 	}
 	if !pathFound {
@@ -1006,17 +1037,29 @@ func runProgram(dir, app string, env []string, timeout time.Duration, args ...st
 	if err := cmd.Start(); err != nil {
 		return nil, nil, 0, time.Since(start), err
 	}
+	tree, treeErr := newProcessTree(cmd)
+	if treeErr != nil {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return nil, nil, 0, time.Since(start), fmt.Errorf("track process tree: %w", treeErr)
+	}
+	defer tree.close()
 
 	waitCh := make(chan error, 1)
+	var waitFinished time.Time
 	go func() {
-		waitCh <- cmd.Wait()
+		err := cmd.Wait()
+		waitFinished = time.Now()
+		waitCh <- err
 	}()
 
 	var err error
 	var terminationErr error
 	var timeoutTimer *time.Timer
 	var timeoutCh <-chan time.Time
+	var deadline time.Time
 	if timeout > 0 {
+		deadline = time.Now().Add(timeout)
 		timeoutTimer = time.NewTimer(timeout)
 		timeoutCh = timeoutTimer.C
 		defer timeoutTimer.Stop()
@@ -1045,22 +1088,25 @@ func runProgram(dir, app string, env []string, timeout time.Duration, args ...st
 	}
 	var peakRSS uint64
 	for {
+		// Completion takes priority over a queued sampling tick or timeout,
+		// especially when a slow resource query outlives the direct child.
 		select {
 		case err = <-waitCh:
-			// ErrWaitDelay identifies a pipe-copy timeout after a successful
-			// direct child, but an ExitError masks it after a non-zero exit.
-			// Either error can therefore leave descendants alive.
-			if err != nil {
-				killProcessTree(cmd)
-			}
-			goto finished
+			goto waited
+		default:
+		}
+		select {
 		case <-timeoutCh:
-			terminationErr = fmt.Errorf("timed out after %s", timeout)
-			killProcessTree(cmd)
-			err = waitTerminatedProgram(cmd, waitCh, 10*time.Second)
-			goto finished
+			goto timedOut
+		default:
+		}
+		select {
+		case err = <-waitCh:
+			goto waited
+		case <-timeoutCh:
+			goto timedOut
 		case <-rssCh:
-			rssBytes, rssErr := processGroupRSS(cmd.Process.Pid)
+			rssBytes, rssErr := tree.rss()
 			if rssErr != nil {
 				continue
 			}
@@ -1070,20 +1116,43 @@ func runProgram(dir, app string, env []string, timeout time.Duration, args ...st
 			limitBytes := uint64(*flagMaxRSSMiB) << 20
 			if *flagMaxRSSMiB > 0 && rssBytes > limitBytes {
 				terminationErr = &resourceLimitError{message: fmt.Sprintf("process-group RSS %s exceeded limit %s", formatBytes(rssBytes), formatBytes(limitBytes))}
-				killProcessTree(cmd)
+				tree.kill()
 				err = waitTerminatedProgram(cmd, waitCh, 10*time.Second)
 				goto finished
 			}
 		case <-memoryCh:
 			if memoryErr := checkSystemMemoryPressure(); memoryErr != nil {
 				terminationErr = memoryErr
-				killProcessTree(cmd)
+				tree.kill()
 				err = waitTerminatedProgram(cmd, waitCh, 10*time.Second)
 				goto finished
 			}
 		}
 	}
 
+timedOut:
+	select {
+	case err = <-waitCh:
+		goto waited
+	default:
+	}
+	terminationErr = fmt.Errorf("timed out after %s", timeout)
+	tree.kill()
+	err = waitTerminatedProgram(cmd, waitCh, 10*time.Second)
+	goto finished
+waited:
+	// Receiving waitCh also publishes waitFinished. Preserve the deadline
+	// for children that finish late, even if completion and timeout were both
+	// queued while a resource query was running.
+	if !deadline.IsZero() && waitFinished.After(deadline) {
+		terminationErr = fmt.Errorf("timed out after %s", timeout)
+	}
+	// ErrWaitDelay identifies a pipe-copy timeout after a successful direct
+	// child, but an ExitError masks it after a non-zero exit. Either error
+	// can therefore leave descendants alive.
+	if err != nil || terminationErr != nil {
+		tree.kill()
+	}
 finished:
 	if *flagRSSWarnMiB > 0 && peakRSS >= uint64(*flagRSSWarnMiB)<<20 {
 		fmt.Fprintf(os.Stderr, "goroot resource warning: %s peak process-group RSS %s\n", filepath.Base(app), formatBytes(peakRSS))
@@ -1203,9 +1272,11 @@ func logSlowCase(t *testing.T, casePath string, goBuildDur, llgoBuildDur, goRunD
 	if !slowBuild && !slowRun {
 		return
 	}
+	// setup-go's problem matcher treats "file.go: message" as a compiler
+	// error, even when the message only reports timing for a passing case.
 	fmt.Fprintf(
 		os.Stderr,
-		"slow goroot case %s: go build=%s llgo build=%s go run=%s llgo run=%s\n",
+		"slow goroot case %s (go build=%s, llgo build=%s, go run=%s, llgo run=%s)\n",
 		casePath,
 		goBuildDur.Round(time.Millisecond),
 		llgoBuildDur.Round(time.Millisecond),
@@ -2336,6 +2407,12 @@ func expectationPlatform(goos, goarch, windowsABI string) string {
 func matchPlatform(want, got string) bool {
 	if want == got {
 		return true
+	}
+	switch got {
+	case "J32-GoJS", "J32-Emscripten", "J64-Emscripten":
+		return want == "js/wasm"
+	case "W32-WASI":
+		return want == "wasip1/wasm"
 	}
 	if strings.HasPrefix(got, "windows-msvc/") || strings.HasPrefix(got, "windows-mingw/") {
 		_, arch, ok := strings.Cut(got, "/")

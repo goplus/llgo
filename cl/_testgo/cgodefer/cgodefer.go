@@ -29,14 +29,27 @@ import "C"
 // go_callback_c_only is deliberately never referenced by Go: the local C
 // invoke_export_only wrapper is its sole caller, preserving the export-only
 // reachability regression.
-// CHECK-LABEL: define i32 @go_callback(i32 %0){{.*}} {
+// CHECK inspects package IR; ENTRY inspects the final-link module through
+// TestCgoDeferExportEntries. Both stages retain the callback's signature.
+// ENTRY-LABEL: define i32 @go_callback(i32 %0){{.*}} {
+// ENTRY: [[REGISTERED:%[0-9]+]] = call i1 @"{{.*}}EnterForeignThread"()
+// ENTRY-NEXT: [[RESULT:%[0-9]+]] = call i32 @main.go_callback(i32 %0)
+// ENTRY-NEXT: call void @"{{.*}}ExitForeignThread"(i1 [[REGISTERED]])
+// ENTRY-NEXT: ret i32 [[RESULT]]
+// ENTRY-LABEL: define i32 @go_callback_c_only(i32 %0){{.*}} {
+// ENTRY: [[ONLY_REGISTERED:%[0-9]+]] = call i1 @"{{.*}}EnterForeignThread"()
+// ENTRY-NEXT: [[ONLY_RESULT:%[0-9]+]] = call i32 @main.go_callback_c_only(i32 %0)
+// ENTRY-NEXT: call void @"{{.*}}ExitForeignThread"(i1 [[ONLY_REGISTERED]])
+// ENTRY-NEXT: ret i32 [[ONLY_RESULT]]
+
+// CHECK-LABEL: define i32 @main.go_callback(i32 %0){{.*}} {
 // CHECK: [[GO_CONTEXT:%[0-9]+]] = alloca %"{{.*}}LocalContext"
 // CHECK: [[GO_TOKEN:%[0-9]+]] = call i64 @"{{.*}}EnterLocalContext"(ptr [[GO_CONTEXT]])
 // CHECK: [[GO_RESULT:%[0-9]+]] = add i32 %0, 2
 // CHECK: call void @"{{.*}}LeaveLocalContext"(ptr [[GO_CONTEXT]], i64 [[GO_TOKEN]])
 // CHECK: ret i32 [[GO_RESULT]]
 
-// CHECK-LABEL: define i32 @go_callback_c_only(i32 %0){{.*}} {
+// CHECK-LABEL: define i32 @main.go_callback_c_only(i32 %0){{.*}} {
 // CHECK: [[ONLY_CONTEXT:%[0-9]+]] = alloca %"{{.*}}LocalContext"
 // CHECK: call i64 @"{{.*}}EnterLocalContext"(ptr [[ONLY_CONTEXT]])
 // CHECK: [[ONLY_RESULT:%[0-9]+]] = add i32 %0, 2

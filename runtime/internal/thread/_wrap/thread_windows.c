@@ -25,6 +25,11 @@ __declspec(dllimport) llgo_handle LLGO_WINAPI CreateThread(
     void *attributes, llgo_size_t stack_size, llgo_win_thread_start start,
     void *arg, llgo_dword flags, llgo_dword *thread_id);
 __declspec(dllimport) void LLGO_WINAPI ExitThread(llgo_dword exit_code);
+__declspec(dllimport) void LLGO_WINAPI Sleep(llgo_dword milliseconds);
+__declspec(dllimport) void LLGO_WINAPI ExitProcess(llgo_dword exit_code);
+__declspec(dllimport) llgo_handle LLGO_WINAPI GetCurrentProcess(void);
+__declspec(dllimport) llgo_bool LLGO_WINAPI
+TerminateProcess(llgo_handle process, llgo_uint exit_code);
 __declspec(dllimport) llgo_bool LLGO_WINAPI CloseHandle(llgo_handle handle);
 __declspec(dllimport) llgo_dword LLGO_WINAPI GetLastError(void);
 __declspec(dllimport) llgo_handle LLGO_WINAPI GetProcessHeap(void);
@@ -59,9 +64,20 @@ enum {
  * deliberately retained sidecar allocation. */
 static llgo_dword llgo_process_exiting;
 
-void llgo_win_thread_begin_process_exit(void)
+void llgo_win_thread_exit_process(llgo_dword exit_code)
 {
     __atomic_store_n(&llgo_process_exiting, 1, __ATOMIC_RELEASE);
+    /* Go process exit must not wait for other goroutines or DLL callbacks.
+     * ExitProcess kills the other threads before DLL_PROCESS_DETACH; a DLL
+     * cleanup callback can then wait on a lock held by a killed thread. Native
+     * gcgort stress gets stuck inside LdrShutdownProcess. Self-termination
+     * skips that unsafe teardown and does not return.
+     * See Microsoft's ExitProcess documentation on shutdown with unknown
+     * thread state. Go exit hooks run before this call. */
+    TerminateProcess(GetCurrentProcess(), (llgo_uint)exit_code);
+    /* The current-process pseudo-handle has termination rights. Retain the
+     * normal exit path only if self-termination unexpectedly fails. */
+    ExitProcess(exit_code);
 }
 
 typedef void *(*llgo_thread_routine)(void *arg);
@@ -147,6 +163,11 @@ void llgo_win_thread_exit(void)
 #else
     ExitThread(0);
 #endif
+}
+
+void llgo_win_thread_yield(void)
+{
+    Sleep(0);
 }
 
 typedef void (*llgo_key_destructor)(void *value);

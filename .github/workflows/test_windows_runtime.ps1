@@ -91,9 +91,22 @@ foreach ($artifact in @($runtime, $stdlib, $ffi, $empty, $coreFault, $network)) 
 }
 
 Write-Host "==> windows-runtime-smoke.exe"
-& $runtime
-if ($LASTEXITCODE -ne 0) {
-  throw "windows-runtime-smoke.exe exited with code $LASTEXITCODE"
+$runtimeStdout = Join-Path $out "runtime.stdout"
+$runtimeStderr = Join-Path $out "runtime.stderr"
+$runtimeProcess = Start-Process -FilePath $runtime -NoNewWindow -PassThru `
+  -RedirectStandardOutput $runtimeStdout -RedirectStandardError $runtimeStderr
+if (-not $runtimeProcess.WaitForExit(60000)) {
+  $runtimeProcess.Kill()
+  throw "windows-runtime-smoke.exe did not terminate after main returned"
+}
+$runtimeProcess.WaitForExit()
+Get-Content $runtimeStdout
+Get-Content $runtimeStderr
+if ($runtimeProcess.ExitCode -ne 0) {
+  throw "windows-runtime-smoke.exe exited with code $($runtimeProcess.ExitCode)"
+}
+if (-not (Get-Content -Raw $runtimeStdout).Contains("windows C stdio smoke: ok")) {
+  throw "normal Windows main return lost buffered C stdio output"
 }
 
 Write-Host "==> windows-runtime-smoke.exe (unrecovered fault)"

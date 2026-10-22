@@ -255,7 +255,7 @@ func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 		}
 		directSig := types.NewSignatureType(nil, nil, nil, sig.Params(),
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", sig.Results().At(0).Type())), false)
-		fnTy = p.type_(directSig, llssa.InC)
+		fnTy = p.type_(directSig, llssa.CDecl)
 	}
 	pfn.Type = p.prog.Pointer(fnTy)
 	fn := b.Load(pfn)
@@ -264,11 +264,11 @@ func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 	if isC2 {
 		errnoSig := types.NewSignatureType(nil, nil, nil, nil,
 			types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
-		errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+		errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.CDecl)
 		p.cgoErrno = b.Call(errnoFn.Expr)
 		return p.cgoErrno
 	}
-	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	i32 := p.type_(types.Typ[types.Int32], llssa.GoDecl)
 	p.cgoErrno = p.prog.Zero(i32)
 	return p.cgoErrno
 }
@@ -289,7 +289,7 @@ func (p *context) advance(b llssa.Builder, args []ssa.Value, native ...bool) (re
 			// their pointer elements occupy four bytes even though Go pointer
 			// slots occupy eight. Preserve that distinction on the expression so
 			// Builder.Advance can select the physical element layout.
-			ptr.Type = p.type_(args[0].Type(), llssa.InC)
+			ptr.Type = p.type_(args[0].Type(), llssa.CDecl)
 		}
 		offset := p.compileValue(b, args[1])
 		return b.Advance(ptr, offset)
@@ -412,11 +412,11 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if cname := extractTrampolineCName(v.Name()); cname != "" {
 			cname = p.remapTrampolineCName(cname)
 			fnSig := p.syscallFnSig(len(v.Params))
-			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
-			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.CDecl)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), cfn.Expr)
 		}
 		if aFn, _, _ := p.compileFunction(v); aFn != nil {
-			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), aFn.Expr)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), aFn.Expr)
 		}
 	case *ssa.MakeClosure:
 		return p.funcPCABI0Value(b, v.Fn)
@@ -424,7 +424,7 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 		if t := v.Type(); t != nil {
 			if _, ok := t.Underlying().(*types.Interface); ok {
 				data := b.InterfaceData(p.compileValue(b, v))
-				uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+				uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 				uptrPtr := p.prog.Pointer(uptr)
 				codePtr := b.Convert(uptrPtr, data)
 				return b.Load(codePtr)
@@ -439,9 +439,9 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 // materialize a typed zero value of the tuple type.
 func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
 	if results.Len() == 1 {
-		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.InGo))
+		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.GoDecl))
 	}
-	return p.prog.Zero(p.type_(results, llssa.InGo))
+	return p.prog.Zero(p.type_(results, llssa.GoDecl))
 }
 
 // syscallFnSig returns a variadic C signature with argc uintptr parameters
@@ -474,10 +474,10 @@ var errnoSig = types.NewSignatureType(nil, nil, nil, nil,
 // This matches the common libc syscall convention used by our llgo.syscall
 // intrinsic lowering.
 func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
-	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 	minus1 := p.prog.IntVal(^uint64(0), uptr)
 	cond := b.BinOp(token.EQL, r1, minus1)
-	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.CDecl)
 	errno := b.Call(errnoFn.Expr)
 	errno = b.Convert(uptr, errno)
 	zero := p.prog.Zero(uptr)
@@ -502,13 +502,13 @@ func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *t
 	}
 	fnSig := p.syscallFnSigFixed(callArgTypes)
 	fnArg := p.compileValue(b, args[0])
-	fnType := p.type_(fnSig, llssa.InC)
-	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.InGo), fnArg))
+	fnType := p.type_(fnSig, llssa.CDecl)
+	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.GoDecl), fnArg))
 	r1 := b.Call(fnPtr, callArgs...)
-	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.GoDecl)
 	r2 := p.prog.Zero(uptr)
 	err := p.syscallErrno(b, r1)
-	tuple := p.type_(results, llssa.InGo)
+	tuple := p.type_(results, llssa.GoDecl)
 	return b.Aggregate(tuple, r1, r2, err)
 }
 
@@ -620,7 +620,7 @@ func (p *context) atomicCmpXchgOK(b llssa.Builder, args []llssa.Expr) llssa.Expr
 
 func (p *context) boolToUint8(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	if len(args) == 1 {
-		retType := p.type_(types.Typ[types.Uint8], llssa.InGo)
+		retType := p.type_(types.Typ[types.Uint8], llssa.GoDecl)
 		one := p.prog.IntVal(1, retType)
 		zero := p.prog.Zero(retType)
 		return b.SelectValue(args[0], one, zero)
@@ -632,12 +632,13 @@ func (p *context) bitCastIntrinsic(b llssa.Builder, args []llssa.Expr, result ty
 	if len(args) != 1 {
 		panic(name + ": invalid arguments")
 	}
-	return b.BitCast(p.type_(result, llssa.InGo), args[0])
+	return b.BitCast(p.type_(result, llssa.GoDecl), args[0])
 }
 
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
+	"simd":        llgoSIMD,
 	"cstr":        llgoCstr,
 	"advance":     llgoAdvance,
 	"index":       llgoIndex,
@@ -729,10 +730,13 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 			sig := p.patchType(fn.Signature).(*types.Signature)
 			// Source env-bearing bodies are created by compileFuncDecl before
 			// lowering. Imported declarations cannot reconstruct //llgo:env.
-			aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, p.needsLinkOnce(fn))
+			aFn = pkg.NewFuncEx(name, sig, llssa.CallConv(ftype), false, p.needsLinkOnce(fn))
 			if disableInline {
 				aFn.Inline(llssa.NoInline)
 			}
+		}
+		if ftype == goFunc {
+			p.markSIMDFMV(aFn, fn)
 		}
 	}
 	return
@@ -756,11 +760,12 @@ func (p *context) funcKind(vfn ssa.Value) int {
 					return fnIgnore
 				}
 			}
-		} else {
-			last := params.At(n - 1)
-			if last.Name() == llssa.NameValist {
-				return fnHasVArg
-			}
+		}
+	}
+	// Direct C symbols and indirect function values share the same varargs rule.
+	if vfn != nil {
+		if signature, ok := vfn.Type().Underlying().(*types.Signature); ok && llssa.HasNameValist(signature) {
+			return fnHasVArg
 		}
 	}
 	return fnNormal
@@ -780,8 +785,8 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 		if !ok || field.Field < 0 || field.Field >= st.NumFields() {
 			return llssa.Expr{}, false
 		}
-		typ := p.type_(field.X.Type(), llssa.InGo)
-		return p.prog.Val(int(p.prog.OffsetOf(typ, field.Field))), true
+		typ := p.type_(field.X.Type(), llssa.GoDecl)
+		return p.prog.IntVal(p.prog.OffsetOf(typ, field.Field), p.prog.Uintptr()), true
 	}
 	load, ok := arg.(*ssa.UnOp)
 	if !ok || load.Op != token.MUL {
@@ -795,7 +800,7 @@ func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	return p.prog.Val(offset), true
+	return p.prog.IntVal(uint64(offset), p.prog.Uintptr()), true
 }
 
 func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
@@ -819,7 +824,7 @@ func (p *context) offsetOfFieldAddr(field *ssa.FieldAddr) (int, bool) {
 	if !ok {
 		return 0, false
 	}
-	typ := p.type_(ptr.Elem(), llssa.InGo)
+	typ := p.type_(ptr.Elem(), llssa.GoDecl)
 	return int(p.prog.OffsetOf(typ, field.Field)), true
 }
 
@@ -929,7 +934,7 @@ func (p *context) shouldTrackCallerFrames() bool {
 	if p == nil || p.pkg == nil || p.fn == nil || p.goFn == nil || !p.trackCallerFrames {
 		return false
 	}
-	if !p.runtimeCallerFuncs[p.goFn] {
+	if !p.options.DebuggerFrames && !p.runtimeCallerFuncs[p.goFn] {
 		return false
 	}
 	if target := p.prog.Target(); target != nil && target.Target != "" && target.GOARCH != "wasm" {
@@ -1347,8 +1352,6 @@ func analyzeCallerTrackingPackage(pkg *ssa.Package, methods []*ssa.Function) cal
 		funcs:     funcs,
 		trackable: trackable,
 		callsites: collectRuntimeCallerCallsites(funcs),
-		memo:      make(map[*ssa.Function]bool),
-		visiting:  make(map[*ssa.Function]bool),
 	}
 	return callerTrackingPackageAnalysis{
 		funcs:     funcs,
@@ -1460,15 +1463,9 @@ func computeRuntimeCallerBaseSetFromAnalysis(analysis *runtimeCallerAnalysis) ma
 		return nil
 	}
 	out := make(map[*ssa.Function]bool)
-	for {
-		ntrack := len(analysis.trackable)
-		for fn := range analysis.trackable {
-			if analysis.fnMayReachRuntimeCaller(fn) {
-				out[fn] = true
-			}
-		}
-		if len(analysis.trackable) == ntrack {
-			break
+	for fn := range analysis.trackable {
+		if analysis.fnMayReachRuntimeCaller(fn) {
+			out[fn] = true
 		}
 	}
 	if len(out) == 0 {
@@ -1482,8 +1479,8 @@ type runtimeCallerAnalysis struct {
 	funcs     map[*ssa.Function]bool
 	trackable map[*ssa.Function]bool
 	callsites map[*ssa.Function][]*ssa.CallCommon
-	memo      map[*ssa.Function]bool
-	visiting  map[*ssa.Function]bool
+	// nil until reachability has been solved for the whole package.
+	memo map[*ssa.Function]bool
 }
 
 func collectRuntimeCallerFunctions(pkg *ssa.Package) (funcs, trackable map[*ssa.Function]bool) {
@@ -1691,57 +1688,65 @@ func (a *runtimeCallerAnalysis) fnMayReachRuntimeCaller(fn *ssa.Function) bool {
 	if !a.funcs[fn] {
 		return false
 	}
-	if ok, done := a.memo[fn]; done {
-		return ok
+	if a.memo == nil {
+		a.computeReachability()
 	}
-	if a.visiting[fn] {
-		return false
-	}
-	a.visiting[fn] = true
-	defer delete(a.visiting, fn)
-	reaches := false
-	forEachCall(fn, func(call *ssa.CallCommon) {
-		if reaches {
-			return
-		}
-		callee := call.StaticCallee()
-		switch {
-		case isRuntimeCallerFrameFunc(callee):
-			reaches = true
-		case callee != nil:
-			reaches = a.fnMayReachRuntimeCaller(callee)
-		case call.Method != nil:
-			reaches = a.interfaceInvokeMayReachRuntimeCaller(fn, call)
-		default:
-			reaches = a.functionValueCallMayReachRuntimeCaller(fn, call.Value)
-		}
-	})
-	if !reaches {
-		for _, anon := range fn.AnonFuncs {
-			if a.fnMayReachRuntimeCaller(anon) {
-				if a.trackable[fn] {
-					a.trackable[anon] = true
-				}
-				reaches = true
-				break
-			}
-		}
-	}
-	a.memo[fn] = reaches
-	return reaches
+	return a.memo[fn]
 }
 
-func (a *runtimeCallerAnalysis) functionValueCallMayReachRuntimeCaller(fn *ssa.Function, value ssa.Value) bool {
-	targets, ok := a.functionValueTargets(fn, value)
-	if !ok {
-		return true
-	}
-	for target := range targets {
-		if a.fnMayReachRuntimeCaller(target) {
-			return true
+// computeReachability propagates positives through the reverse call graph.
+// Recursive DFS cannot cache a negative on a back-edge: another member of the
+// cycle may reach a runtime caller consumer later in the traversal.
+func (a *runtimeCallerAnalysis) computeReachability() {
+	a.memo = make(map[*ssa.Function]bool)
+	callers := make(map[*ssa.Function][]*ssa.Function)
+	var pending []*ssa.Function
+	mark := func(fn *ssa.Function) {
+		if !a.memo[fn] {
+			a.memo[fn] = true
+			pending = append(pending, fn)
 		}
 	}
-	return false
+	addTarget := func(fn, callee *ssa.Function) {
+		if isRuntimeCallerFrameFunc(callee) {
+			mark(fn)
+		} else if a.funcs[callee] {
+			callers[callee] = append(callers[callee], fn)
+		}
+	}
+	for fn := range a.funcs {
+		if isRuntimeCallerFrameFunc(fn) {
+			mark(fn)
+		}
+		forEachCall(fn, func(call *ssa.CallCommon) {
+			if callee := call.StaticCallee(); callee != nil {
+				addTarget(fn, callee)
+				return
+			}
+			var targets map[*ssa.Function]bool
+			var ok bool
+			if call.Method != nil {
+				targets, ok = a.interfaceMethodTargets(fn, call.Value, call.Method)
+			} else {
+				targets, ok = a.functionValueTargets(fn, call.Value)
+			}
+			if !ok {
+				// Preserve conservative tracking for unresolved dispatch.
+				mark(fn)
+			}
+			for callee := range targets {
+				addTarget(fn, callee)
+			}
+		})
+		for _, anon := range fn.AnonFuncs {
+			addTarget(fn, anon)
+		}
+	}
+	for i := 0; i < len(pending); i++ {
+		for _, caller := range callers[pending[i]] {
+			mark(caller)
+		}
+	}
 }
 
 func (a *runtimeCallerAnalysis) functionValueTargets(fn *ssa.Function, value ssa.Value) (map[*ssa.Function]bool, bool) {
@@ -1791,19 +1796,6 @@ func staticFunctionTargets(value ssa.Value) (map[*ssa.Function]bool, bool) {
 		}
 	}
 	return nil, false
-}
-
-func (a *runtimeCallerAnalysis) interfaceInvokeMayReachRuntimeCaller(fn *ssa.Function, call *ssa.CallCommon) bool {
-	targets, ok := a.interfaceMethodTargets(fn, call.Value, call.Method)
-	if !ok {
-		return true
-	}
-	for target := range targets {
-		if a.fnMayReachRuntimeCaller(target) {
-			return true
-		}
-	}
-	return false
 }
 
 func (a *runtimeCallerAnalysis) interfaceMethodTargets(fn *ssa.Function, value ssa.Value, method *types.Func) (map[*ssa.Function]bool, bool) {
@@ -1988,6 +1980,14 @@ func (p *context) pushCallerLocationFrame(b llssa.Builder, fn *ssa.Function) {
 		b.Str(pos.Filename),
 		p.prog.IntVal(uint64(pos.Line), p.prog.Int()),
 	)
+	if p.options.DebuggerFrames {
+		sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewVar(token.NoPos, nil, "mark", types.Typ[types.Int]),
+			types.NewVar(token.NoPos, nil, "base", types.Typ[types.Uintptr]),
+		), nil, false)
+		b.Call(p.runtimeFunc("SetWasmCallerFrameBase", sig), p.callerFrameMark,
+			b.Convert(p.prog.Uintptr(), b.DebugFrameAddress()))
+	}
 }
 
 func (p *context) recordCallerLocation(b llssa.Builder, pos token.Pos) {
@@ -2028,13 +2028,16 @@ func (p *context) recordRuntimeLocation(b llssa.Builder, pos token.Pos, fn strin
 	if position.Line <= 0 || position.Filename == "" {
 		return
 	}
-	p.callRuntimeLocation(
-		b, fn,
-		b.Convert(p.prog.Uintptr(), p.fn.Expr),
-		b.Str(p.runtimeCallerFrameName()),
-		b.Str(position.Filename),
-		p.prog.IntVal(uint64(position.Line), p.prog.Int()),
-	)
+	name := p.runtimeCallerFrameName()
+	b.EmitLocationRecord(fn, name, position.Filename, position.Line, func() llssa.Expr {
+		return p.callRuntimeLocation(
+			b, fn,
+			b.Convert(p.prog.Uintptr(), p.fn.Expr),
+			b.Str(name),
+			b.Str(position.Filename),
+			p.prog.IntVal(uint64(position.Line), p.prog.Int()),
+		)
+	})
 }
 
 // callRuntimeLocation keeps static strings out of the caller's Wasm C stack.
@@ -2068,6 +2071,14 @@ func (p *context) recordCallerLocationForCall(b llssa.Builder, call *ssa.CallCom
 	p.recordPanicLocation(b, call.Pos())
 }
 
+// pcLinePosition is the runtime-visible identity of a source location. Columns
+// do not participate: the runtime line table does not expose them.
+type pcLinePosition struct {
+	symbol string
+	file   string
+	line   int
+}
+
 func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 	if p == nil || p.pkg == nil || p.fn == nil || !p.prog.FuncInfoSitesEnabled() || !p.shouldTrackCallerFrames() {
 		return
@@ -2095,8 +2106,20 @@ func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 	}
 	p.lastPCLineFile = position.Filename
 	p.lastPCLineLine = position.Line
-	p.pcLineSeq++
-	id := pcLineID(p.fn.Name(), p.pcLineSeq)
+	// Distinct machine-code ranges can describe the same source line (branch
+	// arms, cold nil checks, and repeated stores). They still need independent
+	// DCE-associated anchors, but can share one address-free line-table row.
+	positionKey := pcLinePosition{p.fn.Name(), position.Filename, position.Line}
+	id, recorded := p.pcLineIDs[positionKey]
+	if !recorded {
+		if p.pcLineIDs == nil {
+			p.pcLineIDs = make(map[pcLinePosition]uint64)
+		}
+		p.pcLineSeq++
+		id = pcLineID(p.fn.Name(), p.pcLineSeq)
+		p.pcLineIDs[positionKey] = id
+		p.pkg.EmitPCLineInfo(id, p.fn.Name(), position.Filename, position.Line, position.Column)
+	}
 	label := pcLineLabelName(id)
 	if target.GOOS == "darwin" {
 		// Mach-O subsections-via-symbols treats every non-local symbol as an
@@ -2138,7 +2161,7 @@ func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 		// the '$m' subsection suffix used for lexicographic merging.
 		pushSection = ".pushsection .llgopcl$$m,\"dr\",associative," + asmLabel
 	}
-	b.InlineAsm(
+	b.InlineAsmNoDebug(
 		asmLabel + ":\n" +
 			pushSection + "\n" +
 			".p2align " + align + "\n" +
@@ -2148,7 +2171,6 @@ func (p *context) emitPCLineLabel(b llssa.Builder, pos token.Pos) {
 			".quad " + uint64Hex(id) + "\n" +
 			".popsection",
 	)
-	p.pkg.EmitPCLineInfo(id, p.fn.Name(), position.Filename, position.Line, position.Column)
 }
 
 func canEmitPCLineLabelsForTarget(target *llssa.Target) bool {
@@ -2243,7 +2265,7 @@ func (p *context) runtimeFunc(name string, sig *types.Signature) llssa.Expr {
 	if fn := p.pkg.FuncOf(fullName); fn != nil {
 		return fn.Expr
 	}
-	return p.pkg.NewFuncEx(fullName, sig, llssa.InGo, false, false).Expr
+	return p.pkg.NewFuncEx(fullName, sig, llssa.GoDecl, false, false).Expr
 }
 
 func pushCallerLocationFrameSig() *types.Signature {
@@ -2411,7 +2433,7 @@ func (p *context) staticArrayLenBuiltinArg(b llssa.Builder, arg ssa.Value) (llss
 		return llssa.Expr{}, false
 	}
 	p.compileValue(b, sideEffect)
-	return b.Const(constant.MakeInt64(arr.Len()), p.type_(types.Typ[types.Int], llssa.InGo)), true
+	return b.Const(constant.MakeInt64(arr.Len()), p.type_(types.Typ[types.Int], llssa.GoDecl)), true
 }
 
 func isPointerGoType(t types.Type) bool {
@@ -2645,6 +2667,11 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 		args := p.compileValues(b, args, kind)
 		ret = p.emitDo(b, act, ds, false, llssa.Builtin(fn), llssa.Builder.Call, args...)
 	case *ssa.Function:
+		if _, ok := p.simdOperation(cv); ok && act != llssa.Call {
+			fn := p.compileValue(b, cv)
+			ret = p.emitDo(b, act, ds, mayRecover, fn, llssa.Builder.Call, p.compileValues(b, args, kind)...)
+			return
+		}
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
@@ -2652,13 +2679,36 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			forward := false
+			if isCVariadicWrapperForwarding(p.goFn, call) {
+				reason := p.cVariadicWrapperForwardingReason(p.goFn, call)
+				if reason == "" && (act != llssa.Call || !b.CanForwardVarargs(aFn.Expr)) {
+					reason = "incompatible fixed LLVM prototypes, calling conventions, or result conversion"
+				}
+				if reason == "" {
+					forward = true
+				} else {
+					if p.variadicErrors == nil {
+						p.variadicErrors = make(map[*ssa.Function]error)
+					}
+					p.variadicErrors[p.goFn] = p.cVariadicForwardingError(p.goFn, reason)
+				}
+			}
+			if forward {
+				// A tail transfer removes the synthetic frame itself, so no
+				// recover-frame alias may surround it (or run after the call).
+				ret = b.CallForwardVarargs(aFn.Expr, args...)
+			} else {
+				ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
+			}
 		case goFunc:
 			args := p.compileValues(b, args, kind)
 			ret = p.emitDo(b, act, ds, mayRecover, aFn.Expr, llssa.Builder.Call, args...)
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
 			ret = p.emitDo(b, act, ds, mayRecover, pyFn.Expr, llssa.Builder.Call, args...)
+		case llgoSIMD:
+			ret = p.simdCall(b, cv, args)
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
@@ -2805,6 +2855,65 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	return
 }
 
+func isCVariadicWrapperForwarding(fn *ssa.Function, call *ssa.CallCommon) bool {
+	if fn == nil || fn.Synthetic == "" || !llssa.HasNameValist(fn.Signature) ||
+		!llssa.HasNameValist(call.Signature()) || len(call.Args) == 0 || len(fn.Params) == 0 {
+		return false
+	}
+	param, ok := call.Args[len(call.Args)-1].(*ssa.Parameter)
+	return ok && param == fn.Params[len(fn.Params)-1]
+}
+
+// cVariadicWrapperForwardingReason returns an empty string when forwarding is supported.
+func (p *context) cVariadicWrapperForwardingReason(fn *ssa.Function, call *ssa.CallCommon) string {
+	callee := call.Signature()
+	// Promoted pointer methods adjust the receiver and return the C call's
+	// result. compileValues omits the incoming ellipsis marker: the wrapper
+	// must forward the unknown register/stack arguments with a mandatory tail
+	// call. Wasm does not support variadic tail calls. Explicit -target
+	// profiles (including custom native profiles) remain excluded because
+	// their backend and storage ABI may not support this forwarding path.
+	target := p.prog.Target()
+	if target.GOARCH == "wasm" {
+		return "WebAssembly does not support variadic tail forwarding"
+	}
+	if target.Target != "" {
+		return fmt.Sprintf("explicit target profile %q does not support variadic forwarding", target.Target)
+	}
+	// Value receivers do not have LLVM's required matching fixed prototype.
+	if fn.Signature.Recv() == nil || !isPointerGoType(fn.Signature.Recv().Type()) ||
+		callee.Recv() == nil || !isPointerGoType(callee.Recv().Type()) {
+		return "wrapper and callee must have pointer receivers"
+	}
+	// Tuple returns need extract/insert instructions after the call, while
+	// aggregate ABI lowering can replace the call and lose its tail marker.
+	// Neither path can preserve the immediate return required by musttail.
+	results := callee.Results()
+	if results.Len() > 1 {
+		return "multiple results cannot preserve the variadic tail call"
+	}
+	if results.Len() == 1 && !isCVariadicForwardScalar(results.At(0).Type()) {
+		return "non-scalar result requires unsupported ABI lowering"
+	}
+	params := callee.Params()
+	for i := 0; i < params.Len()-1; i++ {
+		if !isCVariadicForwardScalar(params.At(i).Type()) {
+			return fmt.Sprintf("fixed parameter %q is not scalar", params.At(i).Name())
+		}
+	}
+	return ""
+}
+
+func isCVariadicForwardScalar(t types.Type) bool {
+	switch t := t.Underlying().(type) {
+	case *types.Pointer:
+		return true
+	case *types.Basic:
+		return t.Info()&(types.IsBoolean|types.IsInteger|types.IsFloat) != 0 || t.Kind() == types.UnsafePointer
+	}
+	return false
+}
+
 func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon, hasVArg int) []llssa.Expr {
 	args := p.compileValues(b, call.Args, hasVArg)
 	params := call.Signature().Params()
@@ -2812,7 +2921,7 @@ func (p *context) compileDynamicCallValues(b llssa.Builder, call *ssa.CallCommon
 	for i, arg := range call.Args[:n] {
 		want := params.At(i).Type()
 		if needsNamedClosureChange(arg.Type(), want) {
-			args[i] = b.ChangeType(p.type_(want, llssa.InGo), args[i])
+			args[i] = b.ChangeType(p.type_(want, llssa.GoDecl), args[i])
 		}
 	}
 	return args

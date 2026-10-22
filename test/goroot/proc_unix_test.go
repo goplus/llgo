@@ -5,6 +5,7 @@ package goroot
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -21,7 +23,22 @@ func configureProcessGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 }
 
-func killProcessTree(cmd *exec.Cmd) {
+type processTree struct {
+	cmd *exec.Cmd
+}
+
+func newProcessTree(cmd *exec.Cmd) (*processTree, error) {
+	return &processTree{cmd: cmd}, nil
+}
+
+func (tree *processTree) close() {}
+
+func (tree *processTree) rss() (uint64, error) {
+	return processGroupRSS(tree.cmd.Process.Pid)
+}
+
+func (tree *processTree) kill() {
+	cmd := tree.cmd
 	if cmd.Process == nil {
 		return
 	}
@@ -30,8 +47,39 @@ func killProcessTree(cmd *exec.Cmd) {
 
 func resourceMonitoringSupported() bool { return true }
 
+var processRSSQueryTimeout = time.Second
+
 func processGroupRSS(processGroupID int) (uint64, error) {
-	output, err := exec.Command("ps", "-axo", "pgid=,rss=").Output()
+	// A slow process-table query must not block the command's wait or
+	// timeout channels. A failed sample is retried on the next RSS tick.
+	ctx, cancel := context.WithTimeout(context.Background(), processRSSQueryTimeout)
+	defer cancel()
+	type queryResult struct {
+		output []byte
+		err    error
+	}
+	result := make(chan queryResult, 1)
+	go func() {
+		args := []string{"-axo", "pgid=,rss="}
+		if runtime.GOOS == "darwin" {
+			// Reading RSS for every process can stall on unrelated Mach tasks.
+			// BSD ps -g selects the entire process group, including descendants.
+			args = []string{"-g", strconv.Itoa(processGroupID), "-o", "pgid=,rss="}
+		}
+		output, err := exec.CommandContext(ctx, "ps", args...).Output()
+		result <- queryResult{output, err}
+	}()
+	var output []byte
+	var err error
+	select {
+	case query := <-result:
+		output, err = query.output, query.err
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
+	if ctx.Err() != nil {
+		return 0, ctx.Err()
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -56,6 +104,59 @@ func processGroupRSS(processGroupID int) (uint64, error) {
 		return 0, err
 	}
 	return totalKiB << 10, nil
+}
+
+func TestProcessGroupRSSQueryIsBounded(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "ps"), []byte("#!/bin/sh\nexec /bin/sleep 2\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	previous := processRSSQueryTimeout
+	processRSSQueryTimeout = 20 * time.Millisecond
+	t.Cleanup(func() { processRSSQueryTimeout = previous })
+	start := time.Now()
+	if _, err := processGroupRSS(os.Getpid()); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("slow RSS query error = %v, want deadline exceeded", err)
+	}
+	if elapsed := time.Since(start); elapsed >= time.Second {
+		t.Fatalf("slow RSS query took %s, want bounded return", elapsed)
+	}
+}
+
+func TestRunProgramDeadlineAfterSlowRSSQuery(t *testing.T) {
+	disableSystemMemoryLimits(t)
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "ps"), []byte("#!/bin/sh\nexec /bin/sleep 6\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	previousTimeout, previousPoll := processRSSQueryTimeout, *flagRSSPoll
+	processRSSQueryTimeout, *flagRSSPoll = 5*time.Second, 5*time.Millisecond
+	t.Cleanup(func() { processRSSQueryTimeout, *flagRSSPoll = previousTimeout, previousPoll })
+	// Both children exit while sampling is still running. Their actual wait
+	// completion time decides the deadline, rather than select's random pick.
+	// Leave seconds of scheduling headroom for the before-deadline child:
+	// a 150ms deadline can expire under concurrent CI coverage workloads.
+	for _, tc := range []struct {
+		name, sleep string
+		wantTimeout bool
+	}{
+		{"before-deadline", "0.05", false},
+		{"after-deadline", "4", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, exitCode, _, err := runProgram(t.TempDir(), "/bin/sh", os.Environ(),
+				3*time.Second, "-c", "sleep "+tc.sleep)
+			if tc.wantTimeout {
+				if err == nil || !strings.Contains(err.Error(), "timed out after") {
+					t.Fatalf("late child error = %v, want timeout", err)
+				}
+			} else if err != nil || exitCode != 0 {
+				t.Fatalf("completed child was reported as timed out: exit=%d, err=%v", exitCode, err)
+			}
+		})
+	}
 }
 
 func TestRunProgramWaitDelayCleansDescendant(t *testing.T) {

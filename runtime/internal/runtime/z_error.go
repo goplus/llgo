@@ -230,3 +230,13 @@ func printanycustomtype(i any) {
 		print("(", typestring, ") ", e.data)
 	}
 }
+
+// PanicSIMDImmediate reports an invalid SIMD lane immediate.
+func PanicSIMDImmediate() {
+	panic(errorString("out-of-range immediate for simd intrinsic"))
+}
+
+// PanicSIMDUnimplemented identifies an intrinsic without an LLGo implementation.
+func PanicSIMDUnimplemented(name string) {
+	panic(errorString("unimplemented SIMD intrinsic: " + name))
+}

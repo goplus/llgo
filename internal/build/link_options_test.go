@@ -17,6 +17,7 @@
 package build
 
 import (
+	"bytes"
 	"debug/elf"
 	"os"
 	"os/exec"
@@ -27,6 +28,9 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/firmware"
+	"github.com/xgo-dev/llgo/internal/lto"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 	"github.com/xgo-dev/llgo/xtool/env/llvm"
 )
 
@@ -53,7 +57,9 @@ func TestDebugInfoLinkerArgs(t *testing.T) {
 		{name: "windows explicit PDB via Xlinker", conf: Config{Goos: "windows", BuildMode: BuildModeExe, LinkOptions: LinkOptions{DWARF: DWARFPreserve, ExternalLinkerFlags: "-Xlinker /debug:full"}}, target: windowsDebugInfo()},
 		{name: "windows w overrides external PDB", conf: Config{Goos: "windows", BuildMode: BuildModeExe, LinkOptions: LinkOptions{DWARF: DWARFOmit, ExternalLinkerFlags: "/debug:full"}}, target: windowsDebugInfo(), want: []string{"-Wl,/debug:none"}},
 		{name: "windows c-archive", conf: Config{BuildMode: BuildModeCArchive, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, target: windowsDebugInfo()},
-		{name: "target linker already suppresses DWARF", conf: Config{Target: "rp2040", LinkOptions: LinkOptions{DWARF: DWARFOmit}}, target: alwaysOmitDebugInfo()},
+		{name: "fixed target w", conf: Config{Target: "rp2040", BuildMode: BuildModeExe, LinkOptions: LinkOptions{DWARF: DWARFOmit}}, target: targetDebugInfo(), want: []string{"-S"}},
+		{name: "fixed target w false", conf: Config{Target: "rp2040", BuildMode: BuildModeExe, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, target: targetDebugInfo()},
+		{name: "target without DWARF support", conf: Config{Target: "rp2040", LinkOptions: LinkOptions{DWARF: DWARFOmit}}, target: unavailableDebugInfo()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,7 +85,7 @@ func TestDebugInfoCompilerArgs(t *testing.T) {
 		{name: "MinGW PDB flag", conf: Config{Goos: "windows", Mode: ModeBuild, LinkOptions: LinkOptions{DWARF: DWARFPreserve, ExternalLinkerFlags: "-Xlinker /debug:full"}}, target: windowsGNUToolchainDebugInfo(), want: []string{"-gdwarf-4"}},
 		{name: "generation default", conf: Config{Mode: ModeGen}},
 		{name: "generation explicit preserve", conf: Config{Mode: ModeGen, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, want: []string{"-gdwarf-4"}},
-		{name: "target always omits", conf: Config{Mode: ModeBuild, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, target: alwaysOmitDebugInfo()},
+		{name: "target always omits", conf: Config{Mode: ModeBuild, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, target: unavailableDebugInfo()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,7 +170,7 @@ func TestEffectiveOmitDWARF(t *testing.T) {
 		{name: "safe default c-shared", conf: Config{BuildMode: BuildModeCShared, OmitDWARFByDefault: true}, want: true},
 		{name: "safe default c-archive", conf: Config{BuildMode: BuildModeCArchive, OmitDWARFByDefault: true}, want: true},
 		{name: "requested", conf: Config{LinkOptions: LinkOptions{DWARF: DWARFOmit}}, want: true},
-		{name: "target baseline", target: alwaysOmitDebugInfo(), want: true},
+		{name: "target baseline", target: unavailableDebugInfo(), want: true},
 		{name: "explicit preserve", conf: Config{LinkOptions: LinkOptions{DWARF: DWARFPreserve}}},
 		{name: "explicit preserve overrides safe default", conf: Config{OmitDWARFByDefault: true, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}},
 	}
@@ -193,7 +199,7 @@ func TestShouldEmitDebugInfo(t *testing.T) {
 		{name: "linked s w false", conf: Config{Mode: ModeBuild, LinkOptions: LinkOptions{OmitSymbolTable: true, DWARF: DWARFPreserve}}, want: true},
 		{name: "generation default", conf: Config{Mode: ModeGen}},
 		{name: "generation requested", conf: Config{Mode: ModeGen, LinkOptions: LinkOptions{DWARF: DWARFPreserve}}, want: true},
-		{name: "target always omits", conf: Config{Mode: ModeBuild}, target: alwaysOmitDebugInfo()},
+		{name: "target without DWARF support", conf: Config{Mode: ModeBuild}, target: unavailableDebugInfo()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -226,8 +232,10 @@ func TestValidateLinkOptions(t *testing.T) {
 		{name: "c-archive omit", conf: Config{Goos: "linux", BuildMode: BuildModeCArchive, LinkOptions: w}, target: configurableDebugInfo()},
 		{name: "c-shared preserve", conf: Config{Goos: "linux", BuildMode: BuildModeCShared, LinkOptions: wFalse}, target: configurableDebugInfo()},
 		{name: "c-archive preserve", conf: Config{Goos: "linux", BuildMode: BuildModeCArchive, LinkOptions: wFalse}, target: configurableDebugInfo()},
-		{name: "fixed target omit", conf: Config{Target: "rp2040", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: w}, target: alwaysOmitDebugInfo()},
-		{name: "fixed target explicit DWARF", conf: Config{Target: "rp2040", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: wFalse}, target: alwaysOmitDebugInfo(), wantErr: true},
+		{name: "target without DWARF support omit", conf: Config{Target: "custom", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: w}, target: unavailableDebugInfo()},
+		{name: "target without DWARF support preserve", conf: Config{Target: "custom", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: wFalse}, target: unavailableDebugInfo(), wantErr: true},
+		{name: "fixed target omit", conf: Config{Target: "rp2040", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: w}, target: targetDebugInfo(), wantErr: false},
+		{name: "fixed target preserve", conf: Config{Target: "rp2040", Goos: "linux", BuildMode: BuildModeExe, LinkOptions: wFalse}, target: targetDebugInfo()},
 		{name: "configurable WASI omit", conf: Config{Target: "wasi", Goos: "wasip1", BuildMode: BuildModeExe, LinkOptions: w}, target: configurableDebugInfo()},
 		{name: "configurable WASI preserve", conf: Config{Target: "wasi", Goos: "wasip1", BuildMode: BuildModeExe, LinkOptions: wFalse}, target: configurableDebugInfo()},
 		{name: "no omission", conf: Config{Goos: "windows", BuildMode: BuildModeExe, LinkOptions: wFalse}},
@@ -278,8 +286,74 @@ func TestDwarfLinkerArgsSuppressNativeInputDWARF(t *testing.T) {
 	}
 }
 
-func configurableDebugInfo() crosscompile.Export {
-	return crosscompile.Export{DebugInfo: crosscompile.DebugInfoPolicy{OmitLinkFlags: []string{"-Wl,-S"}}}
+func TestTargetDWARFDoesNotChangeLoadableELF(t *testing.T) {
+	// Use the embedded target's toolchain and policy. In particular, MSYS2's
+	// host ld.lld defaults to MinGW rather than the ELF driver used by LLGo's
+	// bundled ESP Clang; looking up the host linker would test another backend.
+	target, err := crosscompile.UseTarget("cortex-m-qemu", optlevel.O0, lto.Off)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(t.TempDir(), "Cortex-M fixture")
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(dir, "main.c")
+	object := filepath.Join(dir, "main.o")
+	debugELF := filepath.Join(dir, "debug.elf")
+	strippedELF := filepath.Join(dir, "stripped.elf")
+	debugBin := filepath.Join(dir, "debug.bin")
+	strippedBin := filepath.Join(dir, "stripped.bin")
+	if err := os.WriteFile(source, []byte("volatile int value = 41; void Reset_Handler(void) { value++; for (;;) {} }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	compileArgs := append([]string{}, target.CCFLAGS...)
+	compileArgs = append(compileArgs, target.CFLAGS...)
+	compileArgs = append(compileArgs, "-x", "c", "-g", "-ffreestanding", "-c", "-o", object, source)
+	if out, err := exec.Command(target.CC, compileArgs...).CombinedOutput(); err != nil {
+		t.Fatalf("compile Cortex-M DWARF fixture: %v\n%s", err, out)
+	}
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	link := func(path string, opts LinkOptions) {
+		t.Helper()
+		conf := &Config{Target: "cortex-m-qemu", BuildMode: BuildModeExe, LinkOptions: opts}
+		args := append([]string{}, target.LDFLAGS...)
+		args = append(args, debugInfoLinkerArgs(conf, &target)...)
+		args = append(args, "-o", path, object)
+		cmd := exec.Command(target.Linker, args...)
+		cmd.Dir = repoRoot
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("link Cortex-M fixture: %v\n%s", err, out)
+		}
+	}
+	link(debugELF, LinkOptions{DWARF: DWARFPreserve})
+	link(strippedELF, LinkOptions{DWARF: DWARFOmit})
+	if !elfHasDebugInfo(t, debugELF) {
+		t.Fatal("preserved Cortex-M ELF has no debug information")
+	}
+	if elfHasDebugInfo(t, strippedELF) {
+		t.Fatal("omitted Cortex-M ELF still has debug information")
+	}
+	if err := firmware.ConvertFormats("", "", map[string]string{"out": debugELF, "bin": debugBin}); err != nil {
+		t.Fatal(err)
+	}
+	if err := firmware.ConvertFormats("", "", map[string]string{"out": strippedELF, "bin": strippedBin}); err != nil {
+		t.Fatal(err)
+	}
+	debugImage, err := os.ReadFile(debugBin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	strippedImage, err := os.ReadFile(strippedBin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(debugImage) == 0 || !bytes.Equal(debugImage, strippedImage) {
+		t.Fatal("DWARF changed Cortex-M flashed bytes")
+	}
 }
 
 func windowsDebugInfo() crosscompile.Export {
@@ -295,8 +369,18 @@ func windowsGNUToolchainDebugInfo() crosscompile.Export {
 	return target
 }
 
-func alwaysOmitDebugInfo() crosscompile.Export {
-	return crosscompile.Export{DebugInfo: crosscompile.DebugInfoPolicy{AlwaysOmit: true}}
+func configurableDebugInfo() crosscompile.Export {
+	return crosscompile.Export{DebugInfo: crosscompile.DebugInfoPolicy{
+		OmitLinkFlags: []string{"-Wl,-S"},
+	}}
+}
+
+func targetDebugInfo() crosscompile.Export {
+	return crosscompile.Export{DebugInfo: crosscompile.DebugInfoPolicy{OmitLinkFlags: []string{"-S"}}}
+}
+
+func unavailableDebugInfo() crosscompile.Export {
+	return crosscompile.Export{DebugInfo: crosscompile.DebugInfoPolicy{Capability: crosscompile.DebugInfoUnavailable}}
 }
 
 func elfHasDebugInfo(t *testing.T, path string) bool {
@@ -312,4 +396,38 @@ func elfHasDebugInfo(t *testing.T, path string) bool {
 		}
 	}
 	return false
+}
+
+func TestNativeDWARFDefaults(t *testing.T) {
+	for _, tt := range []struct {
+		name, goos, goarch, target string
+		mode                       BuildMode
+		wantOmit                   bool
+	}{
+		{name: "darwin executable", goos: "darwin", goarch: "arm64"},
+		{name: "linux executable", goos: "linux", goarch: "amd64"},
+		{name: "windows executable", goos: "windows", goarch: "amd64"},
+		{name: "darwin archive", goos: "darwin", goarch: "arm64", mode: BuildModeCArchive},
+		{name: "linux shared", goos: "linux", goarch: "amd64", mode: BuildModeCShared},
+		{name: "darwin shared", goos: "darwin", goarch: "arm64", mode: BuildModeCShared, wantOmit: true},
+		{name: "browser", goos: "js", goarch: "wasm", wantOmit: true},
+		{name: "wasi", goos: "wasip1", goarch: "wasm", wantOmit: true},
+		{name: "embedded", target: "cortex-m-qemu", wantOmit: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := NewDefaultConf(ModeBuild)
+			conf.Goos, conf.Goarch, conf.Target, conf.BuildMode = tt.goos, tt.goarch, tt.target, tt.mode
+			if got := omitDWARFRequested(conf); got != tt.wantOmit {
+				t.Fatalf("omit DWARF = %v, want %v", got, tt.wantOmit)
+			}
+			conf.LinkOptions.DWARF = DWARFPreserve
+			if omitDWARFRequested(conf) {
+				t.Fatal("explicit preserve must override the default")
+			}
+			conf.LinkOptions.DWARF = DWARFOmit
+			if !omitDWARFRequested(conf) {
+				t.Fatal("explicit omit must override the default")
+			}
+		})
+	}
 }

@@ -8,6 +8,7 @@
 #elif defined(__wasi__) && defined(_REENTRANT)
 #include <errno.h>
 #include <pthread.h>
+#include <stdlib.h>
 extern unsigned char __stack_high;
 #else
 extern unsigned char __stack_high;
@@ -19,6 +20,32 @@ extern unsigned char __heap_base;
 
 #define LLGO_WASM_PAGE_SIZE 65536
 
+#if defined(__wasi__) && defined(_REENTRANT)
+// wasi-libc allocates pthread stacks and TLS from its own heap. Reserve a
+// disjoint region before tinygogc starts, rather than treating all remaining
+// linear memory as a Go heap and corrupting later libc allocations. Further
+// disjoint regions can be allocated as the Go heap grows.
+#define LLGO_WASI_GC_ARENA_SIZE (1u << 20)
+// These bounds describe only the first malloc-backed segment. Later arenas
+// have independent descriptors in tinygogc; they do not extend this region.
+static uintptr_t llgo_wasi_gc_arena_start;
+static uintptr_t llgo_wasi_gc_arena_end;
+
+static void llgo_wasi_gc_init_arena(void) {
+  if (llgo_wasi_gc_arena_start != 0)
+    return;
+  void *arena = malloc(LLGO_WASI_GC_ARENA_SIZE);
+  if (arena == NULL)
+    __builtin_trap();
+  llgo_wasi_gc_arena_start = (uintptr_t)arena;
+  llgo_wasi_gc_arena_end = (uintptr_t)arena + LLGO_WASI_GC_ARENA_SIZE;
+}
+
+uintptr_t llgo_gc_new_arena(uintptr_t size) {
+  return (uintptr_t)malloc(size);
+}
+#endif
+
 uintptr_t llgo_gc_globals_start(void) {
 	return (uintptr_t)&__global_base;
 }
@@ -28,7 +55,12 @@ uintptr_t llgo_gc_globals_end(void) {
 }
 
 uintptr_t llgo_gc_heap_base(void) {
+#if defined(__wasi__) && defined(_REENTRANT)
+  llgo_wasi_gc_init_arena();
+  return llgo_wasi_gc_arena_start;
+#else
 	return (uintptr_t)&__heap_base;
+#endif
 }
 
 uintptr_t llgo_gc_stack_top(void) {
@@ -41,14 +73,15 @@ uintptr_t llgo_gc_stack_top(void) {
 	void *base = NULL;
 	size_t size = 0;
 	int status = pthread_getattr_np(pthread_self(), &attr);
-	// wasi-libc has no pthread stack descriptor for the process main thread.
+	// Older wasi-libc may not expose the process main thread's stack.
 	if (status == ENOSYS)
 		return (uintptr_t)&__stack_high;
 	if (status != 0)
 		__builtin_trap();
 	status = pthread_attr_getstack(&attr, &base, &size);
 	pthread_attr_destroy(&attr);
-	if (status != 0 || base == NULL || size == 0 ||
+	// A stack-first module legitimately gives the main thread base address 0.
+	if (status != 0 || size == 0 ||
 	    size > UINTPTR_MAX - (uintptr_t)base)
 		__builtin_trap();
 	return (uintptr_t)base + size;
@@ -58,12 +91,20 @@ uintptr_t llgo_gc_stack_top(void) {
 }
 
 uintptr_t llgo_gc_memory_size(void) {
+#if defined(__wasi__) && defined(_REENTRANT)
+  llgo_wasi_gc_init_arena();
+  return llgo_wasi_gc_arena_end;
+#else
 	return (uintptr_t)__builtin_wasm_memory_size(0) * LLGO_WASM_PAGE_SIZE;
+#endif
 }
 
 int llgo_gc_grow_memory(uintptr_t required) {
 #if defined(__EMSCRIPTEN__)
 	return emscripten_resize_heap(required);
+#elif defined(__wasi__) && defined(_REENTRANT)
+  // WASI growth uses llgo_gc_new_arena, never in-place memory.grow.
+  return required <= llgo_gc_memory_size();
 #else
 	uintptr_t current = llgo_gc_memory_size();
 	if (required <= current) {

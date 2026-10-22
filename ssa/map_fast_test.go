@@ -123,7 +123,7 @@ func TestMapKeyFastKind32BitTarget(t *testing.T) {
 
 	pkg := prog.NewPackage("p", "example.com/p")
 	params := types.NewTuple(types.NewVar(token.NoPos, nil, "key", types.NewPointer(types.Typ[types.Int])))
-	fn := pkg.NewFunc("access", types.NewSignatureType(nil, nil, nil, params, nil, false), InGo)
+	fn := pkg.NewFunc("access", types.NewSignatureType(nil, nil, nil, params, nil, false), GoDecl)
 	b := fn.MakeBody(1)
 	arg := b.mapKeyAccessArg(Expr{}, fn.Param(0), mapFast32Ptr)
 	if arg.Type != prog.Uint32() {
@@ -194,7 +194,7 @@ func TestLargeMapLookupUsesFatAccessAndPackageZero(t *testing.T) {
 			types.NewVar(token.NoPos, nil, "m", mapType),
 			types.NewVar(token.NoPos, nil, "key", types.Typ[types.Int]),
 		)
-		fn := pkg.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, nil, false), InGo)
+		fn := pkg.NewFunc(name, types.NewSignatureType(nil, nil, nil, params, nil, false), GoDecl)
 		b := fn.MakeBody(1)
 		b.Lookup(fn.Param(0), fn.Param(1), commaOK)
 		b.Return()

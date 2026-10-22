@@ -55,11 +55,12 @@ type Export struct {
 	ClangRoot      string   // Root directory of custom clang installation
 	ClangBinPath   string   // Path to clang binary directory
 
-	LLVMTarget   string // LLVM Target
-	TargetABI    string // RISC-V Target ABI (e.g., "lp64", "lp64d")
-	BinaryFormat string // Binary format (e.g., "elf", "esp", "uf2")
-	FormatDetail string // For uf2, it's uf2FamilyID
-	Emulator     string // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
+	LLVMTarget   string   // LLVM Target
+	TargetABI    string   // RISC-V Target ABI (e.g., "lp64", "lp64d")
+	BinaryFormat string   // Binary format (e.g., "elf", "esp", "uf2")
+	FormatDetail string   // For uf2, it's uf2FamilyID
+	Emulator     string   // Emulator command template (e.g., "qemu-system-arm -M {} -kernel {}")
+	GDB          []string // GDB command candidates in preference order
 	DebugInfo    DebugInfoPolicy
 	WasmPostLink WasmPostLink
 	WasmRuntime  WasmRuntime
@@ -96,6 +97,14 @@ type NativeToolchain struct {
 type WasmProfile string
 
 const (
+	// WASIThreadedEmulator runs shared-memory modules with standard Wasm EH
+	// and SIMD. Wasmer chooses an available backend; the pinned Windows CLI
+	// uses V8 and supported Unix builds prefer Cranelift for these modules.
+	// wasi-libc manages its own heap inside the module memory.
+	// The runner resolves the working-directory preopen to an absolute path
+	// before execution and also grants Go's default /tmp directory.
+	WASIThreadedEmulator = `wasmer run --enable-exceptions --enable-simd --stack-size=1048576 --volume=. --volume=/tmp "{}"`
+
 	WasmProfileNone WasmProfile = ""
 	WasmProfileJ32  WasmProfile = "j32"
 	WasmProfileJ64  WasmProfile = "j64"
@@ -111,13 +120,16 @@ const (
 	emscriptenAllowTableGrowth   = "-sALLOW_TABLE_GROWTH=1"
 	// libffi calls the target through the JS import ffi_call_js. If that
 	// import is not listed, Asyncify cannot unwind a sleeping Go function
-	// invoked by reflect.Value.Call / MakeFunc.
+	// invoked through libffi. Go reflection uses static typed entries by default.
 	emscriptenAsyncifyImports = "-sASYNCIFY_IMPORTS=llgo_wasm_host_wait_async,ffi_call_js"
-	// libffi's JavaScript closure trampoline recreates its temporary return and
-	// argument buffers during rewind. Keep the three thin entry functions out
-	// of Asyncify so each replay observes the current trampoline buffers; their
-	// separately instrumented callees retain the suspended Go invocation.
-	emscriptenAsyncifyRemove = `-sASYNCIFY_REMOVE=["*llgo_reflect_bind0_js*","*llgo_reflect_bind1_js*","*llgo_reflect_bindn_js*"]`
+	// Caller-location updates also cannot suspend: allocations only enqueue
+	// finalizers, and runtime code has no automatic scheduling safepoints.
+	// Excluding them avoids an Asyncify branch at every recorded call site,
+	// which can exhaust V8's optimizer zone on large generated functions.
+	// TinyGC allocation also stays on its caller: allocator waits only
+	// acknowledge STW and finalizers are queued for a separate G. Keep their
+	// callback runner instrumented, since user finalizers may suspend.
+	emscriptenAsyncifyRemove = `-sASYNCIFY_REMOVE=["*PushCallerLocationFrameWasm*","*RecordCallerLocationWasm*","*RecordPanicLocationWasm*","*tinygogc*Alloc*"]`
 	wasm32LibffiRelDir       = "runtime/internal/clite/ffi/wasm32"
 	wasm64LibffiRelDir       = "runtime/internal/clite/ffi/wasm64"
 )
@@ -216,13 +228,26 @@ type WasmPostLink struct {
 	Asyncify bool
 }
 
+// DebugInfoCapability describes whether the selected linker and its linked
+// output format can retain DWARF. Deployment formats such as bin, hex, and uf2
+// are derived later and do not affect this capability.
+type DebugInfoCapability uint8
+
+const (
+	DebugInfoRetainable DebugInfoCapability = iota
+	DebugInfoUnavailable
+)
+
 // DebugInfoPolicy describes how a selected linker handles debug information.
 // Build orchestration consumes this typed capability instead of inferring it
 // from a target name or linker executable.
 type DebugInfoPolicy struct {
-	AlwaysOmit        bool
+	Capability        DebugInfoCapability
 	OmitLinkFlags     []string
 	PreserveLinkFlags []string
+	// PreserveDriverFlags applies only to compiler-driver invocation paths.
+	// Direct embedded linkers retain DWARF without these compiler options.
+	PreserveDriverFlags []string
 }
 
 func nativeToolchain(goos string) NativeToolchain {
@@ -253,18 +278,50 @@ func nativeToolchain(goos string) NativeToolchain {
 	}
 }
 
+// driverDebugInfoPolicy describes invocation through a compiler driver, including
+// hosted Wasm builds whose driver ultimately invokes wasm-ld. Direct linker
+// invocation instead uses targetDebugInfoPolicy and must not receive driver flags.
+func driverDebugInfoPolicy() DebugInfoPolicy {
+	return DebugInfoPolicy{
+		OmitLinkFlags:       []string{"-Wl,-S"},
+		PreserveDriverFlags: []string{"-gdwarf-4"},
+	}
+}
+
 func nativeDebugInfoPolicy(toolchain NativeToolchain) DebugInfoPolicy {
+	policy := driverDebugInfoPolicy()
 	switch toolchain.Linker {
 	case LinkerFlavorMachO, LinkerFlavorELFLLD, LinkerFlavorMinGWLLD:
-		return DebugInfoPolicy{OmitLinkFlags: []string{"-Wl,-S"}}
 	case LinkerFlavorCOFFLLD:
-		return DebugInfoPolicy{
-			OmitLinkFlags:     []string{"-Wl,/debug:none"},
-			PreserveLinkFlags: []string{"-Wl,/debug:dwarf"},
-		}
+		policy.OmitLinkFlags = []string{"-Wl,/debug:none"}
+		policy.PreserveLinkFlags = []string{"-Wl,/debug:dwarf"}
 	default:
-		return DebugInfoPolicy{}
+		policy.OmitLinkFlags = nil
 	}
+	return policy
+}
+
+func (p DebugInfoPolicy) CanRetain() bool {
+	return p.Capability == DebugInfoRetainable
+}
+
+// targetDebugInfoPolicy covers direct linker invocations from UseTarget. Normal
+// hosted Wasm/WASI builds route through useWithGOARMAndToolchain and the driver
+// policy; the wasm-ld case also supports direct target-policy callers.
+func targetDebugInfoPolicy(linker, llvmTarget string) DebugInfoPolicy {
+	switch linker {
+	case "ld.lld":
+		if !strings.HasPrefix(llvmTarget, "wasm") {
+			return DebugInfoPolicy{OmitLinkFlags: []string{"-S"}}
+		}
+	case "wasm-ld":
+		if strings.HasPrefix(llvmTarget, "wasm") {
+			return DebugInfoPolicy{OmitLinkFlags: []string{"-S"}}
+		}
+	}
+	// Unknown or mismatched linker/target pairs intentionally omit DWARF until
+	// retention has been validated for that direct-linker path.
+	return DebugInfoPolicy{Capability: DebugInfoUnavailable}
 }
 
 // URLs and configuration that can be overridden for testing
@@ -539,15 +596,15 @@ func nativeSectionFlags(toolchain NativeToolchain) (ccflags, ldflags []string) {
 	}
 }
 
-func use(goos, goarch string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (Export, error) {
-	return useWithGOARM(goos, goarch, "", wasiThreads, forceEspClang, level, ltoMode, goGlobalDCE)
+func use(goos, goarch string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (Export, error) {
+	return useWithGOARM(goos, goarch, "", forceEspClang, level, ltoMode, goGlobalDCE)
 }
 
-func useWithGOARM(goos, goarch, goarm string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
-	return useWithGOARMAndToolchain(goos, goarch, goarm, wasiThreads, forceEspClang, level, ltoMode, goGlobalDCE, NativeToolchainInput{}, WasmProfileNone, WasmProviderNone)
+func useWithGOARM(goos, goarch, goarm string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
+	return useWithGOARMAndToolchain(goos, goarch, goarm, forceEspClang, level, ltoMode, goGlobalDCE, NativeToolchainInput{}, WasmProfileNone, WasmProviderNone)
 }
 
-func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool, nativeInput NativeToolchainInput, wasmProfile WasmProfile, wasmProvider WasmProvider) (export Export, err error) {
+func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool, nativeInput NativeToolchainInput, wasmProfile WasmProfile, wasmProvider WasmProvider) (export Export, err error) {
 	if !validWasmSelection(wasmProfile, wasmProvider) {
 		return export, fmt.Errorf("unsupported WebAssembly profile/provider %q/%q", wasmProfile, wasmProvider)
 	}
@@ -683,7 +740,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 	if wasmProvider == WasmProviderWASI {
 		export.BuildTags = appendUniqueStrings(export.BuildTags, "llgo.wasm.wasi")
 	}
-	export.DebugInfo.OmitLinkFlags = []string{"-Wl,-S"}
+	export.DebugInfo = driverDebugInfoPolicy()
 
 	// Configure based on GOOS
 	switch goos {
@@ -699,10 +756,10 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 			}
 		}
 		// WASI-SDK configuration
-		triple := "wasm32-wasip1"
-		if wasiThreads {
-			triple = "wasm32-wasip1-threads"
-		}
+		// Clang selects crt1 from the target triple, independently of -L.
+		// The threads crt1 initializes the main pthread TLS before Go runs.
+		triple := "wasm32-wasip1-threads"
+		clangTriple := triple
 
 		// Set up flags for the WASI-SDK or wasi-libc
 		sysrootDir := filepath.Join(wasiSdkRoot, "share", "wasi-sysroot")
@@ -714,14 +771,15 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 		// Add compiler flags
 		export.CCFLAGS = []string{
 			level.Flag(),
-			"-target", targetTriple,
+			"-target", clangTriple,
 			"--sysroot=" + sysrootDir,
 			"-resource-dir=" + libclangDir,
 			"-matomics",
 			"-mbulk-memory",
 		}
-		if wasiThreads {
-			export.CCFLAGS = append(export.CCFLAGS, "-pthread")
+		export.CCFLAGS = append(export.CCFLAGS, "-pthread")
+		if ltoMode.Enabled() {
+			export.CCFLAGS = append(export.CCFLAGS, ltoMode.ClangFlag())
 		}
 		export.CFLAGS = []string{
 			"-I" + includeDir,
@@ -732,12 +790,24 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 		export.LDFLAGS = append(export.LDFLAGS, export.CCFLAGS...)
 		export.LDFLAGS = append(export.LDFLAGS, "-fwasm-exceptions")
 		if ltoMode.Enabled() {
+			if optFlag := ltoLinkerOptFlag(level); optFlag != "" {
+				export.LDFLAGS = append(export.LDFLAGS, "-Wl,"+optFlag)
+			}
+			// Clang does not forward -fwasm-exceptions to the LTO backend.
+			// Without an explicit exception model, codegen drops SjLj catch pads.
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,--mllvm=-exception-model=wasm")
+			// Supply atomics, bulk-memory and exception-handling defaults to both
+			// Thin and Full LTO. These defaults do not merge into an existing
+			// per-function target-features attribute.
+			export.LDFLAGS = append(export.LDFLAGS, "-Xlinker", "--mllvm=-mattr=+atomics,+bulk-memory,+exception-handling")
 			export.LDFLAGS = append(export.LDFLAGS, "-Wl,--mllvm=-wasm-enable-sjlj")
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,--mllvm=-wasm-use-legacy-eh=false")
 		}
 		export.CCFLAGS = append(
 			export.CCFLAGS,
 			"-fwasm-exceptions",
 			"-mllvm", "-wasm-enable-sjlj",
+			"-mllvm", "-wasm-use-legacy-eh=false",
 		)
 		export.LDFLAGS = append(export.LDFLAGS, []string{
 			"-Wno-override-module",
@@ -745,11 +815,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 			"-L" + libDir,
 			"-Wl,--allow-undefined",
 			"-Wl,--export-memory",
-			// Some LLVM 19 wasm-ld distributions place static data before the
-			// process stack by default. The single-worker runtime and Binaryen
-			// Asyncify switch __stack_pointer; that host-dependent layout traps
-			// with an out-of-bounds access under WAMR on Linux. Put the process
-			// stack first so the post-link layout is stable on every host.
+			// Keep process-stack placement stable across host linker versions.
 			"-Wl,--stack-first",
 			"-mbulk-memory",
 			"-mmultimemory",
@@ -766,19 +832,15 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 			"-lwasi-emulated-process-clocks",
 			"-lwasi-emulated-signal",
 		}...)
-		// Add thread support if enabled
-		if wasiThreads {
-			export.BuildTags = append(export.BuildTags, "llgo.wasi_threads")
-			export.LDFLAGS = append(
-				export.LDFLAGS,
-				"-Wl,--initial-memory=67108864", // Preserve the shared-memory backend's host contract.
-				"-Wl,--import-memory",
-				"-lwasi-emulated-pthread",
-				"-lpthread",
-			)
-		} else {
-			export.WasmPostLink.Asyncify = true
-		}
+		export.BuildTags = append(export.BuildTags, "llgo.wasi_threads")
+		export.LDFLAGS = append(
+			export.LDFLAGS,
+			// Leave room for 256 default 1 MiB pthread stacks, the process
+			// stack, libc metadata, and independently owned GC arenas.
+			"-Wl,--max-memory=536870912",
+			"-Wl,--import-memory",
+			"-lpthread",
+		)
 
 	case "js":
 		// Emscripten configuration using system installation
@@ -794,7 +856,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 		export.CFLAGS = []string{}
 		// Add WebAssembly linker flags for Emscripten
 		export.LDFLAGS = []string{
-			emscriptenLinkLevel(level).Flag(),
+			level.Flag(),
 			"-target", targetTriple,
 			"-Wno-override-module",
 			"-Wl,--error-limit=0",
@@ -831,12 +893,35 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, wasiThreads, forceEspC
 			// before an overflow can overwrite another goroutine's memory.
 			"-sSTACK_OVERFLOW_CHECK=2",
 		}...)
+		if ltoMode.Enabled() {
+			export.CCFLAGS = append(export.CCFLAGS, ltoMode.ClangFlag())
+			export.LDFLAGS = append(export.LDFLAGS, ltoMode.ClangFlag())
+			// emcc's -O controls its compile and post-link pipelines, but can
+			// leave wasm-ld's LTO optimizer at its default O2 (e.g. SDK 6.0.8).
+			// Set the LTO level explicitly, as for the WASI linker above.
+			if optFlag := ltoLinkerOptFlag(level); optFlag != "" {
+				export.LDFLAGS = append(export.LDFLAGS, "-Wl,"+optFlag)
+			}
+		}
 		appendEmscriptenLibffiSearchPath(&export, llgoRoot, wasmProfile)
 	default:
 		err = errors.New("unsupported GOOS for WebAssembly: " + goos)
 		return
 	}
 	return
+}
+
+// EnableWasmReflectLibffi keeps the JS closure replay entries outside Asyncify.
+// The separately instrumented Go invocation resumes with the current buffers.
+func EnableWasmReflectLibffi(export *Export) error {
+	for i, flag := range export.LDFLAGS {
+		if flag == emscriptenAsyncifyRemove {
+			export.LDFLAGS[i] = strings.TrimSuffix(flag, "]") +
+				`,"llgo_reflect_bind0_js","llgo_reflect_bind1_js","llgo_reflect_bindn_js"]`
+			return nil
+		}
+	}
+	return errors.New("JavaScript libffi reflection requires Emscripten Asyncify")
 }
 
 func appendEmscriptenLibffiSearchPath(export *Export, llgoRoot string, wasmProfile WasmProfile) {
@@ -850,20 +935,6 @@ func appendEmscriptenLibffiSearchPath(export *Export, llgoRoot string, wasmProfi
 		dir = wasm64LibffiRelDir
 	}
 	export.LDFLAGS = append(export.LDFLAGS, "-L"+filepath.Join(llgoRoot, dir))
-}
-
-func emscriptenLinkLevel(level optlevel.Level) optlevel.Level {
-	// Emscripten 6.0.8 runs JS/wasm MetaDCE at -O3, -Os, and -Oz. That pass
-	// removes the Asyncify control exports from LLGo's already-linked module
-	// while leaving generated JS references to them, so the executable fails
-	// before main. Keep the requested level for every source/object compile and
-	// use the highest link level that does not enable the broken MetaDCE pass.
-	switch level {
-	case optlevel.O3, optlevel.Os, optlevel.Oz:
-		return optlevel.O2
-	default:
-		return level
-	}
 }
 
 func appendUniqueStrings(dst []string, values ...string) []string {
@@ -884,6 +955,12 @@ func usesNativePlatformToolchain(hostGOOS, hostGOARCH, targetGOOS, targetGOARCH 
 
 // UseTarget loads configuration from a target name (e.g., "rp2040", "wasi")
 func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (export Export, err error) {
+	return useTarget(targetName, level, ltoMode, compileWithConfig)
+}
+
+func useTarget(targetName string, level optlevel.Level, ltoMode lto.Mode,
+	buildLibrary func(compile.CompileConfig, string, compile.CompileOptions) ([]string, error),
+) (export Export, err error) {
 	resolver := targets.NewDefaultResolver()
 
 	config, err := resolver.Resolve(targetName)
@@ -927,7 +1004,8 @@ func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (expor
 	export.TargetABI = config.TargetABI
 	export.BinaryFormat = config.BinaryFormat
 	export.FormatDetail = config.FormatDetail()
-	export.DebugInfo.AlwaysOmit = true
+	export.GDB = append([]string(nil), config.GDB...)
+	export.DebugInfo = targetDebugInfoPolicy(config.Linker, config.LLVMTarget)
 
 	// Set flashing/debugging configuration
 	export.Device = flash.Device{
@@ -957,7 +1035,7 @@ func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (expor
 
 	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
 	// ICF off for Go pc-identity semantics (see the non-cross flags above).
-	ldflags := []string{"-S", "--icf=none"}
+	ldflags := []string{"--icf=none"}
 	ccflags := []string{level.Flag()}
 	cflags := []string{"-Wno-override-module", "-Qunused-arguments", "-Wno-unused-command-line-argument"}
 	clangTarget := config.LLVMTarget
@@ -1107,7 +1185,7 @@ func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (expor
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		libcLDFlags, err = buildLibrary(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,
@@ -1133,7 +1211,7 @@ func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (expor
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+		rtLibLDFlags, err = buildLibrary(compileConfig, outputDir, compile.CompileOptions{
 			CC:      export.CC,
 			Linker:  export.Linker,
 			CCFLAGS: ccflags,
@@ -1157,23 +1235,23 @@ func UseTarget(targetName string, level optlevel.Level, ltoMode lto.Mode) (expor
 
 // Use extends the original Use function to support target-based configuration
 // If targetName is provided, it takes precedence over goos/goarch
-func Use(goos, goarch, targetName string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
-	return UseWithGOARM(goos, goarch, "", targetName, wasiThreads, forceEspClang, level, ltoMode, goGlobalDCE)
+func Use(goos, goarch, targetName string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
+	return UseWithGOARM(goos, goarch, "", targetName, forceEspClang, level, ltoMode, goGlobalDCE)
 }
 
 // UseWithGOARM is Use with an explicit Go ARM architecture setting. The
 // setting affects native GOARCH=arm clang and linker triples; named targets
 // retain their target configuration's LLVM triple.
-func UseWithGOARM(goos, goarch, goarm, targetName string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
-	return UseWithGOARMAndToolchain(goos, goarch, goarm, targetName, wasiThreads, forceEspClang, level, ltoMode, goGlobalDCE, NativeToolchainInput{})
+func UseWithGOARM(goos, goarch, goarm, targetName string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool) (export Export, err error) {
+	return UseWithGOARMAndToolchain(goos, goarch, goarm, targetName, forceEspClang, level, ltoMode, goGlobalDCE, NativeToolchainInput{})
 }
 
 // UseWithGOARMAndToolchain is UseWithGOARM with explicit Go-compatible native
 // compiler commands. Named -target configurations intentionally ignore these
 // host commands and preserve their existing toolchain selection.
-func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, wasiThreads, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool, nativeInput NativeToolchainInput) (export Export, err error) {
+func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, forceEspClang bool, level optlevel.Level, ltoMode lto.Mode, goGlobalDCE bool, nativeInput NativeToolchainInput) (export Export, err error) {
 	if targetName == "" {
-		return useWithGOARMAndToolchain(goos, goarch, goarm, wasiThreads, forceEspClang, level, ltoMode, goGlobalDCE, nativeInput, WasmProfileNone, WasmProviderNone)
+		return useWithGOARMAndToolchain(goos, goarch, goarm, forceEspClang, level, ltoMode, goGlobalDCE, nativeInput, WasmProfileNone, WasmProviderNone)
 	}
 
 	// Resolve every named target before selecting its toolchain. Inherited wasm
@@ -1192,7 +1270,7 @@ func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, wasiThread
 	if !validWasmSelection(wasmProfile, wasmProvider) {
 		return export, fmt.Errorf("target %q has unsupported WebAssembly profile/provider %q/%q", targetName, config.WasmProfile, config.WasmProvider)
 	}
-	export, err = useWithGOARMAndToolchain(config.GOOS, config.GOARCH, "", wasiThreads, false, level, ltoMode, goGlobalDCE, nativeInput, wasmProfile, wasmProvider)
+	export, err = useWithGOARMAndToolchain(config.GOOS, config.GOARCH, "", false, level, ltoMode, goGlobalDCE, nativeInput, wasmProfile, wasmProvider)
 	if err != nil {
 		return export, err
 	}
@@ -1205,6 +1283,9 @@ func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, wasiThread
 	export.GOOS = config.GOOS
 	export.GOARCH = config.GOARCH
 	export.Emulator = env.ExpandEnvWithDefault(config.Emulator, buildEnvMap(env.LLGoROOT()), "{}")
+	if wasmProvider == WasmProviderWASI && (targetName == "wasi" || targetName == "wasip1") {
+		export.Emulator = WASIThreadedEmulator
+	}
 	export.BuildTags = appendUniqueStrings(export.BuildTags, config.BuildTags...)
 	if wasmProvider == WasmProviderEmscripten {
 		// The existing raw js/wasm path remains browser/worker-only. Named

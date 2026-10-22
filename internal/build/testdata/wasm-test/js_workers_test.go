@@ -30,17 +30,17 @@ type workerFinalizerBarrier struct {
 	padding [128]uintptr
 }
 
-func TestWorkerJSRealmInheritance(t *testing.T) {
+func TestWorkerSharedJSValues(t *testing.T) {
 	object := js.ValueOf(map[string]any{"value": 42})
 	owner := schedulerProcID()
 	result := make(chan workerCallbackResult, 1)
 	go func() {
-		// The intermediate G has not used syscall/js itself. Its child still
-		// needs the original realm when the handle is passed through a closure.
+		// Neither descendant needs to stay on the originating Go worker to
+		// use a JavaScript value passed through the closure.
 		go func() {
 			worker := schedulerProcID()
-			if worker != owner || object.Get("value").Int() != 42 {
-				result <- workerCallbackResult{origin: owner, callback: worker, err: fmt.Errorf("JavaScript value moved from worker %d to %d", owner, worker)}
+			if value := object.Get("value").Int(); value != 42 {
+				result <- workerCallbackResult{origin: owner, callback: worker, err: fmt.Errorf("JavaScript value = %d on worker %d, want 42", value, worker)}
 				return
 			}
 			result <- workerCallbackResult{origin: owner, callback: worker}
@@ -89,11 +89,11 @@ func TestWorkerEmvalFinalizersStayInRealm(t *testing.T) {
 		owners[result.origin] = true
 	}
 	if len(owners) < 2 {
-		t.Fatalf("JavaScript values were created on %d worker, want at least 2", len(owners))
+		t.Fatalf("JavaScript values were used on %d worker, want at least 2", len(owners))
 	}
 
-	finalizersDone := make(chan struct{})
-	installWorkerFinalizerBarrier(finalizersDone)
+	finalizersDone := make(chan struct{}, 3)
+	installRetiredWorkerFinalizerBarrier(t, finalizersDone)
 	for range 24 {
 		clobberWorkerStack(16, 1)
 		runtime.GC()
@@ -135,10 +135,57 @@ finalizersComplete:
 	}
 }
 
+func TestRetiredWorkerFiberReleasesFinalizer(t *testing.T) {
+	finalized := make(chan struct{}, 3)
+	installRetiredWorkerFinalizerBarrier(t, finalized)
+
+	// The G has exited, but a conservative reference in its retired fiber
+	// storage must not keep the finalizable object alive indefinitely.
+	for range 24 {
+		clobberWorkerStack(16, 1)
+		runtime.GC()
+		select {
+		case <-finalized:
+			return
+		default:
+			time.Sleep(time.Millisecond)
+		}
+	}
+	t.Fatal("finalizers stayed reachable after their worker fibers exited")
+}
+
+// Allocate the marker in a fiber that will retire before collection. A marker
+// installed on the collecting fiber may stay visible in its conservative stack
+// scan even after the factory returns; stack clobbering is optimizer dependent.
+func installRetiredWorkerFinalizerBarrier(t *testing.T, finalized chan struct{}) {
+	t.Helper()
+	retired := make(chan struct{})
+	go func() {
+		// Bind this parent and its child to one realm. Once the parent resumes,
+		// that worker has returned from and retired the child's fiber. Two
+		// independent spawns cannot guarantee this: finalizer goroutines may
+		// advance the scheduler's round-robin cursor between them.
+		js.Global()
+		installed := make(chan struct{})
+		go func() {
+			// Any one marker may be retained by an unrelated conservative
+			// root. Install independent markers together and require progress
+			// within the same collection budget, rather than retrying the test.
+			for range 3 {
+				installWorkerFinalizerBarrier(finalized)
+			}
+			close(installed)
+		}()
+		<-installed
+		close(retired)
+	}()
+	<-retired
+}
+
 //go:noinline
 func installWorkerFinalizerBarrier(done chan<- struct{}) {
 	barrier := &workerFinalizerBarrier{}
-	runtime.SetFinalizer(barrier, func(*workerFinalizerBarrier) { close(done) })
+	runtime.SetFinalizer(barrier, func(*workerFinalizerBarrier) { done <- struct{}{} })
 }
 
 //go:noinline
@@ -296,8 +343,8 @@ func TestWorkerHostCallbackRealms(t *testing.T) {
 			if result.err != nil {
 				t.Fatal(result.err)
 			}
-			if result.callback != result.origin {
-				t.Fatalf("callback worker = %d, want origin worker %d", result.callback, result.origin)
+			if result.callback != 0 {
+				t.Fatalf("callback worker = %d, want shared JS worker 0 (caller %d)", result.callback, result.origin)
 			}
 			workers[result.origin] = true
 		case <-timeout:

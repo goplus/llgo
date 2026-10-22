@@ -124,7 +124,7 @@ func UseSkip() {
 	print(a, b)
 }
 
-//llgo:type C
+//llgo:cdecl
 type cAdd func(int, int) int
 
 func addForAddress(a, b int) int {

@@ -69,8 +69,12 @@ type Options struct {
 	AllowInternalDirectives bool
 	// CExportWrappers keeps //export implementations under their Go symbols;
 	// the final-link module supplies the public C entry points.
+	// It does not apply to package C, which defines its exports directly.
 	CExportWrappers bool
 	ShadowStack     bool
+	// DebuggerFrames retains logical stacks for every eligible function in
+	// opt-in Wasm debugger builds, including parked goroutines.
+	DebuggerFrames bool
 	// PreloadedSyntax means all Program-side source metadata was collected
 	// before lowering and is now shared read-only by backend Programs.
 	PreloadedSyntax bool
@@ -153,6 +157,12 @@ type pkgInfo struct {
 
 type none = struct{}
 
+type debugStableParam struct {
+	home  llssa.Expr
+	value ssa.Value
+	block *ssa.BasicBlock
+}
+
 type context struct {
 	prog                 llssa.Program
 	pkg                  llssa.Package
@@ -170,12 +180,15 @@ type context struct {
 	recvNilDerefChecks   map[*ssa.UnOp]token.Pos
 	vargs                map[*ssa.Alloc][]llssa.Expr // varargs
 	funcs                map[*ssa.Function]llssa.Function
+	variadicErrors       map[*ssa.Function]error
 	linkOnceFns          map[*ssa.Function]none
 	stackDefers          map[*ssa.Function]bool
 	anonDefers           map[*ssa.Function]bool
 	recoverFacts         *recoverFacts
 	debugDIVars          map[*types.Var]llssa.DIVar
 	debugAllocVars       map[*ssa.Alloc]*types.Var
+	debugAllocObjects    map[*types.Var]bool
+	debugStableParams    map[*types.Var]debugStableParam
 	runtimeCallerFuncs   map[*ssa.Function]bool
 	panicSiteFuncs       map[*ssa.Function]bool
 	gcRoots              map[ssa.Value][]llssa.Expr
@@ -183,6 +196,7 @@ type context struct {
 	safepointEntry       bool
 	safepoints           map[ssa.Instruction]struct{}
 	pcLineSeq            uint64
+	pcLineIDs            map[pcLinePosition]uint64
 	panicSitePos         token.Pos
 	// The runtime PC-line table stores file and line, but not column. Keep the
 	// last emitted position within one SSA basic block so repeated checks for a
@@ -408,7 +422,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		return
 	}
 	dbgInstrln("==> NewVar", name, typ)
-	g, skip := p.localityGlobalStorage(pkg, gbl, name, typ, llssa.Background(vtype))
+	g, skip := p.localityGlobalStorage(pkg, gbl, name, typ, llssa.CallConv(vtype))
 	if skip {
 		return
 	}
@@ -478,13 +492,13 @@ func (p *context) canElideZeroSizedClosureEnv(f *ssa.Function) bool {
 
 func (p *context) isElidableZeroSizedFreeVar(freeVar *ssa.FreeVar) bool {
 	ptr, ok := types.Unalias(p.patchType(freeVar.Type())).Underlying().(*types.Pointer)
-	return ok && p.prog.SizeOf(p.type_(ptr.Elem(), llssa.InGo)) == 0
+	return ok && p.prog.SizeOf(p.type_(ptr.Elem(), llssa.GoDecl)) == 0
 }
 
 func (p *context) elidedZeroSizedFreeVar(b llssa.Builder, freeVar *ssa.FreeVar) llssa.Expr {
-	typ := p.type_(freeVar.Type(), llssa.InGo)
+	typ := p.type_(freeVar.Type(), llssa.GoDecl)
 	ptr := types.Unalias(p.patchType(freeVar.Type())).Underlying().(*types.Pointer)
-	addr := b.Alloc(p.type_(ptr.Elem(), llssa.InGo), true)
+	addr := b.Alloc(p.type_(ptr.Elem(), llssa.GoDecl), true)
 	return b.Convert(typ, addr)
 }
 
@@ -583,6 +597,16 @@ func hasInstantiatedRecv(recv *types.Var) bool {
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
+	simd, simdDecl := lookupSIMD(f, p.prog.Target().GOARCH)
+	simdDecl = simdDecl && f.Pkg == p.goPkg
+	if simdDecl {
+		// Intrinsics also need real symbols for indirect calls and linker aliases.
+		// Ordinary direct calls still use the same table to inline their lowering.
+		obj := f.Object().(*types.Func)
+		pkgTypes = obj.Pkg()
+		name = llssa.FuncName(pkgTypes, obj.Name(), f.Signature.Recv(), false)
+		ftype = goFunc
+	}
 	if ftype != goFunc {
 		return nil, nil, ignoredFunc
 	}
@@ -635,7 +659,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if fn == nil {
-		background := llssa.Background(ftype)
+		cc := llssa.CallConv(ftype)
 		if target := p.prog.Target(); target != nil && target.GOARCH == "wasm" && target.WasmProfile != "" {
 			// Executable-mode //export functions keep their final C symbol in
 			// the defining package instead of going through the library wrapper
@@ -644,17 +668,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			// body continues to use the Go 64-bit word model.
 			for _, exportName := range p.pkg.ExportFuncs() {
 				if exportName == name {
-					background = llssa.InC
+					cc = llssa.CDecl
 					break
 				}
 			}
 		}
 		if hasCtx {
-			fn = pkg.NewEnvFunc(name, sig, background, ctx, p.needsLinkOnce(f))
+			fn = pkg.NewEnvFunc(name, sig, cc, ctx, p.needsLinkOnce(f))
 		} else {
-			fn = pkg.NewFuncEx(name, sig, background, false, p.needsLinkOnce(f))
+			fn = pkg.NewFuncEx(name, sig, cc, false, p.needsLinkOnce(f))
 		}
 	}
+	p.markSIMDFMV(fn, f)
 	if p.prog.Target().GOARCH == "wasm" {
 		if decl, ok := f.Syntax().(*ast.FuncDecl); ok {
 			fullName := declarationFuncName(llssa.PathOf(pkgTypes), decl, f.Object(), f.Signature.Recv())
@@ -673,21 +698,49 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if noInlineDirective || runtimeStackNoInline || pcLineNoInline || usesRecover {
 		fn.DisableTailCalls()
 	}
+	if !disableInline && !noInlineDirective && (runtimeStackNoInline || pcLineNoInline || usesRecover) {
+		fn.AllowSIMDDispatcherInlining()
+	}
 	p.funcs[f] = fn
 	isCgo := isCgoExternSymbol(f)
-	if nblk := len(f.Blocks); nblk > 0 {
-		if p.prog.FuncInfoMetadataEnabled() {
-			goName := fn.Name()
-			if pkgTypes != nil {
-				goName = funcName(pkgTypes, f, false)
+	if (len(f.Blocks) != 0 || simdDecl) && p.prog.FuncInfoMetadataEnabled() {
+		goName := fn.Name()
+		if pkgTypes != nil {
+			goName = funcName(pkgTypes, f, false)
+		}
+		pos := p.funcInfoPosition(f)
+		if p.prog.Target().GOOS == "windows" && isRecoverTransparentWrapper(f) {
+			pkg.EmitFuncInfoFlags(fn.Name(), funcInfoDisplayName(goName), pos.Filename, pos.Line, pos.Column, llssa.FuncInfoFlagWrapper)
+		} else {
+			pkg.EmitFuncInfo(fn.Name(), funcInfoDisplayName(goName), pos.Filename, pos.Line, pos.Column)
+		}
+	}
+	if simdDecl {
+		b := fn.MakeBody(1)
+		if simd.op == llssa.SIMDUnimplemented {
+			b.SIMD(simd.op, p.prog.Void(), b.Str(name))
+			b.Unreachable()
+		} else {
+			n := sig.Params().Len()
+			if sig.Recv() != nil {
+				n++
 			}
-			pos := p.funcInfoPosition(f)
-			if p.prog.Target().GOOS == "windows" && isRecoverTransparentWrapper(f) {
-				pkg.EmitFuncInfoFlags(fn.Name(), funcInfoDisplayName(goName), pos.Filename, pos.Line, pos.Column, llssa.FuncInfoFlagWrapper)
+			args := make([]llssa.Expr, n)
+			for i := range args {
+				args[i] = fn.Param(i)
+			}
+			result := b.SIMD(simd.op, p.simdResultType(f.Signature), args...)
+			if sig.Results().Len() == 0 {
+				b.Return()
 			} else {
-				pkg.EmitFuncInfo(fn.Name(), funcInfoDisplayName(goName), pos.Filename, pos.Line, pos.Column)
+				b.Return(result)
 			}
 		}
+		b.EndBuild()
+		b.Dispose()
+		return fn, nil, goFunc
+	}
+	if nblk := len(f.Blocks); nblk > 0 {
 		var childInits []func()
 		if len(f.AnonFuncs) > 0 {
 			parentInits := p.inits
@@ -741,9 +794,13 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			if dbgSymsEnabled {
 				p.debugDIVars = make(map[*types.Var]llssa.DIVar)
 				p.debugAllocVars = collectDebugAllocVariables(f)
+				p.debugAllocObjects = collectDebugAllocObjects(p.debugAllocVars)
+				p.debugStableParams = make(map[*types.Var]debugStableParam)
 			} else {
 				p.debugDIVars = nil
 				p.debugAllocVars = nil
+				p.debugAllocObjects = nil
+				p.debugStableParams = nil
 			}
 			dbgGoSSADump(f)
 			dbgInstrln("==> FuncBody", name)
@@ -983,8 +1040,10 @@ func parseLineDirectiveFilename(text string) (filename string, previous, ok bool
 }
 
 func isGlobal(v *types.Var) bool {
-	// TODO(lijie): better implementation
-	return strings.HasPrefix(v.Parent().String(), "package ")
+	// Package scopes, including copies made by typepatch, are direct children
+	// of Universe. Avoid formatting every declaration in the scope.
+	scope := v.Parent()
+	return scope != nil && scope.Parent() == types.Universe
 }
 
 func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
@@ -1002,18 +1061,30 @@ func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
 		// avoid generate local variable debug info of global variable in function
 		return
 	}
-	pos := p.goProg.Fset.Position(v.Pos())
-	var value llssa.Expr
-	if iv, ok := v.X.(instrOrValue); ok {
-		var exists bool
-		value, exists = p.bvals[iv]
-		if !exists {
-			// DebugRef is metadata-only. Do not rematerialize an SSA value that
-			// executable lowering deliberately omitted.
+	if p.debugAllocObjects[variable] {
+		// The variable already has a declaration tied to its real storage.
+		// At any optimization level, a value DebugRef for an aggregate would
+		// replace it with a snapshot instead of tracking later memory writes.
+		return
+	}
+	if stable, ok := p.debugStableParams[variable]; ok {
+		if stable.value == v.X && stable.block == v.Block() {
 			return
 		}
-	} else {
-		value = p.compileValue(b, v.X)
+		value, exists := p.debugRefValue(b, v.X)
+		if !exists {
+			return
+		}
+		b.DIStore(stable.home, value)
+		stable.value = v.X
+		stable.block = v.Block()
+		p.debugStableParams[variable] = stable
+		return
+	}
+	pos := p.goProg.Fset.Position(v.Pos())
+	value, exists := p.debugRefValue(b, v.X)
+	if !exists {
+		return
 	}
 	fn := v.Parent()
 	dbgVar := p.getLocalVariable(b, fn, variable)
@@ -1026,21 +1097,41 @@ func (p *context) debugRef(b llssa.Builder, v *ssa.DebugRef) {
 	}
 }
 
+func (p *context) debugRefValue(b llssa.Builder, value ssa.Value) (llssa.Expr, bool) {
+	if iv, ok := value.(instrOrValue); ok {
+		// DebugRef is metadata-only. Do not rematerialize an SSA value that
+		// executable lowering deliberately omitted.
+		result, exists := p.bvals[iv]
+		return result, exists
+	}
+	return p.compileValue(b, value), true
+}
+
 func (p *context) debugParams(b llssa.Builder, f *ssa.Function) {
-	for i, param := range f.Params {
+	params := f.Params
+	if llssa.HasNameValist(f.Signature) {
+		// C ellipsis has no fixed parameter slot. For example, the promoted
+		// CFmt.Printf wrapper has only its receiver before the variadic tail.
+		params = params[:len(params)-1]
+	}
+	for i, param := range params {
 		variable := param.Object().(*types.Var)
-		if hasDebugAlloc(p.debugAllocVars, variable) {
+		if p.debugAllocObjects[variable] {
 			continue
 		}
 		pos := p.goProg.Fset.Position(param.Pos())
 		v := p.compileValue(b, param)
 		ty := param.Type()
 		argNo := i + 1
-		div := b.DIVarParam(p.fn, pos, param.Name(), p.type_(ty, llssa.InGo), argNo)
+		div := b.DIVarParam(p.fn, pos, param.Name(), p.type_(ty, llssa.GoDecl), argNo)
 		if p.debugDIVars != nil {
 			p.debugDIVars[variable] = div
 		}
-		b.DIParam(variable, v, div, p.fn, pos, p.fn.Block(0))
+		if home := b.DIParamWithHome(variable, v, div, p.fn, pos, p.fn.Block(0)); !home.IsNil() {
+			p.debugStableParams[variable] = debugStableParam{
+				home: home, value: param, block: f.Blocks[0],
+			}
+		}
 	}
 }
 
@@ -1111,7 +1202,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
-			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
+			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.CDecl)
 			b.Call(fnOld.Expr)
 		}
 		if isCgoCfunc || isCgoC2 || isCgoCmacro {
@@ -1138,7 +1229,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			case *ssa.Return:
 				// return cgo function result
 				if isCgoCmacro {
-					ty := p.type_(instr.Results[0].Type(), llssa.InGo)
+					ty := p.type_(instr.Results[0].Type(), llssa.GoDecl)
 					p.cgoRet.Type = p.prog.Pointer(ty)
 					p.cgoRet = b.Load(p.cgoRet)
 				} else {
@@ -1304,7 +1395,7 @@ func (p *context) cgoReturn(b llssa.Builder, isCgoC2 bool) {
 }
 
 func (p *context) cgoC2Return(b llssa.Builder, ret llssa.Expr, errType types.Type) {
-	errTy := p.type_(errType, llssa.InGo)
+	errTy := p.type_(errType, llssa.GoDecl)
 	nilSlot := b.AllocU(errTy)
 	b.Store(nilSlot, p.prog.Zero(errTy))
 	nilErr := b.Load(nilSlot)
@@ -1312,14 +1403,14 @@ func (p *context) cgoC2Return(b llssa.Builder, ret llssa.Expr, errType types.Typ
 		b.Return(ret, nilErr)
 		return
 	}
-	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	i32 := p.type_(types.Typ[types.Int32], llssa.GoDecl)
 	errno := p.cgoErrno
 	if !types.Identical(errno.RawType(), i32.RawType()) {
 		errno = b.Convert(i32, errno)
 	}
 	zero := p.prog.Zero(i32)
 	cond := b.BinOp(token.NEQ, errno, zero)
-	errnoVal := b.Convert(p.type_(p.cgoErrnoType(), llssa.InGo), errno)
+	errnoVal := b.Convert(p.type_(p.cgoErrnoType(), llssa.GoDecl), errno)
 	errIface := b.MakeInterface(errTy, errnoVal)
 	fn := b.Func
 	errBlk := fn.MakeBlock()
@@ -1369,7 +1460,7 @@ func (p *context) compileSyntheticMakeSlice(b llssa.Builder, v *ssa.Slice) (llss
 	if !ok {
 		return llssa.Expr{}, false
 	}
-	t := p.type_(v.Type(), llssa.InGo)
+	t := p.type_(v.Type(), llssa.GoDecl)
 	length := p.compileValue(b, v.High)
 	return b.MakeSlice(t, length, capacity), true
 }
@@ -1479,7 +1570,7 @@ func (p *context) compilePhis(b llssa.Builder, block *ssa.BasicBlock) int {
 }
 
 func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
-	phi := b.Phi(p.type_(v.Type(), llssa.InGo))
+	phi := b.Phi(p.type_(v.Type(), llssa.GoDecl))
 	ret = phi.Expr
 	p.phis = append(p.phis, func() {
 		preds := v.Block().Preds
@@ -1559,8 +1650,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				// The runtime helper consumes the proven-stable addresses. Keep
 				// typed placeholders for ArrayBinOp without materializing the
 				// otherwise unused aggregate loads.
-				x = p.prog.Zero(p.type_(v.X.Type(), llssa.InGo))
-				y = p.prog.Zero(p.type_(v.Y.Type(), llssa.InGo))
+				x = p.prog.Zero(p.type_(v.X.Type(), llssa.GoDecl))
+				y = p.prog.Zero(p.type_(v.Y.Type(), llssa.GoDecl))
 			} else {
 				x = p.compileValueAs(b, v.X, v.Y.Type())
 				y = p.compileValueAs(b, v.Y, v.X.Type())
@@ -1568,16 +1659,16 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			ret = b.ArrayBinOp(v.Op, x, y, xaddr, yaddr)
 		} else if typ, ok := v.X.Type().Underlying().(*types.Struct); ok && (v.Op == token.EQL || v.Op == token.NEQ) {
 			xaddr, yaddr := llssa.Nil, llssa.Nil
-			size := p.prog.SizeOf(p.type_(v.X.Type(), llssa.InGo))
+			size := p.prog.SizeOf(p.type_(v.X.Type(), llssa.GoDecl))
 			if p.prog.IsRegularMemory(v.X.Type()) && !llssa.CanInlineStructEqual(typ, size, p.prog.GoWordSize()) {
 				xaddr = p.structZeroCompareAddr(b, v.X, v.Y, v)
 				yaddr = p.structZeroCompareAddr(b, v.Y, v.X, v)
 			}
-			x := p.prog.Zero(p.type_(v.X.Type(), llssa.InGo))
+			x := p.prog.Zero(p.type_(v.X.Type(), llssa.GoDecl))
 			if xaddr.IsNil() {
 				x = p.compileValueAs(b, v.X, v.Y.Type())
 			}
-			y := p.prog.Zero(p.type_(v.Y.Type(), llssa.InGo))
+			y := p.prog.Zero(p.type_(v.Y.Type(), llssa.GoDecl))
 			if yaddr.IsNil() {
 				y = p.compileValueAs(b, v.Y, v.X.Type())
 			}
@@ -1624,7 +1715,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 			if refs, ok := nonDebugReferrers(v); ok && len(refs) == 1 {
 				if _, ok := refs[0].(*ssa.MakeInterface); ok {
-					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+					if t := p.type_(v.Type(), llssa.GoDecl); t.RawType() != nil {
 						if p.isLargeNonPointerValue(t) {
 							// Skip the load: the MakeInterface handler below copies
 							// from the original pointer and preserves the nil check.
@@ -1639,8 +1730,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				if cname := strings.TrimPrefix(name[:len(name)-16], "libc_"); cname != "" {
 					cname = p.remapTrampolineCName(cname)
 					fnSig := p.syscallFnSig(0)
-					cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
-					ret = b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+					cfn := b.Pkg.NewFunc(cname, fnSig, llssa.CDecl)
+					ret = b.Convert(p.type_(types.Typ[types.Uintptr], llssa.GoDecl), cfn.Expr)
 					p.bvals[iv] = ret
 					return ret
 				}
@@ -1660,11 +1751,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			ret = b.Recv(x, v.CommaOk)
 		} else {
 			if v.Op == token.MUL {
-				if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil && p.prog.SizeOf(t) == 0 {
-					p.assertNilDerefBase(b, v.X)
+				if t := p.type_(v.Type(), llssa.GoDecl); t.RawType() != nil && p.prog.SizeOf(t) == 0 {
+					p.emitNilDerefBaseCheck(b, v.X)
 				}
 				if isInterfaceCompareDeref(v) {
-					p.assertNilDerefBase(b, v.X)
+					// Preserve p.bvals: a branch-local reload would break SSA dominance.
+					p.emitNilDerefBaseCheck(b, v.X)
 					b.AssertNilDeref(x)
 				}
 			}
@@ -1680,7 +1772,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			break
 		}
 		x := p.compileValue(b, v.X)
-		ret = b.ChangeType(p.type_(t, llssa.InGo), x)
+		ret = b.ChangeType(p.type_(t, llssa.GoDecl), x)
 	case *ssa.Convert:
 		t := v.Type()
 		if isUntypedNilConst(v.X) {
@@ -1688,7 +1780,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			break
 		}
 		x := p.compileValue(b, v.X)
-		ret = b.Convert(p.type_(t, llssa.InGo), x)
+		ret = b.Convert(p.type_(t, llssa.GoDecl), x)
 	case *ssa.FieldAddr:
 		x := p.compileValue(b, v.X)
 		p.recordPanicSite(b, v.Pos())
@@ -1697,6 +1789,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		ret = b.FieldAddr(x, v.Field)
 	case *ssa.Alloc:
+		// An allocation with no uses has no observable result. In particular,
+		// do not emit a runtime GC call for an unused composite literal.
+		if refs, ok := nonDebugReferrers(v); ok && len(refs) == 0 {
+			return
+		}
 		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this maybe a varargs allocation
 			return
@@ -1704,7 +1801,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if p.skipSyntheticMakeSliceAlloc(v) {
 			return
 		}
-		elem := p.type_(t.Elem(), llssa.InGo)
+		elem := p.type_(t.Elem(), llssa.GoDecl)
 		hoistToEntry := true
 		if p.goFn != nil && (p.goFn.Synthetic == "package initializer" || p.goFn.Name() == "init") {
 			inLoop := false
@@ -1767,7 +1864,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		p.recordPanicSite(b, v.Pos())
 		ret = b.Slice(x, low, high, max)
-		ret.Type = p.type_(v.Type(), llssa.InGo)
+		ret.Type = p.type_(v.Type(), llssa.GoDecl)
 	case *ssa.MakeInterface:
 		if refs, _ := nonDebugReferrers(v); len(refs) == 1 {
 			switch ref := refs[0].(type) {
@@ -1785,13 +1882,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				}
 			}
 		}
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		if isUntypedNilConst(v.X) {
 			ret = p.prog.Nil(t)
 			break
 		}
 		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
-			if vt := p.type_(unop.Type(), llssa.InGo); vt.RawType() != nil {
+			if vt := p.type_(unop.Type(), llssa.GoDecl); vt.RawType() != nil {
 				if p.isLargeNonPointerValue(vt) || p.isZeroSizedValue(vt) {
 					if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
 						p.assertNilDerefBase(b, unop.X)
@@ -1804,13 +1901,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		nLen := p.compileValue(b, v.Len)
 		nCap := p.compileValue(b, v.Cap)
 		ret = b.MakeSlice(t, nLen, nCap)
 	case *ssa.MakeMap:
 		var nReserve llssa.Expr
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		if v.Reserve != nil {
 			nReserve = p.compileValue(b, v.Reserve)
 		}
@@ -1826,7 +1923,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
-		t := p.type_(v.AssertedType, llssa.InGo)
+		t := p.type_(v.AssertedType, llssa.GoDecl)
 		p.recordPanicSite(b, v.Pos())
 		ret = b.TypeAssert(x, t, v.CommaOk)
 	case *ssa.Extract:
@@ -1838,21 +1935,21 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Next:
 		var typ llssa.Type
 		if !v.IsString {
-			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.GoDecl)
 		}
 		iter := p.compileValue(b, v.Iter)
 		ret = b.Next(typ, iter, v.IsString)
 	case *ssa.ChangeInterface:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
-		ret = b.ChangeInterface(p.type_(t, llssa.InGo), x)
+		ret = b.ChangeInterface(p.type_(t, llssa.GoDecl), x)
 	case *ssa.Field:
 		x := p.compileValue(b, v.X)
 		ret = b.Field(x, v.Field)
 	case *ssa.MakeChan:
 		t := v.Type()
 		size := p.compileValue(b, v.Size)
-		ret = b.MakeChan(p.type_(t, llssa.InGo), size)
+		ret = b.MakeChan(p.type_(t, llssa.GoDecl), size)
 	case *ssa.Select:
 		states := make([]*llssa.SelectState, len(v.States))
 		for i, s := range v.States {
@@ -1866,7 +1963,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		ret = b.Select(states, v.Blocking)
 	case *ssa.SliceToArrayPointer:
-		t := p.type_(v.Type(), llssa.InGo)
+		t := p.type_(v.Type(), llssa.GoDecl)
 		x := p.compileValue(b, v.X)
 		p.recordPanicSite(b, v.Pos())
 		ret = b.SliceToArrayPointer(x, t)
@@ -1981,7 +2078,7 @@ func foldConstComparison(v *ssa.BinOp) (bool, bool) {
 }
 
 func (p *context) nilOf(typ types.Type) llssa.Expr {
-	return p.prog.Nil(p.type_(typ, llssa.InGo))
+	return p.prog.Nil(p.type_(typ, llssa.GoDecl))
 }
 
 func (p *context) compileValueAs(b llssa.Builder, v ssa.Value, typ types.Type) llssa.Expr {
@@ -2034,7 +2131,7 @@ func (p *context) canElideStructZeroCompareLoad(load *ssa.UnOp) bool {
 	if !p.prog.IsRegularMemory(load.Type()) {
 		return false
 	}
-	size := p.prog.SizeOf(p.type_(load.Type(), llssa.InGo))
+	size := p.prog.SizeOf(p.type_(load.Type(), llssa.GoDecl))
 	if llssa.CanInlineStructEqual(typ, size, p.prog.GoWordSize()) {
 		return false
 	}
@@ -2201,7 +2298,7 @@ func (p *context) needsWasmNilGuard(addr ssa.Value) bool {
 
 // assertNilDerefBase uses pointer-returning checks to rewrite p.bvals. Keep its
 // traversal in sync with emitNilDerefBaseCheck, which emits cold failure
-// branches without replacing cached addresses for delayed receiver checks.
+// branches while preserving cached addresses and their SSA dominance.
 func (p *context) assertNilDerefBase(b llssa.Builder, addr ssa.Value) {
 	switch addr := addr.(type) {
 	case *ssa.UnOp:
@@ -2229,10 +2326,7 @@ func (p *context) jumpTo(v *ssa.Jump) llssa.BasicBlock {
 }
 
 func (p *context) getDebugLocScope(v *ssa.Function, pos token.Pos) *types.Scope {
-	if v.Object() == nil {
-		return nil
-	}
-	funcScope := v.Object().(*types.Func).Scope()
+	funcScope := debugFunctionScope(v)
 	if funcScope == nil {
 		return nil
 	}
@@ -2314,7 +2408,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		runDefers := p.returnNeedsImplicitRunDefers(v)
 		if runDefers {
 			p.spillImplicitDeferResults(b, v)
-			p.recordPanicLocation(b, v.Pos())
+			p.recordPanicLocation(b, p.deferRunPos(v.Pos()))
 			p.emitPCLineLabel(b, p.deferRunPos(v.Pos()))
 			b.RunDefers()
 		}
@@ -2372,7 +2466,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		p.checkMethodCallReceiver(b, &v.Call)
 		p.call(b, llssa.Go, &v.Call)
 	case *ssa.RunDefers:
-		p.recordPanicLocation(b, v.Pos())
+		p.recordPanicLocation(b, p.deferRunPos(v.Pos()))
 		p.emitPCLineLabel(b, p.deferRunPos(v.Pos()))
 		b.RunDefers()
 	case *ssa.Panic:
@@ -2405,7 +2499,7 @@ func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.V
 		}
 	}
 	pos := p.fset.Position(v.Pos())
-	t := p.type_(v.Type(), llssa.InGo)
+	t := p.type_(v.Type(), llssa.GoDecl)
 	scope := b.DIScope(p.fn, v.Parent())
 	div := b.DIVarAuto(scope, pos, v.Name(), t)
 	if p.debugDIVars != nil {
@@ -2460,9 +2554,9 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		return val
 	case *ssa.Const:
 		t := types.Default(v.Type())
-		bg := llssa.InGo
+		bg := llssa.GoDecl
 		if p.inCFunc {
-			bg = llssa.InC
+			bg = llssa.CDecl
 		}
 		return b.Const(v.Value, p.type_(t, bg))
 	case *ssa.FreeVar:
@@ -2601,7 +2695,7 @@ func (p *context) prepareImplicitDeferResults(b llssa.Builder, fn *ssa.Function)
 	p.implicitDeferResults = make([]llssa.Expr, results.Len())
 	for i := 0; i < results.Len(); i++ {
 		if p.namedResultSlot(i) == nil {
-			p.implicitDeferResults[i] = b.Alloc(p.type_(results.At(i).Type(), llssa.InGo), false)
+			p.implicitDeferResults[i] = b.Alloc(p.type_(results.At(i).Type(), llssa.GoDecl), false)
 		}
 	}
 }
@@ -2810,6 +2904,13 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
 	pkgName, pkgPath := pkgTypes.Name(), llssa.PathOf(pkgTypes)
+	cPkg := IsCPackage(pkgName)
+	// package C's exported names are part of the package object/archive ABI,
+	// including automatic X-prefix removal. They must not depend on final-link
+	// wrappers, even when an embedding compiler enables this option globally.
+	if cPkg {
+		options.CExportWrappers = false
+	}
 	patch, hasPatch := patches[pkgPath]
 	if hasPatch {
 		pkgTypes = patch.Types
@@ -2860,7 +2961,7 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 		cgoSymbols: make([]string, 0, 128),
 		rewrites:   rewrites,
 
-		trackCallerFrames:  filesUseRuntimeCaller(files) || packageUsesRuntimeCaller(ct, pkg),
+		trackCallerFrames:  options.DebuggerFrames || filesUseRuntimeCaller(files) || packageUsesRuntimeCaller(ct, pkg),
 		runtimeCallerFuncs: runtimeCallerFuncSet(ct, pkg),
 		panicSiteFuncs:     recoverPanicSiteFuncSet(ct, pkg),
 	}
@@ -2873,7 +2974,7 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 		}
 	}
 	ctx.initPyModule()
-	ctx.initFiles(pkgPath, files, pkgName == "C")
+	ctx.initFiles(pkgPath, files, cPkg)
 	ctx.prog.SetPatch(ctx.patchType)
 	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
@@ -2903,6 +3004,9 @@ func newPackageEx(prog llssa.Program, ct *CallerTracking, patches Patches, rewri
 	if fn := ctx.initAfter; fn != nil {
 		ctx.initAfter = nil
 		fn()
+	}
+	if err = ctx.validateCVariadicWrapperUses(); err != nil {
+		return nil, nil, err
 	}
 	ret.MaterializePreserveSyms()
 	if metaCollect {
@@ -2972,8 +3076,8 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 	}
 }
 
-func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
-	return p.prog.Type(p.patchType(typ), bg)
+func (p *context) type_(typ types.Type, cc llssa.CallConv) llssa.Type {
+	return p.prog.Type(p.patchType(typ), cc)
 }
 
 func (p *context) patchType(typ types.Type) (r types.Type) {
@@ -3039,7 +3143,7 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
 				if obj := patch.Types.Scope().Lookup(o.Name()); obj != nil {
-					raw := p.prog.Type(instantiate(obj.Type(), typ), llssa.InGo).RawType()
+					raw := p.prog.Type(instantiate(obj.Type(), typ), llssa.GoDecl).RawType()
 					return raw, typ != raw
 				}
 			}
