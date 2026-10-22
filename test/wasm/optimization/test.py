@@ -14,6 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser", action="store_true", help="also run each artifact in Chrome")
+    parser.add_argument("--wasm-opt", choices=("off", "size"), default="off")
     args = parser.parse_args()
     env = dict(os.environ, LLGO_ROOT=str(ROOT))
     llgo = env.get("LLGO", "llgo")
@@ -45,7 +46,7 @@ def main():
                 build_env = dict(env, LLGO_WASM_WORKERS=str(workers))
                 print(f"Checking {name}", flush=True)
                 subprocess.run(
-                    [llgo, "build", "-target", target, f"-{level}", "-o", str(output),
+                    [llgo, "build", "-target", target, f"-{level}", f"-wasm-opt={args.wasm_opt}", "-o", str(output),
                      str(ROOT / "internal/build/testdata" / fixture)],
                     env=build_env, check=True, timeout=300,
                 )
@@ -67,11 +68,29 @@ def main():
                          "workers" if workers > 1 else "single"],
                         env=browser_env, check=True, timeout=90,
                     )
+            # Explicit native exports and cwrap remain part of the host ABI
+            # when size mode stops publishing incidental JS implementation names.
+            output = pathlib.Path(directory) / f"{target}-exports.mjs"
+            subprocess.run(
+                [llgo, "build", "-target", target, f"-wasm-opt={args.wasm_opt}",
+                 "-o", str(output), str(ROOT / "internal/build/testdata/wasm-exports")],
+                env=dict(env, LLGO_WASM_WORKERS="1"), check=True, timeout=300,
+            )
+            subprocess.run(
+                [node, "--input-type=module", "-e", '''
+import {pathToFileURL} from "node:url";
+const {default: init} = await import(pathToFileURL(process.argv[1]));
+const module = await init();
+const add = module.cwrap("llgo_public_add", "number", ["number", "number"]);
+if (add(19, 23) !== 42) throw new Error("public C/Go export failed");
+console.log("wasm public export ok");
+''', str(output)], env=env, check=True, timeout=60,
+            )
         # Raw js/wasm uses the GoJS provider but shares Emscripten linking.
         output = pathlib.Path(directory) / "raw-js-Oz.mjs"
         raw_env = dict(env, GOOS="js", GOARCH="wasm", LLGO_WASM_WORKERS="1")
         subprocess.run(
-            [llgo, "build", "-Oz", "-o", str(output),
+            [llgo, "build", "-Oz", f"-wasm-opt={args.wasm_opt}", "-o", str(output),
              str(ROOT / "internal/build/testdata/wasm-callback")],
             env=raw_env, check=True, timeout=300,
         )

@@ -46,12 +46,16 @@ func TestMain(m *testing.M) {
 	if os.Getenv("LLGO_TEST_NODE_HELPER") == "1" && strings.TrimSuffix(strings.ToLower(filepath.Base(os.Args[0])), ".exe") == "node" {
 		os.Exit(0)
 	}
-	if mode := os.Getenv("LLGO_TEST_WASM_OPT_HELPER"); mode != "" {
+	if mode := os.Getenv("LLGO_TEST_WASM_OPT_HELPER"); mode != "" && (os.Getenv("LLGO_TEST_FINAL_WASM") != "1" || strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "wasm-opt") {
 		if len(os.Args) == 2 && os.Args[1] == "--version" {
 			if mode == "fail-version" {
 				os.Exit(7)
 			}
-			fmt.Println("wasm-opt version 132 (test helper)")
+			if os.Getenv("LLGO_TEST_FINAL_WASM") == "1" && mode != "wrong-version" {
+				fmt.Println("wasm-opt version 132")
+			} else {
+				fmt.Println("wasm-opt version 132 (test helper)")
+			}
 			os.Exit(0)
 		}
 		if argsFile := os.Getenv("ARGS_FILE"); argsFile != "" {
@@ -70,6 +74,9 @@ func TestMain(m *testing.M) {
 		if mode == "fail" {
 			os.Exit(7)
 		}
+		if mode == "missing-output" {
+			os.Exit(0)
+		}
 		var input, output string
 		for i := 1; i < len(os.Args); i++ {
 			if os.Args[i] == "-o" && i+1 < len(os.Args) {
@@ -81,6 +88,12 @@ func TestMain(m *testing.M) {
 			}
 		}
 		data, err := os.ReadFile(input)
+		if mode == "rewrite-wasm" {
+			data = []byte("\x00asm\x01\x00\x00\x00\x0a\x01\x00")
+		}
+		if mode == "invalid-wasm" {
+			data = []byte("invalid Wasm")
+		}
 		if err == nil {
 			err = os.WriteFile(output, data, 0o666)
 		}
@@ -114,6 +127,9 @@ func TestMain(m *testing.M) {
 			fmt.Fprintln(os.Stderr, "link failed")
 			os.Exit(8)
 		}
+		if mode == "missing-output" {
+			os.Exit(0)
+		}
 		var output string
 		for i := 1; i+1 < len(os.Args); i++ {
 			if os.Args[i] == "-o" {
@@ -126,6 +142,23 @@ func TestMain(m *testing.M) {
 			os.Exit(9)
 		}
 		payload := "linked"
+		if mode == "write-wasm" {
+			payload = "\x00asm\x01\x00\x00\x00"
+		}
+		if mode == "write-debug-wasm" {
+			payload = "\x00asm\x01\x00\x00\x00\x00\x0d\x0b.debug_info\x00"
+		}
+		if mode == "write-emscripten" {
+			payload = "export default async function () {}"
+			module := strings.TrimSuffix(output, filepath.Ext(output)) + ".wasm"
+			if err := os.WriteFile(module, []byte("\x00asm\x01\x00\x00\x00"), 0o666); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(10)
+			}
+		}
+		if mode == "write-padded-wasm" {
+			payload = "\x00asm\x01\x00\x00\x00\x0a\x81\x80\x80\x80\x00\x00"
+		}
 		if mode == "write-html" {
 			payload = `<html><script type=module>import init from"./main.js"</script></html>`
 		}

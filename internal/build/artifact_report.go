@@ -174,6 +174,9 @@ func CollectArtifacts(conf *Config, out *OutFmtDetails) ([]Artifact, error) {
 			return nil, err
 		}
 	}
+	if err := add(ArtifactRoleDeployment, "wasm-manifest", out.WasmManifest); err != nil {
+		return nil, err
+	}
 	return artifacts, nil
 }
 

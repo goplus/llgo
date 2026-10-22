@@ -132,6 +132,8 @@ type OutFmtDetails struct {
 	Uf2   string // UF2 output file path (.uf2)
 	Zip   string // ZIP/DFU output file path (.zip)
 
+	WasmManifest string // Final Wasm artifact manifest
+
 	tempDir string // LLGo-owned directory removed with implicit test outputs
 }
 
@@ -152,6 +154,8 @@ type Config struct {
 	GOEXPERIMENT       string // Go experiments; empty inherits cmd/go configuration, "none" disables defaults
 	Target             string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	OptLevel           optlevel.Level
+	WasmOpt            WasmOptMode
+	WasmStrip          WasmStripMode
 	LTO                lto.Mode
 	LTOPlugin          lto.PassPlugin
 	BinPath            string
@@ -644,6 +648,9 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		return nil, err
 	}
 	if err := validateLinkOptions(conf, &export); err != nil {
+		return nil, err
+	}
+	if err := validateWasmFinalOptions(conf, &export); err != nil {
 		return nil, err
 	}
 	verbose := conf.Verbose
@@ -1289,6 +1296,9 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 	linkCtx := newLinkExecutionContext(ctx, plan)
 	err := func() error {
 		defer linkSpan.done()
+		if needsWasmFinalization(link.conf) {
+			return finalizeWasmArtifacts(linkCtx, plan, link.outFmts, verbose)
+		}
 		if err := executeMainLink(linkCtx, plan, verbose); err != nil {
 			return err
 		}
@@ -1304,7 +1314,10 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 		if err := finalizeNativeSymbols(linkCtx, link.outFmts, verbose); err != nil {
 			return err
 		}
-		return finalizeNativeDWARFCompression(linkCtx, link.outFmts.Out, verbose)
+		if err := finalizeNativeDWARFCompression(linkCtx, link.outFmts.Out, verbose); err != nil {
+			return err
+		}
+		return removeStaleWasmManifest(link.conf, link.outFmts)
 	}()
 	if err != nil {
 		return nil, err
@@ -1443,7 +1456,7 @@ func removeOutFmts(outFmts *OutFmtDetails) {
 		_ = os.RemoveAll(outFmts.DSYM)
 	}
 	for _, output := range []string{
-		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex,
+		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex, outFmts.WasmManifest,
 		outFmts.Img, outFmts.Uf2, outFmts.Zip,
 	} {
 		if output != "" {

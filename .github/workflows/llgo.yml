@@ -1038,6 +1038,7 @@ jobs:
         run: |
           python3 -m unittest discover -s dev -p test_wasm_debug_info_test.py
           python3 dev/test_wasm_debug_info.py --profile j32 --profile j64 --profile w32 --artifact embedded --artifact external
+          python3 dev/test_wasm_debug_info.py --wasm-opt=size --opt 0 --artifact embedded --artifact external
 
       - name: Test optimized Emscripten runtime boundaries
         if: matrix.suite == 'runtime'
@@ -1048,6 +1049,7 @@ jobs:
         run: |
           node --test test/wasm/optimization/asyncify-exports.test.mjs
           python3 test/wasm/optimization/test.py --browser
+          python3 test/wasm/optimization/test.py --browser --wasm-opt=size
 
       - name: Build standard runtime for wasm
         if: matrix.suite == 'runtime'

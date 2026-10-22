@@ -225,6 +225,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.StringVar(&LTOPluginPath, "lto-pass-plugin", "", "Load an LLVM LTO pass plugin during full LTO (ELF lld or Mach-O ld64.lld)")
 	AddGlobalDCEFlag(fs)
 	addPCLNFlag(fs)
+	addWasmFinalFlags(fs)
 	addDebugArtifactFlag(fs)
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.Var(&PthreadStackSize, "goroutine-stack-size", "Stack size for native threads and WebAssembly goroutines, e.g. 2MB (0 uses the platform default)")
@@ -424,6 +425,12 @@ func UpdateConfig(conf *build.Config) error {
 	}
 	if LTO.Specified {
 		conf.LTO = LTO.Mode
+	}
+	if WasmOpt != "" {
+		conf.WasmOpt = build.WasmOptMode(WasmOpt)
+	}
+	if WasmStrip != "" {
+		conf.WasmStrip = build.WasmStripMode(WasmStrip)
 	}
 	if PCLN.Specified {
 		conf.PCLNMode = PCLN.Mode

@@ -3,6 +3,7 @@
 """Check final WebAssembly DWARF after linking and Binaryen rewrites."""
 
 import argparse
+import hashlib
 import itertools
 import json
 import os
@@ -114,7 +115,7 @@ def check_module(module, *, dwarfdump, addr2line):
     check_source_lines(module, line_table, addr2line)
 
 
-def check_artifact_report(output, profile, artifact, build_log):
+def check_artifact_report(output, profile, artifact, build_log, wasm_opt="off"):
     module = output.with_suffix(".wasm")
     role = "debug+deployment" if artifact == "embedded" else "deployment"
     expected = {module: (role, "wasm")}
@@ -126,6 +127,25 @@ def check_artifact_report(output, profile, artifact, build_log):
         expected[output.parent / "wasm_fs.js"] = ("deployment", "javascript")
     if artifact == "external":
         expected[output.with_suffix(".debug.wasm")] = ("debug", "wasm-dwarf")
+    if wasm_opt != "off":
+        manifest = output.with_suffix(".wasm-manifest.json")
+        expected[manifest] = ("deployment", "wasm-manifest")
+        data = json.loads(manifest.read_text())
+        recorded = {entry["path"] for entry in data["artifacts"]}
+        if recorded != {path.name for path in expected if path != manifest}:
+            raise RuntimeError(f"{manifest}: incomplete artifact set")
+        totals = {"payload": {"bytes": 0, "gzip_bytes": 0}, "debug": {"bytes": 0, "gzip_bytes": 0}}
+        for entry in data["artifacts"]:
+            content = (output.parent / entry["path"]).read_bytes()
+            if entry["bytes"] != len(content) or entry["sha256"] != hashlib.sha256(content).hexdigest():
+                raise RuntimeError(f"{manifest}: inaccurate artifact identity: {entry['path']}")
+            if entry["gzip_bytes"] <= 0:
+                raise RuntimeError(f"{manifest}: invalid compressed size")
+            total = totals["debug" if entry["role"] == "debug" else "payload"]
+            for key in total:
+                total[key] += entry[key]
+        if any(data[key] != total for key, total in totals.items()):
+            raise RuntimeError(f"{manifest}: inaccurate totals")
     entries = re.findall(
         r'^llgo: artifact role=(\S+) format=(\S+) size=(\d+) path=(".*")$',
         build_log, re.MULTILINE,
@@ -143,6 +163,7 @@ def main():
     parser.add_argument("--profile", action="append", choices=PROFILES, dest="profiles")
     parser.add_argument("--opt", action="append", choices=("0", "2"), dest="opts")
     parser.add_argument("--artifact", action="append", choices=("embedded", "external"), dest="artifacts")
+    parser.add_argument("--wasm-opt", choices=("off", "size"), default="off")
     options = parser.parse_args()
     profiles = options.profiles or list(PROFILES)
     opts = options.opts or ["0", "2"]
@@ -161,10 +182,10 @@ def main():
             output = module if profile == "w32" else stem.with_suffix(".mjs")
             build_log = run(
                 [llgo, "build", "-target", PROFILES[profile], f"-O{opt}",
-                 f"-debug-artifact={artifact}", "-o", str(output), str(FIXTURE)],
+                 f"-debug-artifact={artifact}", f"-wasm-opt={options.wasm_opt}", "-o", str(output), str(FIXTURE)],
                 env=env,
             )
-            check_artifact_report(output, profile, artifact, build_log)
+            check_artifact_report(output, profile, artifact, build_log, options.wasm_opt)
             debug_module = module
             if artifact == "external":
                 debug_module = stem.with_suffix(".debug.wasm")
@@ -187,10 +208,10 @@ def main():
             output = Path(directory) / "html-report.html"
             build_log = run(
                 [llgo, "build", "-target", PROFILES["j32"], f"-O{opts[0]}",
-                 f"-debug-artifact={artifacts[0]}", "-o", str(output), str(FIXTURE)],
+                 f"-debug-artifact={artifacts[0]}", f"-wasm-opt={options.wasm_opt}", "-o", str(output), str(FIXTURE)],
                 env=env,
             )
-            check_artifact_report(output, "j32", artifacts[0], build_log)
+            check_artifact_report(output, "j32", artifacts[0], build_log, options.wasm_opt)
             print("j32 HTML: complete deployment artifacts and byte sizes passed", flush=True)
 
 
