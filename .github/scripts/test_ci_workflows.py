@@ -19,8 +19,9 @@ import ci_policy
 WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
-    "llgo.yml": 23, "go.yml": 6, "targets.yml": 8, "build-cache.yml": 4,
+    "llgo.yml": 21, "go.yml": 6, "targets.yml": 4, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
+    "mise.yml": 5, "pixi.yml": 5,
 }
 BOOTSTRAP_RUNNER_JOBS = {
     ("ci-prepare.yml", "prepare"), ("ci-policy.yml", "policy"),
@@ -102,6 +103,12 @@ class WorkflowContractTests(unittest.TestCase):
                     if reusable.startswith("./.github/workflows/"):
                         pending.append(Path(reusable).name)
 
+    def test_extended_cross_target_abi_matrix_runs_on_linux(self):
+        step = next(step for step in load("go.yml")["jobs"]["test"]["steps"]
+                    if step.get("id") == "test_coverage")
+        self.assertEqual(step["env"]["LLGO_TEST_EXTENDED_ABI"],
+                         "${{ runner.os == 'Linux' && '1' || '0' }}")
+
     def test_gdb_windows_acceptance_covers_both_abis_and_all_native_architectures(self):
         job = load("llgo.yml")["jobs"]["llgo"]
         entries = job["strategy"]["matrix"]["include"]
@@ -158,44 +165,237 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(step["working-directory"], "runtime")
         self.assertIn("-coverprofile=../coverage-traceback.txt", step["run"])
 
-    def test_windows_exception_overlay_reaches_compiler_and_language_tests(self):
+    def test_go_suite_scheduling_preserves_overlays_and_propagates_failures(self):
         step = next(step for step in load("go.yml")["jobs"]["test"]["steps"]
                     if step.get("id") == "test_coverage")
         script = step["run"].replace("${{ matrix.windows_abi }}", "msvc")
-        for runner, overlay in (("Linux", ""), ("Windows", ""),
-                                ("Windows", "C:/runner temp/runtime-overlay.json")):
-            with self.subTest(runner=runner, overlay=overlay), tempfile.TemporaryDirectory() as directory:
+        scenarios = [("Linux", "", ""), ("macOS", "", ""), ("Windows", "", ""),
+                     ("Windows", "C:/runner temp/runtime-overlay.json", "")]
+        scenarios += [(runner, "", suite) for runner in ("Linux", "macOS", "Windows")
+                      for suite in ("main", "build", "compiler", "language")]
+        for runner, overlay, failure in scenarios:
+            with self.subTest(runner=runner, overlay=overlay, failure=failure), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 log = root / "commands.jsonl"
+                summary = root / "summary.md"
                 fake_go = root / "go"
-                fake_go.write_text(f"#!{sys.executable}\n" + """
-import json, os, sys
+                fake_go.write_text(f"#!{sys.executable}\n" + r"""
+import json, os, sys, time
+from pathlib import Path
 if sys.argv[1] == 'list':
+    print('github.com/xgo-dev/llgo/cmd/internal/version')
     print('github.com/xgo-dev/llgo/internal/build')
 else:
-    with open(os.environ['TEST_GO_LOG'], 'a') as stream:
-        stream.write(json.dumps(sys.argv[1:]) + '\\n')
+    args = sys.argv[1:]
+    suite = next((name for package, name in (
+        ('./internal/build', 'build'), ('./cl', 'compiler'), ('./test/go', 'language'))
+        if package in args), 'main')
+    root = Path(os.environ['TEST_GO_LOG']).parent
+    with (root / 'commands.jsonl').open('a') as stream:
+        stream.write(json.dumps(args) + '\n')
+    (root / (suite + '.started')).touch()
+    if os.environ['RUNNER_OS'] == 'Linux' and suite in {'main', 'build'}:
+        peer = root / (('main' if suite == 'build' else 'build') + '.started')
+        deadline = time.monotonic() + 5
+        while not peer.exists():
+            if time.monotonic() > deadline:
+                sys.exit('independent suites did not overlap')
+            time.sleep(0.01)
+    elif os.environ['RUNNER_OS'] != 'Linux':
+        order = ['main', 'build', 'compiler', 'language']
+        index = order.index(suite)
+        if index and not (root / (order[index - 1] + '.finished')).exists():
+            sys.exit('host suites did not retain serial order')
+    (root / (suite + '.finished')).touch()
+    sys.exit(7 if suite == os.environ['TEST_GO_FAILURE'] else 0)
 """)
                 fake_go.chmod(0o755)
                 (root / "dev").mkdir()
                 (root / "dev/go_test_windows.sh").write_text('exec "$@"\n')
-                subprocess.run(["bash", "-c", script], cwd=root, check=True,
-                               capture_output=True, text=True, env={**os.environ,
-                                   "PATH": directory + os.pathsep + os.environ["PATH"],
-                                   "RUNNER_OS": runner, "LLGO_GO_TEST_OVERLAY": overlay,
-                                   "TEST_GO_LOG": str(log)})
+                helper = root / ".github/scripts/run_go_tests.py"
+                helper.parent.mkdir(parents=True)
+                shutil.copyfile(WORKFLOWS.parent / "scripts/run_go_tests.py", helper)
+                # This contract checks suite ordering and Windows options.
+                # The real shard executor has separate end-to-end Go tests.
+                (helper.parent / "run_build_tests.py").write_text(r"""
+import argparse, subprocess, sys
+parser = argparse.ArgumentParser()
+parser.add_argument('--overlay')
+parser.add_argument('--ldflags')
+args = parser.parse_args()
+command = ['go', 'test', '-json', '-coverpkg=./...', '-coverprofile=coverage-build.txt']
+if args.overlay:
+    command.append('-overlay=' + args.overlay)
+if args.ldflags:
+    command.append('-ldflags=' + args.ldflags)
+sys.exit(subprocess.call(command + ['./internal/build']))
+""")
+                result = subprocess.run(["bash", "-c", script], cwd=root,
+                                        capture_output=True, text=True, timeout=20,
+                                        env={**os.environ,
+                                             "PATH": directory + os.pathsep + os.environ["PATH"],
+                                             "RUNNER_OS": runner, "LLGO_GO_TEST_OVERLAY": overlay,
+                                             "TEST_GO_LOG": str(log), "TEST_GO_FAILURE": failure,
+                                             "GITHUB_STEP_SUMMARY": str(summary)})
+                if failure == "main":
+                    # GNU and BSD xargs map a child failure to different codes.
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                else:
+                    self.assertEqual(result.returncode, 7 if failure else 0,
+                                     result.stdout + result.stderr)
                 calls = [json.loads(line) for line in log.read_text().splitlines()]
-                self.assertEqual(len(calls), 4)
+                expected_suites = {"main", "build"}
+                if failure != "main":
+                    expected_suites.add("compiler")
+                if failure not in {"main", "compiler"}:
+                    expected_suites.add("language")
+                if runner != "Linux":
+                    order = ["main", "build", "compiler", "language"]
+                    expected_suites = set(order[:order.index(failure) + 1] if failure else order)
+                self.assertEqual(len(calls), len(expected_suites))
+                report = summary.read_text()
+                for suite in expected_suites:
+                    self.assertTrue((root / (suite + ".finished")).exists())
+                    self.assertIn(f"### Go tests: {suite} (exit {7 if suite == failure else 0})", report)
                 for package in ("./cl", "./internal/build", "./test/go"):
-                    args = next(args for args in calls if package in args)
-                    self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
-                                     [f"-overlay={overlay}"] if overlay else [])
-                simd = next(args for args in calls if "./internal/build" in args)
-                self.assertIn("^TestSIMD", simd)
-                self.assertIn("-coverprofile=coverage-simd.txt", simd)
-                self.assertIn(
-                    "-coverpkg=github.com/xgo-dev/llgo/internal/build,"
-                    "github.com/xgo-dev/llgo/cl,github.com/xgo-dev/llgo/ssa", simd)
+                    for args in (args for args in calls if package in args):
+                        self.assertEqual([arg for arg in args if arg.startswith("-overlay=")],
+                                         [f"-overlay={overlay}"] if overlay else [])
+                main = next(args for args in calls if "github.com/xgo-dev/llgo/cmd/internal/version" in args)
+                self.assertEqual("-p=2" in main, runner == "Linux")
+                self.assertFalse(any(arg.startswith("-overlay=") for arg in main))
+                # Every build case still runs exactly once with compiler coverage.
+                if "build" in expected_suites:
+                    build = next(args for args in calls if "./internal/build" in args)
+                    self.assertNotIn("-run", build)
+                    self.assertNotIn("-skip", build)
+                    self.assertIn("-coverprofile=coverage-build.txt", build)
+                    self.assertIn("-coverpkg=./...", build)
+                    self.assertEqual(sum("./internal/build" in args for args in calls), 1)
+                    self.assertEqual(any(arg.startswith("-ldflags=-linkmode=external") for arg in build),
+                                     runner == "Windows")
+                self.assertFalse(any("github.com/xgo-dev/llgo/internal/build" in args
+                                     for args in calls))
+                self.assertTrue(all("-json" in args for args in calls))
+
+    def test_cross_host_windows_checks_keep_every_host_target_pair(self):
+        job = load("llgo.yml")["jobs"]["windows-gnu-cross"]
+        entries = job["strategy"]["matrix"]["include"]
+        checks = [step for step in job["steps"]
+                  if step.get("uses") == "./.github/actions/test-windows-cross"]
+        actual = set()
+        for entry in entries:
+            for step in checks:
+                arch = step["with"]["windows-arch"]
+                if entry["windows_arch"] in {"all", arch}:
+                    actual.add((entry["os"], arch))
+                self.assertIn("!cancelled()", step["if"])
+                self.assertIn("steps.host_compiler.outcome == 'success'", step["if"])
+                self.assertIn(f"matrix.windows_arch == '{arch}'", step["if"])
+                self.assertNotIn("continue-on-error", step)
+        self.assertEqual(actual, {(host, arch) for host in ("ubuntu-24.04", "macos-latest")
+                                  for arch in ("amd64", "arm64", "386")})
+        self.assertEqual(sum(entry["os"] == "macos-latest" for entry in entries), 1)
+
+    def test_embedded_debuggers_share_setup_without_losing_backend_failures(self):
+        job = load("targets.yml")["jobs"]["embedded-debug"]
+        self.assertCountEqual(job["strategy"]["matrix"]["os"],
+                              ["ubuntu-24.04", "macos-15", "windows-2022"])
+        self.assertNotIn("backend", job["strategy"]["matrix"])
+        for backend in ("gdb", "lldb"):
+            step = next(step for step in job["steps"]
+                        if f"runtest.py --backend {backend}" in step.get("run", ""))
+            self.assertIn("!cancelled()", step["if"])
+            self.assertIn("steps.compiler.outcome == 'success'", step["if"])
+            self.assertNotIn("continue-on-error", step)
+
+    def test_all_board_fixtures_share_one_compiler_and_cache(self):
+        job = load("targets.yml")["jobs"]["llgo"]
+        self.assertEqual(matrix_size(job), 1)
+        steps = job["steps"]
+        compiler = next(step for step in steps if step.get("id") == "compiler")
+        self.assertIn("go build -tags=dev", compiler["run"])
+        self.assertIn("LLGO_TEST_COMPILER=", compiler["run"])
+        cache = next(step for step in steps
+                     if step.get("uses") == "./.github/actions/setup-llgo-cache")
+        self.assertEqual(cache["with"]["crosscompile-cache-mode"], "readwrite")
+        self.assertEqual(cache["with"]["build-cache-scope"], "embedded-boards")
+        for fixture in ("empty", "defer"):
+            step = next(step for step in steps
+                        if step.get("run") == f"bash build.sh {fixture}")
+            self.assertEqual(step["working-directory"], "_demo/embed/targetsbuild")
+            self.assertIn("!cancelled()", step["if"])
+            self.assertIn("steps.compiler.outcome == 'success'", step["if"])
+            self.assertNotIn("continue-on-error", step)
+
+    def test_wasm_caches_use_pinned_go_and_include_workers(self):
+        steps = load("llgo.yml")["jobs"]["wasm-runtime"]["steps"]
+        go = next(i for i, step in enumerate(steps)
+                  if step.get("uses") == "./.github/actions/setup-go")
+        cache = next(i for i, step in enumerate(steps)
+                     if step.get("uses") == "./.github/actions/setup-llgo-cache")
+        self.assertLess(go, cache)
+        self.assertNotIn("if", steps[cache])
+        self.assertEqual(steps[cache]["with"]["build-cache-mode"], "readwrite")
+        self.assertEqual(steps[cache]["with"]["build-cache-scope"], "wasm-${{ matrix.suite }}")
+        self.assertEqual(steps[cache]["with"]["crosscompile-cache-mode"], "readwrite")
+        self.assertIn("matrix.suite != 'workers'", steps[cache]["with"]["wasmer-cache-mode"])
+
+    def test_benchmark_runtime_manifest_keeps_versions_and_full_demo_dependencies(self):
+        root = WORKFLOWS.parents[1]
+        full = json.loads((root / ".github/windows/vcpkg/vcpkg.json").read_text())
+        runtime = json.loads((root / ".github/windows/vcpkg-runtime/vcpkg.json").read_text())
+        self.assertEqual(full["builtin-baseline"], runtime["builtin-baseline"])
+        self.assertEqual(full["overrides"], runtime["overrides"])
+        runtime_names = {dep if isinstance(dep, str) else dep["name"]
+                         for dep in runtime["dependencies"]}
+        full_names = {dep if isinstance(dep, str) else dep["name"]
+                      for dep in full["dependencies"]}
+        self.assertEqual(runtime_names, {"bdwgc", "libffi", "libuv", "pkgconf", "zlib"})
+        self.assertEqual(full_names - runtime_names, {"openssl", "cjson", "sqlite3"})
+        self.assertIn({"name": "pkgconf", "host": True}, runtime["dependencies"])
+        action = yaml.load((root / ".github/actions/setup-deps/action.yml").read_text(),
+                           Loader=yaml.BaseLoader)
+        self.assertEqual(action["inputs"]["windows-msvc-dependencies"]["default"], "full")
+        cache = next(step for step in action["runs"]["steps"]
+                     if step.get("id") == "windows_vcpkg_cache")
+        self.assertIn("steps.windows_profile.outputs.manifest-hash", cache["with"]["key"])
+        self.assertIn("steps.windows_profile.outputs.manifest-hash", cache["with"]["path"])
+        steps = load("benchmark.yml")["jobs"]["benchmark"]["steps"]
+        deps = next(step for step in steps
+                    if step.get("uses") == "./.github/actions/setup-deps")
+        self.assertEqual(deps["with"]["windows-msvc-dependencies"], "runtime")
+
+    def test_cache_scopes_preserve_legacy_keys_and_isolate_package_workloads(self):
+        root = WORKFLOWS.parents[1]
+        action = yaml.load((root / ".github/actions/setup-llgo-cache/action.yml").read_text(),
+                           Loader=yaml.BaseLoader)
+        resolve = action["runs"]["steps"][0]["run"]
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            for tool, output in (("go", "go1.27.0"), ("clang", "clang version 22.1.8")):
+                path = directory / tool
+                path.write_text(f"#!/bin/sh\necho '{output}'\n")
+                path.chmod(0o755)
+            profiles = []
+            for scope in ("", "embedded-boards", "wasm-runtime", "wasm-workers", "bad/scope"):
+                output = directory / "outputs"
+                output.write_text("")
+                result = subprocess.run(["bash", "-c", resolve], cwd=root,
+                    env={**os.environ, "PATH": f"{directory}{os.pathsep}{os.environ['PATH']}",
+                         "BUILD_CACHE_MODE": "readwrite", "CROSSCOMPILE_CACHE_MODE": "readwrite",
+                         "WASMER_CACHE_MODE": "off", "BUILD_CACHE_SCOPE": scope,
+                         "LLGO_WINDOWS_ABI": "native", "LLGO_WINDOWS_ARCH": "native",
+                         "GITHUB_OUTPUT": str(output)}, capture_output=True, text=True)
+                if scope == "bad/scope":
+                    self.assertNotEqual(result.returncode, 0)
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                values = dict(line.split("=", 1) for line in output.read_text().splitlines())
+                self.assertEqual(values["profile"], "native-native")
+                self.assertEqual(values["build-profile"], "native-native" + (f"-{scope}" if scope else ""))
+                profiles.append(values["build-profile"])
+            self.assertEqual(len(profiles), len(set(profiles)))
 
     def test_code_and_document_jobs_consume_the_shared_decision(self):
         for filename in [*CODE_WORKFLOWS, "doc-link-checker.yml", "model-demo.yml"]:
@@ -436,7 +636,7 @@ else:
             with self.subTest(workflow=filename):
                 self.assertEqual(workflow["jobs"]["prepare"]["uses"], PREPARE)
                 self.assertIn("prepare", needs(job))
-                self.assertNotIn("if", job)  # These checks still run for docs-only PRs.
+                self.assertEqual(job["if"], "needs.prepare.outputs.run_code_ci == 'true'")
                 self.assertEqual(job["runs-on"],
                                  "${{ matrix.os == 'ubuntu-24.04' && fromJSON(needs.prepare.outputs.linux_large_runner) || matrix.os }}")
                 self.assertCountEqual(job["strategy"]["matrix"]["os"],

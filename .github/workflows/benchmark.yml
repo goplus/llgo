@@ -132,6 +132,7 @@ jobs:
           llvm-version: 22
           windows-abi: ${{ matrix.windows_abi || 'msvc' }}
           windows-arch: ${{ matrix.windows_arch || 'amd64' }}
+          windows-msvc-dependencies: runtime
 
       - name: Set up Go
         uses: ./.github/actions/setup-go
