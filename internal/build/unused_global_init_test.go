@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/cl"
+	"github.com/xgo-dev/llgo/internal/env"
 	"github.com/xgo-dev/llgo/internal/optlevel"
 	"github.com/xgo-dev/llgo/internal/packages"
 	llssa "github.com/xgo-dev/llgo/ssa"
@@ -71,7 +72,7 @@ func main() { Read() }
 func TestUnusedGlobalInitLinkAliases(t *testing.T) {
 	t.Setenv("LDFLAGS", "")
 	pkg := buildWasmReflectTestProgram(t, `package main; var M = map[int]int{1:2}; func main() {}`)
-	for _, alias := range []string{"", "source", "target"} {
+	for _, alias := range []string{"", "source", "target", "thread local", "goroutine local"} {
 		prog := llssa.NewProgram(&llssa.Target{GOOS: "wasip1", GOARCH: "wasm"})
 		name := llssa.FullName(pkg.Pkg, "M")
 		if alias == "source" {
@@ -79,6 +80,12 @@ func TestUnusedGlobalInitLinkAliases(t *testing.T) {
 		}
 		if alias == "target" {
 			prog.SetLinkname("other.alias", name)
+		}
+		if alias == "thread local" {
+			prog.SetLocalityInfo(name, llssa.LocalityInfo{Locality: llssa.ThreadLocal})
+		}
+		if alias == "goroutine local" {
+			prog.SetLocalityInfo(name, llssa.LocalityInfo{Locality: llssa.GoroutineLocal})
 		}
 		ctx := &context{prog: prog, progSSA: pkg.Prog, buildConf: &Config{BuildMode: BuildModeExe}}
 		configureUnusedGlobalInits(ctx)
@@ -136,9 +143,15 @@ func TestUnusedGlobalInitExportAnnotation(t *testing.T) {
 	p := &packages.Package{ID: "main", PkgPath: "main", Types: pkg.Pkg, Syntax: []*ast.File{file}}
 	ctx := &context{prog: prog, progSSA: pkg.Prog, buildConf: &Config{BuildMode: BuildModeExe},
 		pkgByID: map[string]*aPackage{"main": {Package: p, SSA: pkg}}}
-	configureUnusedGlobalInits(ctx)
-	if names := ctx.frontendOptions.UnusedGlobalInits.Names(pkg); len(names) != 0 {
-		t.Fatalf("single-name exported globals were pruned: %v", names)
+	for _, alternate := range []bool{false, true} {
+		if alternate {
+			p.Syntax = nil
+			ctx.pkgByID["main"].AltPkg = &packages.Cached{Types: pkg.Pkg, Syntax: []*ast.File{file}}
+		}
+		configureUnusedGlobalInits(ctx)
+		if names := ctx.frontendOptions.UnusedGlobalInits.Names(pkg); len(names) != 0 {
+			t.Fatalf("alternate=%v: single-name exported globals were pruned: %v", alternate, names)
+		}
 	}
 }
 
@@ -153,5 +166,70 @@ func TestUnusedGlobalInitRewrite(t *testing.T) {
 	configureUnusedGlobalInits(ctx)
 	if names := ctx.frontendOptions.UnusedGlobalInits.Names(pkg); len(names) != 0 {
 		t.Fatalf("rewritten initializer was pruned: %v", names)
+	}
+}
+
+func TestUnusedGlobalInitNativeInputs(t *testing.T) {
+	t.Setenv("LDFLAGS", "")
+	t.Setenv(llgoPlan9ASMPkgs, "all")
+	for _, tc := range []struct {
+		name, declarations, assembly, native, dir string
+		prune, asmDisabled                        bool
+	}{
+		{name: "native object", native: "extra.o"},
+		{name: "LLGoFiles", declarations: `const LLGoFiles = "extra.c"`},
+		{name: "linked package", declarations: `const LLGoPackage = "link: extra"`},
+		{name: "C import", declarations: `import "C"`},
+		{name: "raw C import", declarations: "import `C`"},
+		{name: "cgo linker flag", declarations: "//go:cgo_ldflag \"-pthread\"\n"},
+		{name: "cgo dynamic import", declarations: "//go:cgo_import_dynamic local remote \"lib.so\"\n"},
+		{name: "missing assembly", native: "read_wasm.s"},
+		{name: "invalid assembly", native: "read_wasm.s", assembly: "TEXT ·Read(SB),NOSPLIT,$0-8\n\tINVALID\n"},
+		{name: "disabled assembly", native: "read_wasm.s", assembly: "TEXT ·Read(SB),NOSPLIT,$0-8\n\tRET\n", asmDisabled: true},
+		{name: "empty assembly", native: "read_wasm.s", assembly: "// placeholder\n", prune: true},
+		{name: "empty native declarations", declarations: `const LLGoFiles = ""; const LLGoPackage = "normal"`, prune: true},
+		{name: "runtime provider", native: "extra.c", dir: "runtime", prune: true},
+		{name: "library provider", native: "extra.c", dir: "lib", prune: true},
+		{name: "outside runtime", native: "extra.c", dir: "runtime-other"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// C imports are loader metadata; keep them out of the ordinary
+			// Go type checker while exercising the complete pruning gate.
+			src := "package main\n" + tc.declarations + "\nvar M = map[int]int{1:2}; func Read() int64; func main() {}"
+			ssaSrc := src
+			if strings.HasPrefix(tc.declarations, "import") {
+				ssaSrc = strings.Replace(src, tc.declarations, "", 1)
+			}
+			pkg := buildWasmReflectTestProgram(t, ssaSrc)
+			file, err := parser.ParseFile(token.NewFileSet(), "main.go", src, parser.ParseComments)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := t.TempDir()
+			if tc.dir != "" {
+				dir = filepath.Join(env.LLGoROOT(), tc.dir, "init-test")
+			}
+			p := &packages.Package{ID: "main", PkgPath: "main", Dir: dir, Types: pkg.Pkg,
+				TypesSizes: &types.StdSizes{WordSize: 4, MaxAlign: 8}, Syntax: []*ast.File{file}}
+			prog := llssa.NewProgram(&llssa.Target{GOOS: "wasip1", GOARCH: "wasm"})
+			defer prog.Dispose()
+			conf := &Config{BuildMode: BuildModeExe, Goos: "wasip1", Goarch: "wasm", Verbose: true}
+			if tc.native != "" {
+				path := filepath.Join(dir, tc.native)
+				p.OtherFiles = []string{path}
+				if tc.assembly != "" {
+					conf.Overlay = map[string][]byte{path: []byte(tc.assembly)}
+				}
+			}
+			ctx := &context{prog: prog, progSSA: pkg.Prog, buildConf: conf,
+				pkgByID: map[string]*aPackage{"main": {Package: p, SSA: pkg}}}
+			if tc.asmDisabled {
+				t.Setenv(llgoPlan9ASMPkgs, "none")
+			}
+			configureUnusedGlobalInits(ctx)
+			if got := len(ctx.frontendOptions.UnusedGlobalInits.Names(pkg)) != 0; got != tc.prune {
+				t.Fatalf("pruned=%v, want %v", got, tc.prune)
+			}
+		})
 	}
 }

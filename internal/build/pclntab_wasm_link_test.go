@@ -80,3 +80,16 @@ func TestWasmPCLNPruningScope(t *testing.T) {
 		prog.Dispose()
 	}
 }
+
+func TestWasmPCLNInvalidModule(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "module.wasm")
+	if _, err := analyzeWasmPCLN(path, pclnmap.Data{}); err == nil {
+		t.Fatal("accepted missing linked module")
+	}
+	if err := os.WriteFile(path, []byte("\x00asm"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := analyzeWasmPCLN(path, pclnmap.Data{}); err == nil {
+		t.Fatal("accepted truncated linked module")
+	}
+}

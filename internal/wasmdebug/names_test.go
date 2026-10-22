@@ -22,6 +22,10 @@ func TestFunctionNames(t *testing.T) {
 		}
 	}
 	for _, payload := range [][]byte{
+		{1},                             // missing subsection length
+		{1, 2, 0},                       // truncated subsection
+		{1, 0},                          // missing map count
+		{1, 1, 1},                       // missing function index
 		{1, 7, 2, 0, 1, 'a', 0, 1, 'b'}, // repeated index
 		{1, 2, 0, 0},                    // trailing bytes
 		{1, 1, 0, 1, 1, 0},              // repeated map
@@ -30,5 +34,16 @@ func TestFunctionNames(t *testing.T) {
 		if _, err := FunctionNames(appendCustomSection(append([]byte(nil), wasmHeader...), "name", payload)); err == nil {
 			t.Fatalf("accepted invalid name map %x", payload)
 		}
+	}
+}
+
+func TestFunctionNamesOptionalSubsections(t *testing.T) {
+	// Other custom sections and the module-name subsection can precede an
+	// empty function map; neither supplies evidence that functions are dead.
+	module := appendCustomSection(append([]byte(nil), wasmHeader...), "producers", nil)
+	module = appendCustomSection(module, "name", []byte{0, 2, 1, 'm', 1, 1, 0})
+	names, err := FunctionNames(module)
+	if err != nil || names == nil || len(names) != 0 {
+		t.Fatalf("empty function map = %v, %v", names, err)
 	}
 }

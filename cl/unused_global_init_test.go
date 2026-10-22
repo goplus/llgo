@@ -22,6 +22,7 @@ func TestUnusedGlobalInitializers(t *testing.T) {
 		{"post-init write", `var M = map[int]int{1: 2}; func write() { M = nil }`, nil, 0},
 		{"interface key panic", `var M = map[any]int{[]int{1}: 2}`, []string{"M"}, 0},
 		{"nested interface key panic", `type K struct{ X any }; var M = map[K]int{{[]int{1}}: 2}`, []string{"M"}, 0},
+		{"array interface key panic", `var M = map[[1]any]int{{[]int{1}}: 2}`, []string{"M"}, 0},
 		{"dynamic map hint", `func hint() int { return -1 }; var M = make(map[int]int, hint())`, []string{"M"}, 0},
 		{"large map hint", `var M = make(map[int]int, 1 << 30)`, []string{"M"}, 0},
 		{"blank map", `var _ = map[int]int{1: 2}`, nil, 1},
@@ -64,7 +65,7 @@ func TestUnusedGlobalInitializerPreserve(t *testing.T) {
 		t.Fatal("removed a preserved initializer")
 	}
 	var absent *UnusedGlobalInits
-	if absent.Names(pkg) != nil {
+	if absent.Names(pkg) != nil || absent.CacheKeys(pkg) != nil {
 		t.Fatal("nil plan has package entries")
 	}
 }
