@@ -27,7 +27,7 @@ func StripMetadata(module []byte, all bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := append([]byte(nil), wasmHeader...)
+	out := append(make([]byte, 0, len(module)), wasmHeader...)
 	for _, s := range sections {
 		if s.id == 0 && (isDWARFSection(s.name) || s.name == "name" || s.name == "sourceMappingURL" || all && s.name == "producers") {
 			continue

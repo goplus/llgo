@@ -17,6 +17,7 @@
 package build
 
 import (
+	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
@@ -102,6 +103,15 @@ type byteCounter int64
 func (n *byteCounter) Write(p []byte) (int, error) { *n += byteCounter(len(p)); return len(p), nil }
 
 func wasmArtifact(path string) (wasmManifestArtifact, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return wasmManifestArtifact{}, err
+	}
+	defer f.Close()
+	return wasmArtifactFrom(path, f)
+}
+
+func wasmArtifactFrom(path string, reader io.Reader) (wasmManifestArtifact, error) {
 	a := wasmManifestArtifact{Path: filepath.Base(path), Role: "deployment"}
 	if strings.HasSuffix(path, ".debug.wasm") {
 		a.Role = "debug"
@@ -109,18 +119,13 @@ func wasmArtifact(path string) (wasmManifestArtifact, error) {
 	if strings.HasSuffix(path, ".pclntab") {
 		a.Role = "runtime-symbols"
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		return a, err
-	}
-	defer f.Close()
 	var compressed byteCounter
 	gz, err := gzip.NewWriterLevel(&compressed, gzip.BestCompression)
 	if err != nil {
 		return a, err
 	}
 	h := sha256.New()
-	a.Bytes, err = io.Copy(io.MultiWriter(h, gz), f)
+	a.Bytes, err = io.Copy(io.MultiWriter(h, gz), reader)
 	if err != nil {
 		return a, err
 	}
@@ -131,8 +136,15 @@ func wasmArtifact(path string) (wasmManifestArtifact, error) {
 	return a, nil
 }
 
-func writeWasmManifest(ctx *context, dir, module, name string, tool wasmManifestTool, args, linkFlags []string, before int64) error {
+func writeWasmManifest(ctx *context, dir, module string, moduleData []byte, name string, tool wasmManifestTool, args, linkFlags []string, before int64) error {
 	conf := ctx.buildConf
+	if tool.Path != "" {
+		tool.Path = filepath.Base(tool.Path)
+	}
+	linkFlags = slices.Clone(linkFlags)
+	for i, arg := range linkFlags {
+		linkFlags[i] = wasmManifestArg(arg)
+	}
 	m := wasmManifest{Schema: 1, Compiler: env.Version(), CompilerHash: conf.CompilerHash,
 		CompilerGo: runtime.Version(), Go: ctx.sourceGoVersion(), LLVM: gllvm.Version,
 		LinkDriver: ctx.crossCompile.CC, DriverVersion: ctx.getLLVMVersion(),
@@ -140,17 +152,17 @@ func writeWasmManifest(ctx *context, dir, module, name string, tool wasmManifest
 		PointerBits: int(conf.debugPointerSize) * 8, PCLN: conf.PCLNMode.String(), Optimization: conf.WasmOpt,
 		Strip: conf.WasmStrip, Tool: tool, Args: args, LinkFlags: linkFlags, InputBytes: before,
 		AllowedFeatures: wasmFinalFeatures(&ctx.crossCompile)}
+	if m.LinkDriver != "" {
+		m.LinkDriver = filepath.Base(m.LinkDriver)
+	}
 	if m.Optimization == "" {
 		m.Optimization = WasmOptOff
 	}
 	if m.Strip == "" {
 		m.Strip = WasmStripNone
 	}
-	data, err := os.ReadFile(filepath.Join(dir, module))
-	if err != nil {
-		return err
-	}
-	if m.Features, err = wasmdebug.TargetFeatures(data); err != nil {
+	var err error
+	if m.Features, err = wasmdebug.TargetFeatures(moduleData); err != nil {
 		return err
 	}
 	if m.Features == nil {
@@ -173,7 +185,16 @@ func writeWasmManifest(ctx *context, dir, module, name string, tool wasmManifest
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("unexpected non-file Wasm artifact %q", entry.Name())
 		}
-		a, err := wasmArtifact(filepath.Join(dir, entry.Name()))
+		var a wasmManifestArtifact
+		if entry.Name() == module {
+			// Optimization/debug packaging can change features and bytes. Reuse
+			// that final image for metadata, hashing and compression; other
+			// artifacts are streamed without loading the whole set into memory.
+			a, err = wasmArtifactFrom(module, bytes.NewReader(moduleData))
+			a.Role = "deployment"
+		} else {
+			a, err = wasmArtifact(filepath.Join(dir, entry.Name()))
+		}
 		if err != nil {
 			return err
 		}
@@ -192,6 +213,23 @@ func writeWasmManifest(ctx *context, dir, module, name string, tool wasmManifest
 		return err
 	}
 	return os.WriteFile(filepath.Join(dir, name), append(raw, '\n'), 0o644)
+}
+
+// Keep flag intent without publishing machine-specific absolute directories.
+// A manifest describes the result; it is not a portable linker command line.
+func wasmManifestArg(arg string) string {
+	if filepath.IsAbs(arg) {
+		return "<path>/" + filepath.Base(arg)
+	}
+	if i := strings.IndexAny(arg, "=,"); i >= 0 {
+		return wasmManifestArg(arg[:i]) + arg[i:i+1] + wasmManifestArg(arg[i+1:])
+	}
+	for _, prefix := range []string{"-L", "-I", "@"} {
+		if strings.HasPrefix(arg, prefix) && filepath.IsAbs(arg[len(prefix):]) {
+			return prefix + wasmManifestArg(arg[len(prefix):])
+		}
+	}
+	return arg
 }
 
 // Publish with rollback on ordinary filesystem failures, then publish the

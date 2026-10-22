@@ -59,7 +59,9 @@ It records compiler/source-Go/LLVM/link-driver identity, target profile and
 pointer width, PCLN and final optimization modes, Binaryen identity/arguments,
 link flags, declared and allowed Wasm features, and each artifact's byte count,
 gzip-9 byte count and SHA-256. Its build ID covers sorted artifact names and
-hashes. Debugger build IDs remain paired with the external DWARF container.
+hashes. Tool names and absolute flag paths are normalized to omit local machine
+directories; the manifest is a build record, not a portable linker command.
+Debugger build IDs remain paired with the external DWARF container.
 
 `payload` includes Wasm, JS/HTML loaders, worker assets and runtime symbols;
 `debug` counts external debugger containers separately. Gzip totals sum files
@@ -93,12 +95,12 @@ can have a slightly larger compressed total because of the manifest.
 
 | Profile | Example | Baseline | Final | Raw reduction |
 | --- | --- | ---: | ---: | ---: |
-| W32 | cprintf | 160,243 / 44,666 | 118,957 / 40,612 | 25.76% |
-| W32 | println | 159,933 / 44,678 | 118,705 / 40,486 | 25.78% |
-| W32 | fmtprintf | 2,371,607 / 514,578 | 1,938,055 / 495,444 | 18.28% |
-| J32 | cprintf | 252,135 / 70,298 | 249,249 / 70,470 | 1.14% |
-| J32 | println | 251,679 / 70,215 | 248,766 / 70,223 | 1.16% |
-| J32 | fmtprintf | 3,139,290 / 703,680 | 3,072,833 / 701,050 | 2.12% |
-| J64 | cprintf | 242,604 / 66,670 | 239,994 / 66,918 | 1.08% |
-| J64 | println | 242,194 / 66,485 | 239,554 / 66,682 | 1.09% |
-| J64 | fmtprintf | 2,908,050 / 642,098 | 2,848,393 / 640,962 | 2.05% |
+| W32 | cprintf | 160,243 / 44,666 | 118,610 / 40,517 | 25.98% |
+| W32 | println | 159,933 / 44,678 | 118,358 / 40,387 | 26.00% |
+| W32 | fmtprintf | 2,371,607 / 514,578 | 1,937,708 / 495,349 | 18.30% |
+| J32 | cprintf | 252,135 / 70,298 | 248,991 / 70,371 | 1.25% |
+| J32 | println | 251,679 / 70,215 | 248,508 / 70,129 | 1.26% |
+| J32 | fmtprintf | 3,139,290 / 703,680 | 3,072,575 / 700,958 | 2.13% |
+| J64 | cprintf | 242,604 / 66,670 | 239,736 / 66,807 | 1.18% |
+| J64 | println | 242,194 / 66,485 | 239,296 / 66,574 | 1.20% |
+| J64 | fmtprintf | 2,908,050 / 642,098 | 2,848,135 / 640,863 | 2.06% |

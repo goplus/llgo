@@ -74,10 +74,14 @@ func validateWasmFinalOptions(conf *Config, target *crosscompile.Export) error {
 	if conf.OutFmts != (OutFmts{}) {
 		return fmt.Errorf("wasm-opt and wasm-strip do not support firmware output conversion")
 	}
+	return nil
+}
+
+func wasmFinalLinkFlags(conf *Config, target *crosscompile.Export) []string {
 	if conf.WasmOpt == WasmOptSize && target.WasmProvider == crosscompile.WasmProviderEmscripten {
 		// Keep explicit runtime methods and user/native exports. Size builds
 		// expose that ABI instead of every incidental JS implementation symbol.
-		target.LDFLAGS = append(target.LDFLAGS, "-sEXPORT_ALL=0")
+		return []string{"-sEXPORT_ALL=0"}
 	}
 	return nil
 }
@@ -206,11 +210,11 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	if err := finalizeDebugArtifact(ctx.buildConf, &staged, verbose); err != nil {
 		return err
 	}
+	data, err = os.ReadFile(module)
+	if err != nil {
+		return err
+	}
 	if ctx.buildConf.WasmStrip == WasmStripDebug || ctx.buildConf.WasmStrip == WasmStripAll {
-		data, err := os.ReadFile(module)
-		if err != nil {
-			return err
-		}
 		data, err = wasmdebug.StripMetadata(data, ctx.buildConf.WasmStrip == WasmStripAll)
 		if err != nil {
 			return err
@@ -221,7 +225,7 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	}
 	manifestName := filepath.Base(wasmManifestPath(module))
 	linkFlags := append(slices.Clone(ctx.crossCompile.LDFLAGS), plan.linkArgs...)
-	if err := writeWasmManifest(ctx, dir, filepath.Base(module), manifestName, tool, args[:len(args)-3], linkFlags, before.Size()); err != nil {
+	if err := writeWasmManifest(ctx, dir, filepath.Base(module), data, manifestName, tool, args[:len(args)-3], linkFlags, before.Size()); err != nil {
 		return err
 	}
 	var remove []string

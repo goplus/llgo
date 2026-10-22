@@ -63,12 +63,20 @@ func TestWasmFinalOptions(t *testing.T) {
 	if needsWasmFinalization(nil) {
 		t.Fatal("nil enabled")
 	}
-	target := crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}
-	if err := validateWasmFinalOptions(&good, &target); err != nil {
-		t.Fatal(err)
+	target := crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten, LDFLAGS: []string{"-sEXPORT_ALL=1"}}
+	for range 2 {
+		if err := validateWasmFinalOptions(&good, &target); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if !slices.Contains(target.LDFLAGS, "-sEXPORT_ALL=0") {
-		t.Fatal("size mode retained EXPORT_ALL")
+	if !slices.Equal(target.LDFLAGS, []string{"-sEXPORT_ALL=1"}) {
+		t.Fatal("validation mutated linker flags")
+	}
+	if !slices.Equal(wasmFinalLinkFlags(&good, &target), []string{"-sEXPORT_ALL=0"}) {
+		t.Fatal("size link omitted export policy")
+	}
+	if len(wasmFinalLinkFlags(&Config{}, &target)) != 0 || len(wasmFinalLinkFlags(&good, &crosscompile.Export{})) != 0 {
+		t.Fatal("changed other link modes")
 	}
 	for _, profile := range []crosscompile.WasmProfile{crosscompile.WasmProfileW32, crosscompile.WasmProfileJ32, crosscompile.WasmProfileJ64} {
 		target.WasmProfile = profile
@@ -93,11 +101,15 @@ func TestWasmManifestDeterminism(t *testing.T) {
 	write("app.wasm", []byte("\x00asm\x01\x00\x00\x00"))
 	write("app.mjs", []byte("glue"))
 	write("app.debug.wasm", []byte("DWARF"))
-	ctx := &context{buildConf: &Config{PCLNMode: PCLNEmbedded, debugPointerSize: 4}, llvmVersion: "LLVM test", crossCompile: crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32}}
+	ctx := &context{buildConf: &Config{PCLNMode: PCLNEmbedded, debugPointerSize: 4}, llvmVersion: "LLVM test", crossCompile: crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, CC: filepath.Join(dir, "emcc")}}
 	name := "app.wasm-manifest.json"
 	run := func() ([]byte, wasmManifest) {
 		t.Helper()
-		if err := writeWasmManifest(ctx, dir, "app.wasm", name, wasmManifestTool{Version: "132"}, []string{"-g"}, nil, 100); err != nil {
+		data, err := os.ReadFile(filepath.Join(dir, "app.wasm"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := writeWasmManifest(ctx, dir, "app.wasm", data, name, wasmManifestTool{Path: filepath.Join(dir, "wasm-opt"), Version: "132"}, []string{"-g"}, []string{"--sysroot=" + dir}, 100); err != nil {
 			t.Fatal(err)
 		}
 		raw, err := os.ReadFile(filepath.Join(dir, name))
@@ -111,6 +123,9 @@ func TestWasmManifestDeterminism(t *testing.T) {
 		return raw, m
 	}
 	first, m := run()
+	if m.Tool.Path != "wasm-opt" || m.LinkDriver != "emcc" || strings.Contains(string(first), dir) {
+		t.Fatalf("manifest contains local tool paths: %s", first)
+	}
 	if len(m.Artifacts) != 3 || m.PointerBits != 32 || m.Optimization != WasmOptOff || m.Strip != WasmStripNone {
 		t.Fatalf("manifest=%+v", m)
 	}
@@ -464,7 +479,8 @@ func TestWasmManifestRejectsInvalidArtifacts(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := writeWasmManifest(ctx, dir, "app.wasm", "app.wasm-manifest.json", wasmManifestTool{}, nil, nil, 0); err == nil {
+			data, _ := os.ReadFile(module)
+			if err := writeWasmManifest(ctx, dir, "app.wasm", data, "app.wasm-manifest.json", wasmManifestTool{}, nil, nil, 0); err == nil {
 				t.Fatal("accepted invalid artifacts")
 			}
 		})
@@ -588,10 +604,55 @@ func TestWasmManifestUnreadableArtifactPreservesManifest(t *testing.T) {
 		t.Skip("filesystem grants reads despite mode 000")
 	}
 	ctx := &context{buildConf: &Config{}, llvmVersion: "test"}
-	if err := writeWasmManifest(ctx, dir, "app.wasm", "manifest", wasmManifestTool{}, nil, nil, 0); err == nil {
+	data, err := os.ReadFile(module)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeWasmManifest(ctx, dir, "app.wasm", data, "manifest", wasmManifestTool{}, nil, nil, 0); err == nil {
 		t.Fatal("accepted unreadable artifact")
 	}
 	if data, err := os.ReadFile(manifest); err != nil || string(data) != "previous manifest" {
 		t.Fatalf("replaced manifest on failure: %q, %v", data, err)
+	}
+}
+
+func TestWasmManifestArguments(t *testing.T) {
+	absolute := filepath.Join(t.TempDir(), "library")
+	for _, tc := range []struct{ input, want string }{
+		{absolute, "<path>/library"},
+		{"--sysroot=" + absolute, "--sysroot=<path>/library"},
+		{"-Wl,-rpath," + absolute, "-Wl,-rpath,<path>/library"},
+		{"-L" + absolute, "-L<path>/library"},
+		{"-I" + absolute, "-I<path>/library"},
+		{"@" + absolute, "@<path>/library"},
+		{"-Wl,--export=main", "-Wl,--export=main"},
+		{"relative/path", "relative/path"},
+	} {
+		if got := wasmManifestArg(tc.input); got != tc.want {
+			t.Fatalf("%q => %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
+func TestWasmManifestPrimaryDebugSuffix(t *testing.T) {
+	dir := t.TempDir()
+	data := []byte("\x00asm\x01\x00\x00\x00")
+	if err := os.WriteFile(filepath.Join(dir, "app.debug.wasm"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &context{buildConf: &Config{}, llvmVersion: "test"}
+	if err := writeWasmManifest(ctx, dir, "app.debug.wasm", data, "manifest", wasmManifestTool{}, nil, nil, 0); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "manifest"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m wasmManifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Payload.Bytes != int64(len(data)) || m.Debug.Bytes != 0 {
+		t.Fatalf("primary module misclassified: %+v", m)
 	}
 }
