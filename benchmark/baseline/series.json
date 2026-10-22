@@ -4022,10 +4022,10 @@
       "label": "Branch visualfc/llgo:fix/sync-pool-shared-tls",
       "path": "series/branch/ee65ee08fa675848/summary.json",
       "configPath": "series/branch/ee65ee08fa675848/config.json",
-      "commitPath": "commits/d92c69ed75da5bf141b529b7a6f6485e30c88f8f.json",
-      "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
-      "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
-      "updatedAt": "2026-10-21T12:09:47.964Z"
+      "commitPath": "commits/f6a3f7c2ace3221ab35c410201d7786c8884624f.json",
+      "sha": "f6a3f7c2ace3221ab35c410201d7786c8884624f",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/f6a3f7c2ace3221ab35c410201d7786c8884624f",
+      "updatedAt": "2026-10-22T04:10:19.544Z"
     },
     {
       "kind": "branch",
@@ -10028,10 +10028,10 @@
       "label": "PR #2902",
       "path": "series/pull/2902/summary.json",
       "configPath": "series/pull/2902/config.json",
-      "commitPath": "commits/d92c69ed75da5bf141b529b7a6f6485e30c88f8f.json",
-      "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
-      "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
-      "updatedAt": "2026-10-21T12:09:46.289Z"
+      "commitPath": "commits/f6a3f7c2ace3221ab35c410201d7786c8884624f.json",
+      "sha": "f6a3f7c2ace3221ab35c410201d7786c8884624f",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/f6a3f7c2ace3221ab35c410201d7786c8884624f",
+      "updatedAt": "2026-10-22T04:10:17.318Z"
     },
     {
       "kind": "pull",
