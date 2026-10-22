@@ -353,3 +353,67 @@ func TestCDPWorkerExitCancelsPendingRequest(t *testing.T) {
 		t.Fatalf("pending request after worker exit: %v", err)
 	}
 }
+
+func TestWorkerSnapshotDrainsRepliesAfterTargetExit(t *testing.T) {
+	firstReply := make(chan struct{})
+	release := make(chan struct{})
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	}()
+	ctx, client := workerTestClient(t, func(ctx context.Context, conn *websocket.Conn) {
+		var commands [2]cdpMessage
+		for i := range commands {
+			if wsjson.Read(ctx, conn, &commands[i]) != nil {
+				return
+			}
+		}
+		_ = wsjson.Write(ctx, conn, cdpMessage{ID: commands[0].ID, Error: &cdpError{Message: "Target closed"}})
+		close(firstReply)
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return
+		}
+		_ = wsjson.Write(ctx, conn, cdpMessage{ID: commands[1].ID, Result: json.RawMessage(`{}`)})
+		var command cdpMessage
+		if wsjson.Read(ctx, conn, &command) == nil {
+			_ = wsjson.Write(ctx, conn, cdpMessage{ID: command.ID, Result: json.RawMessage(`{}`)})
+		}
+	})
+	control := &workerControl{}
+	control.client.Store(client)
+	control.state.Store(&workerSnapshot{
+		Enabled: true, Ready: true, Paused: true, StopID: 1,
+		Targets: 2, sessions: []string{"page", "worker"},
+	})
+	session := &Session{}
+	session.workers.Store(control)
+	result := make(chan workerSnapshot, 1)
+	go func() { result <- session.checkedWorkerState(ctx) }()
+	select {
+	case <-firstReply:
+	case <-ctx.Done():
+		t.Fatal("snapshot requests did not reach the debugger")
+	}
+	select {
+	case <-result:
+		t.Fatal("target exit canceled another in-flight snapshot request")
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(release)
+	select {
+	case state := <-result:
+		if state.Paused {
+			t.Fatal("accepted a snapshot after one target exited")
+		}
+	case <-ctx.Done():
+		t.Fatal("snapshot requests did not finish")
+	}
+	if err := client.call(ctx, "page", "Runtime.getIsolateId", map[string]any{}, nil); err != nil {
+		t.Fatalf("surviving target lost its debugger transport: %v", err)
+	}
+}
