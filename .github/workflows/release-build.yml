@@ -616,6 +616,8 @@ jobs:
     needs: [prepare, prepare-winget, test-artifacts, test-windows-artifacts, test-windows-artifacts-x86, test-linux-distributions, populate-linux-sysroot]
     runs-on: ubuntu-latest
     if: needs.prepare.outputs.run_code_ci == 'true' && (startsWith(github.ref, 'refs/tags/'))
+    outputs:
+      stable: ${{ steps.release-type.outputs.stable }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
@@ -733,3 +735,12 @@ jobs:
               exit 1
             fi
           done
+
+  submit-winget:
+    needs: [prepare, release]
+    if: needs.prepare.outputs.run_code_ci == 'true' && github.repository == 'xgo-dev/llgo' && needs.release.outputs.stable == 'true'
+    uses: ./.github/workflows/winget.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      WINGET_PR_TOKEN: ${{ secrets.WINGET_PR_TOKEN }}

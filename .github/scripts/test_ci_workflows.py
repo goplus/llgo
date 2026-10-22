@@ -243,7 +243,7 @@ else:
         for filename, expected in CODE_WORKFLOWS.items():
             workflow = load(filename)
             count = sum(matrix_size(job) for name, job in workflow["jobs"].items()
-                        if name not in {"prepare", "ci-gate", "release"})
+                        if name not in {"prepare", "ci-gate", "release", "submit-winget"})
             with self.subTest(workflow=filename):
                 self.assertEqual(count, expected)
 
@@ -352,6 +352,31 @@ else:
                                     "GITHUB_OUTPUT": str(output)})
                 expected = "true" if tag in {"v1.2.3", "v0.0.0"} else "false"
                 self.assertEqual(output.read_text(), f"stable={expected}\n")
+
+    def test_winget_submission_follows_stable_release_and_has_a_read_only_preview(self):
+        jobs = load("release-build.yml")["jobs"]
+        call = jobs["submit-winget"]
+        self.assertEqual(set(needs(call)), {"prepare", "release"})
+        self.assertIn("github.repository == 'xgo-dev/llgo'", call["if"])
+        self.assertIn("needs.release.outputs.stable == 'true'", call["if"])
+        self.assertEqual(jobs["release"]["outputs"]["stable"], "${{ steps.release-type.outputs.stable }}")
+        self.assertEqual(call["uses"], "./.github/workflows/winget.yml")
+        self.assertEqual(call["with"], {"tag": "${{ github.ref_name }}"})
+        self.assertEqual(call["secrets"], {"WINGET_PR_TOKEN": "${{ secrets.WINGET_PR_TOKEN }}"})
+        workflow = load("winget.yml")
+        self.assertEqual(set(workflow["on"]), {"workflow_call", "workflow_dispatch"})
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        self.assertEqual(workflow["concurrency"], {"group": "winget-${{ inputs.tag }}", "cancel-in-progress": "false"})
+        self.assertEqual(workflow["on"]["workflow_dispatch"]["inputs"]["dry_run"]["default"], "true")
+        self.assertEqual(workflow["on"]["workflow_call"]["inputs"]["dry_run"]["default"], "false")
+        job = workflow["jobs"]["submit"]
+        self.assertEqual(job["if"], "github.repository == 'xgo-dev/llgo' || inputs.dry_run")
+        self.assertEqual(job["strategy"], {"fail-fast": "false", "matrix": {"profile": ["msvc", "mingw"]}})
+        step = next(step for step in job["steps"] if step.get("name") == "Submit release manifests")
+        self.assertEqual(step["env"]["WINGET_PR_TOKEN"], "${{ !inputs.dry_run && secrets.WINGET_PR_TOKEN || '' }}")
+        self.assertIn('--tag "$RELEASE_TAG"', step["run"])
+        self.assertIn('args+=(--dry-run)', step["run"])
+        self.assertNotIn("${{", step["run"])
 
     def test_fury_upload_validates_packages_and_stops_on_failure(self):
         steps = load("release-build.yml")["jobs"]["release"]["steps"]

@@ -11,7 +11,7 @@ import zipfile
 
 PROFILES = {'msvc': 'MSVC', 'mingw': 'MinGW'}
 ARCHITECTURES = {'amd64': 'x64', 'arm64': 'arm64', '386': 'x86'}
-SCHEMA = '1.9.0'
+SCHEMA = '1.12.0'
 REPOSITORY = 'https://github.com/xgo-dev/llgo'
 
 
@@ -63,6 +63,12 @@ def prepare(artifacts, output, version):
     for arch in ARCHITECTURES:
         if len({releases[p, arch][3] for p in PROFILES}) != 1:
             raise ValueError(f'Windows {arch} profiles use different host compilers')
+    write_manifests(output, version, {key: (value[1], value[2]) for key, value in releases.items()})
+    print(f'Prepared local WinGet candidates in {output}; release publication and submission are separate steps.')
+
+
+def write_manifests(output, version, installers):
+    """Render the same manifests from verified local or published installers."""
     for profile, label in PROFILES.items():
         identifier = f'XGo.LLGo.{label}'
         directory = output / 'manifests' / 'x' / 'XGo' / 'LLGo' / label / version
@@ -88,10 +94,9 @@ def prepare(artifacts, output, version):
                       '  PortableCommandAlias: llgo\nUpgradeBehavior: uninstallPrevious\n'
                       'Commands:\n- llgo\nInstallers:\n')
         for arch, winget_arch in ARCHITECTURES.items():
-            _, url, checksum, _ = releases[profile, arch]
+            url, checksum = installers[profile, arch]
             installer += f'- Architecture: {winget_arch}\n  InstallerUrl: {yaml_scalar(url)}\n  InstallerSha256: {checksum}\n'
         write_manifest(directory, f'{identifier}.installer.yaml', 'installer', installer)
-    print(f'Prepared local WinGet candidates in {output}; release publication and submission are separate steps.')
 
 
 if __name__ == '__main__':
