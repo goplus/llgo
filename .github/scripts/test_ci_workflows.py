@@ -523,7 +523,7 @@ else:
         step = load("ci-prepare.yml")["jobs"]["prepare"]["steps"][1]
         self.assertEqual(step["env"]["PR_BASE_SHA"], "${{ github.event.pull_request.base.sha }}")
         self.assertEqual(step["env"]["PR_HEAD_SHA"], "${{ github.event.pull_request.head.sha }}")
-        for case in ("base-policy", "missing-base-policy", "docs-only"):
+        for case in ("base-policy", "missing-base-policy", "docs-only", "earlier-code"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
                 repo = Path(directory)
 
@@ -534,6 +534,14 @@ else:
                 git("init", "-q")
                 git("config", "user.name", "CI Test")
                 git("config", "user.email", "ci@example.invalid")
+                historical_blob = None
+                if case == "earlier-code":
+                    payload = repo / "old-payload.bin"
+                    payload.write_bytes(b"historical payload" * 65536)
+                    git("add", ".")
+                    git("commit", "-qm", "historical payload")
+                    historical_blob = git("rev-parse", "HEAD:old-payload.bin")
+                    payload.unlink()
                 (repo / "README.md").write_text("base\n")
                 scripts = repo / ".github" / "scripts"
                 if case != "missing-base-policy":
@@ -554,7 +562,32 @@ else:
                     (repo / "compiler.go").write_text("package compiler\n")
                 git("add", ".")
                 git("commit", "-qm", "pr")
+                if case == "earlier-code":
+                    (repo / "README.md").write_text("final documentation edit\n")
+                    git("add", ".")
+                    git("commit", "-qm", "docs after code")
                 head = git("rev-parse", "HEAD")
+
+                # Exercise checkout's transport, including lazy retrieval of
+                # the trusted policy when the PR replaces its current blob.
+                git("config", "uploadpack.allowFilter", "true")
+                git("config", "uploadpack.allowAnySHA1InWant", "true")
+                remote = repo.as_uri()
+                repo = repo / "checkout"
+                repo.mkdir()
+                git("init", "-q")
+                git("config", "protocol.file.allow", "always")
+                git("remote", "add", "origin", remote)
+                fetch = ["fetch", "--quiet", "--no-tags"]
+                configured_filter = load("ci-prepare.yml")["jobs"]["prepare"]["steps"][0]["with"].get("filter")
+                if configured_filter:
+                    fetch.append("--filter=" + configured_filter)
+                git(*fetch, "origin", "+refs/heads/*:refs/remotes/origin/*")
+                git("checkout", "-q", "--detach", head)
+                self.assertEqual(git("rev-parse", "--is-shallow-repository"), "false")
+                if historical_blob:
+                    self.assertIn("?" + historical_blob,
+                                  git("rev-list", "--objects", "--all", "--missing=print"))
 
                 event = repo / "event.json"
                 event.write_text(json.dumps({"pull_request": {

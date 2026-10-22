@@ -41,8 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # The PR merge checkout contains both event commits and their history.
+          # Keep the PR commit graph, fetching historical blobs only on demand.
           fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          filter: blob:none
           persist-credentials: false
       - name: Resolve CI policy and changed paths
         id: policy
