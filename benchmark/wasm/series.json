@@ -1994,6 +1994,17 @@
     },
     {
       "kind": "branch",
+      "id": "42f69619208df085",
+      "label": "Branch dependabot/github_actions/jdx/mise-action-5.2.1",
+      "path": "series/branch/42f69619208df085/summary.json",
+      "configPath": "series/branch/42f69619208df085/config.json",
+      "commitPath": "commits/90411352cd3329f7f16501086f11292606ca051f.json",
+      "sha": "90411352cd3329f7f16501086f11292606ca051f",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/90411352cd3329f7f16501086f11292606ca051f",
+      "updatedAt": "2026-10-22T03:29:09.097Z"
+    },
+    {
+      "kind": "branch",
       "id": "e421bb3c204a1ee5",
       "label": "Branch dependabot/go_modules/github.com/goplus/gogen-1.24.0",
       "path": "series/branch/e421bb3c204a1ee5/summary.json",
@@ -6006,6 +6017,17 @@
       "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
       "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
       "updatedAt": "2026-10-21T12:13:37.401Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2905",
+      "label": "PR #2905",
+      "path": "series/pull/2905/summary.json",
+      "configPath": "series/pull/2905/config.json",
+      "commitPath": "commits/90411352cd3329f7f16501086f11292606ca051f.json",
+      "sha": "90411352cd3329f7f16501086f11292606ca051f",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/90411352cd3329f7f16501086f11292606ca051f",
+      "updatedAt": "2026-10-22T03:29:08.971Z"
     }
   ]
 }
