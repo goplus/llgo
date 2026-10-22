@@ -18,7 +18,7 @@ The repository's `GITHUB_TOKEN` cannot write to the fork or submit to Microsoft.
 
 ## Automatic submission and recovery
 
-Only published stable `vMAJOR.MINOR.PATCH` releases are accepted. Snapshot, draft and prerelease builds do not submit. The script verifies all six public ZIP asset URLs and SHA256 digests against the published checksum file, and verifies that file's own GitHub digest. It then renders the same schema 1.12 manifests as the local candidate generator. It does not re-download the multi-gigabyte ZIP set or depend on expiring workflow artifacts.
+Only published stable `vMAJOR.MINOR.PATCH` releases are accepted. Snapshot, draft and prerelease builds do not submit. The script verifies all six public ZIP asset URLs and SHA256 digests against the published checksum file, and verifies that file's own GitHub digest. It then renders the same schema 1.12.0 manifests as the local candidate generator. It does not re-download the multi-gigabyte ZIP set or depend on expiring workflow artifacts.
 
 The release workflow calls submission directly because [events generated with `GITHUB_TOKEN` do not trigger another release workflow](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows). Submission failures can be retried without rebuilding or republishing LLGo:
 

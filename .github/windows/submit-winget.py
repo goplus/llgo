@@ -50,6 +50,7 @@ class GitHub:
                     raise
                 error.close()
                 time.sleep(2 ** attempt)
+        raise RuntimeError('GitHub API retries exhausted')
 
     def optional(self, path, **params):
         try:
@@ -109,7 +110,7 @@ def published_installers(api, tag, download=None):
             raise ValueError('Malformed or duplicate published checksum entry')
         hashes[match[2]] = match[1].lower()
     installers = {}
-    # Check all six profiles before either PR can be submitted.
+    # Check all six profile/architecture ZIPs before either PR can be submitted.
     for profile in manifests.PROFILES:
         for arch in manifests.ARCHITECTURES:
             name = f'llgo{version}.windows-{arch}-{profile}.zip'
@@ -140,6 +141,9 @@ def existing_pull(api, branch, directory, identifier, version):
 def check_branch(api, branch, base, files):
     comparison = api.request(f'repos/{FORK}/compare/{base}...{quote(branch, safe="")}')
     changes = comparison.get('files', [])
+    # Compare lists at most 300 files on its first page. A recovery branch
+    # must contain exactly the three expected manifests, so a capped larger
+    # diff is rejected by the exact file-set check below.
     if {item['filename'] for item in changes} != set(files) or any(item['status'] != 'added' for item in changes):
         raise ValueError(f'Existing branch {branch} contains unexpected changes; inspect it manually')
     for path, content in files.items():
