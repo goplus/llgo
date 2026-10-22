@@ -104,7 +104,9 @@ func opaqueGlobalInitPackage(ctx *context, exported map[string]bool) string {
 	// Permit output-only diagnostics used by the LTO/size qualification jobs.
 	for _, flags := range []string{os.Getenv("LDFLAGS"), ctx.buildConf.LinkOptions.ExternalLinkerFlags} {
 		for _, flag := range safesplit.SplitPkgConfigFlags(flags) {
-			if flag != "-Wl,--save-temps" && flag != "-Wl,--print-map" &&
+			// Clang splits -Wl on every comma; a diagnostic option can be
+			// followed by an export, forced root or native object.
+			if strings.Count(flag, ",") != 1 || flag != "-Wl,--save-temps" && flag != "-Wl,--print-map" &&
 				!strings.HasPrefix(flag, "-Wl,--lto-obj-path=") && !strings.HasPrefix(flag, "-Wl,-Map=") {
 				return "linker flags"
 			}

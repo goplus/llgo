@@ -867,13 +867,10 @@ runs:
         python3 "$GITHUB_ACTION_PATH/ubuntu_apt_test.py"
         sudo python3 "$GITHUB_ACTION_PATH/ubuntu_apt.py" /etc/apt "$(dpkg --print-architecture)"
         apt_get() {
-          local limit=10m
-          if [[ "$1" == "update" ]]; then
-            limit=5m
-          fi
           # Per-download timeouts alone do not bound an entire mirror-list
-          # transaction. Fail with diagnostics before exhausting the job.
-          sudo timeout --kill-after=30s "$limit" apt-get "$@"
+          # transaction. Allow fresh indexes to finish on a slow mirror, but
+          # still fail before exhausting the job.
+          sudo timeout --kill-after=30s 10m apt-get "$@"
         }
         # Install LLVM if requested
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
