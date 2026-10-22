@@ -30,7 +30,7 @@ import (
 
 // UnusedGlobalInits describes package initializations whose destination is never
 // accessed by the program. It is computed before parallel package lowering and
-// is immutable afterwards. Names must participate in each package's cache key.
+// is immutable afterwards. CacheKeys must participate in each package's cache key.
 type UnusedGlobalInits struct {
 	names  map[*ssa.Package][]string
 	instrs map[*ssa.Package][]ssa.Instruction
@@ -47,6 +47,7 @@ func (p *UnusedGlobalInits) CacheKeys(pkg *ssa.Package) []string {
 	return p.keys[pkg]
 }
 
+// Names returns dead-global names for diagnostics; use CacheKeys for cache identity.
 func (p *UnusedGlobalInits) Names(pkg *ssa.Package) []string {
 	if p == nil {
 		return nil
@@ -77,6 +78,11 @@ func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *
 			}
 		}
 	}
+	// Export/native visibility is immutable across the fixed point.
+	preserved := make(map[*ssa.Global]bool, len(uses))
+	for global := range uses {
+		preserved[global] = preserve(global)
+	}
 	removed := make(map[ssa.Instruction]bool)
 	deadGlobals := make(map[*ssa.Global]bool)
 	var inits []ssa.Instruction
@@ -105,7 +111,7 @@ func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *
 			}
 		}
 		for global, refs := range uses {
-			if deadGlobals[global] || preserve(global) {
+			if deadGlobals[global] || preserved[global] {
 				continue
 			}
 			init := global.Pkg.Func("init")
@@ -144,7 +150,7 @@ func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *
 				// Loads from ordinary Go globals cannot fault. Removing unused
 				// loads exposes chains such as B = A after B's store is removed.
 				global, ok := value.X.(*ssa.Global)
-				if ok && value.Op == token.MUL && len(refs) == 0 && !preserve(global) {
+				if ok && value.Op == token.MUL && len(refs) == 0 && !preserved[global] {
 					remove(instr)
 				}
 			case *ssa.MakeMap:
@@ -182,6 +188,8 @@ func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *
 	for _, names := range plan.names {
 		slices.Sort(names)
 	}
+	// Every removal above belongs to a synthetic package initializer: stores
+	// check their parent explicitly, and other instructions come from inits.
 	for pkg := range plan.instrs {
 		hash := sha256.New()
 		for _, block := range pkg.Func("init").Blocks {

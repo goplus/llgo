@@ -57,7 +57,8 @@ func analyzeWasmPCLN(path string, original pclnmap.Data) (pclnpost.ExternalAnaly
 	analysis := pclnpost.ExternalAnalysis{PointerSize: original.PointerSize}
 	for i, rec := range original.Table.Records {
 		symbol := original.Table.Symbol(rec)
-		if names == nil || live[symbol] {
+		// Empty maps provide no liveness evidence, just like missing names.
+		if len(names) == 0 || live[symbol] {
 			analysis.EntrySites = append(analysis.EntrySites, pclnpost.ExternalSite{
 				PCOffset: uint64(i + 1), ID: funcInfoSymbolID(symbol),
 			})

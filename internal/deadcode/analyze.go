@@ -67,6 +67,8 @@ func (a Analysis) CanDropMethodMetadata(name string) bool {
 	return !visible
 }
 
+// AnalyzeProgram computes method liveness and interface visibility together.
+// The returned Analysis borrows info and must not outlive its package metadata.
 func AnalyzeProgram(info *meta.GlobalSummary, rootNames []string) Analysis {
 	roots := make([]meta.Symbol, 0, len(rootNames))
 	for _, name := range rootNames {

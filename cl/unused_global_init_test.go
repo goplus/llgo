@@ -68,3 +68,25 @@ func TestUnusedGlobalInitializerPreserve(t *testing.T) {
 		t.Fatal("nil plan has package entries")
 	}
 }
+
+func TestUnusedGlobalInitializerPreserveOnce(t *testing.T) {
+	pkg := buildSSAPackage(t, `package foo
+var Keep = map[string]int{"keep": 1}
+var A = map[string]int{"a": 1}
+var B = A
+var C = B
+`)
+	calls := make(map[*ssa.Global]int)
+	plan := FindUnusedGlobalInits(pkg.Prog, func(global *ssa.Global) bool {
+		calls[global]++
+		return global.Name() == "Keep"
+	})
+	if got := plan.Names(pkg); !slices.Equal(got, []string{"foo.A", "foo.B", "foo.C"}) {
+		t.Fatalf("dead globals = %v", got)
+	}
+	for global, count := range calls {
+		if count != 1 {
+			t.Fatalf("preserve(%s) called %d times", global, count)
+		}
+	}
+}

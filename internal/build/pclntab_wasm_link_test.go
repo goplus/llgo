@@ -20,12 +20,15 @@ func TestWasmPCLNLiveness(t *testing.T) {
 		{SymbolID: funcInfoSymbolID("main.live"), FuncIndex: 1},
 		{SymbolID: funcInfoSymbolID("main.dead"), FuncIndex: 2},
 	}}
-	for _, names := range []string{"main.live.llvm.12", "", "fully.inlined"} {
+	for _, names := range []string{"main.live.llvm.12", "", "empty-map", "fully.inlined"} {
 		module := []byte("\x00asm\x01\x00\x00\x00")
 		if names != "" {
 			// name custom section, function map containing a promoted LTO name.
 			name := names
 			payload := append([]byte{1, 7, byte(len(name))}, name...)
+			if names == "empty-map" {
+				payload = []byte{0}
+			}
 			custom := append([]byte{4, 'n', 'a', 'm', 'e', 1, byte(len(payload))}, payload...)
 			module = append(module, 0, byte(len(custom)))
 			module = append(module, custom...)
