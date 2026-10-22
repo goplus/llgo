@@ -90,6 +90,16 @@ func TestWasmFinalOptions(t *testing.T) {
 	}
 }
 
+func TestDoRejectsWasmFinalOptionsOnNativeTarget(t *testing.T) {
+	for _, conf := range []Config{{WasmOpt: WasmOptSize}, {WasmStrip: WasmStripAll}} {
+		// Reject the target before loading or compiling any input package.
+		_, err := Do([]string{filepath.Join(t.TempDir(), "missing")}, &conf)
+		if err == nil || !strings.Contains(err.Error(), "require a hosted WebAssembly executable") {
+			t.Fatalf("native final pipeline: %v", err)
+		}
+	}
+}
+
 func TestWasmManifestDeterminism(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string, data []byte) {
@@ -457,6 +467,10 @@ func TestPublishWasmArtifactsRetainsFailedRestore(t *testing.T) {
 
 func TestWasmManifestRejectsInvalidArtifacts(t *testing.T) {
 	ctx := &context{buildConf: &Config{}, llvmVersion: "test"}
+	missing := filepath.Join(t.TempDir(), "missing")
+	if err := writeWasmManifest(ctx, missing, "app.wasm", []byte("\x00asm\x01\x00\x00\x00"), "manifest", wasmManifestTool{}, nil, nil, 0); !os.IsNotExist(err) {
+		t.Fatalf("missing artifact directory: %v", err)
+	}
 	for _, kind := range []string{"missing", "invalid module", "directory", "write failure"} {
 		t.Run(kind, func(t *testing.T) {
 			dir := t.TempDir()
