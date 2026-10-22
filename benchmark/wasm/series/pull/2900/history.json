@@ -8,11 +8,11 @@
     {
       "source": {
         "repository": "xgo-dev/llgo",
-        "sha": "c171abfa130108bc6451e01fcf15a8a3474eb0a7",
+        "sha": "0578518757341c5663e764c189a5f9b1e99a254d",
         "ref": "main",
-        "url": "https://github.com/xgo-dev/llgo/commit/c171abfa130108bc6451e01fcf15a8a3474eb0a7",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39561958588",
-        "timestamp": "2026-10-21T07:26:15Z"
+        "url": "https://github.com/xgo-dev/llgo/commit/0578518757341c5663e764c189a5f9b1e99a254d",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39702434913",
+        "timestamp": "2026-10-22T00:53:41Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -21,11 +21,11 @@
           "shardId": "merged",
           "source": {
             "repository": "xgo-dev/llgo",
-            "sha": "c171abfa130108bc6451e01fcf15a8a3474eb0a7",
+            "sha": "0578518757341c5663e764c189a5f9b1e99a254d",
             "ref": "main",
-            "url": "https://github.com/xgo-dev/llgo/commit/c171abfa130108bc6451e01fcf15a8a3474eb0a7",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39561958588",
-            "timestamp": "2026-10-21T07:26:15Z"
+            "url": "https://github.com/xgo-dev/llgo/commit/0578518757341c5663e764c189a5f9b1e99a254d",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39702434913",
+            "timestamp": "2026-10-22T00:53:41Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 9179976576
+                    "build-ns": 7856152580
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 9179976576
+                "build-ns": 7856152580
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7656210638
+                    "build-ns": 7545044765
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7656210638
+                "build-ns": 7545044765
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6982462623
+                    "build-ns": 6881576994
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6982462623
+                "build-ns": 6881576994
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 26069794955
+                    "build-ns": 25680994263
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 26069794955
+                "build-ns": 25680994263
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5083138345
+                    "build-ns": 5185429480
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5083138345
+                "build-ns": 5185429480
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4766492071
+                    "build-ns": 5453606704
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4766492071
+                "build-ns": 5453606704
               }
             },
             {
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "visualfc/llgo",
-        "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
+        "sha": "a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
         "ref": "fix/interface-compare-dominance",
-        "url": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39561958588",
-        "timestamp": "2026-10-21T07:26:15Z"
+        "url": "https://github.com/visualfc/llgo/commit/a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39702434913",
+        "timestamp": "2026-10-22T00:53:41Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "visualfc/llgo",
-            "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
+            "sha": "a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
             "ref": "fix/interface-compare-dominance",
-            "url": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39561958588",
-            "timestamp": "2026-10-21T07:26:15Z"
+            "url": "https://github.com/visualfc/llgo/commit/a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39702434913",
+            "timestamp": "2026-10-22T00:53:41Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8378606766
+                    "build-ns": 8211694072
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8378606766
+                "build-ns": 8211694072
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7903623474
+                    "build-ns": 7739411618
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7903623474
+                "build-ns": 7739411618
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7533917988
+                    "build-ns": 6988684302
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7533917988
+                "build-ns": 6988684302
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 24808105922
+                    "build-ns": 25198681161
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 24808105922
+                "build-ns": 25198681161
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5654559954
+                    "build-ns": 4926731308
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5654559954
+                "build-ns": 4926731308
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4969557878
+                    "build-ns": 4893749121
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4969557878
+                "build-ns": 4893749121
               }
             },
             {

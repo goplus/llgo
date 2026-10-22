@@ -2328,10 +2328,10 @@
       "label": "Branch visualfc/llgo:fix/interface-compare-dominance",
       "path": "series/branch/8cf78832660556e7/summary.json",
       "configPath": "series/branch/8cf78832660556e7/config.json",
-      "commitPath": "commits/549670ddf3ae766d455f90b649fc01421bb7bb7b.json",
-      "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
-      "sourceUrl": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
-      "updatedAt": "2026-10-21T12:55:51.172Z"
+      "commitPath": "commits/a30c2b0ebdbf75fd0661ab6880473a16a4381fed.json",
+      "sha": "a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+      "updatedAt": "2026-10-22T03:00:17.888Z"
     },
     {
       "kind": "branch",
@@ -5991,10 +5991,10 @@
       "label": "PR #2900",
       "path": "series/pull/2900/summary.json",
       "configPath": "series/pull/2900/config.json",
-      "commitPath": "commits/549670ddf3ae766d455f90b649fc01421bb7bb7b.json",
-      "sha": "549670ddf3ae766d455f90b649fc01421bb7bb7b",
-      "sourceUrl": "https://github.com/visualfc/llgo/commit/549670ddf3ae766d455f90b649fc01421bb7bb7b",
-      "updatedAt": "2026-10-21T12:55:51.049Z"
+      "commitPath": "commits/a30c2b0ebdbf75fd0661ab6880473a16a4381fed.json",
+      "sha": "a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+      "sourceUrl": "https://github.com/visualfc/llgo/commit/a30c2b0ebdbf75fd0661ab6880473a16a4381fed",
+      "updatedAt": "2026-10-22T03:00:17.733Z"
     },
     {
       "kind": "pull",
