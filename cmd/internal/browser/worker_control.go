@@ -102,11 +102,16 @@ func (s *Session) checkedWorkerState(ctx context.Context) workerSnapshot {
 			results <- client.call(ctx, session, "Runtime.getIsolateId", map[string]any{}, nil)
 		}(session)
 	}
+	// A target can exit while these requests are being written. Drain every
+	// request before canceling their shared context: canceling an active
+	// WebSocket write closes the transport used by the surviving targets too.
 	for range state.sessions {
 		if err := <-results; err != nil {
 			state.Paused = false
-			return state
 		}
+	}
+	if !state.Paused {
+		return state
 	}
 	// The reader increments received before queuing each lifecycle/debugger
 	// event; the actor publishes its snapshot before updating applied. Read
