@@ -879,7 +879,7 @@ jobs:
           version: "11.3.1"
           token: ${{ secrets.CODECOV_TOKEN }}
           use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          files: coverage-browser/j32-embedded.out,coverage-browser/j32-external.out,coverage-browser/j64-embedded.out,coverage-browser/j64-external.out
+          files: coverage-browser/j32-embedded.out,coverage-browser/j32-external.out,coverage-browser/j64-embedded.out,coverage-browser/j64-external.out,coverage-browser/j32-goroutines-1.out,coverage-browser/j32-goroutines-2.out,coverage-browser/j32-goroutines-4.out,coverage-browser/j32-goroutines-2-optimized.out,coverage-browser/j64-goroutines-1.out,coverage-browser/j64-goroutines-2.out,coverage-browser/j64-goroutines-4.out,coverage-browser/j64-goroutines-2-optimized.out
           flags: go-tests
           disable_search: true
           fail_ci_if_error: true

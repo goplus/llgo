@@ -1980,6 +1980,14 @@ func (p *context) pushCallerLocationFrame(b llssa.Builder, fn *ssa.Function) {
 		b.Str(pos.Filename),
 		p.prog.IntVal(uint64(pos.Line), p.prog.Int()),
 	)
+	if p.options.DebuggerFrames {
+		sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewVar(token.NoPos, nil, "mark", types.Typ[types.Int]),
+			types.NewVar(token.NoPos, nil, "base", types.Typ[types.Uintptr]),
+		), nil, false)
+		b.Call(p.runtimeFunc("SetWasmCallerFrameBase", sig), p.callerFrameMark,
+			b.Convert(p.prog.Uintptr(), b.DebugFrameAddress()))
+	}
 }
 
 func (p *context) recordCallerLocation(b llssa.Builder, pos token.Pos) {

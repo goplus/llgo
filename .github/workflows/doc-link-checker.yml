@@ -54,14 +54,16 @@ jobs:
         continue-on-error: true
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --max-concurrency 3 --retry-wait-time 15 README.md
+          # pkg.go.dev may generate package documentation on demand. Space
+          # requests to the same host while retaining strict status checks.
+          args: --max-concurrency 3 --host-concurrency 1 --host-request-interval 1s --retry-wait-time 15 README.md
 
       - name: Wait before retrying failed links
         if: steps.lychee.outcome == 'failure'
-        run: sleep 15
+        run: sleep 30
 
       - name: Retry Link Checker
         if: steps.lychee.outcome == 'failure'
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --max-concurrency 3 --retry-wait-time 15 README.md
+          args: --max-concurrency 3 --host-concurrency 1 --host-request-interval 1s --retry-wait-time 15 README.md
