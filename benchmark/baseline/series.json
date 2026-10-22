@@ -3270,6 +3270,17 @@
     },
     {
       "kind": "branch",
+      "id": "42f69619208df085",
+      "label": "Branch dependabot/github_actions/jdx/mise-action-5.2.1",
+      "path": "series/branch/42f69619208df085/summary.json",
+      "configPath": "series/branch/42f69619208df085/config.json",
+      "commitPath": "commits/90411352cd3329f7f16501086f11292606ca051f.json",
+      "sha": "90411352cd3329f7f16501086f11292606ca051f",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/90411352cd3329f7f16501086f11292606ca051f",
+      "updatedAt": "2026-10-22T03:19:33.753Z"
+    },
+    {
+      "kind": "branch",
       "id": "03eafe0e0b45c6f2",
       "label": "Branch dependabot/github_actions/prefix-dev/setup-pixi-0.11.2",
       "path": "series/branch/03eafe0e0b45c6f2/summary.json",
@@ -10021,6 +10032,17 @@
       "sha": "d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
       "sourceUrl": "https://github.com/visualfc/llgo/commit/d92c69ed75da5bf141b529b7a6f6485e30c88f8f",
       "updatedAt": "2026-10-21T12:09:46.289Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2905",
+      "label": "PR #2905",
+      "path": "series/pull/2905/summary.json",
+      "configPath": "series/pull/2905/config.json",
+      "commitPath": "commits/90411352cd3329f7f16501086f11292606ca051f.json",
+      "sha": "90411352cd3329f7f16501086f11292606ca051f",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/90411352cd3329f7f16501086f11292606ca051f",
+      "updatedAt": "2026-10-22T03:19:31.043Z"
     }
   ]
 }
