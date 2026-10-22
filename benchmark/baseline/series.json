@@ -3637,10 +3637,10 @@
       "label": "Branch dependabot/go_modules/golang.org/x/sys-0.49.0",
       "path": "series/branch/d499539a941e84b2/summary.json",
       "configPath": "series/branch/d499539a941e84b2/config.json",
-      "commitPath": "commits/1f8ac018d38b848edc7e8497c3f62a84ea6f12e2.json",
-      "sha": "1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
-      "updatedAt": "2026-10-14T13:34:00.053Z"
+      "commitPath": "commits/87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3.json",
+      "sha": "87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3",
+      "updatedAt": "2026-10-22T23:07:54.715Z"
     },
     {
       "kind": "branch",
@@ -9445,10 +9445,10 @@
       "label": "PR #2816",
       "path": "series/pull/2816/summary.json",
       "configPath": "series/pull/2816/config.json",
-      "commitPath": "commits/1f8ac018d38b848edc7e8497c3f62a84ea6f12e2.json",
-      "sha": "1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/1f8ac018d38b848edc7e8497c3f62a84ea6f12e2",
-      "updatedAt": "2026-10-14T13:33:58.141Z"
+      "commitPath": "commits/87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3.json",
+      "sha": "87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/87cdbc79e6fc66df5b54d2ad72a008ee3ead0cd3",
+      "updatedAt": "2026-10-22T23:07:51.913Z"
     },
     {
       "kind": "pull",
