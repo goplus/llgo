@@ -511,6 +511,10 @@ else:
         checkout = job["steps"][0]
         self.assertEqual(checkout["with"]["fetch-depth"],
                          "${{ github.event_name == 'pull_request' && '0' || '1' }}")
+        self.assertGreater(int(checkout["env"]["GIT_HTTP_LOW_SPEED_LIMIT"]), 0)
+        self.assertGreater(int(checkout["env"]["GIT_HTTP_LOW_SPEED_TIME"]), 0)
+        retry_budget = 3 * int(checkout["env"]["GIT_HTTP_LOW_SPEED_TIME"]) + 2 * 20
+        self.assertLess(retry_budget, int(job["timeout-minutes"]) * 60)
         self.assertEqual(workflow["permissions"], {"contents": "read"})
 
     def test_pr_policy_comes_from_base_and_missing_base_enables_all_checks(self):
