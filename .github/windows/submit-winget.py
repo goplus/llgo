@@ -72,13 +72,12 @@ class GitHub:
 
 
 def public_bytes(url):
-    # Public release downloads may redirect to asset storage. Never send the
-    # cross-repository credential to a download URL or its redirects.
+    # Keep credentials out of public asset downloads and their redirects.
     with urlopen(url, timeout=60) as response:
         return response.read()
 
 
-def published_installers(api, tag, download=None):
+def published_installers(api, tag):
     if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag):
         raise ValueError('WinGet submission requires a stable vMAJOR.MINOR.PATCH tag')
     release = api.request(f'repos/{SOURCE}/releases/tags/{tag}')
@@ -100,7 +99,7 @@ def published_installers(api, tag, download=None):
 
     version = tag[1:]
     checksums = asset(f'llgo{version}.checksums.txt')
-    content = (download or public_bytes)(checksums['browser_download_url'])
+    content = public_bytes(checksums['browser_download_url'])
     if 'sha256:' + hashlib.sha256(content).hexdigest() != checksums['digest']:
         raise ValueError('Published checksum file does not match its GitHub digest')
     hashes = {}
@@ -141,9 +140,7 @@ def existing_pull(api, branch, directory, identifier, version):
 def check_branch(api, branch, base, files):
     comparison = api.request(f'repos/{FORK}/compare/{base}...{quote(branch, safe="")}')
     changes = comparison.get('files', [])
-    # Compare lists at most 300 files on its first page. A recovery branch
-    # must contain exactly the three expected manifests, so a capped larger
-    # diff is rejected by the exact file-set check below.
+    # Compare caps the file list at 300; larger diffs also fail this exact set check.
     if {item['filename'] for item in changes} != set(files) or any(item['status'] != 'added' for item in changes):
         raise ValueError(f'Existing branch {branch} contains unexpected changes; inspect it manually')
     for path, content in files.items():
@@ -174,8 +171,6 @@ def submit(api, tag, profile, output, dry_run=False):
     fork = api.request(f'repos/{FORK}')
     if not fork['fork'] or fork.get('parent', {}).get('full_name') != UPSTREAM:
         raise ValueError(f'{FORK} must be a fork of {UPSTREAM}')
-    if not api.token:
-        raise ValueError('Set WINGET_PR_TOKEN to a public_repo token with write access to xgo-dev/winget-pkgs')
     files = {f'{directory}/{name}': (output / directory / name).read_text(encoding='utf-8') for name in
              (f'{identifier}.yaml', f'{identifier}.installer.yaml', f'{identifier}.locale.en-US.yaml')}
     ref = api.optional(f'repos/{FORK}/git/ref/heads/{branch}')
@@ -194,8 +189,7 @@ def submit(api, tag, profile, output, dry_run=False):
             'ref': f'refs/heads/{branch}', 'sha': commit['sha'],
         })
     else:
-        # Recover an interrupted submission without force-pushing or replacing
-        # review edits. No fork default-branch synchronization is needed.
+        # Recover interrupted submissions without overwriting review edits.
         check_branch(api, branch, parent, files)
     body = f'''## 📖 Description
 

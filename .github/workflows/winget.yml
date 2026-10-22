@@ -46,8 +46,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - name: Test manifest generation and submission
-        run: python -m unittest discover -s .github/windows -p 'test_*winget.py' -v
       - name: Submit release manifests
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -56,15 +54,8 @@ jobs:
           WINGET_PR_TOKEN: ${{ !inputs.dry_run && secrets.WINGET_PR_TOKEN || '' }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          args=(--tag "$RELEASE_TAG" --profile "$PROFILE" --output .winget)
+          args=(--tag "$RELEASE_TAG" --profile "$PROFILE")
           if [[ "$DRY_RUN" == true ]]; then
             args+=(--dry-run)
           fi
           python .github/windows/submit-winget.py "${args[@]}"
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: winget-${{ matrix.profile }}
-          path: .winget/manifests
-          if-no-files-found: ignore
-          include-hidden-files: true

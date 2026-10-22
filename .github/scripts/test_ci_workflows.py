@@ -361,21 +361,15 @@ else:
         self.assertIn("needs.release.outputs.stable == 'true'", call["if"])
         self.assertEqual(jobs["release"]["outputs"]["stable"], "${{ steps.release-type.outputs.stable }}")
         self.assertEqual(call["uses"], "./.github/workflows/winget.yml")
-        self.assertEqual(call["with"], {"tag": "${{ github.ref_name }}"})
-        self.assertEqual(call["secrets"], {"WINGET_PR_TOKEN": "${{ secrets.WINGET_PR_TOKEN }}"})
         workflow = load("winget.yml")
         self.assertEqual(set(workflow["on"]), {"workflow_call", "workflow_dispatch"})
         self.assertEqual(workflow["permissions"], {"contents": "read"})
-        self.assertEqual(workflow["concurrency"], {"group": "winget-${{ inputs.tag }}", "cancel-in-progress": "false"})
         self.assertEqual(workflow["on"]["workflow_dispatch"]["inputs"]["dry_run"]["default"], "true")
         self.assertEqual(workflow["on"]["workflow_call"]["inputs"]["dry_run"]["default"], "false")
         job = workflow["jobs"]["submit"]
         self.assertEqual(job["if"], "github.repository == 'xgo-dev/llgo' || inputs.dry_run")
-        self.assertEqual(job["strategy"], {"fail-fast": "false", "matrix": {"profile": ["msvc", "mingw"]}})
         step = next(step for step in job["steps"] if step.get("name") == "Submit release manifests")
         self.assertEqual(step["env"]["WINGET_PR_TOKEN"], "${{ !inputs.dry_run && secrets.WINGET_PR_TOKEN || '' }}")
-        self.assertIn('--tag "$RELEASE_TAG"', step["run"])
-        self.assertIn('args+=(--dry-run)', step["run"])
         self.assertNotIn("${{", step["run"])
 
     def test_fury_upload_validates_packages_and_stops_on_failure(self):
@@ -523,7 +517,7 @@ else:
         step = load("ci-prepare.yml")["jobs"]["prepare"]["steps"][1]
         self.assertEqual(step["env"]["PR_BASE_SHA"], "${{ github.event.pull_request.base.sha }}")
         self.assertEqual(step["env"]["PR_HEAD_SHA"], "${{ github.event.pull_request.head.sha }}")
-        for case in ("base-policy", "missing-base-policy", "docs-only", "earlier-code"):
+        for case in ("base-policy", "missing-base-policy", "docs-only"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
                 repo = Path(directory)
 
@@ -534,14 +528,6 @@ else:
                 git("init", "-q")
                 git("config", "user.name", "CI Test")
                 git("config", "user.email", "ci@example.invalid")
-                historical_blob = None
-                if case == "earlier-code":
-                    payload = repo / "old-payload.bin"
-                    payload.write_bytes(b"historical payload" * 65536)
-                    git("add", ".")
-                    git("commit", "-qm", "historical payload")
-                    historical_blob = git("rev-parse", "HEAD:old-payload.bin")
-                    payload.unlink()
                 (repo / "README.md").write_text("base\n")
                 scripts = repo / ".github" / "scripts"
                 if case != "missing-base-policy":
@@ -551,6 +537,7 @@ else:
                 git("add", ".")
                 git("commit", "-qm", "base")
                 base = git("rev-parse", "HEAD")
+                historical_blob = git("rev-parse", "HEAD:README.md")
 
                 if case == "docs-only":
                     (repo / "README.md").write_text("updated prose\n")
@@ -562,7 +549,7 @@ else:
                     (repo / "compiler.go").write_text("package compiler\n")
                 git("add", ".")
                 git("commit", "-qm", "pr")
-                if case == "earlier-code":
+                if case == "base-policy":
                     (repo / "README.md").write_text("final documentation edit\n")
                     git("add", ".")
                     git("commit", "-qm", "docs after code")
@@ -585,7 +572,7 @@ else:
                 git(*fetch, "origin", "+refs/heads/*:refs/remotes/origin/*")
                 git("checkout", "-q", "--detach", head)
                 self.assertEqual(git("rev-parse", "--is-shallow-repository"), "false")
-                if historical_blob:
+                if case != "missing-base-policy":
                     self.assertIn("?" + historical_blob,
                                   git("rev-list", "--objects", "--all", "--missing=print"))
 

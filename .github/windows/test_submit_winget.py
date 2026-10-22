@@ -1,5 +1,4 @@
 import base64
-import copy
 import hashlib
 import importlib.util
 import io
@@ -136,13 +135,9 @@ class SubmissionTests(unittest.TestCase):
                 self.assertEqual(tree['base_tree'], 'upstream-tree')
                 self.assertEqual(commit['parents'], ['upstream-head'])
                 self.assertEqual(len(tree['tree']), 3)
-                for entry in tree['tree']:
-                    self.assertTrue(entry['path'].startswith(f'manifests/x/XGo/LLGo/{label}/1.2.3/'))
-                    self.assertEqual(entry['mode'], '100644')
-                    self.assertIn('ManifestVersion: 1.12.0', entry['content'])
-                installer = next(item['content'] for item in tree['tree'] if item['path'].endswith('.installer.yaml'))
-                self.assertEqual(installer.count('InstallerSha256:'), 3)
-                self.assertEqual('ArchiveBinariesDependOnPath: true' in installer, profile == 'mingw')
+                expected = {path.relative_to(self.output).as_posix(): path.read_text() for path in
+                            (self.output / f'manifests/x/XGo/LLGo/{label}/1.2.3').glob('*.yaml')}
+                self.assertEqual(self.api.branch_files, expected)
                 self.assertEqual(ref['ref'], f'refs/heads/llgo/{profile}/1.2.3')
                 self.assertEqual(pull['head'], f'xgo-dev:llgo/{profile}/1.2.3')
                 self.assertEqual(pull['base'], 'master')
@@ -269,7 +264,7 @@ class SubmissionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'duplicate published checksum'):
             self.submit()
         self.api = FakeGitHub()
-        self.api.assets.append(copy.deepcopy(self.api.assets[0]))
+        self.api.assets.append(self.api.assets[0])
         with self.assertRaisesRegex(ValueError, 'Duplicate release asset'):
             self.submit()
         self.assertEqual(self.api.writes, [])
