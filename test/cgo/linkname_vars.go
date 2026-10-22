@@ -31,6 +31,12 @@ func resetLinkedCallbacks() {
 	C.llgo_linkvar_reset_callbacks()
 }
 
+//go:linkname linkedCallbackBox C.llgo_linkvar_callback_box
+var linkedCallbackBox struct {
+	Callback func(int32) int32
+	Guard    uintptr
+}
+
 func linkedVarAddressesMatch() bool {
 	return C.llgo_linkvar_addresses(
 		unsafe.Pointer(&linkedScalar), unsafe.Pointer(&linkedArray),

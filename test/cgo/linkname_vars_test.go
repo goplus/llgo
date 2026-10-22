@@ -85,3 +85,24 @@ func TestLinknameCVariableCallbackRejectsClosure(t *testing.T) {
 	}()
 	linkedCallbacks[0] = func(v int32) int32 { return v + value }
 }
+
+func TestLinknameCFunctionPointerStorage(t *testing.T) {
+	callback := linkedCallbackBox.Callback
+	t.Cleanup(func() {
+		linkedCallbackBox.Callback = callback
+	})
+	linkedCallbackBox.Callback = nil
+	if linkedCallbackBox.Callback != nil {
+		t.Fatal("native function pointer could not be cleared")
+	}
+	if got := linkedCallbackBox.Guard; got != 0xfeedface {
+		t.Fatalf("clearing a native callback overwrote adjacent storage: %#x", got)
+	}
+	linkedCallbackBox.Callback = callback
+	if got := linkedCallbackBox.Callback(21); got != 42 {
+		t.Fatalf("restored native function pointer returned %d, want 42", got)
+	}
+	if got := linkedCallbackBox.Guard; got != 0xfeedface {
+		t.Fatalf("restoring a native callback overwrote adjacent storage: %#x", got)
+	}
+}

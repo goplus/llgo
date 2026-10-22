@@ -2189,7 +2189,9 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	}
 	if v.kind == vkClosure {
 		if _, ok := t.Underlying().(*types.Signature); ok {
-			if dst := b.Prog.Type(t, GoDecl); dst.kind == vkFuncPtr {
+			// Assignment destinations are already lowered raw types. A raw
+			// signature is a native pointer, not a two-word Go function value.
+			if dst := b.Prog.rawType(t); dst.kind == vkFuncPtr {
 				return b.ChangeType(dst, v)
 			}
 		}
