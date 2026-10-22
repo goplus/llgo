@@ -1323,6 +1323,17 @@
     },
     {
       "kind": "branch",
+      "id": "37be56a6570f2950",
+      "label": "Branch cpunion/llgo:codex/release-winget-pr-20261022",
+      "path": "series/branch/37be56a6570f2950/summary.json",
+      "configPath": "series/branch/37be56a6570f2950/config.json",
+      "commitPath": "commits/1e33796de1b77873d2a2fab16de37b992f802b21.json",
+      "sha": "1e33796de1b77873d2a2fab16de37b992f802b21",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1e33796de1b77873d2a2fab16de37b992f802b21",
+      "updatedAt": "2026-10-22T06:07:10.506Z"
+    },
+    {
+      "kind": "branch",
       "id": "7539c21850be99c0",
       "label": "Branch cpunion/llgo:codex/remove-select-recv-ssa-fix-20260926",
       "path": "series/branch/7539c21850be99c0/summary.json",
@@ -6028,6 +6039,17 @@
       "sha": "90411352cd3329f7f16501086f11292606ca051f",
       "sourceUrl": "https://github.com/xgo-dev/llgo/commit/90411352cd3329f7f16501086f11292606ca051f",
       "updatedAt": "2026-10-22T03:29:08.971Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2906",
+      "label": "PR #2906",
+      "path": "series/pull/2906/summary.json",
+      "configPath": "series/pull/2906/config.json",
+      "commitPath": "commits/1e33796de1b77873d2a2fab16de37b992f802b21.json",
+      "sha": "1e33796de1b77873d2a2fab16de37b992f802b21",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/1e33796de1b77873d2a2fab16de37b992f802b21",
+      "updatedAt": "2026-10-22T06:07:10.440Z"
     }
   ]
 }
