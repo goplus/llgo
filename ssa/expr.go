@@ -2132,6 +2132,14 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 			fn = "PrintPointer"
 			typ = prog.VoidPtr()
 		case vkString:
+			if prog.target.GOARCH == "wasm" {
+				length := b.StringLen(arg)
+				if value := length.impl.IsAConstantInt(); !value.IsNil() && value.ZExtValue() <= 1<<32-1 {
+					b.Call(b.Pkg.rtFunc("PrintString32"), b.Convert(prog.VoidPtr(), b.StringData(arg)),
+						prog.IntVal(value.ZExtValue(), prog.Uint32()))
+					continue
+				}
+			}
 			fn = "PrintString"
 		case vkEface:
 			fn = "PrintEface"

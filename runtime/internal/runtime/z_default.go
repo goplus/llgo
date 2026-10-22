@@ -9,10 +9,10 @@ import (
 	"github.com/xgo-dev/llgo/runtime/internal/clite/debug"
 )
 
-var (
-	printFormatPrefixInt  = c.Str("%lld")
-	printFormatPrefixUInt = c.Str("%llu")
-	printFormatPrefixHex  = c.Str("%llx")
+const (
+	printFormatPrefixInt  = "%lld"
+	printFormatPrefixUInt = "%llu"
+	printFormatPrefixHex  = "%llx"
 )
 
 // Rethrow rethrows a panic.

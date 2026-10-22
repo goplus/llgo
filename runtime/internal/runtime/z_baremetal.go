@@ -7,10 +7,10 @@ import (
 	"github.com/xgo-dev/llgo/runtime/internal/clite/setjmp"
 )
 
-var (
-	printFormatPrefixInt  = c.Str("%ld")
-	printFormatPrefixUInt = c.Str("%lu")
-	printFormatPrefixHex  = c.Str("%lx")
+const (
+	printFormatPrefixInt  = "%ld"
+	printFormatPrefixUInt = "%lu"
+	printFormatPrefixHex  = "%lx"
 )
 
 // Rethrow rethrows a panic.

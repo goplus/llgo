@@ -34,11 +34,11 @@ func PrintBool(v bool) {
 }
 
 func PrintUint(v uint64) {
-	c.Fprintf(c.Stderr, printFormatPrefixUInt, v)
+	c.Fprintf(c.Stderr, c.Str(printFormatPrefixUInt), v)
 }
 
 func PrintInt(v int64) {
-	c.Fprintf(c.Stderr, printFormatPrefixInt, v)
+	c.Fprintf(c.Stderr, c.Str(printFormatPrefixInt), v)
 }
 
 func PrintFloat(v float64) {
@@ -50,7 +50,7 @@ func PrintComplex(v complex128) {
 }
 
 func PrintHex(v uint64) {
-	c.Fprintf(c.Stderr, printFormatPrefixHex, v)
+	c.Fprintf(c.Stderr, c.Str(printFormatPrefixHex), v)
 }
 
 func PrintPointer(p unsafe.Pointer) {
@@ -58,7 +58,7 @@ func PrintPointer(p unsafe.Pointer) {
 	c.Fprintf(c.Stderr, c.Str("0x"))
 	// %llx consumes an unsigned long long. On 32-bit targets, passing uintptr
 	// directly leaves the upper half of the variadic argument unspecified.
-	c.Fprintf(c.Stderr, printFormatPrefixHex, uint64(uintptr(p)))
+	c.Fprintf(c.Stderr, c.Str(printFormatPrefixHex), uint64(uintptr(p)))
 }
 
 func PrintSlice(s Slice) {

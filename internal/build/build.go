@@ -1002,6 +1002,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		return nil, err
 	}
 	buildSSAPkgs(ctx, append(append(altEntries, pkgEntries...), depEntries...))
+	specializeWasmLiteralFormats(ctx)
 	recordPackageSSAInstructions(ctx)
 	callerSpan := buildTrace.startCoordinator("precompute caller tracking", nil)
 	ctx.callerTracking.Precompute(ctx.progSSA.AllPackages())
@@ -1033,6 +1034,7 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		configureWasmReflectBridges(ctx)
 		configureWasmFuncInfoEntries(ctx)
 	}
+	configureWasmRuntimeFree(ctx)
 
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, depPkgs...)
@@ -1775,6 +1777,7 @@ type context struct {
 	crossCompile    crosscompile.Export
 	commands        commandEnv
 	frontendOptions cl.Options
+	wasmRuntimeFree bool
 
 	cTransformer *cabi.Transformer
 
@@ -2568,7 +2571,7 @@ func planMainLink(ctx *context, pkg *packages.Package, pkgs []*aPackage) (*mainL
 	}
 	gen := genConfig{
 		defaultGODEBUG: ctx.defaultGODEBUG[pkg.ID],
-		rtInit:         needRuntime,
+		rtInit:         needRuntime && !ctx.wasmRuntimeFree,
 		pyInit:         needPyInit,
 		abiInit:        needAbiInit,
 		packageInits:   packageInits,

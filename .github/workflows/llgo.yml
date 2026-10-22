@@ -1120,6 +1120,12 @@ jobs:
         run: |
           bash dev/test_wasm_stdlib_test.sh
           bash dev/test_wasm_stdlib.sh
+          for target in wasi emscripten emscripten-memory64; do
+            "$LLGO" test -target "$target" -emulator -v -count=1 -timeout=2m \
+              -run '^TestLiteral' ./test/std/fmt
+            "$LLGO" run -target "$target" -emulator -tags=llgo.wasm.debugger \
+              ./internal/build/testdata/wasm-fmt-literal-debugger
+          done
 
       - name: Run caller and large-function regressions on browser targets
         if: matrix.suite == 'test-command'
