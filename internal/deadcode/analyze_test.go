@@ -568,8 +568,22 @@ func TestAnalyzeMethodMetadataVisibility(t *testing.T) {
 		name string
 		drop bool
 	}{{"_llgo_visible", false}, {"_llgo_child", false}, {"_llgo_dead", true}, {"missing", false}} {
+		if got := analysis.CanRejectInterfaceType(tc.name); got != tc.drop {
+			t.Errorf("%s: reject=%v, want %v", tc.name, got, tc.drop)
+		}
 		if got := analysis.CanDropMethodMetadata(tc.name); got != tc.drop {
 			t.Errorf("%s: drop=%v, want %v", tc.name, got, tc.drop)
 		}
+	}
+}
+
+func TestRejectInterfaceTypeWithoutFacts(t *testing.T) {
+	pm := buildPackage(func(b *pkgBuilder) {
+		b.addEdge(b.sym("main.main"), b.sym("_llgo_unknown"))
+	})
+	defer pm.Close()
+	analysis := AnalyzeProgram(newSummary(t, pm), []string{"main.main"})
+	if analysis.CanRejectInterfaceType("_llgo_unknown") {
+		t.Fatal("a referenced type without owner facts must remain possible")
 	}
 }

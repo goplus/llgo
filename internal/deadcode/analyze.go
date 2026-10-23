@@ -55,6 +55,19 @@ type Analysis struct {
 	visible   map[meta.Symbol]struct{}
 }
 
+// CanRejectInterfaceType reports whether a concrete type is absent from the
+// closed interface domain. Unknown metadata must retain the runtime check.
+// Callers must restrict predicates to basic types: reflection can synthesize
+// composite types without a recorded conversion to that exact type.
+func (a Analysis) CanRejectInterfaceType(name string) bool {
+	typ, known := a.info.LookupSymbol(name)
+	if !known || !a.info.HasFacts(typ) {
+		return false
+	}
+	_, visible := a.visible[typ]
+	return !visible
+}
+
 // CanDropMethodMetadata requires a known type that cannot be observed through
 // an interface, including reflection through child and method-result types.
 // Callers must additionally rule out opaque native consumers of Go metadata.

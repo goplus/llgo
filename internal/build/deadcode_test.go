@@ -326,3 +326,31 @@ func addMethodTypeGlobal(mod llvm.Module, name string) {
 		llvm.ConstNull(ctx.Int8Type()), methods,
 	}))
 }
+
+func TestInterfacePredicatesRequireClosedProgram(t *testing.T) {
+	for _, closed := range []bool{false, true} {
+		prog := llssa.NewProgram(nil)
+		defer prog.Dispose()
+		src := prog.NewPackage("source", "source")
+		dst := prog.NewPackage("entry", "entry")
+		name := "_llgo_iface_use._llgo_float64"
+		llvm.AddGlobal(src.Module(), src.Module().Context().Int8Type(), name)
+		builder := meta.NewBuilder()
+		typ := builder.Sym("_llgo_float64")
+		builder.AddOrdinaryEdge(typ, typ)
+		pm, err := builder.Build()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer pm.Close()
+		pkg := &aPackage{Package: &packages.Package{PkgPath: "source"}, LPkg: src, Meta: pm}
+		entry := &aPackage{LPkg: dst}
+		if err := applyDeadcodeDropOverrides([]Package{pkg}, entry, false, closed, false); err != nil {
+			t.Fatal(err)
+		}
+		value := dst.Module().NamedGlobal(name).Initializer().ZExtValue()
+		if (value == 0) != closed {
+			t.Fatalf("closed=%v: predicate=%d", closed, value)
+		}
+	}
+}

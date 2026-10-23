@@ -796,6 +796,7 @@ const (
 	llgoFloat64Bits        = llgoInstrBase + 0x4c
 	llgoUMulOverflow       = llgoInstrBase + 0x4d
 	llgoSIMD               = llgoInstrBase + 0x4e
+	llgoInterfaceKindUsed  = llgoInstrBase + 0x4f
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

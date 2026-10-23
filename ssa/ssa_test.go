@@ -1073,6 +1073,7 @@ func TestRecordTypeChildren(t *testing.T) {
 		types.NewVar(token.NoPos, pkgTypes, "S", types.Typ[types.String]),
 	}, nil))
 	b.recordTypeChildren("pkg.named", namedType)
+	b.recordTypeChildren("pkg.namedFloat", types.NewNamed(types.NewTypeName(token.NoPos, pkgTypes, "Number", nil), types.Typ[types.Float64], nil))
 	b.recordTypeChildren("pkg.interface", interfaceType)
 
 	pm, err := pkg.metaBuilder.Build()
@@ -1091,6 +1092,8 @@ pkg.map:
     _llgo_string
 pkg.named:
     _llgo_bool
+pkg.namedFloat:
+    _llgo_float64
 pkg.pointer:
     _llgo_int
 pkg.signature:
@@ -3504,5 +3507,36 @@ func TestRtFuncResolvesLinkname(t *testing.T) {
 
 	if got := pkg.RuntimeFunc("Sigsetjmp").impl.Name(); got != "sigsetjmp" {
 		t.Fatalf("rtFunc linkname = %q, want %q", got, "sigsetjmp")
+	}
+}
+
+func TestInterfaceBasicTypeUsed(t *testing.T) {
+	for _, tc := range []struct {
+		arch      string
+		enabled   bool
+		predicate bool
+	}{{"wasm", false, false}, {"amd64", true, false}, {"wasm", true, true}} {
+		t.Run(fmt.Sprintf("%s/%v", tc.arch, tc.enabled), func(t *testing.T) {
+			prog := NewProgram(&Target{GOARCH: tc.arch})
+			defer prog.Dispose()
+			prog.EnableDeadcodeDrop(tc.enabled)
+			pkg := prog.NewPackage("predicate", "predicate")
+			fn := pkg.NewFunc("check", NoArgsNoRet, CDecl)
+			b := fn.MakeBody(1)
+			b.InterfaceBasicTypeUsed(types.Typ[types.Float64])
+			b.InterfaceBasicTypeUsed(types.Typ[types.Float64])
+			b.Return()
+			b.EndBuild()
+			flag := pkg.Module().NamedGlobal("_llgo_iface_use._llgo_float64")
+			if !flag.IsNil() != tc.predicate {
+				t.Fatalf("predicate present=%v, want %v", !flag.IsNil(), tc.predicate)
+			}
+			if tc.predicate && !flag.Initializer().IsNil() {
+				t.Fatal("package compilation must not resolve the predicate")
+			}
+			if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

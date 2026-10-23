@@ -638,32 +638,33 @@ func (p *context) bitCastIntrinsic(b llssa.Builder, args []llssa.Expr, result ty
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
-	"simd":        llgoSIMD,
-	"cstr":        llgoCstr,
-	"advance":     llgoAdvance,
-	"index":       llgoIndex,
-	"alloca":      llgoAlloca,
-	"allocCStr":   llgoAllocCStr,
-	"allocaCStr":  llgoAllocaCStr,
-	"allocaCStrs": llgoAllocaCStrs,
-	"string":      llgoString,
-	"stringData":  llgoStringData,
-	"funcAddr":    llgoFuncAddr,
-	"funcPCABI0":  llgoFuncPCABI0,
-	"skip":        llgoSkip,
-	"syscall":     llgoSyscall,
-	"boolToUint8": llgoBoolToUint8,
-	"closureEnv":  llgoClosureEnv,
-	"pystr":       llgoPyStr,
-	"pyList":      llgoPyList,
-	"pyTuple":     llgoPyTuple,
-	"sigjmpbuf":   llgoSigjmpbuf,
-	"sigsetjmp":   llgoSigsetjmp,
-	"siglongjmp":  llgoSiglongjmp,
-	"setjmp":      llgoSetjmp,
-	"longjmp":     llgoLongjmp,
-	"deferData":   llgoDeferData,
-	"unreachable": llgoUnreachable,
+	"simd":              llgoSIMD,
+	"cstr":              llgoCstr,
+	"advance":           llgoAdvance,
+	"index":             llgoIndex,
+	"alloca":            llgoAlloca,
+	"allocCStr":         llgoAllocCStr,
+	"allocaCStr":        llgoAllocaCStr,
+	"allocaCStrs":       llgoAllocaCStrs,
+	"string":            llgoString,
+	"stringData":        llgoStringData,
+	"funcAddr":          llgoFuncAddr,
+	"funcPCABI0":        llgoFuncPCABI0,
+	"skip":              llgoSkip,
+	"syscall":           llgoSyscall,
+	"boolToUint8":       llgoBoolToUint8,
+	"interfaceKindUsed": llgoInterfaceKindUsed,
+	"closureEnv":        llgoClosureEnv,
+	"pystr":             llgoPyStr,
+	"pyList":            llgoPyList,
+	"pyTuple":           llgoPyTuple,
+	"sigjmpbuf":         llgoSigjmpbuf,
+	"sigsetjmp":         llgoSigsetjmp,
+	"siglongjmp":        llgoSiglongjmp,
+	"setjmp":            llgoSetjmp,
+	"longjmp":           llgoLongjmp,
+	"deferData":         llgoDeferData,
+	"unreachable":       llgoUnreachable,
 
 	"atomicLoad":         llgoAtomicLoad,
 	"atomicStore":        llgoAtomicStore,
@@ -2783,6 +2784,15 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.boolToUint8(b, args)
 			}, args...)
+		case llgoInterfaceKindUsed:
+			if len(call.Args) != 1 {
+				panic("interfaceKindUsed(kind): invalid arguments")
+			}
+			kind, ok := constInt(call.Args[0])
+			if !ok || kind < int(types.Float32) || kind > int(types.Complex128) {
+				panic("interfaceKindUsed(kind): expected a constant floating-point kind")
+			}
+			ret = b.InterfaceBasicTypeUsed(types.Typ[kind])
 		case llgoClosureEnv:
 			if len(args) != 0 || p.fn == nil || !p.fn.NeedsEnv() {
 				panic("closureEnv(): called outside an env-bearing function")

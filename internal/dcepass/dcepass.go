@@ -5,9 +5,38 @@ package dcepass
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/xgo-dev/llgo/internal/meta"
 	"github.com/xgo-dev/llvm"
 )
+
+// EmitInterfaceUseOverrides resolves predicates only after the complete
+// interface domain is known. A nil predicate keeps every assertion possible.
+func EmitInterfaceUseOverrides(dst llvm.Module, srcMods []llvm.Module, reject func(string) bool) {
+	seen := make(map[string]bool)
+	for _, src := range srcMods {
+		for g := src.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
+			name := g.Name()
+			typ, ok := strings.CutPrefix(name, meta.InterfaceUsePrefix)
+			if !ok || seen[name] {
+				continue
+			}
+			seen[name] = true
+			value := uint64(1)
+			if reject != nil && reject(typ) {
+				value = 0
+			}
+			target := dst.NamedGlobal(name)
+			if target.IsNil() {
+				target = llvm.AddGlobal(dst, dst.Context().IntType(g.GlobalValueType().IntTypeWidth()), name)
+			}
+			target.SetInitializer(llvm.ConstInt(target.GlobalValueType(), value, false))
+			target.SetGlobalConstant(true)
+			target.SetLinkage(llvm.ExternalLinkage)
+		}
+	}
+}
 
 const (
 	abiMethodTypeName     = "github.com/xgo-dev/llgo/runtime/abi.Method"

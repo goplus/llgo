@@ -2734,10 +2734,14 @@ func applyDeadcodeDropOverrides(pkgs []Package, entryPkg Package, needRuntime, t
 	roots := dceEntryRootCandidates(pkgs, needRuntime)
 	analysis := deadcode.AnalyzeProgram(summary, roots)
 	var dropMetadata func(string) bool
+	var rejectInterfaceType func(string) bool
 	if trimMethods {
 		dropMetadata = analysis.CanDropMethodMetadata
+		rejectInterfaceType = analysis.CanRejectInterfaceType
 	}
-	dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), dceSourceModules(pkgs), analysis.LiveSlots, dropMetadata, verbose)
+	mods := dceSourceModules(pkgs)
+	dcepass.EmitInterfaceUseOverrides(entryPkg.LPkg.Module(), mods, rejectInterfaceType)
+	dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), mods, analysis.LiveSlots, dropMetadata, verbose)
 	return nil
 }
 

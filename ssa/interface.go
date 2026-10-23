@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 
+	"github.com/xgo-dev/llgo/internal/meta"
 	"github.com/xgo-dev/llgo/ssa/abi"
 	"github.com/xgo-dev/llvm"
 )
@@ -443,6 +444,13 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
 		} else {
 			eq = b.BinOp(token.EQL, tx, tabi)
+			// Reflection can synthesize new composite types (including an empty
+			// struct) without a static conversion to that exact interface type.
+			basicType, basic := types.Unalias(assertedTyp.raw.Type).(*types.Basic)
+			if basic && b.Prog.enableDeadcodeDrop && b.Prog.target.effectiveGOARCH() == "wasm" {
+				live := b.InterfaceBasicTypeUsed(basicType)
+				eq.impl = llvm.CreateAnd(b.impl, eq.impl, live.impl)
+			}
 			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
 		}
 	}
@@ -534,3 +542,15 @@ func (b Builder) faceAbiType(x Expr) Expr {
 }
 
 // -----------------------------------------------------------------------------
+
+// InterfaceBasicTypeUsed reports link-time visibility of a basic type. Floating-
+// point domains also include named types with that underlying kind. It defaults
+// to true outside a closed Wasm executable using the development dead-code pass.
+func (b Builder) InterfaceBasicTypeUsed(t *types.Basic) Expr {
+	if !b.Prog.enableDeadcodeDrop || b.Prog.target.effectiveGOARCH() != "wasm" {
+		return b.Prog.BoolVal(true)
+	}
+	name, _ := b.Prog.abi.TypeName(t)
+	flag := b.Pkg.NewVarEx(meta.InterfaceUsePrefix+name, b.Prog.Pointer(b.Prog.Bool()))
+	return b.Load(flag.Expr)
+}

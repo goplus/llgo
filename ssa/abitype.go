@@ -431,6 +431,11 @@ func (b Builder) structuralTypeChildren(t types.Type) []types.Type {
 		}
 		return children
 	case *types.Named:
+		if basic, ok := t.Underlying().(*types.Basic); ok && basic.Info()&(types.IsFloat|types.IsComplex) != 0 {
+			// Panic printing can inspect a named floating-point kind without
+			// converting it to the corresponding basic interface type.
+			return []types.Type{basic}
+		}
 		return b.structuralTypeChildren(t.Underlying())
 	}
 	return nil

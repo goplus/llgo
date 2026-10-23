@@ -62,6 +62,12 @@ def main():
     env["RUST_LOG"] = "off"
     with tempfile.TemporaryDirectory(prefix="llgo-wasi-lto-") as temporary:
         directory = pathlib.Path(temporary)
+        diagnostic = directory / "bootstrap-diagnostic.wasm"
+        subprocess.run([LLGO, "build", "-target=wasi", "-o", str(diagnostic),
+                        "./internal/clite/diagnostic/_test"],
+                       cwd=ROOT / "runtime", env=env, check=True, timeout=300)
+        run(env, diagnostic, ["0", "ffffffffffffffff", "(error=42)", "zero: (error=0)", "negative: (error=-1)",
+                              "minimum: (error=-2147483648)", "maximum: (error=2147483647)"])
         for mode in ("thin", "full"):
             print(f"Testing WASI {mode} LTO", flush=True)
             fixture = ROOT / "cl/_testlto/globaldce_interface_matrix"
@@ -73,6 +79,7 @@ def main():
                            extra_flags=("-deadcodedrop", "-globaldce=false"))
             check_size_probe(env, module)
             for fixture, marker in (
+                ("interface-domain", "wasm interface domain passed"),
                 ("reflect-method-value", "wasm reflect method values: 42 42 42 42 42"),
                 ("reflect-method-alias", "wasm reflect method aliases: 42 42"),
                 ("reflect-method-alias/named", "wasm named method aliases: 42 42"),
@@ -83,6 +90,16 @@ def main():
                 if mode == "full":
                     module = build(env, directory, mode, ROOT / "test/wasm" / fixture)
                     run(env, module, [marker])
+            module = build(env, directory, mode, ROOT / "internal/build/testdata/wasm-interface-panic",
+                           extra_flags=("-deadcodedrop", "-globaldce=false"))
+            for kind, message in (
+                ("float32", "main.F32(1.25)"),
+                ("float64", "main.F64(1.25)"),
+                ("complex64", "main.C64 (1.25+2.5i)"),
+                ("complex128", "main.C128 (1.25+2.5i)"),
+            ):
+                for args in ((kind,), (kind, "reflect")):
+                    run(env, module, ["panic: " + message], expected_exits=(1, 2), args=args)
             for tags in ("nogc", ""):
                 fixture = ROOT / "internal/build/testdata/wasm-wasi-goexit-defer"
                 module = build(env, directory, mode, fixture, tags)

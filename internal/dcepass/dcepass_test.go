@@ -617,3 +617,44 @@ declare void @method()
 		}
 	}
 }
+
+func TestEmitInterfaceUseOverrides(t *testing.T) {
+	for _, known := range []bool{false, true} {
+		t.Run(fmt.Sprint(known), func(t *testing.T) {
+			sc, dc := llvm.NewContext(), llvm.NewContext()
+			defer sc.Dispose()
+			defer dc.Dispose()
+			src, dst := sc.NewModule("src"), dc.NewModule("dst")
+			defer src.Dispose()
+			defer dst.Dispose()
+			for _, name := range []string{"dead", "live", "unknown"} {
+				llvm.AddGlobal(src, sc.Int8Type(), "_llgo_iface_use."+name)
+			}
+			llvm.AddGlobal(src, sc.Int32Type(), "unrelated")
+			llvm.AddGlobal(dst, dc.Int8Type(), "_llgo_iface_use.live")
+			var reject func(string) bool
+			if known {
+				reject = func(name string) bool { return name == "dead" }
+			}
+			EmitInterfaceUseOverrides(dst, []llvm.Module{src, src}, reject)
+			// Idempotent when a destination module also appears in the input.
+			EmitInterfaceUseOverrides(dst, []llvm.Module{dst}, reject)
+			for _, name := range []string{"dead", "live", "unknown"} {
+				g := dst.NamedGlobal("_llgo_iface_use." + name)
+				want := uint64(1)
+				if known && name == "dead" {
+					want = 0
+				}
+				if g.Initializer().ZExtValue() != want || !g.IsGlobalConstant() {
+					t.Fatalf("%s: %s", name, g.String())
+				}
+			}
+			if !dst.NamedGlobal("unrelated").IsNil() {
+				t.Fatal("copied an unrelated global")
+			}
+			if err := llvm.VerifyModule(dst, llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
