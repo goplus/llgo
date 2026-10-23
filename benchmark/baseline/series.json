@@ -1019,10 +1019,10 @@
       "label": "Branch cpunion/llgo:codex/fix-issue2691-struct-asm-20260929",
       "path": "series/branch/a1ed5c6aa8df259e/summary.json",
       "configPath": "series/branch/a1ed5c6aa8df259e/config.json",
-      "commitPath": "commits/d87feb5b9d809ce6b432b0289fc3cff3be72170f.json",
-      "sha": "d87feb5b9d809ce6b432b0289fc3cff3be72170f",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/d87feb5b9d809ce6b432b0289fc3cff3be72170f",
-      "updatedAt": "2026-10-23T21:34:59.519Z"
+      "commitPath": "commits/8c7ff5abd9c313dd99bfbec066d1ea599c3d59be.json",
+      "sha": "8c7ff5abd9c313dd99bfbec066d1ea599c3d59be",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8c7ff5abd9c313dd99bfbec066d1ea599c3d59be",
+      "updatedAt": "2026-10-23T23:32:39.355Z"
     },
     {
       "kind": "branch",
@@ -8620,10 +8620,10 @@
       "label": "PR #2694",
       "path": "series/pull/2694/summary.json",
       "configPath": "series/pull/2694/config.json",
-      "commitPath": "commits/d87feb5b9d809ce6b432b0289fc3cff3be72170f.json",
-      "sha": "d87feb5b9d809ce6b432b0289fc3cff3be72170f",
-      "sourceUrl": "https://github.com/cpunion/llgo/commit/d87feb5b9d809ce6b432b0289fc3cff3be72170f",
-      "updatedAt": "2026-10-23T21:34:58.280Z"
+      "commitPath": "commits/8c7ff5abd9c313dd99bfbec066d1ea599c3d59be.json",
+      "sha": "8c7ff5abd9c313dd99bfbec066d1ea599c3d59be",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/8c7ff5abd9c313dd99bfbec066d1ea599c3d59be",
+      "updatedAt": "2026-10-23T23:32:37.209Z"
     },
     {
       "kind": "pull",
