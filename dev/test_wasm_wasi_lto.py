@@ -79,6 +79,13 @@ def main():
                            extra_flags=("-deadcodedrop", "-globaldce=false"))
             check_size_probe(env, module)
             for fixture, marker in (
+                ("wasm-type-fields", "wasm type fields passed"),
+                ("wasm-type-fields-reflect", "wasm type fields reflection passed"),
+            ):
+                module = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
+                               extra_flags=("-deadcodedrop", "-globaldce=false"))
+                run(env, module, [marker])
+            for fixture, marker in (
                 ("interface-domain", "wasm interface domain passed"),
                 ("reflect-method-value", "wasm reflect method values: 42 42 42 42 42"),
                 ("reflect-method-alias", "wasm reflect method aliases: 42 42"),

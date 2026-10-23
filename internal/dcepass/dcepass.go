@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/xgo-dev/llgo/internal/meta"
+	"github.com/xgo-dev/llgo/runtime/abi"
 	"github.com/xgo-dev/llvm"
 )
 
@@ -49,6 +50,72 @@ const (
 	abiMethodTypeName     = "github.com/xgo-dev/llgo/runtime/abi.Method"
 	unreachableMethodName = "github.com/xgo-dev/llgo/runtime/internal/runtime.unreachableMethod"
 )
+
+// EmitRegularTypeFieldOverrides removes inaccessible field tables after method
+// overrides. Regular-memory types use byte-wise equality and hashing, so neither
+// needs the table. Keep descriptor prefixes and any earlier method compaction.
+func EmitRegularTypeFieldOverrides(dst llvm.Module, sources []llvm.Module, drop func(string) bool) {
+	if drop == nil {
+		return
+	}
+	emitter := newOverrideEmitter(dst)
+	seen := make(map[string]bool)
+	for _, src := range sources {
+		for g := src.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
+			if seen[g.Name()] || !g.IsGlobalConstant() || !drop(g.Name()) {
+				continue
+			}
+			trimmed, changed := trimRegularTypeFields(g.Initializer())
+			if !changed {
+				continue
+			}
+			seen[g.Name()] = true
+			target := dst.NamedGlobal(g.Name())
+			if target.IsNil() {
+				target = llvm.AddGlobal(dst, emitter.cloneType(g.GlobalValueType()), g.Name())
+			}
+			value := target.Initializer()
+			if value.IsNil() {
+				emitter.values[g] = target
+				value = emitter.cloneConst(trimmed)
+			} else {
+				value, _ = trimRegularTypeFields(value)
+			}
+			target.SetInitializer(value)
+			target.SetGlobalConstant(true)
+			target.SetLinkage(llvm.ExternalLinkage)
+			copyGlobalAttrs(target, g)
+		}
+	}
+}
+
+func trimRegularTypeFields(value llvm.Value) (llvm.Value, bool) {
+	if value.IsNil() || value.IsAConstantStruct().IsNil() || value.OperandsCount() == 0 {
+		return value, false
+	}
+	fields := make([]llvm.Value, value.OperandsCount())
+	for i := range fields {
+		fields[i] = value.Operand(i)
+	}
+	if value.Type().StructName() == "github.com/xgo-dev/llgo/runtime/abi.StructType" {
+		if len(fields) != 3 {
+			return value, false
+		}
+		common := fields[0]
+		if common.OperandsCount() < 4 || common.Operand(3).IsAConstantInt().IsNil() ||
+			common.Operand(3).ZExtValue()&uint64(abi.TFlagRegularMemory) == 0 || fields[2].IsNull() {
+			return value, false
+		}
+		fields[2] = llvm.ConstNull(fields[2].Type())
+	} else {
+		first, changed := trimRegularTypeFields(fields[0])
+		if !changed {
+			return value, false
+		}
+		fields[0] = first
+	}
+	return constStructOfType(value.Type(), fields), true
+}
 
 // EmitStrongTypeOverrides emits method-pruned strong ABI type symbols into dst.
 // srcMods contains the original package modules. For each constant ABI type

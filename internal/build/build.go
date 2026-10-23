@@ -2742,6 +2742,9 @@ func applyDeadcodeDropOverrides(pkgs []Package, entryPkg Package, needRuntime, t
 	mods := dceSourceModules(pkgs)
 	dcepass.EmitInterfaceUseOverrides(entryPkg.LPkg.Module(), mods, rejectInterfaceType)
 	dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), mods, analysis.LiveSlots, dropMetadata, verbose)
+	if trimMethods {
+		dcepass.EmitRegularTypeFieldOverrides(entryPkg.LPkg.Module(), mods, analysis.CanDropTypeFields)
+	}
 	return nil
 }
 

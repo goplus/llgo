@@ -571,6 +571,9 @@ func TestAnalyzeMethodMetadataVisibility(t *testing.T) {
 		if got := analysis.CanRejectInterfaceType(tc.name); got != tc.drop {
 			t.Errorf("%s: reject=%v, want %v", tc.name, got, tc.drop)
 		}
+		if got := analysis.CanDropTypeFields(tc.name); got != tc.drop {
+			t.Errorf("%s: drop fields=%v, want %v", tc.name, got, tc.drop)
+		}
 		if got := analysis.CanDropMethodMetadata(tc.name); got != tc.drop {
 			t.Errorf("%s: drop=%v, want %v", tc.name, got, tc.drop)
 		}
@@ -583,7 +586,34 @@ func TestRejectInterfaceTypeWithoutFacts(t *testing.T) {
 	})
 	defer pm.Close()
 	analysis := AnalyzeProgram(newSummary(t, pm), []string{"main.main"})
-	if analysis.CanRejectInterfaceType("_llgo_unknown") {
+	if analysis.CanRejectInterfaceType("_llgo_unknown") || analysis.CanDropTypeFields("_llgo_unknown") {
 		t.Fatal("a referenced type without owner facts must remain possible")
+	}
+}
+
+func TestTypeFieldLookupVisibility(t *testing.T) {
+	for _, name := range []string{
+		"github.com/xgo-dev/llgo/runtime/internal/runtime.typelist",
+		"github.com/xgo-dev/llgo/runtime/internal/lib/reflect.typelist",
+		"reflect.typelist",
+	} {
+		for _, live := range []bool{false, true} {
+			t.Run(name+map[bool]string{false: "/dead", true: "/live"}[live], func(t *testing.T) {
+				pm := buildPackage(func(b *pkgBuilder) {
+					main, typ, lookup := b.sym("main.main"), b.sym("_llgo_hidden"), b.sym(name)
+					b.addEdge(main, typ)
+					b.addEdge(typ, typ)
+					b.addEdge(lookup, lookup)
+					if live {
+						b.addEdge(main, lookup)
+					}
+				})
+				defer pm.Close()
+				analysis := AnalyzeProgram(newSummary(t, pm), []string{"main.main"})
+				if got := analysis.CanDropTypeFields("_llgo_hidden"); got == live {
+					t.Fatalf("drop fields=%v with live lookup=%v", got, live)
+				}
+			})
+		}
 	}
 }

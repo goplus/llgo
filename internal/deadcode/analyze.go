@@ -50,9 +50,17 @@ func Analyze(info *meta.GlobalSummary, rootNames []string) map[string][]int {
 // Analysis keeps interface/reflection visibility and method liveness from the
 // same fixed point. It borrows info and must not outlive its package metadata.
 type Analysis struct {
-	LiveSlots map[string][]int
-	info      *meta.GlobalSummary
-	visible   map[meta.Symbol]struct{}
+	LiveSlots  map[string][]int
+	info       *meta.GlobalSummary
+	visible    map[meta.Symbol]struct{}
+	typeLookup bool
+}
+
+// CanDropTypeFields excludes reflection-visible types and dynamic type lookup.
+// StructOf can find a static descriptor without converting that type to an
+// interface. Callers must also prove equality and hashing do not read Fields.
+func (a Analysis) CanDropTypeFields(name string) bool {
+	return !a.typeLookup && a.unobservedType(name)
 }
 
 // CanRejectInterfaceType reports whether a concrete type is absent from the
@@ -60,6 +68,10 @@ type Analysis struct {
 // Callers must restrict predicates to basic types: reflection can synthesize
 // composite types without a recorded conversion to that exact type.
 func (a Analysis) CanRejectInterfaceType(name string) bool {
+	return a.unobservedType(name)
+}
+
+func (a Analysis) unobservedType(name string) bool {
 	typ, known := a.info.LookupSymbol(name)
 	if !known || !a.info.HasFacts(typ) {
 		return false
@@ -98,7 +110,19 @@ func AnalyzeProgram(info *meta.GlobalSummary, rootNames []string) Analysis {
 		sort.Ints(sorted)
 		out[name] = sorted
 	}
-	return Analysis{LiveSlots: out, info: info, visible: pass.usedInIface}
+	typeLookup := false
+	for _, name := range []string{
+		"github.com/xgo-dev/llgo/runtime/internal/runtime.typelist",
+		"github.com/xgo-dev/llgo/runtime/internal/lib/reflect.typelist",
+		"reflect.typelist",
+	} {
+		if sym, ok := info.LookupSymbol(name); ok {
+			if _, live := pass.reachable[sym]; live {
+				typeLookup = true
+			}
+		}
+	}
+	return Analysis{LiveSlots: out, info: info, visible: pass.usedInIface, typeLookup: typeLookup}
 }
 
 func deadcode(info *meta.GlobalSummary, roots []meta.Symbol) *pass {
