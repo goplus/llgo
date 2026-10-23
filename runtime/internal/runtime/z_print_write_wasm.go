@@ -1,5 +1,6 @@
 //go:build !llgo || !js || !llgo.wasm.emscripten
 
+// The _wasm.go suffix also restricts this file to GOARCH=wasm.
 package runtime
 
 import (

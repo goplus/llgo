@@ -85,7 +85,8 @@ func main() { ordinary(); println("ok") }
 func TestSpecializeLiteralFormats(t *testing.T) {
 	for _, helpers := range []bool{false, true} {
 		pkg := literalFormatProgram(t, helpers)
-		specializeLiteralFormats(pkg.Prog)
+		recordPackageSSAInstructions(&context{progSSA: pkg.Prog,
+			buildConf: &Config{Goarch: "wasm", OptLevel: optlevel.O2}})
 		for name, want := range map[string]string{
 			"literal": "llgoPrintfLiteral", "writer": "llgoFprintfLiteral", "sprint": "llgoSprintfLiteral",
 			"nilSpread": "llgoPrintfLiteral", "deferred": "llgoPrintfLiteral", "goroutine": "llgoPrintfLiteral",
@@ -136,7 +137,7 @@ func TestSpecializeLiteralFormatsTargetPolicy(t *testing.T) {
 		pkg := literalFormatProgram(t, true)
 		ctx := &context{progSSA: pkg.Prog, mode: test.mode, buildConf: &Config{Goarch: test.arch, OptLevel: test.opt}}
 		ctx.frontendOptions.DebuggerFrames = test.debugger
-		specializeWasmLiteralFormats(ctx)
+		recordPackageSSAInstructions(ctx)
 		call := pkg.Func("literal").Blocks[0].Instrs[0].(*ssa.Call)
 		want := "Printf"
 		if test.arch == "wasm" && test.opt != optlevel.O0 && test.mode != ModeGen && !test.debugger {

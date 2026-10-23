@@ -1002,7 +1002,6 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 		return nil, err
 	}
 	buildSSAPkgs(ctx, append(append(altEntries, pkgEntries...), depEntries...))
-	specializeWasmLiteralFormats(ctx)
 	recordPackageSSAInstructions(ctx)
 	callerSpan := buildTrace.startCoordinator("precompute caller tracking", nil)
 	ctx.callerTracking.Precompute(ctx.progSSA.AllPackages())
@@ -4188,11 +4187,20 @@ func recordPackageSSAInstructions(ctx *context) {
 	defer span.done()
 	counts := make(map[*ssa.Package]int64)
 	var total int64
+	literalFormats := canSpecializeWasmLiteralFormats(ctx)
 	for fn := range ssautil.AllFunctions(ctx.progSSA) {
-		if fn == nil || fn.Pkg == nil {
+		if fn == nil || fn.Pkg == nil && !literalFormats {
 			continue
 		}
 		for _, block := range fn.Blocks {
+			if literalFormats {
+				for _, instruction := range block.Instrs {
+					specializeLiteralFormat(instruction)
+				}
+			}
+			if fn.Pkg == nil {
+				continue
+			}
 			instructions := int64(len(block.Instrs))
 			counts[fn.Pkg] += instructions
 			total += instructions

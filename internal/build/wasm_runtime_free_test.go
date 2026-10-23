@@ -151,6 +151,18 @@ func TestConfigureWasmRuntimeFree(t *testing.T) {
 			p.Syntax[0].Comments = []*ast.CommentGroup{{List: []*ast.Comment{{Text: `//go:cgo_ldflag "-lforeign"`}}}}
 		}, false},
 		{"compiler runtime input", func(_ *testing.T, _ *context, p *aPackage) { p.Dir = filepath.Join(root, "runtime") }, true},
+		{"runtime thread local global", func(_ *testing.T, c *context, p *aPackage) {
+			p.Dir = filepath.Join(root, "runtime")
+			c.prog.SetLocalityInfoFor(p.Types, llssa.FullName(p.Types, "n"), llssa.LocalityInfo{Locality: llssa.ThreadLocal})
+		}, false},
+		{"runtime goroutine local global", func(_ *testing.T, c *context, p *aPackage) {
+			p.Dir = filepath.Join(root, "runtime")
+			c.prog.SetLocalityInfoFor(p.Types, llssa.FullName(p.Types, "n"), llssa.LocalityInfo{Locality: llssa.GoroutineLocal})
+		}, false},
+		{"runtime aliased global", func(_ *testing.T, c *context, p *aPackage) {
+			p.Dir = filepath.Join(root, "runtime")
+			c.prog.SetLinkname(llssa.FullName(p.Types, "n"), "C.number")
+		}, false},
 		{"C import", func(_ *testing.T, _ *context, p *aPackage) {
 			p.Syntax[0].Imports = []*ast.ImportSpec{{Path: &ast.BasicLit{Kind: token.STRING, Value: `"C"`}}}
 		}, false},

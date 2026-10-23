@@ -29,23 +29,45 @@ func configureWasmRuntimeFree(ctx *context) {
 		os.Getenv("LDFLAGS") != "" || ctx.commands.lookup("LDFLAGS") != "" || conf.LinkOptions.ExternalLinkerFlags != "" {
 		return
 	}
+	linkname := func(fn *ssa.Function) string {
+		if fn.Pkg == nil {
+			return ""
+		}
+		name, _ := ctx.prog.Linkname(llssa.FullName(fn.Pkg.Pkg, fn.Name()))
+		return name
+	}
+	globalSafe := func(global *ssa.Global) bool {
+		name := llssa.FullName(global.Pkg.Pkg, global.Name())
+		if _, linked := ctx.prog.Linkname(name); linked {
+			return false
+		}
+		_, locality, ok, err := ctx.prog.ResolveLocalityFor(global.Pkg.Pkg, name)
+		return err == nil && (!ok || locality.Locality == llssa.LocalityNone)
+	}
+	// Check reachable globals even inside the trusted runtime tree. Most
+	// programs also fail this proof without needing any filesystem checks.
+	if !wasmRuntimeFreeFunctions(wasmReflectRoots(ctx), linkname, globalSafe) {
+		return
+	}
 	// Foreign objects and exported entries can hide calls back into Go.
 	runtimeDir, err := filepath.EvalSymlinks(env.LLGoRuntimeDir())
 	if err != nil {
 		return
 	}
+	resolvedDirs := make(map[string]string)
 	for _, pkg := range ctx.pkgByID {
-		dir, err := filepath.EvalSymlinks(pkg.Dir)
-		if err != nil {
-			return
+		dir, resolved := resolvedDirs[pkg.Dir]
+		if !resolved {
+			dir, err = filepath.EvalSymlinks(pkg.Dir)
+			if err != nil {
+				return
+			}
+			resolvedDirs[pkg.Dir] = dir
 		}
 		if rel, err := filepath.Rel(runtimeDir, dir); err == nil && rel != ".." && !filepath.IsAbs(rel) && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			continue
 		}
 		if len(pkg.OtherFiles) != 0 || len(pkg.EmbedFiles) != 0 {
-			return
-		}
-		if _, err := os.Stat(filepath.Join(pkg.Dir, "_wrap")); err == nil || !os.IsNotExist(err) {
 			return
 		}
 		for _, file := range pkg.Syntax {
@@ -89,20 +111,9 @@ func configureWasmRuntimeFree(ctx *context) {
 				return
 			}
 		}
-	}
-	linkname := func(fn *ssa.Function) string {
-		if fn.Pkg == nil {
-			return ""
+		if _, err := os.Stat(filepath.Join(pkg.Dir, "_wrap")); err == nil || !os.IsNotExist(err) {
+			return
 		}
-		name, _ := ctx.prog.Linkname(llssa.FullName(fn.Pkg.Pkg, fn.Name()))
-		return name
-	}
-	globalSafe := func(global *ssa.Global) bool {
-		_, linked := ctx.prog.Linkname(llssa.FullName(global.Pkg.Pkg, global.Name()))
-		return !linked
-	}
-	if !wasmRuntimeFreeFunctions(wasmReflectRoots(ctx), linkname, globalSafe) {
-		return
 	}
 	ctx.wasmRuntimeFree = true
 	ctx.frontendOptions.ShadowStack = false

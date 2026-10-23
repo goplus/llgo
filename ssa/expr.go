@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"math"
 
 	"github.com/xgo-dev/llvm"
 )
@@ -2134,8 +2135,8 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 		case vkString:
 			if prog.target.GOARCH == "wasm" {
 				length := b.StringLen(arg)
-				if value := length.impl.IsAConstantInt(); !value.IsNil() && value.ZExtValue() <= 1<<32-1 {
-					b.Call(b.Pkg.rtFunc("PrintString32"), b.Convert(prog.VoidPtr(), b.StringData(arg)),
+				if value := length.impl.IsAConstantInt(); !value.IsNil() && value.ZExtValue() <= math.MaxUint32 {
+					b.InlineCall(b.Pkg.rtFunc("PrintString32"), b.Convert(prog.VoidPtr(), b.StringData(arg)),
 						prog.IntVal(value.ZExtValue(), prog.Uint32()))
 					continue
 				}
