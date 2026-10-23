@@ -525,9 +525,95 @@ declare void @method()
 		if got := init.Operand(2).IsNull(); got != drop {
 			t.Fatalf("drop=%v: zero method storage=%v", drop, got)
 		}
+		if got := init.Operand(2).Type().ArrayLength(); got != int(wantCount) {
+			t.Fatalf("drop=%v: method storage length=%d", drop, got)
+		}
 		if drop && (!dst.NamedGlobal("method.type").IsNil() || !dst.NamedFunction("method").IsNil()) {
 			t.Fatal("cleared methods still reference signature or function")
 		}
 		dst.Dispose()
+	}
+}
+
+func TestCompactMethodStorageReferences(t *testing.T) {
+	for _, bits := range []int{32, 64} {
+		for _, mode := range []string{"new", "declaration", "in-place", "live"} {
+			t.Run(fmt.Sprintf("%d/%s", bits, mode), func(t *testing.T) {
+				srcCtx, dstCtx := llvm.NewContext(), llvm.NewContext()
+				defer srcCtx.Dispose()
+				defer dstCtx.Dispose()
+				text := `
+%"github.com/xgo-dev/llgo/runtime/abi.UncommonType" = type { { ptr, i64 }, i16, i16, i32 }
+%"github.com/xgo-dev/llgo/runtime/abi.Method" = type { { ptr, i64 }, ptr, ptr, ptr }
+%descriptor = type { ptr, %"github.com/xgo-dev/llgo/runtime/abi.UncommonType", [1 x %"github.com/xgo-dev/llgo/runtime/abi.Method"] }
+@first = weak_odr hidden constant %descriptor { ptr @second, %"github.com/xgo-dev/llgo/runtime/abi.UncommonType" { { ptr, i64 } zeroinitializer, i16 1, i16 1, i32 24 }, [1 x %"github.com/xgo-dev/llgo/runtime/abi.Method"] [%"github.com/xgo-dev/llgo/runtime/abi.Method" { { ptr, i64 } zeroinitializer, ptr null, ptr @method, ptr @method }] }, align 32
+@second = weak_odr constant %descriptor { ptr @first, %"github.com/xgo-dev/llgo/runtime/abi.UncommonType" { { ptr, i64 } zeroinitializer, i16 1, i16 1, i32 24 }, [1 x %"github.com/xgo-dev/llgo/runtime/abi.Method"] [%"github.com/xgo-dev/llgo/runtime/abi.Method" { { ptr, i64 } zeroinitializer, ptr null, ptr @method, ptr @method }] }
+@reference = constant ptr getelementptr (%descriptor, ptr @second, i32 0, i32 1)
+declare void @method()
+`
+				path := filepath.Join(t.TempDir(), "types.ll")
+				if err := os.WriteFile(path, []byte(text), 0600); err != nil {
+					t.Fatal(err)
+				}
+				src := parseModule(t, &srcCtx, path)
+				defer src.Dispose()
+				dst := src
+				if mode != "in-place" {
+					dst = dstCtx.NewModule("dst")
+					defer dst.Dispose()
+				}
+				layout := fmt.Sprintf("e-p:%d:%d-i64:64", bits, bits)
+				src.SetDataLayout(layout)
+				dst.SetDataLayout(layout)
+				data := llvm.NewTargetData(layout)
+				defer data.Dispose()
+				original := src.NamedGlobal("first").GlobalValueType()
+				before := data.TypeAllocSize(original)
+				if mode == "declaration" {
+					e := newOverrideEmitter(dst)
+					// Existing uses of a full-size declaration must also be rebound.
+					r := llvm.AddGlobal(dst, e.cloneType(src.NamedGlobal("reference").GlobalValueType()), "reference")
+					r.SetInitializer(e.cloneConst(src.NamedGlobal("reference").Initializer()))
+				}
+				var live map[string][]int
+				if mode == "live" {
+					live = map[string][]int{"first": {0}, "second": {0}}
+				}
+				EmitStrongTypeOverrides(dst, []llvm.Module{src}, live, func(string) bool { return true }, false)
+				if err := llvm.VerifyModule(dst, llvm.ReturnStatusAction); err != nil {
+					t.Fatal(err)
+				}
+				for _, name := range []string{"first", "second"} {
+					g := dst.NamedGlobal(name)
+					typ := g.GlobalValueType()
+					want := before
+					if mode != "live" {
+						want -= data.TypeAllocSize(original.StructElementTypes()[2])
+					}
+					if got := data.TypeAllocSize(typ); got != want {
+						t.Fatalf("%s: storage=%d, want %d", name, got, want)
+					}
+					for i := 0; i < 3; i++ {
+						if data.ElementOffset(typ, i) != data.ElementOffset(original, i) {
+							t.Fatalf("%s: field %d moved", name, i)
+						}
+					}
+					other := "first"
+					if name == "first" {
+						other = "second"
+					}
+					if g.Initializer().Operand(0) != dst.NamedGlobal(other) {
+						t.Fatalf("%s: stale cross-descriptor reference", name)
+					}
+				}
+				first := dst.NamedGlobal("first")
+				if first.Visibility() != llvm.HiddenVisibility || first.Alignment() != 32 || first.Linkage() != llvm.ExternalLinkage {
+					t.Fatal("descriptor attributes changed")
+				}
+				if ref := dst.NamedGlobal("reference"); !ref.IsNil() && ref.Initializer().Operand(0) != dst.NamedGlobal("second") {
+					t.Fatal("existing GEP still refers to the old descriptor")
+				}
+			})
+		}
 	}
 }

@@ -72,6 +72,13 @@ def main():
             module = build(env, directory, mode, ROOT / "internal/build/testdata/wasm-size",
                            extra_flags=("-deadcodedrop", "-globaldce=false"))
             check_size_probe(env, module)
+            for fixture, marker in (
+                ("reflect-method-value", "wasm reflect method values: 42 42 42 42 42"),
+                ("reflect-method-alias", "wasm reflect method aliases: 42 42"),
+            ):
+                module = build(env, directory, mode, ROOT / "test/wasm" / fixture,
+                               extra_flags=("-deadcodedrop", "-globaldce=false"))
+                run(env, module, [marker])
             for tags in ("nogc", ""):
                 fixture = ROOT / "internal/build/testdata/wasm-wasi-goexit-defer"
                 module = build(env, directory, mode, fixture, tags)

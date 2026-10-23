@@ -2614,6 +2614,7 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	cv := call.Value
 	mayRecover := p.callMayRecover(cv)
 	if mthd := call.Method; mthd != nil {
+		p.recordReflectValueMethodInvoke(call, mthd)
 		reflectCheck := p.reflectTypeMethodCheck(call, mthd)
 		o := p.compileValue(b, cv)
 		var fn llssa.Expr
@@ -2934,6 +2935,30 @@ func needsNamedClosureChange(got, want types.Type) bool {
 	_, gotIsFunc := got.Underlying().(*types.Signature)
 	_, wantIsFunc := want.Underlying().(*types.Signature)
 	return gotIsFunc && wantIsFunc && types.Identical(got.Underlying(), want.Underlying())
+}
+
+// A user interface can invoke reflect.Value's method lookup without a direct
+// reference to reflect.Value.Method. Preserve the same DCE demand, including
+// when its result is spelled through a type alias.
+func (p *context) recordReflectValueMethodInvoke(call *ssa.CallCommon, method *types.Func) {
+	sig := method.Type().(*types.Signature)
+	if sig.Results().Len() != 1 || len(call.Args) != 1 {
+		return
+	}
+	typ, ok := types.Unalias(sig.Results().At(0).Type()).(*types.Named)
+	if !ok || typ.Obj().Pkg() == nil || typ.Obj().Pkg().Path() != "reflect" || typ.Obj().Name() != "Value" {
+		return
+	}
+	switch method.Name() {
+	case "Method":
+		p.pkg.MarkReflectMethod(p.fn.Name())
+	case "MethodByName":
+		if name, ok := constStr(call.Args[0]); ok {
+			p.pkg.RecordReflectMethodByName(p.fn.Name(), name)
+		} else {
+			p.pkg.MarkReflectMethod(p.fn.Name())
+		}
+	}
 }
 
 func (p *context) reflectTypeMethodCheck(call *ssa.CallCommon, method *types.Func) (check llssa.ReflectMethodCheck) {
