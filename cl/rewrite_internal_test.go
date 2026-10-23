@@ -807,6 +807,34 @@ func Use(v int) int { return Handlers[0].Call(v) }
 	}
 }
 
+func TestStaticGlobalNonCapturingClosureInit(t *testing.T) {
+	const src = `package staticinit
+
+type Handler struct { Call func(int) int }
+var offset = 1
+var Direct = func(v int) int { return v + offset }
+var Nested = Handler{Call: func(v int) int { return v * 2 }}
+var Array = [1]func(int) int{func(v int) int { return v - 1 }}
+
+func Use(v int) int { offset = v; return Direct(v) + Nested.Call(v) + Array[0](v) }
+`
+	ir := compileWithRewrites(t, src, nil)
+	for i, name := range []string{"Direct", "Nested", "Array"} {
+		global := "@staticinit." + name
+		assertNoStoreToGlobal(t, ir, global)
+		code := fmt.Sprintf(`@"staticinit.init$%d"`, i+1)
+		found := false
+		for _, line := range strings.Split(ir, "\n") {
+			if strings.HasPrefix(line, global+" = ") && strings.Contains(line, code) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing static closure %s in %s:\n%s", code, global, ir)
+		}
+	}
+}
+
 func TestStaticGlobalPointerArrayInit(t *testing.T) {
 	const src = `package staticinit
 

@@ -17,6 +17,7 @@ var kept = map[string]int{"a": 4}
 func sideEffect() int { effects++; return effects }
 
 func main() {
+	checkStaticClosures()
 	checkMethodMetadata()
 	if effects != 2 || kept["a"] != 4 {
 		panic("initializer effects lost")
