@@ -3497,6 +3497,7 @@ func optimizeLLVMModule(ctx *context, pkgPath string, mod gllvm.Module) error {
 	if !ctx.passOpt {
 		return nil
 	}
+	releaseGoHeapForLLVM()
 	mod.SetDataLayout(ctx.prog.DataLayout())
 	mod.SetTarget(ctx.prog.Target().Spec().Triple)
 	pbo := gllvm.NewPassBuilderOptions()
