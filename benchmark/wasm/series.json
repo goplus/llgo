@@ -1653,6 +1653,17 @@
     },
     {
       "kind": "branch",
+      "id": "e19ad010dd29c8f3",
+      "label": "Branch cpunion/llgo:codex/wasm-format-size-20261023",
+      "path": "series/branch/e19ad010dd29c8f3/summary.json",
+      "configPath": "series/branch/e19ad010dd29c8f3/config.json",
+      "commitPath": "commits/f49add50416419ee683063a5874b30d6f10fc73c.json",
+      "sha": "f49add50416419ee683063a5874b30d6f10fc73c",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/f49add50416419ee683063a5874b30d6f10fc73c",
+      "updatedAt": "2026-10-23T03:04:02.324Z"
+    },
+    {
+      "kind": "branch",
       "id": "0a6297fdd6d151e4",
       "label": "Branch cpunion/llgo:codex/wasm-gc-segment-lookup-20261011",
       "path": "series/branch/0a6297fdd6d151e4/summary.json",
@@ -6138,6 +6149,17 @@
       "sha": "9b001de138288c57243a14d6680c2a5a17886adc",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/9b001de138288c57243a14d6680c2a5a17886adc",
       "updatedAt": "2026-10-22T19:45:52.574Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2910",
+      "label": "PR #2910",
+      "path": "series/pull/2910/summary.json",
+      "configPath": "series/pull/2910/config.json",
+      "commitPath": "commits/f49add50416419ee683063a5874b30d6f10fc73c.json",
+      "sha": "f49add50416419ee683063a5874b30d6f10fc73c",
+      "sourceUrl": "https://github.com/cpunion/llgo/commit/f49add50416419ee683063a5874b30d6f10fc73c",
+      "updatedAt": "2026-10-23T03:04:02.247Z"
     }
   ]
 }
