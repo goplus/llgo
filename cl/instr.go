@@ -2614,6 +2614,9 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	p.emitPCLineLabel(b, call.Pos())
 	cv := call.Value
 	mayRecover := p.callMayRecover(cv)
+	if act == llssa.Call && p.emitDirectFinalizer(b, call, ds, mayRecover) {
+		return
+	}
 	if mthd := call.Method; mthd != nil {
 		p.recordReflectValueMethodInvoke(call, mthd)
 		reflectCheck := p.reflectTypeMethodCheck(call, mthd)

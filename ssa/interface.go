@@ -228,6 +228,20 @@ func (b Builder) imethod(intf Expr, method *types.Func, recoverToken bool) Expr 
 //	t1 = make interface{} <- int (42:int)
 //	t2 = make Stringer <- t0
 func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
+	return b.makeInterface(tinter, x, true)
+}
+
+// MakeInterfaceDataOnly boxes an argument for a statically checked runtime
+// call. Its type word is unobservable and remains nil; the ordinary interface
+// data word and GC-root layout retain the argument across allocating calls.
+func (b Builder) MakeInterfaceDataOnly(tinter Type, x Expr) Expr {
+	if tinter.raw.Type.Underlying().(*types.Interface).NumMethods() != 0 {
+		panic("data-only interface must be empty")
+	}
+	return b.makeInterface(tinter, x, false)
+}
+
+func (b Builder) makeInterface(tinter Type, x Expr, observable bool) (ret Expr) {
 	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
 	dbgInstrf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	if x.kind == vkFuncDecl {
@@ -236,8 +250,11 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	typ := x.Type
-	b.recordUseIface(typ)
-	tabi := b.abiType(typ.raw.Type)
+	tabi := prog.Nil(prog.AbiTypePtr())
+	if observable {
+		b.recordUseIface(typ)
+		tabi = b.abiType(typ.raw.Type)
+	}
 	if !directIfaceType(typ.raw.Type) {
 		vptr := b.AllocU(typ)
 		b.Store(vptr, x)

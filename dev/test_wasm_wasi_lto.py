@@ -81,10 +81,14 @@ def main():
             for fixture, marker in (
                 ("wasm-type-fields", "wasm type fields passed"),
                 ("wasm-type-fields-reflect", "wasm type fields reflection passed"),
+                ("wasm-finalizer-direct", "wasm direct finalizers passed"),
             ):
                 module = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
                                extra_flags=("-deadcodedrop", "-globaldce=false"))
                 run(env, module, [marker])
+                if fixture == "wasm-finalizer-direct":
+                    run(env, module, ["panic: fatal error: runtime.SetFinalizer: first argument is nil"],
+                        expected_exits=(1, 2), args=("nil",))
             for fixture, marker in (
                 ("interface-domain", "wasm interface domain passed"),
                 ("reflect-method-value", "wasm reflect method values: 42 42 42 42 42"),
