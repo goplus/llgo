@@ -13,11 +13,15 @@ import (
 
 // EmitInterfaceUseOverrides resolves predicates only after the complete
 // interface domain is known. A nil predicate keeps every assertion possible.
+// Constant-returning functions also fold during final Wasm optimization without
+// LTO; linear-memory flags cannot be treated as immutable by that optimizer.
 func EmitInterfaceUseOverrides(dst llvm.Module, srcMods []llvm.Module, reject func(string) bool) {
 	seen := make(map[string]bool)
+	builder := dst.Context().NewBuilder()
+	defer builder.Dispose()
 	for _, src := range srcMods {
-		for g := src.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
-			name := g.Name()
+		for fn := src.FirstFunction(); !fn.IsNil(); fn = llvm.NextFunction(fn) {
+			name := fn.Name()
 			typ, ok := strings.CutPrefix(name, meta.InterfaceUsePrefix)
 			if !ok || seen[name] {
 				continue
@@ -27,13 +31,16 @@ func EmitInterfaceUseOverrides(dst llvm.Module, srcMods []llvm.Module, reject fu
 			if reject != nil && reject(typ) {
 				value = 0
 			}
-			target := dst.NamedGlobal(name)
+			result := dst.Context().IntType(fn.GlobalValueType().ReturnType().IntTypeWidth())
+			target := dst.NamedFunction(name)
 			if target.IsNil() {
-				target = llvm.AddGlobal(dst, dst.Context().IntType(g.GlobalValueType().IntTypeWidth()), name)
+				target = llvm.AddFunction(dst, name, llvm.FunctionType(result, nil, false))
 			}
-			target.SetInitializer(llvm.ConstInt(target.GlobalValueType(), value, false))
-			target.SetGlobalConstant(true)
-			target.SetLinkage(llvm.ExternalLinkage)
+			if target.BasicBlocksCount() != 0 {
+				continue
+			}
+			builder.SetInsertPointAtEnd(dst.Context().AddBasicBlock(target, "entry"))
+			builder.CreateRet(llvm.ConstInt(result, value, false))
 		}
 	}
 }

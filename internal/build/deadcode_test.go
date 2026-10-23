@@ -334,7 +334,7 @@ func TestInterfacePredicatesRequireClosedProgram(t *testing.T) {
 		src := prog.NewPackage("source", "source")
 		dst := prog.NewPackage("entry", "entry")
 		name := "_llgo_iface_use._llgo_float64"
-		llvm.AddGlobal(src.Module(), src.Module().Context().Int8Type(), name)
+		llvm.AddFunction(src.Module(), name, llvm.FunctionType(src.Module().Context().Int1Type(), nil, false))
 		builder := meta.NewBuilder()
 		typ := builder.Sym("_llgo_float64")
 		builder.AddOrdinaryEdge(typ, typ)
@@ -348,7 +348,7 @@ func TestInterfacePredicatesRequireClosedProgram(t *testing.T) {
 		if err := applyDeadcodeDropOverrides([]Package{pkg}, entry, false, closed, false); err != nil {
 			t.Fatal(err)
 		}
-		value := dst.Module().NamedGlobal(name).Initializer().ZExtValue()
+		value := dst.Module().NamedFunction(name).FirstBasicBlock().FirstInstruction().Operand(0).ZExtValue()
 		if (value == 0) != closed {
 			t.Fatalf("closed=%v: predicate=%d", closed, value)
 		}

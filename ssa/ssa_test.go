@@ -3527,11 +3527,11 @@ func TestInterfaceBasicTypeUsed(t *testing.T) {
 			b.InterfaceBasicTypeUsed(types.Typ[types.Float64])
 			b.Return()
 			b.EndBuild()
-			flag := pkg.Module().NamedGlobal("_llgo_iface_use._llgo_float64")
+			flag := pkg.Module().NamedFunction("_llgo_iface_use._llgo_float64")
 			if !flag.IsNil() != tc.predicate {
 				t.Fatalf("predicate present=%v, want %v", !flag.IsNil(), tc.predicate)
 			}
-			if tc.predicate && !flag.Initializer().IsNil() {
+			if tc.predicate && !flag.IsDeclaration() {
 				t.Fatal("package compilation must not resolve the predicate")
 			}
 			if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {

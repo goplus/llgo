@@ -551,6 +551,8 @@ func (b Builder) InterfaceBasicTypeUsed(t *types.Basic) Expr {
 		return b.Prog.BoolVal(true)
 	}
 	name, _ := b.Prog.abi.TypeName(t)
-	flag := b.Pkg.NewVarEx(meta.InterfaceUsePrefix+name, b.Prog.Pointer(b.Prog.Bool()))
-	return b.Load(flag.Expr)
+	result := types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool]))
+	sig := types.NewSignatureType(nil, nil, nil, nil, result, false)
+	predicate := b.Pkg.NewFunc(meta.InterfaceUsePrefix+name, sig, CDecl)
+	return b.Call(predicate.Expr)
 }
