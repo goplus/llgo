@@ -14,7 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 LLGO = os.environ.get("LLGO", "llgo")
 
 
-def build(env, directory, mode, fixture, tags="", test=False, extra_flags=()):
+def build(env, directory, mode, fixture, tags="", test=False, extra_flags=(), opt="O2"):
     module = directory / f"{fixture.name}-{mode}-{tags or 'gc'}.wasm"
     link_object = module.with_suffix(".lto.o")
     build_env = env.copy()
@@ -24,7 +24,7 @@ def build(env, directory, mode, fixture, tags="", test=False, extra_flags=()):
         flags += " -Wl,--save-temps"
     build_env["LDFLAGS"] = (env.get("LDFLAGS", "") + " " + flags).strip()
     command = [LLGO, "test", "-c"] if test else [LLGO, "build"]
-    command += ["-target", "wasi", "-O2", f"-lto={mode}"]
+    command += ["-target", "wasi", f"-{opt}", f"-lto={mode}"]
     command += extra_flags
     if tags:
         command += ["-tags", tags]
@@ -82,10 +82,16 @@ def main():
                 ("wasm-type-fields", "wasm type fields passed"),
                 ("wasm-type-fields-reflect", "wasm type fields reflection passed"),
                 ("wasm-finalizer-direct", "wasm direct finalizers passed"),
+                ("wasm-root-sharing", "wasm root sharing passed"),
             ):
                 module = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
                                extra_flags=("-deadcodedrop", "-globaldce=false"))
                 run(env, module, [marker])
+                if fixture == "wasm-root-sharing":
+                    # Frame helpers are outlined only by size optimization.
+                    sized = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
+                                  extra_flags=("-deadcodedrop", "-globaldce=false"), opt="Oz")
+                    run(env, sized, [marker])
                 if fixture == "wasm-finalizer-direct":
                     run(env, module, ["panic: fatal error: runtime.SetFinalizer: first argument is nil"],
                         expected_exits=(1, 2), args=("nil",))
