@@ -1569,6 +1569,8 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	var reflectCheck ReflectMethodCheck
 	if b.Pkg.Path() != "reflect" {
 		reflectCheck = b.checkReflect(fn, args)
+	} else {
+		reflectCheck = reflectMethodWrapperCheck(b.Func.Name(), fn.Name())
 	}
 	ret.Type = b.Prog.retType(sig)
 	params := llvmParamsEx(data, args, sig.Params(), b)
@@ -1713,6 +1715,21 @@ const (
 	reflectTypeMethodMask = ReflectTypeMethodByIndex | ReflectTypeMethodByName | ReflectTypeMethodDynamic
 	ReflectMethodMask     = ReflectMethodByIndex | ReflectMethodByName | ReflectMethodDynamic | reflectTypeMethodMask
 )
+
+// Interface dispatch reaches the pointer wrapper instead of a direct Value
+// lookup. Put its capability check in that wrapper, so unreachable wrappers
+// do not retain methods and ordinary user-defined lookups gain no assumptions
+// about the reflect.Value they return. This does not request global ABI init.
+func reflectMethodWrapperCheck(caller, callee string) ReflectMethodCheck {
+	switch {
+	case caller == "reflect.(*Value).Method" && callee == "reflect.Value.Method":
+		return ReflectMethodCheck{Kind: ReflectMethodDynamic}
+	case caller == "reflect.(*Value).MethodByName" && callee == "reflect.Value.MethodByName":
+		return ReflectMethodCheck{Kind: ReflectMethodDynamic | ReflectMethodByName}
+	default:
+		return ReflectMethodCheck{}
+	}
+}
 
 func (b Builder) checkReflect(fn Expr, args []Expr) (check ReflectMethodCheck) {
 	pkg := b.Pkg

@@ -1217,6 +1217,42 @@ pkg.named:
 	}
 }
 
+func TestReflectInterfaceWrappersRetainMethodCapabilities(t *testing.T) {
+	for _, tt := range []struct {
+		caller, callee string
+		want           bool
+	}{
+		{"reflect.(*Value).Method", "reflect.Value.Method", true},
+		{"reflect.(*Value).MethodByName", "reflect.Value.MethodByName", true},
+		{"reflect.Value.MethodByName", "reflect.Value.Method", false},
+		{"reflect.(*Value).Method", "reflect.Value.Other", false},
+	} {
+		t.Run(tt.caller+"/"+tt.callee, func(t *testing.T) {
+			prog := NewProgram(nil)
+			defer prog.Dispose()
+			prog.EnableGoGlobalDCE(true)
+			pkg := prog.NewPackage("reflect", "reflect")
+			value := prog.Struct(prog.VoidPtr(), prog.VoidPtr(), prog.Uintptr())
+			result := types.NewTuple(types.NewVar(token.NoPos, nil, "", value.RawType()))
+			sig := types.NewSignatureType(nil, nil, nil, nil, result, false)
+			lookup := pkg.NewFunc(tt.callee, sig, GoDecl)
+			wrapper := pkg.NewFunc(tt.caller, sig, GoDecl)
+			b := wrapper.MakeBody(1)
+			b.Return(b.Call(lookup.Expr))
+			if err := llvm.VerifyModule(pkg.Module(), llvm.ReturnStatusAction); err != nil {
+				t.Fatal(err)
+			}
+			ir := pkg.String()
+			if got := strings.Contains(ir, "@llvm.type.checked.load"); got != tt.want {
+				t.Fatalf("method capability present=%v, want %v:\n%s", got, tt.want, ir)
+			}
+			if pkg.NeedAbiInit != 0 {
+				t.Fatal("an unused wrapper requested global ABI registration")
+			}
+		})
+	}
+}
+
 func TestReflectSliceAtDemandsSliceTypeInit(t *testing.T) {
 	prog := NewProgram(nil)
 	defer prog.Dispose()
