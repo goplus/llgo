@@ -38,18 +38,18 @@ type nativeCallback func(*Item)
 func nativeValue(p *Item, f nativeCallback) { runtime.SetFinalizer(p, f) }
 `
 	for _, tc := range []struct {
-		name, arch     string
-		dce, gc, debug bool
+		name, goos, arch string
+		dce, gc, debug   bool
 	}{
-		{"enabled", "wasm", true, true, false},
-		{"no-dce", "wasm", false, true, false},
-		{"no-gc", "wasm", true, false, false},
-		{"native", "amd64", true, true, false},
-		{"debugger", "wasm", true, true, true},
+		{"enabled", "wasip1", "wasm", true, true, false},
+		{"no-dce", "wasip1", "wasm", false, true, false},
+		{"no-gc", "wasip1", "wasm", true, false, false},
+		{"native", "linux", "amd64", true, true, false},
+		{"debugger", "wasip1", "wasm", true, true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ssapkg, _, files := buildGoSSAPkg(t, src)
-			prog := newLLSSAProgForTarget(t, &llssa.Target{GOARCH: tc.arch})
+			prog := newLLSSAProgForTarget(t, &llssa.Target{GOOS: tc.goos, GOARCH: tc.arch})
 			defer prog.Dispose()
 			prog.EnableDeadcodeDrop(tc.dce)
 			prog.EnableGCRoots(tc.gc)
