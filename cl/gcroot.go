@@ -310,10 +310,25 @@ func gcRootOwner(value ssa.Value) ssa.Value {
 		case *ssa.IndexAddr:
 			value = v.X
 		case *ssa.Slice:
+			// LLGo can replace a synthetic makeslice array with a fresh
+			// allocation at this slice and omit the array entirely. Keep
+			// that result rooted even if its SSA input looks like an owner.
+			if alloc, ok := v.X.(*ssa.Alloc); ok && alloc.Comment == "makeslice" {
+				return value
+			}
 			value = v.X
 		case *ssa.SliceToArrayPointer:
 			value = v.X
 		case *ssa.ChangeType:
+			// Function/aggregate conversions can have a different lowered
+			// ABI. Only these views preserve their backing allocation.
+			switch v.Type().Underlying().(type) {
+			case *types.Pointer, *types.Slice:
+			default:
+				if kind := basicKind(v.Type()); kind != types.String && kind != types.UnsafePointer {
+					return value
+				}
+			}
 			value = v.X
 		case *ssa.Convert:
 			pointer := func(t types.Type) bool {

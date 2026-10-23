@@ -14,6 +14,9 @@ func TestGCRootOwner(t *testing.T) {
 import "unsafe"
 type Pair struct { A, B int }
 type Pointer *int
+type Text string
+type Bytes []byte
+type Raw unsafe.Pointer
 var global Pair
 func field(p *Pair) *int { return &p.B }
 func index(p *[4]int) *int { return &p[2] }
@@ -21,6 +24,9 @@ func slice(p []byte) []byte { return p[1:][1:] }
 func array(p []byte) *[2]byte { return (*[2]byte)(p[1:]) }
 func text(p string) string { return p[1:] }
 func named(p *int) Pointer { return Pointer(p) }
+func namedtext(p Text) string { return string(p) }
+func namedbytes(p Bytes) []byte { return []byte(p) }
+func raw(p Raw) unsafe.Pointer { return unsafe.Pointer(p) }
 func cast(p *int) *uint { return (*uint)(unsafe.Pointer(p)) }
 func constant() string { return "abcd"[1:] }
 func static() *int { return &global.B }
@@ -29,17 +35,20 @@ func copy(p []byte) string { return string(p) }
 func integer(p uintptr) unsafe.Pointer { return unsafe.Pointer(p) }
 func merge(p, q *int, yes bool) *int { if yes { p = q }; return p }
 func box(p *int) any { return p }
+func synthetic(n int) []byte { return make([]byte, n, 256) }
+type Function func()
+func function(p Function) func() { return (func())(p) }
 func closure() func() *int { p := Pair{}; return func() *int { return &p.B } }
 `
 	pkg, _, _ := buildGoSSAPkg(t, src)
-	for _, name := range []string{"field", "index", "slice", "array", "text", "named", "cast"} {
+	for _, name := range []string{"field", "index", "slice", "array", "text", "named", "cast", "namedtext", "namedbytes", "raw"} {
 		fn := pkg.Func(name)
 		ret := fn.Blocks[len(fn.Blocks)-1].Instrs[len(fn.Blocks[len(fn.Blocks)-1].Instrs)-1].(*ssa.Return)
 		if got := gcRootOwner(ret.Results[0]); got != fn.Params[0] {
 			t.Errorf("%s owner = %s, want parameter", name, got)
 		}
 	}
-	for _, name := range []string{"load", "copy", "integer", "merge", "box"} {
+	for _, name := range []string{"load", "copy", "integer", "merge", "box", "synthetic", "function"} {
 		fn := pkg.Func(name)
 		for _, block := range fn.Blocks {
 			if ret, ok := block.Instrs[len(block.Instrs)-1].(*ssa.Return); ok {

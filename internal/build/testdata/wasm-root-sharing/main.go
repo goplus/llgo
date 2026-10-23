@@ -39,6 +39,19 @@ func views(n int) {
 }
 
 //go:noinline
+func synthetic(n int) {
+	// A nonconstant length with constant capacity uses SSA's synthetic array
+	// form. LLGo elides that array and allocates at the slice instead.
+	values := make([]int, n, 26)
+	values[8], values[9] = 81, 92
+	part := values[8:10]
+	pressure()
+	if part[0] != 81 || part[1] != 92 {
+		panic("synthetic make slice lost its allocation")
+	}
+}
+
+//go:noinline
 func text(n byte) {
 	bytes := []byte{'a', n, n + 1, 'z'}
 	str := string(bytes)
@@ -99,6 +112,7 @@ func main() {
 	go func() {
 		for i := 0; i < 4; i++ {
 			views(40 + i)
+			synthetic(12 + i)
 			text(byte(40 + i))
 			closure(40 + i)()
 			unwinding(40 + i)
