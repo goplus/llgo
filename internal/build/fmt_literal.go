@@ -8,15 +8,15 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-func canSpecializeWasmLiteralFormats(ctx *context) bool {
+func canSpecializeLiteralFormats(ctx *context) bool {
 	conf := ctx.buildConf
-	return conf != nil && conf.Goarch == "wasm" && conf.OptLevel != optlevel.O0 &&
+	return conf != nil && conf.OptLevel != optlevel.O0 &&
 		ctx.mode != ModeGen && !ctx.frontendOptions.DebuggerFrames
 }
 
 // Rewrite during the instruction-counting pass, before reachability analysis,
 // so a literal write need not retain the general formatter and reflection.
-func specializeLiteralFormat(instruction ssa.Instruction) {
+func specializeLiteralFormat(instruction ssa.Instruction, allowWriter bool) {
 	call, ok := instruction.(ssa.CallInstruction)
 	if !ok {
 		return
@@ -30,6 +30,11 @@ func specializeLiteralFormat(instruction ssa.Instruction) {
 	switch callee.Name() {
 	case "Printf", "Sprintf":
 	case "Fprintf":
+		// An arbitrary native Writer can inspect its callers. Keep Fprintf
+		// until specialized helpers can preserve that logical frame identity.
+		if !allowWriter {
+			return
+		}
 		formatIndex = 1
 	default:
 		return

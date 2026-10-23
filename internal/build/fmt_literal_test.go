@@ -127,12 +127,17 @@ func TestSpecializeLiteralFormatsTargetPolicy(t *testing.T) {
 		opt      optlevel.Level
 		mode     Mode
 		debugger bool
+		want     bool
 	}{
-		{"amd64", optlevel.O2, ModeBuild, false},
-		{"wasm", optlevel.O0, ModeBuild, false},
-		{"wasm", optlevel.O2, ModeGen, false},
-		{"wasm", optlevel.O2, ModeBuild, false},
-		{"wasm", optlevel.O2, ModeBuild, true},
+		{"amd64", optlevel.O2, ModeBuild, false, true},
+		{"arm64", optlevel.O2, ModeBuild, false, true},
+		{"riscv32", optlevel.O2, ModeBuild, false, true},
+		{"amd64", optlevel.O0, ModeBuild, false, false},
+		{"amd64", optlevel.O2, ModeBuild, true, false},
+		{"wasm", optlevel.O0, ModeBuild, false, false},
+		{"wasm", optlevel.O2, ModeGen, false, false},
+		{"wasm", optlevel.O2, ModeBuild, false, true},
+		{"wasm", optlevel.O2, ModeBuild, true, false},
 	} {
 		pkg := literalFormatProgram(t, true)
 		ctx := &context{progSSA: pkg.Prog, mode: test.mode, buildConf: &Config{Goarch: test.arch, OptLevel: test.opt}}
@@ -140,11 +145,21 @@ func TestSpecializeLiteralFormatsTargetPolicy(t *testing.T) {
 		recordPackageSSAInstructions(ctx)
 		call := pkg.Func("literal").Blocks[0].Instrs[0].(*ssa.Call)
 		want := "Printf"
-		if test.arch == "wasm" && test.opt != optlevel.O0 && test.mode != ModeGen && !test.debugger {
+		if test.want {
 			want = "llgoPrintfLiteral"
 		}
 		if got := call.Common().StaticCallee().Name(); got != want {
 			t.Fatalf("%+v: call %s, want %s", test, got, want)
 		}
+	}
+}
+
+func TestNativeLiteralWriterFrames(t *testing.T) {
+	pkg := literalFormatProgram(t, true)
+	recordPackageSSAInstructions(&context{progSSA: pkg.Prog,
+		buildConf: &Config{Goarch: "amd64", OptLevel: optlevel.O2}})
+	call := pkg.Func("writer").Blocks[0].Instrs[0].(*ssa.Call)
+	if got := call.Common().StaticCallee().Name(); got != "Fprintf" {
+		t.Fatalf("native Writer must retain Fprintf for caller inspection, got %s", got)
 	}
 }

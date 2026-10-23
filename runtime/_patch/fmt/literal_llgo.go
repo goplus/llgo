@@ -1,4 +1,4 @@
-//go:build llgo && wasm
+//go:build llgo
 
 package fmt
 

@@ -228,6 +228,10 @@ jobs:
 
           python .github/scripts/check_llgo_coverage.py coverage-llgo.txt
 
+          # Literal formatting must preserve arbitrary Writers' caller frames.
+          "$LLGO" run ./internal/build/testdata/wasm-fmt-literal-debugger
+          "$LLGO" run -O0 ./internal/build/testdata/wasm-fmt-literal-debugger
+
           # Native thread and TLS regressions live outside test/.
           (cd runtime && "$LLGO" test -v -run '^TestSlot(GCAllocation|DestructorGCRegistration)$' -count=20 -timeout=2m ./internal/clite/tls)
           if [[ "$RUNNER_OS" != Windows ]]; then
