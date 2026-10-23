@@ -11,8 +11,8 @@
         "sha": "7723e3025b520562ea61eda481b8afa61c58b100",
         "ref": "main",
         "url": "https://github.com/xgo-dev/llgo/commit/7723e3025b520562ea61eda481b8afa61c58b100",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39905058622",
-        "timestamp": "2026-10-23T05:18:49Z"
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39914478330",
+        "timestamp": "2026-10-23T06:55:23Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -24,8 +24,8 @@
             "sha": "7723e3025b520562ea61eda481b8afa61c58b100",
             "ref": "main",
             "url": "https://github.com/xgo-dev/llgo/commit/7723e3025b520562ea61eda481b8afa61c58b100",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39905058622",
-            "timestamp": "2026-10-23T05:18:49Z"
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39914478330",
+            "timestamp": "2026-10-23T06:55:23Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8595266488
+                    "build-ns": 7696828916
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8595266488
+                "build-ns": 7696828916
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8482082973
+                    "build-ns": 7565832267
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8482082973
+                "build-ns": 7565832267
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7367564723
+                    "build-ns": 6671591131
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7367564723
+                "build-ns": 6671591131
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 25465421558
+                    "build-ns": 24848731509
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 25465421558
+                "build-ns": 24848731509
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5206104017
+                    "build-ns": 4783543791
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5206104017
+                "build-ns": 4783543791
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5005286535
+                    "build-ns": 4502708554
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5005286535
+                "build-ns": 4502708554
               }
             },
             {
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "cpunion/llgo",
-        "sha": "b9031ef56f119bc3b37836038915119d18d106b6",
+        "sha": "7cdaa4175a357845c705d22f229396d48a347afa",
         "ref": "codex/wasm-size-closeout-20261022",
-        "url": "https://github.com/cpunion/llgo/commit/b9031ef56f119bc3b37836038915119d18d106b6",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39905058622",
-        "timestamp": "2026-10-23T05:18:49Z"
+        "url": "https://github.com/cpunion/llgo/commit/7cdaa4175a357845c705d22f229396d48a347afa",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39914478330",
+        "timestamp": "2026-10-23T06:55:23Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "cpunion/llgo",
-            "sha": "b9031ef56f119bc3b37836038915119d18d106b6",
+            "sha": "7cdaa4175a357845c705d22f229396d48a347afa",
             "ref": "codex/wasm-size-closeout-20261022",
-            "url": "https://github.com/cpunion/llgo/commit/b9031ef56f119bc3b37836038915119d18d106b6",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39905058622",
-            "timestamp": "2026-10-23T05:18:49Z"
+            "url": "https://github.com/cpunion/llgo/commit/7cdaa4175a357845c705d22f229396d48a347afa",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/39914478330",
+            "timestamp": "2026-10-23T06:55:23Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8357638456
+                    "build-ns": 7887749221
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8357638456
+                "build-ns": 7887749221
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7837099198
+                    "build-ns": 7687533190
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7837099198
+                "build-ns": 7687533190
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7069411242
+                    "build-ns": 6850499375
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7069411242
+                "build-ns": 6850499375
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 25248604825
+                    "build-ns": 29389933305
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 25248604825
+                "build-ns": 29389933305
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5317008094
+                    "build-ns": 5167560520
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5317008094
+                "build-ns": 5167560520
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4836179026
+                    "build-ns": 4782103299
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4836179026
+                "build-ns": 4782103299
               }
             },
             {
@@ -895,14 +895,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2890751,
-                    "glue-bytes": 121067
+                    "module-bytes": 2754040,
+                    "glue-bytes": 120789
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 121067,
-                "module-bytes": 2890751
+                "glue-bytes": 120789,
+                "module-bytes": 2754040
               }
             },
             {
@@ -933,14 +933,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2986869,
-                    "glue-bytes": 91739
+                    "module-bytes": 2849868,
+                    "glue-bytes": 91461
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 91739,
-                "module-bytes": 2986869
+                "glue-bytes": 91461,
+                "module-bytes": 2849868
               }
             },
             {
@@ -952,14 +952,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2659485,
-                    "glue-bytes": 125844
+                    "module-bytes": 2533910,
+                    "glue-bytes": 124906
                   }
                 }
               ],
               "measurements": {
-                "glue-bytes": 125844,
-                "module-bytes": 2659485
+                "glue-bytes": 124906,
+                "module-bytes": 2533910
               }
             },
             {
@@ -990,14 +990,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2068474,
+                    "module-bytes": 1963767,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2068474
+                "module-bytes": 1963767
               }
             },
             {
@@ -1009,14 +1009,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 2069699,
+                    "module-bytes": 1964837,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 2069699
+                "module-bytes": 1964837
               }
             },
             {
@@ -1104,14 +1104,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1411563,
+                    "module-bytes": 1408120,
                     "glue-bytes": 95808
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 95808,
-                "module-bytes": 1411563
+                "module-bytes": 1408120
               }
             },
             {
@@ -1142,14 +1142,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1463559,
+                    "module-bytes": 1460149,
                     "glue-bytes": 79857
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 79857,
-                "module-bytes": 1463559
+                "module-bytes": 1460149
               }
             },
             {
@@ -1161,14 +1161,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1296899,
+                    "module-bytes": 1293819,
                     "glue-bytes": 99561
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 99561,
-                "module-bytes": 1296899
+                "module-bytes": 1293819
               }
             },
             {
@@ -1199,14 +1199,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1021311,
+                    "module-bytes": 1018042,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1021311
+                "module-bytes": 1018042
               }
             },
             {
@@ -1218,14 +1218,14 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "module-bytes": 1021484,
+                    "module-bytes": 1018215,
                     "glue-bytes": 0
                   }
                 }
               ],
               "measurements": {
                 "glue-bytes": 0,
-                "module-bytes": 1021484
+                "module-bytes": 1018215
               }
             },
             {
