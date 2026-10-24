@@ -929,6 +929,12 @@ func TestConfigureWasmGCWASIThreads(t *testing.T) {
 }
 
 func TestNeedStartWASITargetAliases(t *testing.T) {
+	if needStart(&context{
+		buildConf:    &Config{Target: "wasi-small"},
+		crossCompile: crosscompile.Export{WasmProvider: crosscompile.WasmProviderWASI},
+	}) {
+		t.Fatal("inherited WASI target must use libc startup")
+	}
 	for _, target := range []string{"wasi", "wasip1"} {
 		if needStart(&context{buildConf: &Config{Target: target}}) {
 			t.Errorf("target %q unexpectedly requested LLGo's generic _start", target)

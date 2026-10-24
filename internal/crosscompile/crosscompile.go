@@ -64,6 +64,9 @@ type Export struct {
 	DebugInfo    DebugInfoPolicy
 	WasmPostLink WasmPostLink
 	WasmRuntime  WasmRuntime
+	// WASIInitialMemory is a target default applied at final link only when
+	// explicit linker arguments do not already select an initial memory/heap.
+	WASIInitialMemory uint64
 
 	// Flashing/Debugging configuration
 	Device flash.Device // Device configuration for flashing/debugging
@@ -103,7 +106,9 @@ const (
 	// wasi-libc manages its own heap inside the module memory.
 	// The runner resolves the working-directory preopen to an absolute path
 	// before execution and also grants Go's default /tmp directory.
-	WASIThreadedEmulator = `wasmer run --enable-exceptions --enable-simd --stack-size=1048576 --volume=. --volume=/tmp "{}"`
+	WASIThreadedEmulator     = `wasmer run --enable-exceptions --enable-simd --stack-size=1048576 --volume=. --volume=/tmp "{}"`
+	defaultWASIStackFlag     = "stack-size=10485760"
+	defaultWASIMaxMemoryFlag = "-Wl,--max-memory=536870912"
 
 	WasmProfileNone WasmProfile = ""
 	WasmProfileJ32  WasmProfile = "j32"
@@ -819,7 +824,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 			"-Wl,--stack-first",
 			"-mbulk-memory",
 			"-mmultimemory",
-			"-z", "stack-size=10485760", // 10MB
+			"-z", defaultWASIStackFlag,
 			"-Wl,--export=malloc", "-Wl,--export=free",
 			"-lc",
 			"-lcrypt",
@@ -837,7 +842,7 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 			export.LDFLAGS,
 			// Leave room for 256 default 1 MiB pthread stacks, the process
 			// stack, libc metadata, and independently owned GC arenas.
-			"-Wl,--max-memory=536870912",
+			defaultWASIMaxMemoryFlag,
 			"-Wl,--import-memory",
 			"-lpthread",
 		)
@@ -1287,6 +1292,17 @@ func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, forceEspCl
 		export.Emulator = WASIThreadedEmulator
 	}
 	export.BuildTags = appendUniqueStrings(export.BuildTags, config.BuildTags...)
+	if wasmProvider == WasmProviderWASI {
+		export.WASIInitialMemory = config.WasmInitialMemory
+		for i, flag := range export.LDFLAGS {
+			switch {
+			case flag == defaultWASIStackFlag && config.WasmStackSize != 0:
+				export.LDFLAGS[i] = fmt.Sprintf("stack-size=%d", config.WasmStackSize)
+			case flag == defaultWASIMaxMemoryFlag && config.WasmMaxMemory != 0:
+				export.LDFLAGS[i] = fmt.Sprintf("-Wl,--max-memory=%d", config.WasmMaxMemory)
+			}
+		}
+	}
 	if wasmProvider == WasmProviderEmscripten {
 		// The existing raw js/wasm path remains browser/worker-only. Named
 		// Emscripten targets also promise their configured Node emulator, so

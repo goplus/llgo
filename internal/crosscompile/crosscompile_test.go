@@ -886,6 +886,41 @@ func TestNamedWasmTargetUsesInheritedProfile(t *testing.T) {
 	}
 }
 
+func TestNamedWASITargetMemory(t *testing.T) {
+	writeWasmTargetFixture(t, "base", `{
+		"llvm-target":"wasm32-unknown-wasip1",
+		"goos":"wasip1","goarch":"wasm","wasm-profile":"w32","wasm-provider":"wasi",
+		"wasm-initial-memory":16777216,"wasm-max-memory":134217728,"wasm-stack-size":1048576
+	}`)
+	root := os.Getenv("LLGO_ROOT")
+	// Configuration resolution only needs the SDK directory to exist.
+	if err := os.MkdirAll(filepath.Join(root, "crosscompile", "wasi-libc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "targets", "child.json"),
+		[]byte(`{"inherits":["base"],"wasm-stack-size":2097152}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{"base", "child", ""} {
+		export, err := Use("wasip1", "wasm", target, false, optlevel.Os, lto.Off, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		initial, stack, maximum := uint64(16<<20), "stack-size=1048576", "-Wl,--max-memory=134217728"
+		if target == "child" {
+			stack = "stack-size=2097152"
+		} else if target == "" {
+			initial, stack, maximum = 0, "stack-size=10485760", "-Wl,--max-memory=536870912"
+		}
+		if export.WASIInitialMemory != initial || !slices.Contains(export.LDFLAGS, stack) || !slices.Contains(export.LDFLAGS, maximum) {
+			t.Fatalf("target %q: initial=%d flags=%v", target, export.WASIInitialMemory, export.LDFLAGS)
+		}
+		if !slices.Contains(export.BuildTags, "llgo.wasi_threads") || !slices.Contains(export.LDFLAGS, "-Wl,--import-memory") {
+			t.Fatalf("target %q lost WASI threads/shared memory", target)
+		}
+	}
+}
+
 func TestWasmProfileValidationErrors(t *testing.T) {
 	for _, test := range []struct {
 		name     string

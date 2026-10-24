@@ -3370,6 +3370,10 @@ func isWasmTarget(goos string) bool {
 }
 
 func needStart(ctx *context) bool {
+	if ctx.crossCompile.WasmProvider == crosscompile.WasmProviderWASI {
+		// Inherited WASI targets use the same libc startup as wasi/wasip1.
+		return false
+	}
 	if ctx.buildConf.Target == "" {
 		return !isWasmTarget(ctx.buildConf.Goos)
 	}
