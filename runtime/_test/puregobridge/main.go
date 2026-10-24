@@ -133,7 +133,7 @@ func main() {
 	require(callSort(ascending, descending) == 0, "two qsort callback closures")
 
 	type CDecl struct{}
-	marked := callback(func(CDecl, uintptr) uintptr { return 77 }, true)
+	marked := callback(func(_ CDecl, value uintptr) uintptr { return value + 69 }, true)
 	require(callWord(marked, 8) == 77, "CDecl marker consumed a C argument")
 	voidCalled := false
 	callVoid(callback(func() { voidCalled = true }, false))
