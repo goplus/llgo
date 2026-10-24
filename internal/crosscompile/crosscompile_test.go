@@ -915,6 +915,18 @@ func TestNamedWASITargetMemory(t *testing.T) {
 		if export.WASIInitialMemory != initial || !slices.Contains(export.LDFLAGS, stack) || !slices.Contains(export.LDFLAGS, maximum) {
 			t.Fatalf("target %q: initial=%d flags=%v", target, export.WASIInitialMemory, export.LDFLAGS)
 		}
+		var stacks, maxima int
+		for _, flag := range export.LDFLAGS {
+			if strings.HasPrefix(flag, "stack-size=") {
+				stacks++
+			}
+			if strings.HasPrefix(flag, "-Wl,--max-memory=") {
+				maxima++
+			}
+		}
+		if stacks != 1 || maxima != 1 {
+			t.Fatalf("target %q: expected one stack and maximum memory flag, got %d/%d", target, stacks, maxima)
+		}
 		if !slices.Contains(export.BuildTags, "llgo.wasi_threads") || !slices.Contains(export.LDFLAGS, "-Wl,--import-memory") {
 			t.Fatalf("target %q lost WASI threads/shared memory", target)
 		}

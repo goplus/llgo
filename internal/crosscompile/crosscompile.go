@@ -1294,6 +1294,8 @@ func UseWithGOARMAndToolchain(goos, goarch, goarm, targetName string, forceEspCl
 	export.BuildTags = appendUniqueStrings(export.BuildTags, config.BuildTags...)
 	if wasmProvider == WasmProviderWASI {
 		export.WASIInitialMemory = config.WasmInitialMemory
+		// The base WASI exporter emits each default exactly once, using these
+		// same constants. Override those defaults before package linker flags.
 		for i, flag := range export.LDFLAGS {
 			switch {
 			case flag == defaultWASIStackFlag && config.WasmStackSize != 0:

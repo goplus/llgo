@@ -42,7 +42,8 @@ func (r *Resolver) Resolve(targetName string) (*Config, error) {
 	return config, nil
 }
 
-// ResolveAll resolves all available target configurations
+// ResolveAll resolves all available configurations for inspection. Use Resolve
+// to validate a selected target before building it.
 func (r *Resolver) ResolveAll() (map[string]*Config, error) {
 	return r.loader.LoadAll()
 }
@@ -70,11 +71,12 @@ func (r *Resolver) validateConfig(config *Config) error {
 			{"wasm-max-memory", config.WasmMaxMemory},
 		} {
 			if field.value > 1<<32 || field.value%65536 != 0 {
-				return fmt.Errorf("%s must be a multiple of 65536 bytes, at most 4 GiB", field.name)
+				return fmt.Errorf("%s must be a multiple of 65536 bytes and at most 4 GiB", field.name)
 			}
 		}
+		// Memory can span 4 GiB, but a wasm32 stack pointer cannot hold 2^32.
 		if config.WasmStackSize >= 1<<32 || config.WasmStackSize%16 != 0 {
-			return fmt.Errorf("wasm-stack-size must be a multiple of 16 bytes, below 4 GiB")
+			return fmt.Errorf("wasm-stack-size must be a multiple of 16 bytes and below 4 GiB")
 		}
 		if config.WasmInitialMemory != 0 && config.WasmMaxMemory != 0 && config.WasmInitialMemory > config.WasmMaxMemory {
 			return fmt.Errorf("wasm-initial-memory exceeds wasm-max-memory")
