@@ -33,7 +33,7 @@ func callWasmBridge(ft *abi.FuncType, fn, env unsafe.Pointer, method bool, prefi
 	results := make([]unsafe.Pointer, len(tout))
 	out := make([]Value, len(tout))
 	for i, typ := range tout {
-		results[i] = runtime.AllocZ(typ.Size_)
+		results[i] = runtime.AllocZAligned(typ.Size_, uintptr(typ.Align_))
 	}
 	if fn == wasmReflectOnlyPointer && !method {
 		wasmMakeFuncInvoke(env, unsafe.SliceData(args), unsafe.SliceData(results))

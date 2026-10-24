@@ -226,6 +226,15 @@ jobs:
           export LLGO_TEST_LLGEN="$RUNNER_TEMP/llgo-bin/llgen${tool_suffix}"
           dev/test_go_version.sh 1.27
 
+          # GC_malloc returns zeroed memory, so check allocation clearing with
+          # the malloc-backed runtime too. Poison fresh allocations on glibc.
+          (
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              export MALLOC_PERTURB_=165
+            fi
+            "$LLGO" test -tags=nogc -run '^TestRuntimeAlignedAllocationZeroed$' -count=1 ./test/go
+          )
+
           python .github/scripts/check_llgo_coverage.py coverage-llgo.txt
 
           # Native thread and TLS regressions live outside test/.

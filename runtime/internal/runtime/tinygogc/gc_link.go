@@ -50,6 +50,10 @@ var _globals_start [0]byte
 //go:linkname _globals_end C._globals_end
 var _globals_end [0]byte
 
+// Baremetal heap bases come from the target linker script; do not assume
+// stronger alignment than the machine word.
+const allocationAlignment = unsafe.Sizeof(uintptr(0))
+
 func gcMemoryLayout() (heapStart, heapEnd, globalsStart, globalsEnd, stackTop uintptr) {
 	// Reserve 2 KiB for libc internal allocation that cannot be wrapped.
 	return uintptr(unsafe.Pointer(&_heapStart)) + 2048,

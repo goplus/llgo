@@ -41,6 +41,7 @@ type finalizerEntry struct {
 	retSize     uintptr
 	arg         unsafe.Pointer // object pointer or preallocated interface header
 	key         uintptr
+	offset      uintptr // logical object offset within its collector allocation
 	next        *finalizerEntry
 	prevFn      bdwgc.FinalizerFunc
 	prevCb      unsafe.Pointer
@@ -83,6 +84,13 @@ func SetFinalizer(obj any, finalizer any) {
 		throw("runtime.SetFinalizer: first argument is nil")
 	}
 
+	// Aligned allocations may expose an interior pointer. BDWGC requires
+	// registration on the allocation base, but Go callbacks must receive
+	// the original logical object address.
+	base := bdwgc.Base(objPtr)
+	if base == nil {
+		base = objPtr
+	}
 	finalizerState.once.Do(initFinalizerState)
 	key := hideFinalizerPtr(objPtr)
 
@@ -90,7 +98,7 @@ func SetFinalizer(obj any, finalizer any) {
 	if old := finalizerState.m[key]; old != nil {
 		atomic.Store(&old.state, finalizerStopped)
 		delete(finalizerState.m, key)
-		restoreFinalizer(objPtr, old)
+		restoreFinalizer(base, old)
 	}
 	finalizerState.registryMu.Unlock()
 
@@ -117,7 +125,7 @@ func SetFinalizer(obj any, finalizer any) {
 	sig, argTypes, retSize := newFinalizerFFISignature(ft, explicitEnv, argFFIType)
 	entry := &finalizerEntry{
 		fn: finalizer, sig: sig, argTypes: argTypes, explicitEnv: explicitEnv,
-		retSize: retSize, key: key,
+		retSize: retSize, key: key, offset: uintptr(objPtr) - uintptr(base),
 	}
 	if interfaceTypeOrItab != nil {
 		entry.state = finalizerInterfaceState
@@ -125,7 +133,7 @@ func SetFinalizer(obj any, finalizer any) {
 	}
 	var oldFn bdwgc.FinalizerFunc
 	var oldCb unsafe.Pointer
-	bdwgc.RegisterFinalizer(objPtr, setFinalizerCallback, unsafe.Pointer(entry), &oldFn, &oldCb)
+	bdwgc.RegisterFinalizer(base, setFinalizerCallback, unsafe.Pointer(entry), &oldFn, &oldCb)
 	entry.prevFn = oldFn
 	entry.prevCb = oldCb
 
@@ -205,6 +213,8 @@ func setFinalizerCallback(ptr unsafe.Pointer, cb unsafe.Pointer) {
 	if state == finalizerStopped {
 		return
 	}
+
+	ptr = unsafe.Add(ptr, entry.offset)
 
 	// GC_invoke_finalizers may run on several threads concurrently. BDWGC
 	// releases its allocation lock before invoking client finalizers, including

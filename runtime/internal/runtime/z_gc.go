@@ -41,6 +41,17 @@ func AllocU(size uintptr) unsafe.Pointer {
 	return ret
 }
 
+func allocUAligned(size, alignment uintptr) unsafe.Pointer {
+	ret := bdwgc.Memalign(alignment, size)
+	if ret == nil {
+		// GC_memalign rejects alignments above the collector's heap-block
+		// size. Preserve support for those requests using scanned storage.
+		return allocUAlignedFallback(size, alignment)
+	}
+	recordMemProfileAlloc(size)
+	return ret
+}
+
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
 	ret := AllocU(size)
@@ -234,6 +245,11 @@ func finalizer(ptr unsafe.Pointer, cb unsafe.Pointer) {
 }
 
 func registerCleanupPtr(ptr unsafe.Pointer, e *entry) {
+	// The callback carries no object argument, so only the registration
+	// (including the previous-finalizer chain) needs the collector base.
+	if base := bdwgc.Base(ptr); base != nil {
+		ptr = base
+	}
 	var oldFn bdwgc.FinalizerFunc
 	var oldCb unsafe.Pointer
 	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
