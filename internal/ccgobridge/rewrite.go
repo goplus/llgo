@@ -105,6 +105,17 @@ func staticExportSites(fset *token.FileSet, info *types.Info, files []*ast.File)
 				invalid = fmt.Errorf("%s: CCGo export does not support generic function instantiations", fset.Position(call.Pos()))
 				return false
 			}
+			if info.Uses[id].Name() == "cFuncPointer" {
+				// A static function passed through T=any becomes an interface:
+				// the original helper then reads a type word, not a function
+				// descriptor. Only a matching instantiated function type has
+				// the representation qualified by this source adaptation.
+				sig, ok := info.TypeOf(call.Fun).(*types.Signature)
+				if !ok || !types.Identical(sig.Params().At(0).Type().Underlying(), fn.Type()) {
+					invalid = fmt.Errorf("%s: CCGo generic exporter requires a matching function-type argument", fset.Position(call.Pos()))
+					return false
+				}
+			}
 			sites = append(sites, exportSite{call: call, file: file, fn: fn})
 			return true
 		})
@@ -287,6 +298,29 @@ func validExporter(fset *token.FileSet, info *types.Info, fd *ast.FuncDecl) bool
 	if fd.Recv != nil || fd.Body == nil {
 		return false
 	}
+	fn, ok := info.Defs[fd.Name].(*types.Func)
+	if !ok {
+		return false
+	}
+	sig := fn.Type().(*types.Signature)
+	if sig.Variadic() || sig.Params().Len() != 1 || sig.Results().Len() != 1 ||
+		!types.Identical(sig.Results().At(0).Type(), types.Typ[types.Uintptr]) {
+		return false
+	}
+	parameter := sig.Params().At(0)
+	var typeParameter *types.TypeParam
+	if fd.Name.Name == "cFuncPointer" {
+		if sig.TypeParams().Len() != 1 {
+			return false
+		}
+		typeParameter = sig.TypeParams().At(0)
+		if !types.Identical(parameter.Type(), typeParameter) || !emptyInterface(typeParameter.Constraint()) {
+			return false
+		}
+	} else if sig.TypeParams().Len() != 0 || !emptyInterface(parameter.Type()) {
+		return false
+	}
+
 	var body bytes.Buffer
 	if format.Node(&body, fset, fd.Body) != nil {
 		return false
@@ -298,20 +332,31 @@ func validExporter(fset *token.FileSet, info *types.Info, fd *ast.FuncDecl) bool
 	if syntaxTokens(body.Bytes()) != syntaxTokens([]byte(expected)) {
 		return false
 	}
-	validUnsafe := false
+	validUnsafe, validIdentity := false, true
 	ast.Inspect(fd.Body, func(node ast.Node) bool {
 		if call, ok := node.(*ast.CallExpr); ok && unsafePointerCall(info, call) {
 			validUnsafe = true
 		}
+		if id, ok := node.(*ast.Ident); ok {
+			if used := info.Uses[id]; used != nil {
+				switch id.Name {
+				case "f":
+					validIdentity = validIdentity && used == parameter
+				case "T":
+					validIdentity = validIdentity && typeParameter != nil && used == typeParameter.Obj()
+				case "uintptr":
+					validIdentity = validIdentity && used == types.Universe.Lookup("uintptr")
+				}
+			}
+		}
 		return true
 	})
-	fn, ok := info.Defs[fd.Name].(*types.Func)
-	if !ok {
-		return false
-	}
-	sig := fn.Type().(*types.Signature)
-	return validUnsafe && sig.Params().Len() == 1 && sig.Results().Len() == 1 &&
-		types.Identical(sig.Results().At(0).Type(), types.Typ[types.Uintptr])
+	return validUnsafe && validIdentity
+}
+
+func emptyInterface(typ types.Type) bool {
+	iface, ok := typ.Underlying().(*types.Interface)
+	return ok && iface.Empty()
 }
 
 func syntaxTokens(source []byte) string {

@@ -249,6 +249,112 @@ func callback() {}
 	}
 }
 
+func TestRejectExporterTypedIdentityMismatch(t *testing.T) {
+	const interfaceBody = `{ type iface [2]uintptr; return (*iface)(unsafe.Pointer(&f))[1] }`
+	const genericBody = `{ return *(*uintptr)(unsafe.Pointer(&struct{ f T }{f})) }`
+	tests := []struct {
+		name   string
+		helper string
+		call   string
+	}{
+		{"interface-global-f", `var f any = first; func __ccgo_fp(ignored any) uintptr ` + interfaceBody, `__ccgo_fp(second)`},
+		{"interface-function-parameter", `func __ccgo_fp(f func() int) uintptr ` + interfaceBody, `__ccgo_fp(second)`},
+		{"interface-nonempty-parameter", `func __ccgo_fp(f interface{ String() string }) uintptr ` + interfaceBody, ""},
+		{"interface-variadic", `func __ccgo_fp(f ...any) uintptr ` + interfaceBody, `__ccgo_fp(second)`},
+		{"interface-generic", `func __ccgo_fp[T any](f T) uintptr ` + interfaceBody, `__ccgo_fp(second)`},
+		{"generic-global-f", `const f = 0; func cFuncPointer[T ~int](ignored T) uintptr ` + genericBody, ""},
+		{"generic-nongeneric-helper", `type T = func() int; func cFuncPointer(f T) uintptr ` + genericBody, `cFuncPointer(second)`},
+		{"generic-extra-type-parameter", `func cFuncPointer[T, U any](f T) uintptr ` + genericBody, `cFuncPointer[func() int, int](second)`},
+		{"generic-variadic", `type T = []any; func cFuncPointer(f ...any) uintptr ` + genericBody, `cFuncPointer(second)`},
+		{"generic-interface-instantiation", `func cFuncPointer[T any](f T) uintptr ` + genericBody, `cFuncPointer[any](second)`},
+		{"generic-named-interface-instantiation", `type Empty interface{}; func cFuncPointer[T any](f T) uintptr ` + genericBody, `cFuncPointer[Empty](second)`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			source := `package fixture
+import "unsafe"
+func first() int { return 1 }
+func second() int { return 2 }
+` + test.helper
+			if test.call != "" {
+				source += "\nvar p = " + test.call
+			}
+			original, err := format.Source([]byte(source))
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, stats, err := rewriteSource(t, source)
+			if err == nil {
+				t.Fatal("exporter with unproven typed identity was accepted")
+			}
+			if stats != (Stats{}) || !bytes.Equal(bytes.TrimSpace(original), bytes.TrimSpace([]byte(out))) {
+				t.Fatal("rejected exporter changed the source or reported adaptations")
+			}
+		})
+	}
+}
+
+func TestExporterGlobalShadowOriginalGo(t *testing.T) {
+	// The unchanged helper body is not enough: &f refers to the package's
+	// interface here. Replacing its call by a box of second changes 1 to 2.
+	runRewrittenSource(t, `package main
+import "unsafe"
+func first() int { return 1 }
+func second() int { return 2 }
+var f any = first
+func __ccgo_fp(ignored any) uintptr {
+ type iface [2]uintptr
+ return (*iface)(unsafe.Pointer(&f))[1]
+}
+func main() {
+ p := __ccgo_fp(second)
+ fn := *(*func() int)(unsafe.Pointer(&struct{ uintptr }{p}))
+ if fn() != 1 { panic("global interface must retain first") }
+}
+`)
+}
+
+func TestExporterEmptyInterfaceParameter(t *testing.T) {
+	for _, parameter := range []string{"any", "empty", "alias"} {
+		t.Run(parameter, func(t *testing.T) {
+			_, stats, err := rewriteSource(t, `package fixture
+import "unsafe"
+type empty interface{}
+type alias = any
+func __ccgo_fp(f `+parameter+`) uintptr {
+ type iface [2]uintptr
+ return (*iface)(unsafe.Pointer(&f))[1]
+}
+func callback() {}
+var p = __ccgo_fp(callback)
+`)
+			if err != nil || stats.Exports != 1 {
+				t.Fatalf("valid interface exporter rejected: %+v, %v", stats, err)
+			}
+		})
+	}
+}
+
+func TestGenericExporterFunctionInstantiations(t *testing.T) {
+	for _, parameter := range []string{"func() int", "namedFunction", "aliasFunction"} {
+		t.Run(parameter, func(t *testing.T) {
+			_, stats, err := rewriteSource(t, `package fixture
+import "unsafe"
+type namedFunction func() int
+type aliasFunction = func() int
+func cFuncPointer[T any](f T) uintptr {
+ return *(*uintptr)(unsafe.Pointer(&struct{ f T }{f}))
+}
+func callback() int { return 42 }
+var p = cFuncPointer[`+parameter+`](callback)
+`)
+			if err != nil || stats.Exports != 1 {
+				t.Fatalf("valid function instantiation rejected: %+v, %v", stats, err)
+			}
+		})
+	}
+}
+
 func TestUnrelatedUnsafeConversionUnchanged(t *testing.T) {
 	out, stats, err := rewriteSource(t, `package fixture
 import "unsafe"
