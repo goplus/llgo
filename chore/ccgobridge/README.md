@@ -64,3 +64,32 @@ results against Go running the original application, not the LLGo-only staged
 backend. Other versions, platforms, fakecgo, and changed backend source hashes
 are rejected. The emitted `environment.json` records the target and profile.
 See [the native and callback contracts](../../internal/puregobridge/README.md).
+
+## End-to-end regression gate
+
+On Linux/amd64 with Go 1.27, a compiler built against LLVM 22, and the matching
+LLVM 22 tools selected, run:
+
+```sh
+LLGO=/path/to/built/llgo bash dev/test_source_abi.sh
+```
+
+Optional case arguments are `sqlite`, `purego`, `turso`, `libccallback`, and
+`crc32`. Each has its own pinned module graph under `testdata/`. The gate builds,
+links and executes original Go and adapted LLGo programs; CCGo cases also run
+with Go after adaptation. CRC32 uses its original, unadapted sources and requires
+the SSE4.1/SSE4.2/PCLMUL CPU paths; it does not certify native AVX512 execution.
+Turso executes SQL rather than relying on a lazy `sql.Open`.
+
+The libc callback fixture explicitly bridges a `uintptr` callback signature to
+a pointer-typed assembly implementation. This does not qualify arbitrary
+`uintptr` dereferences or interchange physical Go ABI0 and C function pointers.
+It tests each compiler's matching translated producer/consumer pair.
+
+Reports retain per-case failures, tool configuration, compiler/binary hashes and
+build/run logs under `_out/source-abi.*`. Environment-reported LLVM versions are
+tool configuration, not proof of an arbitrary compiler binary's linked LLVM;
+CI builds its own compiler with the selected LLVM 22 toolchain. Temporary source
+snapshots and executables are removed on exit. Do not edit a running snapshot.
+The separate callback and `reflectzeroabi` fixtures run in CI as well; neither
+translation counts nor a successful source rewrite substitutes for execution.

@@ -535,6 +535,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: dev/test_runtime_go_versions.sh
 
+      - name: Test zero-sized reflection argument ABI
+        if: runner.os != 'Windows' || matrix.windows_arch == 'arm64'
+        shell: bash
+        working-directory: runtime/_test/reflectzeroabi
+        run: |
+          go run .
+          llgo run .
+
       - name: Run caller regressions in C shared libraries and archives
         if: runner.os != 'Windows'
         env:
@@ -856,6 +864,48 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Complete GDB worker unwind failed with exit code $LASTEXITCODE"
           }
+
+  source-abi:
+    if: needs.prepare.outputs.run_code_ci == 'true'
+    needs: prepare
+    name: Source ABI (${{ matrix.case }}, Linux AMD64, LLVM 22)
+    runs-on: ${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [sqlite, purego, turso, libccallback, crc32]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 22
+      - uses: ./.github/actions/setup-go
+      - *native-restore-cache
+      - name: Build source ABI compiler
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/llgo-bin"
+          go build -o "$RUNNER_TEMP/llgo-bin/llgo" ./cmd/llgo
+          echo "$RUNNER_TEMP/llgo-bin" >> "$GITHUB_PATH"
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Test exact-version source ABI regression
+        id: source_abi
+        shell: bash
+        run: bash dev/test_source_abi.sh '${{ matrix.case }}'
+      - name: Test callback ABI and foreign-thread lifetime
+        if: matrix.case == 'purego'
+        shell: bash
+        working-directory: runtime/_test/puregobridge
+        run: timeout -k 10s 10m llgo run .
+      - name: Upload source ABI regression receipts
+        if: ${{ !cancelled() && steps.source_abi.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-abi-${{ matrix.case }}
+          path: _out/source-abi.*/
+          if-no-files-found: error
+          retention-days: 7
 
   runtime-arm64:
     if: needs.prepare.outputs.run_code_ci == 'true'
