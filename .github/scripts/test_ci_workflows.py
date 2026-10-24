@@ -61,6 +61,27 @@ def matrix_size(job):
 
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_macos_benchmark_installs_only_legacy_base_dependency(self):
+        steps = load("benchmark.yml")["jobs"]["benchmark"]["steps"]
+        step = next(s for s in steps if s.get("name") == "Install legacy macOS linker for the benchmark base")
+        self.assertIn("github.event_name == 'pull_request'", step["if"])
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "workspace with spaces"
+                base = root / ".benchmark/base-source"
+                (base / "internal/build").mkdir(parents=True)
+                marker = root / "installed"
+                (base / "install.sh").write_text(
+                    'test "$LLGO_INSTALLER_LIBRARY_ONLY" = 1 || exit 9\n'
+                    'install_macos_lld() { touch "$TEST_MARKER"; PATH=/invalid; }\n')
+                if legacy:
+                    (base / "internal/build/darwin_linker.go").touch()
+                result = subprocess.run(["bash", "-c", step["run"] + '\ncommand -v bash\n'],
+                                        capture_output=True, text=True,
+                                        env={**os.environ, "GITHUB_WORKSPACE": str(root), "TEST_MARKER": str(marker)})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(marker.exists(), legacy)
+
     def test_pr_close_covers_every_pr_workflow(self):
         workflow = load("pr-closed.yml")
         self.assertEqual(workflow["on"], {"pull_request_target": {"types": ["closed"]}})

@@ -406,6 +406,13 @@ brew link --force --overwrite llvm@22 lld@22 libffi
 ./install.sh
 ```
 
+Native macOS builds use LLVM/LLD 22 and require a macOS SDK older than 27.
+LLGo keeps the active SDK when it meets that requirement; otherwise it selects
+the newest installed older SDK from Xcode or Command Line Tools. SDK 27 and
+newer are excluded. Set `SDKROOT` to pin an installed older SDK; an unsupported
+or missing explicit SDK is an error. If no older SDK is installed, install one
+before building. The selected SDK is used for both compilation and linking.
+
 Homebrew's versioned LLVM 22 formula does not ship LLDB and there is no `lldb@22` formula. LLGo checks common Homebrew and system locations, then `lldb` on `PATH`; use `LLGO_LLDB` or `llgo lldb -lldb` to select one explicitly.
 
 ### on Linux

@@ -227,8 +227,8 @@ func TestUseCrossCompileSDK(t *testing.T) {
 						}
 					} else if tc.name == "Same Platform" {
 						// For same platform, we expect sysroot only on macOS
-						if runtime.GOOS == "darwin" && !hasSysroot {
-							t.Error("Missing --sysroot flag in CCFLAGS on macOS")
+						if runtime.GOOS == "darwin" && !slices.Contains(export.CCFLAGS, "-isysroot") {
+							t.Error("Missing -isysroot flag in CCFLAGS on macOS")
 						}
 						// On Linux and other platforms, sysroot is not necessarily required
 					}

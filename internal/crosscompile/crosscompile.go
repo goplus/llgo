@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -381,16 +380,6 @@ func getCanonicalArchName(triple string) string {
 	return arch
 }
 
-// getMacOSSysroot returns the macOS SDK path using xcrun
-func getMacOSSysroot() (string, error) {
-	cmd := exec.Command("xcrun", "--sdk", "macosx", "--show-sdk-path")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
-}
-
 // getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
 // then downloading if needed and platform is supported
 func getESPClangRoot(forceEspClang bool) (clangRoot string, err error) {
@@ -704,13 +693,16 @@ func useWithGOARMAndToolchain(goos, goarch, goarm string, forceEspClang bool, le
 
 		// Add sysroot for macOS only
 		if goos == "darwin" {
-			sysrootPath, sysrootErr := getMacOSSysroot()
+			sdk, sysrootErr := getMacOSSDK()
 			if sysrootErr != nil {
 				err = fmt.Errorf("failed to get macOS SDK path: %w", sysrootErr)
 				return
 			}
-			export.CCFLAGS = append(export.CCFLAGS, []string{"--sysroot=" + sysrootPath}...)
-			export.LDFLAGS = append(export.LDFLAGS, []string{"--sysroot=" + sysrootPath}...)
+			// Override both Clang config spellings: -isysroot selects headers,
+			// but a configured --sysroot takes precedence for the linker's SDK.
+			export.CCFLAGS = append(export.CCFLAGS, "-isysroot", sdk.path)
+			export.LDFLAGS = append(export.LDFLAGS, "-isysroot", sdk.path, "--sysroot="+sdk.path)
+			export.Toolchain.SDKVersion = sdk.version
 		}
 
 		ccflags, ldflags := nativeSectionFlags(export.Toolchain)

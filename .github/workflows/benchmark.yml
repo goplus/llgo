@@ -134,6 +134,21 @@ jobs:
           windows-arch: ${{ matrix.windows_arch || 'amd64' }}
           windows-msvc-dependencies: runtime
 
+      - name: Install legacy macOS linker for the benchmark base
+        if: github.event_name == 'pull_request' && runner.os == 'macOS' && runner.arch == 'ARM64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The base compiler may still require #2828's external linker. Install
+          # its dependency without changing PATH or the head compiler's tools.
+          base="$GITHUB_WORKSPACE/.benchmark/base-source"
+          if [[ -f "$base/internal/build/darwin_linker.go" ]]; then
+            (
+              LLGO_INSTALLER_LIBRARY_ONLY=1 source "$base/install.sh"
+              install_macos_lld
+            )
+          fi
+
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
