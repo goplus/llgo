@@ -80,7 +80,7 @@ func validateWasmFinalOptions(conf *Config, target *crosscompile.Export) error {
 				return fmt.Errorf("-wasm-strip=none conflicts with -ldflags=-s")
 			case "":
 				conf.WasmStrip = WasmStripDebug
-				if conf.DebugArtifactMode == DebugArtifactEmbedded {
+				if conf.DebugArtifactMode == DebugArtifactEmbedded || conf.DebugArtifactMode == DebugArtifactExternal {
 					conf.WasmStrip = WasmStripSymbols
 				}
 			}
@@ -137,6 +137,9 @@ func validateWasmFinalFeatures(module []byte, target *crosscompile.Export) error
 // Never use --all-features: it permits instructions outside the target contract.
 func wasmFinalFeatures(target *crosscompile.Export) []string {
 	features := []string{"threads", "mutable-globals", "nontrapping-float-to-int", "simd", "bulk-memory", "sign-ext", "exception-handling", "reference-types", "multivalue", "bulk-memory-opt", "call-indirect-overlong", "extended-const"}
+	if target.WasmProvider == crosscompile.WasmProviderWASI {
+		features = append(features, "multimemory")
+	}
 	if target.WasmProfile == crosscompile.WasmProfileJ64 {
 		features = append(features, "memory64")
 	}
@@ -192,6 +195,9 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 			return err
 		}
 	}
+	if err := os.MkdirAll(filepath.Dir(out.Out), 0o755); err != nil {
+		return fmt.Errorf("create output directory: %w", err)
+	}
 	dir, err := os.MkdirTemp(filepath.Dir(out.Out), ".llgo-wasm-*")
 	if err != nil {
 		return err
@@ -223,13 +229,25 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	if ctx.buildConf.WasmOpt == WasmOptSize {
 		tmp := module + ".optimized"
 		args = wasmFinalArgs(ctx.buildConf, &ctx.crossCompile, module, tmp)
+		args, err = wasmFinalSourceMapArgs(data, module, tmp, args)
+		if err != nil {
+			return err
+		}
 		if err := runWasmOpt(tool.Path, args, verbose, ctx); err != nil {
 			return fmt.Errorf("final Wasm optimization failed: %w", err)
 		}
-		if err := os.Rename(tmp, module); err != nil {
+		if _, err := os.Stat(module + ".map"); err == nil {
+			if err := replaceFile(tmp+".map", module+".map"); err != nil {
+				return fmt.Errorf("publish optimized source map: %w", err)
+			}
+		}
+		if err := replaceFile(tmp, module); err != nil {
 			return err
 		}
 		args = args[:len(args)-3]
+		for i, arg := range args {
+			args[i] = wasmManifestArg(arg)
+		}
 	}
 	if err := finalizeRuntimePCLN(ctx, &staged, verbose); err != nil {
 		return err
@@ -250,16 +268,29 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 		if err != nil {
 			return err
 		}
+		if ctx.buildConf.WasmStrip != WasmStripSymbols {
+			if err := os.Remove(module + ".map"); err != nil && !os.IsNotExist(err) {
+				return err
+			}
+		}
 		if err := os.WriteFile(module, data, 0o644); err != nil {
 			return err
 		}
 	}
+	if err := relocateWasmSourceMap(module+".map", filepath.Dir(out.Out)); err != nil {
+		return err
+	}
 	manifestName := filepath.Base(wasmManifestPath(module))
-	linkFlags := append(slices.Clone(ctx.crossCompile.LDFLAGS), plan.linkArgs...)
+	linkFlags := ctx.effectiveLinkArgs
 	if err := writeWasmManifest(ctx, dir, filepath.Base(module), data, manifestName, tool, args, linkFlags, before.Size()); err != nil {
 		return err
 	}
 	var remove []string
+	if _, err := os.Stat(module + ".map"); os.IsNotExist(err) {
+		remove = append(remove, filepath.Base(module)+".map")
+	} else if err != nil {
+		return err
+	}
 	if ctx.buildConf.PCLNMode != PCLNExternal {
 		remove = append(remove, filepath.Base(pclnSidecarPath(staged.Out)))
 	}
@@ -303,4 +334,25 @@ func removeStaleWasmManifest(conf *Config, out *OutFmtDetails) error {
 	}
 	out.WasmManifest = ""
 	return nil
+}
+
+// Source maps describe code offsets and must be regenerated along with the
+// optimized module. Keep the driver's URL, including any source-map base URL.
+func wasmFinalSourceMapArgs(data []byte, module, output string, args []string) ([]string, error) {
+	url, err := wasmdebug.SourceMappingURL(data)
+	if err != nil {
+		return nil, err
+	}
+	_, err = os.Stat(module + ".map")
+	if os.IsNotExist(err) && url == "" {
+		return args, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read linked Wasm source map: %w", err)
+	}
+	if url == "" {
+		url = filepath.Base(module) + ".map"
+	}
+	mapArgs := []string{"--input-source-map=" + module + ".map", "--output-source-map=" + output + ".map", "--output-source-map-url=" + url}
+	return slices.Concat(args[:len(args)-3], mapArgs, args[len(args)-3:]), nil
 }

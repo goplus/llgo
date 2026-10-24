@@ -11,7 +11,7 @@ llgo build -target=emscripten -Oz -ldflags=-s -o app.mjs ./app
 Explicit `-Os` and `-Oz` select the corresponding LLVM size optimization on
 all targets. Explicit `-Oz` also runs a final Binaryen `-Oz` pass for hosted
 W32, J32 and J64 executables after required linker/Asyncify transformations. The pass
-uses an explicit feature allowlist; only J64 enables memory64. Inferred target
+uses an explicit feature allowlist; only J64 enables memory64, and WASI retains its multimemory capability. Inferred target
 optimization defaults and `-Os` retain their existing pipeline. Generation, libraries
 and firmware conversions continue to use their normal compiler optimization.
 
@@ -57,6 +57,9 @@ matching `app.debug.wasm`; stripping applies only to the deployed module.
 When retaining DWARF, the final pass skips Binaryen 132's `precompute`,
 `precompute-propagate` and `local-cse` passes, which lose surviving Go call-site
 line mappings. Other `-Oz` passes retain Binaryen's DWARF compatibility checks.
+Emscripten source maps requested through `LDFLAGS=-gsource-map` are regenerated
+for the optimized code, retaining their URL and source locations after publication.
+Debug stripping removes the map file and URL together.
 CI checks Go/C++ source locations and executes the final modules for W32/J32/J64.
 
 ## Artifact manifest
@@ -64,14 +67,15 @@ CI checks Go/C++ source locations and executes the final modules for W32/J32/J64
 An enabled final pipeline writes `app.wasm-manifest.json` beside the output.
 It records compiler/source-Go/LLVM/link-driver identity, target profile and
 pointer width, PCLN and final optimization modes, Binaryen identity/arguments
-(empty for built-in stripping), link flags, declared and allowed Wasm features, and each artifact's byte count,
+(empty for built-in stripping), effective linker driver arguments (including
+environment flags and generated defaults), declared and allowed Wasm features, and each artifact's byte count,
 gzip-9 byte count and SHA-256. Its build ID covers sorted artifact names and
 hashes. Tool names and absolute flag paths are normalized to omit local machine
 directories; the manifest is a build record, not a portable linker command.
 Debugger build IDs remain paired with the external DWARF container.
 
 `payload` includes Wasm, JS/HTML loaders, worker assets and runtime symbols;
-`debug` counts external debugger containers separately. Gzip totals sum files
+`debug` counts external debugger containers and source maps separately. Gzip totals sum files
 compressed independently. Totals exclude the manifest itself; LLGo's artifact
 report includes its actual size. Include it when measuring a deployment that
 ships the manifest. External debug containers contain the module's standard

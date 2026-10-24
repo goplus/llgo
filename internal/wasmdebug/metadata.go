@@ -91,3 +91,32 @@ func TargetFeatures(module []byte) ([]string, error) {
 	}
 	return features, nil
 }
+
+// SourceMappingURL reads the optional debugger URL without interpreting it as a
+// filesystem path. The accompanying local map is supplied by the linker.
+func SourceMappingURL(module []byte) (string, error) {
+	sections, err := parse(module)
+	if err != nil {
+		return "", err
+	}
+	var url string
+	found := false
+	for _, s := range sections {
+		if s.id != 0 || s.name != "sourceMappingURL" {
+			continue
+		}
+		if found {
+			return "", fmt.Errorf("duplicate WebAssembly sourceMappingURL")
+		}
+		found = true
+		off := 0
+		url, err = readName(s.content, &off)
+		if err != nil {
+			return "", err
+		}
+		if off != len(s.content) {
+			return "", fmt.Errorf("trailing WebAssembly sourceMappingURL data")
+		}
+	}
+	return url, nil
+}

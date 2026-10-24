@@ -27,6 +27,7 @@ import (
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
 	"github.com/xgo-dev/llgo/internal/optlevel"
+	"github.com/xgo-dev/llgo/internal/wasmdebug"
 )
 
 func TestWasmFinalOptions(t *testing.T) {
@@ -226,10 +227,17 @@ func TestWasmFinalFeaturesRejectUnsupported(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, name := range []string{"memory64", "gc", "unknown"} {
+	for _, name := range []string{"multimemory", "memory64", "gc", "unknown"} {
 		if err := validateWasmFinalFeatures(module(name), &target); err == nil || !strings.Contains(err.Error(), name) {
 			t.Fatalf("%s=%v", name, err)
 		}
+	}
+	target.WasmProvider = crosscompile.WasmProviderWASI
+	if err := validateWasmFinalFeatures(module("multimemory"), &target); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(wasmFinalArgs(&Config{WasmOpt: WasmOptSize}, &target, "in", "out"), "--enable-multimemory") {
+		t.Fatal("multimemory optimizer flag missing")
 	}
 	if err := validateWasmFinalFeatures([]byte("bad"), &target); err == nil {
 		t.Fatal("invalid module accepted")
@@ -634,7 +642,7 @@ func TestFinalizeWasmPackagedOutputs(t *testing.T) {
 				out.Out = filepath.Join(dir, "missing", "app.wasm")
 			}
 			err := finalizeWasmArtifacts(ctx, &mainLinkPlan{outputPath: out.Out}, out, false)
-			if name == "publication failure" || name == "missing destination" {
+			if name == "publication failure" {
 				if err == nil {
 					t.Fatal("accepted unavailable output")
 				}
@@ -648,6 +656,9 @@ func TestFinalizeWasmPackagedOutputs(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := 3
+			if name == "missing destination" {
+				want = 2
+			}
 			if name == "Emscripten" {
 				want = 4
 			}
@@ -730,5 +741,139 @@ func TestWasmManifestPrimaryDebugSuffix(t *testing.T) {
 	}
 	if m.Payload.Bytes != int64(len(data)) || m.Debug.Bytes != 0 {
 		t.Fatalf("primary module misclassified: %+v", m)
+	}
+}
+
+func TestWasmManifestEffectiveLinkArguments(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CCFLAGS", "-DENV_CC=1")
+	t.Setenv("LDFLAGS", "-Wl,--export=env_ld")
+	t.Setenv("WASMOPT", filepath.Join(dir, "must-not-run"))
+	t.Setenv("LLGO_TEST_LINKER_HELPER", "write-wasm")
+	argsFile := filepath.Join(t.TempDir(), "link-args")
+	t.Setenv("LINK_ARGS_FILE", argsFile)
+	ctx := &context{buildConf: &Config{Mode: ModeBuild, BuildMode: BuildModeExe, Goos: "wasip1", Goarch: "wasm", Target: "wasi", WasmStrip: WasmStripAll, DebugArtifactMode: DebugArtifactNone, PCLNMode: PCLNNone}, llvmVersion: "test", crossCompile: crosscompile.Export{Linker: os.Args[0], LinkerArgs: []string{"--driver-prefix"}, LDFLAGS: []string{"--configured-flag"}, WasmProfile: crosscompile.WasmProfileW32, WasmProvider: crosscompile.WasmProviderWASI}}
+	out := &OutFmtDetails{Out: filepath.Join(dir, "app.wasm")}
+	plan := &mainLinkPlan{outputPath: out.Out, linkArgs: []string{"-Wl,--export=user_export"}, linkInputs: []string{filepath.Join(t.TempDir(), "input.o")}}
+	if err := finalizeWasmArtifacts(ctx, plan, out, false); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(out.WasmManifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m wasmManifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	for i, arg := range actual {
+		actual[i] = wasmManifestArg(arg)
+	}
+	if !slices.Equal(m.LinkFlags, actual) {
+		t.Fatalf("manifest flags=%q; actual driver=%q", m.LinkFlags, actual)
+	}
+	for _, flag := range []string{"--driver-prefix", "-DENV_CC=1", "-Wl,--export=env_ld", "--configured-flag", "-Wl,--export=user_export", defaultWASIHeapFlag, "<path>/input.o"} {
+		if !slices.Contains(m.LinkFlags, flag) {
+			t.Errorf("missing %q in %q", flag, m.LinkFlags)
+		}
+	}
+}
+
+func TestFinalizeWasmSourceMaps(t *testing.T) {
+	for _, strip := range []WasmStripMode{WasmStripNone, WasmStripSymbols, WasmStripDebug} {
+		t.Run(string(strip), func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("WASMOPT", writeWasmOptTestTool(t, t.TempDir()))
+			t.Setenv("LLGO_TEST_FINAL_WASM", "1")
+			t.Setenv("LLGO_TEST_WASM_OPT_HELPER", "copy")
+			t.Setenv("LLGO_TEST_LINKER_HELPER", "write-emscripten-map")
+			argsFile := filepath.Join(t.TempDir(), "optimizer-args")
+			t.Setenv("ARGS_FILE", argsFile)
+			ctx := &context{buildConf: &Config{Mode: ModeBuild, BuildMode: BuildModeExe, Goos: "js", Goarch: "wasm", Target: "emscripten", WasmOpt: WasmOptSize, WasmStrip: strip, DebugArtifactMode: DebugArtifactNone, PCLNMode: PCLNNone}, llvmVersion: "test", crossCompile: crosscompile.Export{CC: os.Args[0], WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}}
+			out := &OutFmtDetails{Out: filepath.Join(dir, "app.mjs")}
+			module := filepath.Join(dir, "app.wasm")
+			if err := os.WriteFile(module+".map", []byte("old map"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := finalizeWasmArtifacts(ctx, &mainLinkPlan{outputPath: out.Out}, out, false); err != nil {
+				t.Fatal(err)
+			}
+			raw, err := os.ReadFile(module)
+			if err != nil {
+				t.Fatal(err)
+			}
+			url, err := wasmdebug.SourceMappingURL(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mapping, mapErr := os.ReadFile(module + ".map")
+			if strip == WasmStripDebug {
+				if url != "" || !os.IsNotExist(mapErr) {
+					t.Fatalf("stripped map remains: %q, %v", url, mapErr)
+				}
+			} else if url != "https://debug.example/app.wasm.map" || mapErr != nil || !strings.Contains(string(mapping), `"sources":["input.go"]`) {
+				t.Fatalf("map=%q URL=%q, %v", mapping, url, mapErr)
+			}
+			args, err := os.ReadFile(argsFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, flag := range []string{"--input-source-map=", "--output-source-map=", "--output-source-map-url=https://debug.example/app.wasm.map"} {
+				if !strings.Contains(string(args), flag) {
+					t.Errorf("missing %s: %s", flag, args)
+				}
+			}
+			manifest, err := os.ReadFile(out.WasmManifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(manifest), dir) {
+				t.Fatal("manifest leaks staging paths")
+			}
+		})
+	}
+}
+
+func TestFinalizeWasmSourceMapFailurePreservesOutputs(t *testing.T) {
+	for _, mode := range []string{"missing-output-map", "invalid-output-map"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("WASMOPT", writeWasmOptTestTool(t, t.TempDir()))
+			t.Setenv("LLGO_TEST_FINAL_WASM", "1")
+			t.Setenv("LLGO_TEST_WASM_OPT_HELPER", mode)
+			t.Setenv("LLGO_TEST_LINKER_HELPER", "write-emscripten-map")
+			ctx := &context{buildConf: &Config{Mode: ModeBuild, BuildMode: BuildModeExe, Goos: "js", Goarch: "wasm", Target: "emscripten", WasmOpt: WasmOptSize, DebugArtifactMode: DebugArtifactNone, PCLNMode: PCLNNone}, llvmVersion: "test", crossCompile: crosscompile.Export{CC: os.Args[0], WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}}
+			out := &OutFmtDetails{Out: filepath.Join(dir, "app.mjs")}
+			names := []string{"app.mjs", "app.wasm", "app.wasm.map", "app.wasm-manifest.json"}
+			for _, name := range names {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte("old "+name), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := finalizeWasmArtifacts(ctx, &mainLinkPlan{outputPath: out.Out}, out, false); err == nil {
+				t.Fatal("accepted missing or invalid optimized map")
+			}
+			for _, name := range names {
+				raw, err := os.ReadFile(filepath.Join(dir, name))
+				if err != nil || string(raw) != "old "+name {
+					t.Fatalf("failed pipeline changed %s: %q, %v", name, raw, err)
+				}
+			}
+		})
+	}
+}
+
+func TestWasmSymbolStrippingPreservesExternalSourceMaps(t *testing.T) {
+	conf := &Config{Mode: ModeBuild, BuildMode: BuildModeExe, DebugArtifactMode: DebugArtifactExternal, LinkOptions: LinkOptions{OmitSymbolTable: true, DWARF: DWARFPreserve}}
+	if err := validateWasmFinalOptions(conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileJ32, WasmProvider: crosscompile.WasmProviderEmscripten}); err != nil {
+		t.Fatal(err)
+	}
+	if conf.WasmStrip != WasmStripSymbols {
+		t.Fatalf("external -s -w=0 strip policy=%s", conf.WasmStrip)
 	}
 }

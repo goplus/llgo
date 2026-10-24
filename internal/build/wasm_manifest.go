@@ -113,7 +113,7 @@ func wasmArtifact(path string) (wasmManifestArtifact, error) {
 
 func wasmArtifactFrom(path string, reader io.Reader) (wasmManifestArtifact, error) {
 	a := wasmManifestArtifact{Path: filepath.Base(path), Role: "deployment"}
-	if strings.HasSuffix(path, ".debug.wasm") {
+	if strings.HasSuffix(path, ".debug.wasm") || strings.HasSuffix(path, ".wasm.map") {
 		a.Role = "debug"
 	}
 	if strings.HasSuffix(path, ".pclntab") {

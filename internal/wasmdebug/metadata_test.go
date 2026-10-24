@@ -82,3 +82,22 @@ func TestStripNamesKeepsDWARF(t *testing.T) {
 		t.Fatalf("Go -s -w=0 removed non-name metadata: %x, %v", got, err)
 	}
 }
+
+func TestSourceMappingURL(t *testing.T) {
+	url := "https://debug.example/app.wasm.map"
+	module := appendCustomSection(append([]byte(nil), wasmHeader...), "sourceMappingURL", append([]byte{byte(len(url))}, url...))
+	if got, err := SourceMappingURL(module); err != nil || got != url {
+		t.Fatalf("URL=%q, %v", got, err)
+	}
+	if got, err := SourceMappingURL(wasmHeader); err != nil || got != "" {
+		t.Fatalf("absent URL=%q, %v", got, err)
+	}
+	if _, err := SourceMappingURL(appendCustomSection(module, "sourceMappingURL", []byte{0})); err == nil {
+		t.Fatal("accepted duplicate URL")
+	}
+	for _, payload := range [][]byte{nil, {2, 'x'}, {0, 0}, {1, 0xff}} {
+		if _, err := SourceMappingURL(appendCustomSection(append([]byte(nil), wasmHeader...), "sourceMappingURL", payload)); err == nil {
+			t.Fatalf("accepted invalid URL %x", payload)
+		}
+	}
+}

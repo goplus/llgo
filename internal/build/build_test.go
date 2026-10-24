@@ -88,6 +88,17 @@ func TestMain(m *testing.M) {
 			}
 		}
 		data, err := os.ReadFile(input)
+		for _, arg := range os.Args[1:] {
+			if strings.HasPrefix(arg, "--output-source-map=") && mode != "missing-output-map" {
+				mapping := []byte(`{"version":3,"sources":["../input.go"],"names":[],"mappings":"AAAA"}`)
+				if mode == "invalid-output-map" {
+					mapping = []byte("invalid map")
+				}
+				if err := os.WriteFile(strings.TrimPrefix(arg, "--output-source-map="), mapping, 0600); err != nil {
+					os.Exit(8)
+				}
+			}
+		}
 		if mode == "rewrite-wasm" {
 			data = []byte("\x00asm\x01\x00\x00\x00\x0a\x01\x00")
 		}
@@ -148,10 +159,22 @@ func TestMain(m *testing.M) {
 		if mode == "write-debug-wasm" {
 			payload = "\x00asm\x01\x00\x00\x00\x00\x0d\x0b.debug_info\x00"
 		}
-		if mode == "write-emscripten" {
+		if mode == "write-emscripten" || mode == "write-emscripten-map" {
 			payload = "export default async function () {}"
 			module := strings.TrimSuffix(output, filepath.Ext(output)) + ".wasm"
-			if err := os.WriteFile(module, []byte("\x00asm\x01\x00\x00\x00"), 0o666); err != nil {
+			data := []byte("\x00asm\x01\x00\x00\x00")
+			if mode == "write-emscripten-map" {
+				name, url := "sourceMappingURL", "https://debug.example/app.wasm.map"
+				custom := append([]byte{byte(len(name))}, name...)
+				custom = append(custom, byte(len(url)))
+				custom = append(custom, url...)
+				data = append(data, 0, byte(len(custom)))
+				data = append(data, custom...)
+				if err := os.WriteFile(module+".map", []byte("original map"), 0600); err != nil {
+					os.Exit(10)
+				}
+			}
+			if err := os.WriteFile(module, data, 0o666); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(10)
 			}

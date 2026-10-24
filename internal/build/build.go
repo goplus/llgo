@@ -1841,6 +1841,9 @@ type context struct {
 	// linkRuntimeSites snapshots the backend-dependent site policy for linking.
 	linkRuntimeSites *bool
 
+	// effectiveLinkArgs records the actual driver invocation for the Wasm manifest.
+	effectiveLinkArgs []string
+
 	buildTrace *buildTracer
 
 	wasmProgramUseOnce sync.Once
@@ -3013,6 +3016,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
+	if needsWasmFinalization(ctx.buildConf) {
+		ctx.effectiveLinkArgs = cmd.LinkArguments(buildArgs...)
+	}
 	if err := cmd.Link(buildArgs...); err != nil {
 		if len(ltoObjectArgs) != 0 {
 			_ = os.RemoveAll(filepath.Dir(ltoObjectArgs[len(ltoObjectArgs)-1]))
