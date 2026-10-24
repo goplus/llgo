@@ -30,11 +30,29 @@ type exportSite struct {
 	fn   *types.Func
 }
 
-// Rewrite validates all export sites before changing syntax. Only a statically
-// named, non-method function declaration can acquire a process-lifetime box.
-// Closures require separately owned roots, never this static path.
-func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []*ast.File) (Stats, error) {
-	var stats Stats
+// ExportedFunctions reports the unique static declarations exported by a
+// selected package without changing its syntax. A graph-level caller must
+// reject functions exported by multiple packages: package-local boxes cannot
+// preserve the original cross-package function-pointer identity.
+// Instantiated generic functions, methods, and function variables are not
+// supported by the shared export-site validation.
+func ExportedFunctions(fset *token.FileSet, info *types.Info, files []*ast.File) ([]*types.Func, error) {
+	sites, err := staticExportSites(fset, info, files)
+	if err != nil {
+		return nil, err
+	}
+	var functions []*types.Func
+	seen := make(map[*types.Func]bool)
+	for _, site := range sites {
+		if !seen[site.fn] {
+			seen[site.fn] = true
+			functions = append(functions, site.fn)
+		}
+	}
+	return functions, nil
+}
+
+func staticExportSites(fset *token.FileSet, info *types.Info, files []*ast.File) ([]exportSite, error) {
 	helpers := make(map[types.Object]bool)
 	for _, file := range files {
 		var reserved string
@@ -45,7 +63,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 			return reserved == ""
 		})
 		if reserved != "" {
-			return stats, fmt.Errorf("CCGo generated identifier %s already exists", reserved)
+			return nil, fmt.Errorf("CCGo generated identifier %s already exists", reserved)
 		}
 		for _, decl := range file.Decls {
 			fd, ok := decl.(*ast.FuncDecl)
@@ -53,7 +71,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 				continue
 			}
 			if !validExporter(fset, info, fd) {
-				return stats, fmt.Errorf("%s: CCGo exporter %s has an unrecognized ABI shape", fset.Position(fd.Pos()), fd.Name.Name)
+				return nil, fmt.Errorf("%s: CCGo exporter %s has an unrecognized ABI shape", fset.Position(fd.Pos()), fd.Name.Name)
 			}
 			helpers[info.Defs[fd.Name]] = true
 		}
@@ -86,12 +104,26 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 		})
 	}
 	if invalid != nil {
-		return stats, invalid
+		return nil, invalid
 	}
 	for id, obj := range info.Uses {
 		if helpers[obj] && !used[id] {
-			return stats, fmt.Errorf("%s: CCGo exporter must be called directly, not stored or passed as a value", fset.Position(id.Pos()))
+			return nil, fmt.Errorf("%s: CCGo exporter must be called directly, not stored or passed as a value", fset.Position(id.Pos()))
 		}
+	}
+	return sites, nil
+}
+
+// Rewrite validates all export sites before changing syntax. Only a statically
+// named, non-method function declaration can acquire a process-lifetime box.
+// Closures require separately owned roots, never this static path. Callers
+// adapting multiple packages must first check ExportedFunctions for duplicate
+// declaration owners across the entire selected graph.
+func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []*ast.File) (Stats, error) {
+	var stats Stats
+	sites, err := staticExportSites(fset, info, files)
+	if err != nil {
+		return stats, err
 	}
 	boxes := make(map[*types.Func]string)
 	for _, site := range sites {
@@ -104,7 +136,6 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 			boxes[site.fn] = name
 		}
 	}
-	var err error
 	stats.Slots, err = RewriteSlots(fset, pkg, info, files)
 	if err != nil {
 		return Stats{}, err

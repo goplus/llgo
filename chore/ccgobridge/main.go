@@ -88,6 +88,11 @@ func runProfile(dir, out string, patterns []string, profile, runtimeDir string) 
 	if len(pkgs) == 0 {
 		return fmt.Errorf("no packages matched")
 	}
+	if profile == "ccgo" {
+		if err := validateExportOwners(pkgs); err != nil {
+			return err
+		}
+	}
 
 	type receipt struct {
 		Package string
@@ -286,5 +291,27 @@ func runProfile(dir, out string, patterns []string, profile, runtimeDir string) 
 	}
 	fmt.Printf("Build with -modfile=%s\n", filepath.Join(absOut, "build.mod"))
 	fmt.Println("Adaptation counts are not build/link/run proof. Validate with both Go and LLGo.")
+	return nil
+}
+
+// Compare declaration identities, not types.Func pointer addresses: separate
+// package loaders may represent the same imported declaration with different
+// objects. Generic instances are already rejected by ExportedFunctions.
+func validateExportOwners(pkgs []*packages.Package) error {
+	owners := make(map[string]string)
+	for _, pkg := range pkgs {
+		functions, err := ccgobridge.ExportedFunctions(pkg.Fset, pkg.TypesInfo, pkg.Syntax)
+		if err != nil {
+			return err
+		}
+		for _, fn := range functions {
+			identity := fn.Pkg().Path() + "." + fn.Name()
+			if owner, exists := owners[identity]; exists && owner != pkg.PkgPath {
+				return fmt.Errorf("CCGo cross-package export of %s by %s and %s cannot preserve function-pointer identity; no snapshot written",
+					identity, owner, pkg.PkgPath)
+			}
+			owners[identity] = pkg.PkgPath
+		}
+	}
 	return nil
 }

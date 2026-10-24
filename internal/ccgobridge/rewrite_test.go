@@ -110,14 +110,60 @@ func recursive() uintptr { return __ccgo_fp(recursive) }
 	}
 }
 
+func TestExportedFunctionsUsesTypedDeclarations(t *testing.T) {
+	const source = `package fixture
+import (
+	"unsafe"
+	text "strings"
+)
+` + exportHelper + `
+func local() {}
+var first = __ccgo_fp(local)
+var second = __ccgo_fp(local)
+var imported = __ccgo_fp(text.TrimSpace)
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "exports.go", source, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info := &types.Info{
+		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
+	}
+	if _, err := (&types.Config{Importer: importer.Default()}).Check("fixture", fset, []*ast.File{file}, info); err != nil {
+		t.Fatal(err)
+	}
+	var before, after bytes.Buffer
+	if err := format.Node(&before, fset, file); err != nil {
+		t.Fatal(err)
+	}
+	functions, err := ExportedFunctions(fset, info, []*ast.File{file})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(functions) != 2 || functions[0].Pkg().Path() != "fixture" || functions[0].Name() != "local" ||
+		functions[1].Pkg().Path() != "strings" || functions[1].Name() != "TrimSpace" {
+		t.Fatalf("unexpected exported declarations: %v", functions)
+	}
+	if err := format.Node(&after, fset, file); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before.Bytes(), after.Bytes()) {
+		t.Fatal("export preflight changed the syntax")
+	}
+}
+
 func TestRejectUnprovenExport(t *testing.T) {
-	for _, value := range []string{"func() {}", "fn", "object.method"} {
+	for _, value := range []string{"func() {}", "fn", "object.method", "generic[int]"} {
 		t.Run(value, func(t *testing.T) {
 			_, _, err := rewriteSource(t, `package fixture
 import "unsafe"
 `+exportHelper+`
 type receiver struct{}
 func (receiver) method() {}
+func generic[T any]() {}
 var object receiver
 var fn = func() {}
 var p = __ccgo_fp(`+value+`)

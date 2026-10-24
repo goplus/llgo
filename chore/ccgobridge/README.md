@@ -28,6 +28,13 @@ cycles for self-references. Function variables, method values, closures and
 escaped exporter helpers are rejected. Consumers load the full function value
 from its box, not from a one-word temporary and not from native machine code.
 
+Each static function may have only one exporting package in the selected
+graph. Repeated exports within that package share a box, including imported
+functions. If two selected packages export the same declaration, preflight
+rejects the graph before writing a snapshot: separate package-local boxes
+would change function-pointer equality. This does not certify identity with
+unadapted exporters outside the selected graph.
+
 The audited musl callback adapters write full typed functions into their TLS
 slots. Typed roots retain environments until the corresponding TLS frame is
 freed; reuse and `Close` release them. Unsupported slot/lifetime shapes fail.
