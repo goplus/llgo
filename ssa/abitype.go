@@ -127,12 +127,15 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, gl
 	case "":
 		equal = prog.Nil(prog.Type(equalFunc, GoDecl))
 	case "structequal", "arrayequal":
-		equal = b.Pkg.rtEnvFunc(name)
+		equal = b.Pkg.rtEnvFunc(RuntimeSymbol(name, "structequal", "arrayequal"))
 		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
 		env := b.abiType(t)
 		equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, env.impl)
 	default:
-		equal = b.Pkg.rtFunc(name)
+		equal = b.Pkg.rtFunc(RuntimeSymbol(name,
+			"memequal0", "memequal8", "memequal16", "memequal32", "memequal64", "memequalptr", "f32equal",
+			"f64equal", "c64equal", "c128equal", "strequal", "nilinterequal", "interequal",
+		))
 		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
 		typ := b.Prog.Type(equal.raw.Type, GoDecl)
 		equal = checkExpr(equal, typ.raw.Type, b)
@@ -699,7 +702,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			methods = b.abiInterfaceMethods(mset)
 		}
 		methodCount := len(methods)
-		rt := prog.rtNamed(prog.abi.RuntimeName(t))
+		rt := prog.rtNamed(RuntimeSymbol(prog.abi.RuntimeName(t), "_type", "ptrtype", "slicetype", "functype", "interfacetype", "structtype", "maptype", "arraytype", "chantype"))
 		var typ types.Type = rt
 		if hasUncommon {
 			ut := prog.rtNamed("uncommonType")
@@ -786,7 +789,10 @@ func (p Package) RegisterAbiTypes(infos []AbiTypeInfo) {
 		if hasUncommon {
 			methods = builder.abiInterfaceMethods(mset)
 		}
-		rt := p.Prog.rtNamed(p.Prog.abi.RuntimeName(t))
+		rt := p.Prog.rtNamed(RuntimeSymbol(p.Prog.abi.RuntimeName(t),
+			"_type", "ptrtype", "slicetype", "functype", "interfacetype", "structtype", "maptype",
+			"arraytype", "chantype",
+		))
 		var typ types.Type = rt
 		if hasUncommon {
 			ut := p.Prog.rtNamed("uncommonType")

@@ -180,7 +180,7 @@ func (p Program) Zero(t Type) Expr {
 		} else {
 			name = "Iface"
 		}
-		ret = p.Zero(p.rtType(name)).impl
+		ret = p.Zero(p.rtType(RuntimeSymbol(name, "Eface", "Iface"))).impl
 	case *types.Map:
 		ret = p.Zero(p.Pointer(p.rtType("Map"))).impl
 	case *types.Tuple:
@@ -1182,7 +1182,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				if arg.impl.Type() != arg.Type.ll {
 					arg.impl = castInt(b, x.impl, srcType, arg.Type)
 				}
-				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc(fn), arg).impl
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc(RuntimeSymbol(fn, "StringFromInt64", "StringFromUint64")), arg).impl
 				return
 			}
 		case types.Complex128:
@@ -1380,7 +1380,7 @@ func castFloatToInt386(b Builder, x llvm.Value, typ Type, dstSize uint64) llvm.V
 	if typ.kind == vkUnsigned {
 		fn = "Float64ToUint64"
 	}
-	return b.InlineCall(b.Pkg.rtFunc(fn), Expr{input, b.Prog.Float64()}).impl
+	return b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(fn, "Float64ToInt64", "Float64ToUint64")), Expr{input, b.Prog.Float64()}).impl
 }
 
 func castFloatToSignedIntX86(b Builder, x llvm.Value, typ Type, bits uint64) llvm.Value {
@@ -2026,7 +2026,7 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			t := b.abiType(m.raw.Type)
 			kind := mapKeyFastKind(b.Prog, m.raw.Type)
 			arg := b.mapKeyAccessArg(m, args[1], kind)
-			b.Call(b.Pkg.rtFunc(kind.deleteName()), t, m, arg)
+			b.Call(b.Pkg.rtFunc(RuntimeSymbol(kind.deleteName(), "MapDelete", "MapDeleteFast32", "MapDeleteFast64", "MapDeleteFastStr")), t, m, arg)
 			return
 		}
 	case "clear":
@@ -2152,7 +2152,10 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 		if typ != arg.Type {
 			arg = b.Convert(typ, arg)
 		}
-		b.InlineCall(b.Pkg.rtFunc(fn), arg)
+		b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(fn,
+			"PrintBool", "PrintInt", "PrintUint", "PrintFloat", "PrintSlice", "PrintPointer",
+			"PrintString", "PrintEface", "PrintIface", "PrintComplex",
+		)), arg)
 	}
 	if ln {
 		b.InlineCall(b.Pkg.rtFunc("PrintByte"), prog.IntVal('\n', prog.Byte()))

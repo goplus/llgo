@@ -1,0 +1,56 @@
+package build
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestRuntimeAuditExternalProviders(t *testing.T) {
+	a := runtimeAuditFixture(t)
+	report := RuntimeOwnership{Symbols: []RuntimeSymbol{
+		{Name: "runtime.local", Linkname: "runtime.implementation", Owner: "external-boundary"},
+		{Name: "runtime.implementation", Kind: "func", Body: true, Source: "implementation.go:1"},
+		{Name: "runtime.native", Linkname: "C.getenv", Owner: "external-boundary"},
+		{Name: "runtime.newNative", Linkname: "C.llgo_new_native_hook", Owner: "external-boundary"},
+		{Name: "runtime.missing", Linkname: "runtime.newGoHook", Owner: "external-boundary"},
+		{Name: "runtime.coverage", Linkname: "internal/coverage/rtcov.AddMeta", Owner: "external-boundary"},
+		{Name: "runtime.coverageAlias", Linkname: "internal/coverage/rtcov.AddMeta", Owner: "external-boundary"},
+	}}
+	dir := filepath.Join(a.goroot, "src/internal/coverage/rtcov")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "rtcov.go"), []byte("package rtcov\nfunc AddMeta() {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.externalBoundaries(&report); err != nil {
+		t.Fatal(err)
+	}
+	if len(report.ExternalBoundaries) != 4 || len(report.UnresolvedBoundaries) != 2 {
+		t.Fatalf("qualified: %+v; unresolved: %+v", report.ExternalBoundaries, report.UnresolvedBoundaries)
+	}
+	if got := report.ExternalBoundaries[2]; got.Kind != "go" || got.Provider != "internal/coverage/rtcov.AddMeta" ||
+		len(got.Sources) != 1 || !strings.HasPrefix(got.Sources[0], "$GOROOT/src/internal/coverage/rtcov/") {
+		t.Fatalf("lost selected GOROOT provider: %+v", got)
+	}
+	if report.UnresolvedBoundaries[0].Symbol != "C.llgo_new_native_hook" || report.UnresolvedBoundaries[1].Symbol != "runtime.newGoHook" {
+		t.Fatalf("new hooks were not rejected: %+v", report.UnresolvedBoundaries)
+	}
+}
+
+func TestRuntimeNativeOwnersAreUnique(t *testing.T) {
+	seen := make(map[string]bool)
+	for _, owner := range runtimeNativeOwners {
+		if owner.owner == "" {
+			t.Fatal("missing native provider")
+		}
+		for _, symbol := range strings.Fields(owner.symbols) {
+			if seen[symbol] {
+				t.Fatalf("multiple native owners for %s", symbol)
+			}
+			seen[symbol] = true
+		}
+	}
+}

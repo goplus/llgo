@@ -302,9 +302,9 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 				hiType = prog.Int()
 			}
 			hi := Expr{castInt(b, hi64, prog.Uint64(), hiType), hiType}
-			b.InlineCall(b.Pkg.rtFunc(panicIndex), hi, lo, max)
+			b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(panicIndex, "PanicIndex", "PanicIndexU", "PanicExtendIndex", "PanicExtendIndexU")), hi, lo, max)
 		} else {
-			b.InlineCall(b.Pkg.rtFunc(panicIndex), nativeIdx, max)
+			b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(panicIndex, "PanicIndex", "PanicIndexU", "PanicExtendIndex", "PanicExtendIndexU")), nativeIdx, max)
 		}
 		// Keep the failure path disconnected from the successful continuation,
 		// while retaining a post-call instruction for return-address line info.
@@ -555,7 +555,7 @@ func (b Builder) MakeSlice(t Type, len, cap Expr) (ret Expr) {
 		len = b.FitIntSize(len)
 		cap = b.FitIntSize(cap)
 	}
-	ret = b.InlineCall(b.Pkg.rtFunc(fn), len, cap, prog.IntVal(prog.SizeOf(telem), prog.Int()))
+	ret = b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(fn, "MakeSlice", "MakeSlice64")), len, cap, prog.IntVal(prog.SizeOf(telem), prog.Int()))
 	ret.Type = t
 	return
 }
@@ -636,7 +636,11 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 		args = append(args, b.Pkg.mapZeroAddr(vsize, int(prog.AlignOf(vtyp))))
 	}
 	if commaOk {
-		vals := b.Call(b.Pkg.rtFunc(name), args...)
+		vals := b.Call(b.Pkg.rtFunc(RuntimeSymbol(name,
+			"MapAccess1", "MapAccess2", "MapAccess1Fat", "MapAccess2Fat", "MapAccess1Fast32",
+			"MapAccess2Fast32", "MapAccess1Fast64", "MapAccess2Fast64", "MapAccess1FastStr",
+			"MapAccess2FastStr",
+		)), args...)
 		valuePtr := b.getField(vals, 0)
 		valuePtr.Type = prog.Pointer(vtyp)
 		val := b.Load(valuePtr)
@@ -644,7 +648,11 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 		t := prog.Struct(vtyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok)
 	} else {
-		val := b.Call(b.Pkg.rtFunc(name), args...)
+		val := b.Call(b.Pkg.rtFunc(RuntimeSymbol(name,
+			"MapAccess1", "MapAccess2", "MapAccess1Fat", "MapAccess2Fat", "MapAccess1Fast32",
+			"MapAccess2Fast32", "MapAccess1Fast64", "MapAccess2Fast64", "MapAccess1FastStr",
+			"MapAccess2FastStr",
+		)), args...)
 		val.Type = prog.Pointer(vtyp)
 		ret = b.Load(val)
 	}
@@ -672,7 +680,10 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	typ := b.abiType(m.raw.Type)
 	kind := mapKeyFastKind(b.Prog, m.raw.Type)
 	arg := b.mapKeyAssignArg(m, k, kind)
-	ret := b.Call(b.Pkg.rtFunc(kind.assignName()), typ, m, arg)
+	ret := b.Call(b.Pkg.rtFunc(RuntimeSymbol(kind.assignName(),
+		"MapAssign", "MapAssignFast32", "MapAssignFast64", "MapAssignFast32Ptr", "MapAssignFast64Ptr",
+		"MapAssignFastStr",
+	)), typ, m, arg)
 	ret.Type = b.Prog.Pointer(v.Type)
 	b.Store(ret, v)
 }
@@ -945,7 +956,7 @@ func (b Builder) MakeChan(t Type, size Expr) (ret Expr) {
 		size = b.FitIntSize(size)
 	}
 	ret.Type = t
-	ret.impl = b.InlineCall(b.Pkg.rtFunc(fn), eltSize, size).impl
+	ret.impl = b.InlineCall(b.Pkg.rtFunc(RuntimeSymbol(fn, "NewChan", "NewChan64")), eltSize, size).impl
 	return
 }
 
