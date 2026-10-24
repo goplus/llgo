@@ -2048,7 +2048,7 @@ func (p *context) callRuntimeLocation(b llssa.Builder, fn string, entry, name, f
 	push := fn == "PushCallerLocationFrame"
 	if target := p.prog.Target(); target != nil && target.GOARCH == "wasm" {
 		return b.Call(
-			p.runtimeFunc(fn+"Wasm", wasmRuntimeLocationSig(push)),
+			p.runtimeFunc(llssa.RuntimeSymbol(fn+"Wasm", "PushCallerLocationFrameWasm", "RecordCallerLocationWasm", "RecordPanicLocationWasm"), wasmRuntimeLocationSig(push)),
 			entry, b.StringData(name), b.StringLen(name), b.StringData(file), b.StringLen(file), line,
 		)
 	}
@@ -2056,7 +2056,7 @@ func (p *context) callRuntimeLocation(b llssa.Builder, fn string, entry, name, f
 	if push {
 		sig = pushCallerLocationFrameSig()
 	}
-	return b.Call(p.runtimeFunc(fn, sig), entry, name, file, line)
+	return b.Call(p.runtimeFunc(llssa.RuntimeSymbol(fn, "PushCallerLocationFrame", "RecordCallerLocation", "RecordPanicLocation"), sig), entry, name, file, line)
 }
 
 func (p *context) recordCallerLocationForCall(b llssa.Builder, call *ssa.CallCommon) {

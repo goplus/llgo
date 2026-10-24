@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -51,6 +52,12 @@ func TestRuntimeOwnership(t *testing.T) {
 			}
 			for _, use := range report.Missing {
 				t.Errorf("missing %s (%s)", use.Symbol, use.Source)
+			}
+			for _, use := range report.DynamicCompilerUses {
+				t.Errorf("unbounded runtime lookup %s (%s)", use.Symbol, use.Source)
+			}
+			for _, use := range report.UnresolvedBoundaries {
+				t.Errorf("unresolved runtime boundary %s (%s)", use.Symbol, use.Source)
 			}
 		})
 	}
@@ -310,6 +317,14 @@ func decoderune(s string, k uint) (r rune, pos uint) { return 0, k }
 func encoderune(p []byte, r rune) int { return 0 }
 `)
 			write("go/src/runtime/runtime.go", "package runtime\nfunc setCrashFD(fd uintptr) uintptr { return fd }\ntype MemStats struct{}\n")
+			for _, name := range []string{"complex.go", "float.go"} {
+				data, err := os.ReadFile(filepath.Join(runtime.GOROOT(), "src/runtime", name))
+				if err != nil {
+					t.Fatal(err)
+				}
+				write("go/src/runtime/"+name, string(data))
+				write("runtime/internal/runtime/"+strings.TrimSuffix(name, ".go")+"_goroot.go", "package runtime\n")
+			}
 			write("runtime/internal/runtime/utf8.go", "package runtime\n")
 			write("runtime/internal/runtime/utf8_index_go127.go", "package runtime\nfunc decoderune(s string, k uint) (r rune, pos uint)\n")
 			write("runtime/internal/lib/runtime/crash_fd_go123.go", "package runtime\nfunc setCrashFD(fd uintptr) uintptr\n")

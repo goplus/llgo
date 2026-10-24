@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -351,5 +352,63 @@ func TestCDPWorkerExitCancelsPendingRequest(t *testing.T) {
 	err = client.call(ctx, "worker", "Runtime.getIsolateId", map[string]any{}, nil)
 	if err == nil || !closedCDPTarget(err) {
 		t.Fatalf("pending request after worker exit: %v", err)
+	}
+}
+
+func TestCDPCanceledWritePreservesOtherTargets(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	ctx, client := workerTestClient(t, func(ctx context.Context, conn *websocket.Conn) {
+		conn.SetReadLimit(64 << 20)
+		_, reader, err := conn.Reader(ctx)
+		if err != nil {
+			return
+		}
+		var first [1]byte
+		if _, err := io.ReadFull(reader, first[:]); err != nil {
+			return
+		}
+		close(started)
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return
+		}
+		if _, err := io.Copy(io.Discard, reader); err != nil {
+			return
+		}
+		var command cdpMessage
+		if wsjson.Read(ctx, conn, &command) == nil {
+			_ = wsjson.Write(ctx, conn, cdpMessage{ID: command.ID, Result: json.RawMessage(`{}`)})
+		}
+	})
+	request, cancel := context.WithCancel(ctx)
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		// Exceed socket buffering so cancellation occurs during the write.
+		result <- client.call(request, "exiting", "Runtime.evaluate", map[string]any{
+			"expression": strings.Repeat(" ", 32<<20),
+		}, nil)
+	}()
+	select {
+	case <-started:
+	case <-ctx.Done():
+		t.Fatal("request did not reach the server")
+	}
+	cancel()
+	// Let cancellation interrupt an incorrectly request-scoped write before
+	// allowing the server to drain the message and accept the next command.
+	select {
+	case err := <-result:
+		result <- err
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(release)
+	if err := <-result; !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled request: %v", err)
+	}
+	if err := client.call(ctx, "surviving", "Runtime.getIsolateId", map[string]any{}, nil); err != nil {
+		t.Fatalf("canceling one request closed the shared connection: %v", err)
 	}
 }
