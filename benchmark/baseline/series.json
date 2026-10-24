@@ -201,6 +201,17 @@
     },
     {
       "kind": "branch",
+      "id": "70844bd46b0ab683",
+      "label": "Branch codex/darwin-sdk-fallback-20261024",
+      "path": "series/branch/70844bd46b0ab683/summary.json",
+      "configPath": "series/branch/70844bd46b0ab683/config.json",
+      "commitPath": "commits/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a.json",
+      "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+      "updatedAt": "2026-10-24T07:20:06.196Z"
+    },
+    {
+      "kind": "branch",
       "id": "7075cae40db9f1dd",
       "label": "Branch codex/dev-wasm-full-lto-fix-20261003",
       "path": "series/branch/7075cae40db9f1dd/summary.json",
@@ -10175,6 +10186,17 @@
       "sha": "c42916d47905a46501067cd01d1b915294dae7c1",
       "sourceUrl": "https://github.com/cpunion/llgo/commit/c42916d47905a46501067cd01d1b915294dae7c1",
       "updatedAt": "2026-10-24T03:18:40.520Z"
+    },
+    {
+      "kind": "pull",
+      "id": "2913",
+      "label": "PR #2913",
+      "path": "series/pull/2913/summary.json",
+      "configPath": "series/pull/2913/config.json",
+      "commitPath": "commits/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a.json",
+      "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+      "updatedAt": "2026-10-24T07:20:04.137Z"
     }
   ]
 }
