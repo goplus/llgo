@@ -69,13 +69,15 @@ columns: default, dev `-deadcodedrop`, and dev
 existing LLVM GoGlobalDCE path, so those results are a different configuration.
 Do not add `-s` to this comparison.
 
-Optimized Wasm executables discard unused global stores and safe map
-initialization, preserving operand effects and potential panics. Native inputs
+Optimized Wasm executables discard unused scalar global stores and safe blank
+map initialization, preserving operand effects and potential panics. Globals
+containing GC pointers remain roots even without explicit reads. Native inputs
 with unknown references disable this analysis. Original dev DCE also clears
 method metadata for types outside its interface/reflection domain; observable
 method sets and structural metadata remain intact. WASI executables without
 address-based `FuncForPC` entries prune embedded PCLN against linked function
-names. Emscripten, library outputs and entry-bearing PCLN retain their current
+names only when the name map covers every imported and defined function.
+Sparse maps retain all records. Emscripten, library outputs and entry-bearing PCLN retain their current
 packaging policy. `dev/test_wasm_wasi_threads.py` and
 `dev/test_wasm_wasi_lto.py` check initialization, map/reflect behavior and source
 locations, including an unrecovered panic, across the default and LTO paths.

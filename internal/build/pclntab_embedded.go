@@ -92,7 +92,7 @@ func pruneEmbeddedPCLN(ctx *context, plan *mainLinkPlan, output string, verbose 
 		link: func(candidate string, inputs []string) error {
 			return linkObjFiles(ctx, candidate, inputs, plan.linkArgs, verbose)
 		},
-		publish: os.Rename,
+		publish: replaceFile,
 	})
 }
 

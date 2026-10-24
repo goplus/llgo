@@ -14,19 +14,21 @@ func TestUnusedGlobalInitializers(t *testing.T) {
 		dead      []string
 		maps      int
 	}{
-		{"unused map and alias", `var A = map[string]int{"a": 1}; var B = A`, []string{"A", "B"}, 1},
+		{"map and alias remain GC roots", `var A = map[string]int{"a": 1}; var B = A`, nil, 0},
 		{"used alias", `var A = map[string]int{"a": 1}; var B = A; func use() int { return B["a"] }`, nil, 0},
 		{"method read", `type T int; var M = map[int]int{1: 2}; func (T) Read() int { return M[1] }`, nil, 0},
 		{"address escape", `var M = map[int]int{1: 2}; var P = &M; func use() any { return P }`, nil, 0},
 		{"init read", `var M = map[int]int{1: 2}; func init() { println(len(M)) }`, nil, 0},
 		{"post-init write", `var M = map[int]int{1: 2}; func write() { M = nil }`, nil, 0},
-		{"interface key panic", `var M = map[any]int{[]int{1}: 2}`, []string{"M"}, 0},
-		{"nested interface key panic", `type K struct{ X any }; var M = map[K]int{{[]int{1}}: 2}`, []string{"M"}, 0},
-		{"array interface key panic", `var M = map[[1]any]int{{[]int{1}}: 2}`, []string{"M"}, 0},
-		{"dynamic map hint", `func hint() int { return -1 }; var M = make(map[int]int, hint())`, []string{"M"}, 0},
-		{"large map hint", `var M = make(map[int]int, 1 << 30)`, []string{"M"}, 0},
+		{"interface key panic", `var _ = map[any]int{[]int{1}: 2}`, nil, 0},
+		{"nested interface key panic", `type K struct{ X any }; var _ = map[K]int{{[]int{1}}: 2}`, nil, 0},
+		{"array interface key panic", `var _ = map[[1]any]int{{[]int{1}}: 2}`, nil, 0},
+		{"dynamic map hint", `func hint() int { return -1 }; var _ = make(map[int]int, hint())`, nil, 0},
+		{"large map hint", `var _ = make(map[int]int, 1 << 30)`, nil, 0},
+		{"unused scalar", `var A = 1`, []string{"A"}, 0},
 		{"blank map", `var _ = map[int]int{1: 2}`, nil, 1},
-		{"effectful key and value", `func value() int { println("side effect"); return 1 }; var M = map[int]int{value(): value()}`, []string{"M"}, 1},
+		{"blank effectful key and value", `func value() int { println("side effect"); return 1 }; var _ = map[int]int{value(): value()}`, nil, 1},
+		{"effectful key and value", `func value() int { println("side effect"); return 1 }; var M = map[int]int{value(): value()}`, nil, 0},
 		{"generic read", `var M = map[int]int{1: 2}; func use[T any](T) int { return M[1] }; func call() int { return use(0) }`, nil, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -58,8 +60,26 @@ func TestUnusedGlobalInitializers(t *testing.T) {
 	}
 }
 
+func TestUnusedGlobalInitializersKeepGCRoots(t *testing.T) {
+	for _, src := range []string{
+		`func makeRoot() *int { return new(int) }; var Root = makeRoot()`,
+		`func makeRoot() *int { return new(int) }; var Root = [1]*int{makeRoot()}`,
+		`func makeRoot() *int { return new(int) }; var Root = struct { P *int }{makeRoot()}`,
+		`func makeRoot() *int { return new(int) }; var Root = []*int{makeRoot()}`,
+		`func makeRoot() *int { return new(int) }; var Root = map[int]*int{0:makeRoot()}`,
+		`func makeRoot() *int { return new(int) }; var Root any = makeRoot()`,
+		`func makeRoot() *int { return new(int) }; var Root = func() func() *int { p:=makeRoot(); return func() *int {return p} }()`,
+	} {
+		pkg := buildSSAPackage(t, "package foo\n"+src)
+		plan := FindUnusedGlobalInits(pkg.Prog, func(*ssa.Global) bool { return false })
+		if len(plan.Names(pkg)) != 0 {
+			t.Errorf("removed a GC root in %s: %v", src, plan.Names(pkg))
+		}
+	}
+}
+
 func TestUnusedGlobalInitializerPreserve(t *testing.T) {
-	pkg := buildSSAPackage(t, "package foo; var M = map[string]int{\"a\":1}")
+	pkg := buildSSAPackage(t, "package foo; var M = 1")
 	plan := FindUnusedGlobalInits(pkg.Prog, func(global *ssa.Global) bool { return global.Name() == "M" })
 	if len(plan.Names(pkg)) != 0 || len(plan.instrs[pkg]) != 0 {
 		t.Fatal("removed a preserved initializer")
@@ -72,8 +92,8 @@ func TestUnusedGlobalInitializerPreserve(t *testing.T) {
 
 func TestUnusedGlobalInitializerPreserveOnce(t *testing.T) {
 	pkg := buildSSAPackage(t, `package foo
-var Keep = map[string]int{"keep": 1}
-var A = map[string]int{"a": 1}
+var Keep = 1
+var A = 2
 var B = A
 var C = B
 `)

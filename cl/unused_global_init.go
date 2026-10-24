@@ -60,7 +60,8 @@ func (p *UnusedGlobalInits) Names(pkg *ssa.Package) []string {
 // through aliases or native code, and must not apply this plan to a library.
 // Removing dead stores and map operations leaves operand evaluation in place,
 // including calls, channel receives, and expressions that may panic. A fixed
-// point also removes now-unused global loads, so aliases do not retain tables.
+// point also removes now-unused scalar global loads. Pointer-bearing globals
+// remain GC roots even when the program never explicitly reads them.
 func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *UnusedGlobalInits {
 	plan := &UnusedGlobalInits{names: make(map[*ssa.Package][]string), instrs: make(map[*ssa.Package][]ssa.Instruction), keys: make(map[*ssa.Package][]string)}
 	uses := make(map[*ssa.Global][]ssa.Instruction)
@@ -82,6 +83,13 @@ func FindUnusedGlobalInits(prog *ssa.Program, preserve func(*ssa.Global) bool) *
 	preserved := make(map[*ssa.Global]bool, len(uses))
 	for global := range uses {
 		preserved[global] = preserve(global)
+		// A global is a GC root even if no SSA instruction reads it. Calls
+		// in its initializer can return objects with registered finalizers,
+		// including pointers nested in aggregates, maps and closure contexts.
+		// Keep these roots until their lifetime can be proved unobservable.
+		if mayContainGCRoot(global.Type().Underlying().(*types.Pointer).Elem()) {
+			preserved[global] = true
+		}
 	}
 	removed := make(map[ssa.Instruction]bool)
 	deadGlobals := make(map[*ssa.Global]bool)

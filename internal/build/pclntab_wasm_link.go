@@ -44,6 +44,10 @@ func analyzeWasmPCLN(path string, original pclnmap.Data) (pclnpost.ExternalAnaly
 	if err != nil {
 		return pclnpost.ExternalAnalysis{}, err
 	}
+	complete, err := wasmdebug.FunctionNamesComplete(raw, names)
+	if err != nil {
+		return pclnpost.ExternalAnalysis{}, err
+	}
 	live := make(map[string]bool, len(names))
 	for _, name := range names {
 		live[name] = true
@@ -57,8 +61,8 @@ func analyzeWasmPCLN(path string, original pclnmap.Data) (pclnpost.ExternalAnaly
 	analysis := pclnpost.ExternalAnalysis{PointerSize: original.PointerSize}
 	for i, rec := range original.Table.Records {
 		symbol := original.Table.Symbol(rec)
-		// Empty maps provide no liveness evidence, just like missing names.
-		if len(names) == 0 || live[symbol] {
+		// Missing, empty or sparse maps provide no complete liveness evidence.
+		if !complete || live[symbol] {
 			analysis.EntrySites = append(analysis.EntrySites, pclnpost.ExternalSite{
 				PCOffset: uint64(i + 1), ID: funcInfoSymbolID(symbol),
 			})

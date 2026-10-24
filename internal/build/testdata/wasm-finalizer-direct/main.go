@@ -16,6 +16,26 @@ type markerError string
 
 func (e markerError) Error() string { return string(e) }
 
+// These globals are never read. Each still keeps a finalized allocation alive,
+// even when the pointer is nested in an aggregate or closure environment.
+var globalPointer = makeGlobalRoot()
+var globalArray = [1]*object{makeGlobalRoot()}
+var globalStruct = struct{ P *object }{makeGlobalRoot()}
+var globalSlice = []*object{makeGlobalRoot()}
+var globalMap = map[int]*object{0: makeGlobalRoot()}
+var globalInterface any = makeGlobalRoot()
+var globalClosure = func() func() *object {
+	p := makeGlobalRoot()
+	return func() *object { return p }
+}()
+
+//go:noinline
+func makeGlobalRoot() *object {
+	p := new(object)
+	runtime.SetFinalizer(p, func(*object) { panic("unread global GC root was dropped") })
+	return p
+}
+
 var events = make(chan int, 64)
 
 func (p *object) finish() error {

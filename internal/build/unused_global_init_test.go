@@ -18,7 +18,7 @@ import (
 )
 
 func TestUnusedGlobalInitCache(t *testing.T) {
-	pkg := buildWasmReflectTestProgram(t, `package main; var M = map[int]int{1:2}; func main() {}`)
+	pkg := buildWasmReflectTestProgram(t, `package main; var M = 42; func main() {}`)
 	ctx := &context{conf: &packages.Config{}, mode: ModeGen, buildConf: &Config{Goos: "wasip1", Goarch: "wasm"}, progSSA: pkg.Prog}
 	fingerprint := func(preserve bool) (string, string) {
 		ctx.frontendOptions.UnusedGlobalInits = cl.FindUnusedGlobalInits(pkg.Prog, func(*ssa.Global) bool { return preserve })
@@ -71,7 +71,7 @@ func main() { Read() }
 
 func TestUnusedGlobalInitLinkAliases(t *testing.T) {
 	t.Setenv("LDFLAGS", "")
-	pkg := buildWasmReflectTestProgram(t, `package main; var M = map[int]int{1:2}; func main() {}`)
+	pkg := buildWasmReflectTestProgram(t, `package main; var M = 42; func main() {}`)
 	for _, alias := range []string{"", "source", "target", "thread local", "goroutine local"} {
 		prog := llssa.NewProgram(&llssa.Target{GOOS: "wasip1", GOARCH: "wasm"})
 		name := llssa.FullName(pkg.Pkg, "M")
@@ -97,7 +97,7 @@ func TestUnusedGlobalInitLinkAliases(t *testing.T) {
 }
 
 func TestUnusedGlobalInitScope(t *testing.T) {
-	pkg := buildWasmReflectTestProgram(t, `package main; var M = map[int]int{1:2}; func main() {}`)
+	pkg := buildWasmReflectTestProgram(t, `package main; var M = 42; func main() {}`)
 	for _, tc := range []struct {
 		name, arch, ldflags string
 		mode                Mode
@@ -132,7 +132,7 @@ func TestUnusedGlobalInitScope(t *testing.T) {
 
 func TestUnusedGlobalInitExportAnnotation(t *testing.T) {
 	t.Setenv("LDFLAGS", "")
-	src := "package main\n//go:linkname\tM\nvar M = map[int]int{1:2}\nfunc main() {}"
+	src := "package main\n//go:linkname\tM\nvar M = 42\nfunc main() {}"
 	pkg := buildWasmReflectTestProgram(t, src)
 	file, err := parser.ParseFile(token.NewFileSet(), "main.go", src, parser.ParseComments)
 	if err != nil {
@@ -195,7 +195,7 @@ func TestUnusedGlobalInitNativeInputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// C imports are loader metadata; keep them out of the ordinary
 			// Go type checker while exercising the complete pruning gate.
-			src := "package main\n" + tc.declarations + "\nvar M = map[int]int{1:2}; func Read() int64; func main() {}"
+			src := "package main\n" + tc.declarations + "\nvar M = 42; func Read() int64; func main() {}"
 			ssaSrc := src
 			if strings.HasPrefix(tc.declarations, "import") {
 				ssaSrc = strings.Replace(src, tc.declarations, "", 1)

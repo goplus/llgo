@@ -47,3 +47,47 @@ func TestFunctionNamesOptionalSubsections(t *testing.T) {
 		t.Fatalf("empty function map = %v, %v", names, err)
 	}
 }
+
+func TestFunctionNamesComplete(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		imports   []byte
+		functions []byte
+		names     map[uint32]string
+		want      bool
+	}{
+		{"defined", nil, []byte{2, 0, 0}, map[uint32]string{0: "a", 1: "b"}, true},
+		{"sparse", nil, []byte{2, 0, 0}, map[uint32]string{0: "a"}, false},
+		{"wrong index", nil, []byte{1, 0}, map[uint32]string{7: "a"}, false},
+		{"empty name", nil, []byte{1, 0}, map[uint32]string{0: ""}, false},
+		{"imported", []byte{1, 1, 'm', 1, 'f', 0, 0}, []byte{1, 0}, map[uint32]string{0: "f", 1: "a"}, true},
+		{"unnamed import", []byte{1, 1, 'm', 1, 'f', 0, 0}, []byte{1, 0}, map[uint32]string{1: "a"}, false},
+		{"memory import", []byte{1, 1, 'm', 1, 'x', 2, 1, 1, 2}, []byte{1, 0}, map[uint32]string{0: "a"}, true},
+		{"shared memory import", []byte{1, 1, 'm', 1, 'x', 2, 3, 1, 2}, []byte{1, 0}, map[uint32]string{0: "a"}, true},
+		{"table import", []byte{1, 1, 'm', 1, 'x', 1, 0x70, 0, 1}, []byte{1, 0}, map[uint32]string{0: "a"}, true},
+		{"global import", []byte{1, 1, 'm', 1, 'x', 3, 0x7f, 1}, []byte{1, 0}, map[uint32]string{0: "a"}, true},
+		{"tag import", []byte{1, 1, 'm', 1, 'x', 4, 0, 0}, []byte{1, 0}, map[uint32]string{0: "a"}, true},
+		{"unknown import", []byte{1, 1, 'm', 1, 'x', 9, 0}, []byte{1, 0}, map[uint32]string{0: "a"}, false},
+		{"unknown limits", []byte{1, 1, 'm', 1, 'x', 2, 4, 1}, []byte{1, 0}, map[uint32]string{0: "a"}, false},
+		{"truncated import", []byte{1, 1, 'm'}, []byte{1, 0}, map[uint32]string{0: "a"}, false},
+		{"trailing functions", nil, []byte{1, 0, 0}, map[uint32]string{0: "a"}, false},
+		{"no functions", nil, nil, nil, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			module := append([]byte(nil), wasmHeader...)
+			for _, section := range []struct {
+				id   byte
+				data []byte
+			}{{2, tc.imports}, {3, tc.functions}} {
+				if section.data != nil {
+					module = append(module, section.id, byte(len(section.data)))
+					module = append(module, section.data...)
+				}
+			}
+			got, err := FunctionNamesComplete(module, tc.names)
+			if err != nil || got != tc.want {
+				t.Fatalf("complete=%v, %v; want %v", got, err, tc.want)
+			}
+		})
+	}
+}

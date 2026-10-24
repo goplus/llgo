@@ -79,3 +79,118 @@ func FunctionNames(module []byte) (map[uint32]string, error) {
 	}
 	return names, nil
 }
+
+// FunctionNamesComplete proves that every imported and defined function has a
+// nonempty name. Optional sparse maps cannot establish that a PCLN symbol died.
+// Import types this reader does not understand conservatively disable pruning.
+func FunctionNamesComplete(module []byte, names map[uint32]string) (bool, error) {
+	sections, err := parse(module)
+	if err != nil {
+		return false, err
+	}
+	var count uint64
+	seen := make(map[byte]bool)
+	for _, section := range sections {
+		if section.id != 2 && section.id != 3 {
+			continue
+		}
+		if seen[section.id] {
+			return false, nil
+		}
+		seen[section.id] = true
+		raw, pos := section.content, 0
+		n, err := readULEB32(raw, &pos)
+		if err != nil {
+			return false, nil
+		}
+		if section.id == 3 {
+			count += uint64(n)
+			for range n {
+				if _, err := readULEB32(raw, &pos); err != nil {
+					return false, nil
+				}
+			}
+		} else {
+			for range n {
+				if _, err := readName(raw, &pos); err != nil {
+					return false, nil
+				}
+				if _, err := readName(raw, &pos); err != nil {
+					return false, nil
+				}
+				if pos == len(raw) {
+					return false, nil
+				}
+				kind := raw[pos]
+				pos++
+				switch kind {
+				case 0: // function type index
+					if _, err := readULEB32(raw, &pos); err != nil {
+						return false, nil
+					}
+					count++
+				case 1: // reference type and table limits
+					if pos == len(raw) || raw[pos] != 0x70 && raw[pos] != 0x6f {
+						return false, nil
+					}
+					pos++
+					if !skipNameCoverageLimits(raw, &pos) {
+						return false, nil
+					}
+				case 2: // memory limits
+					if !skipNameCoverageLimits(raw, &pos) {
+						return false, nil
+					}
+				case 3: // global value type and mutability
+					if len(raw)-pos < 2 || !simpleWasmValueType(raw[pos]) || raw[pos+1] > 1 {
+						return false, nil
+					}
+					pos += 2
+				case 4: // exception tag attribute and type index
+					if pos == len(raw) || raw[pos] != 0 {
+						return false, nil
+					}
+					pos++
+					if _, err := readULEB32(raw, &pos); err != nil {
+						return false, nil
+					}
+				default:
+					return false, nil
+				}
+			}
+		}
+		if pos != len(raw) {
+			return false, nil
+		}
+	}
+	if count == 0 || uint64(len(names)) != count {
+		return false, nil
+	}
+	for index, name := range names {
+		if uint64(index) >= count || name == "" {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func skipNameCoverageLimits(raw []byte, pos *int) bool {
+	flags, err := readULEB32(raw, pos)
+	// New memory/table encodings need a reader update before proving coverage.
+	if err != nil || flags & ^uint32(3) != 0 {
+		return false
+	}
+	if _, err := readULEB32(raw, pos); err != nil {
+		return false
+	}
+	if flags&1 != 0 {
+		if _, err := readULEB32(raw, pos); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func simpleWasmValueType(typ byte) bool {
+	return typ >= 0x7b && typ <= 0x7f || typ == 0x70 || typ == 0x6f
+}
