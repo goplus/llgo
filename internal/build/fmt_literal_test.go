@@ -88,7 +88,7 @@ func TestSpecializeLiteralFormats(t *testing.T) {
 		recordPackageSSAInstructions(&context{progSSA: pkg.Prog,
 			buildConf: &Config{Goarch: "wasm", OptLevel: optlevel.O2}})
 		for name, want := range map[string]string{
-			"literal": "llgoPrintfLiteral", "writer": "llgoFprintfLiteral", "sprint": "llgoSprintfLiteral",
+			"literal": "llgoPrintfLiteral", "writer": "Fprintf", "sprint": "llgoSprintfLiteral",
 			"nilSpread": "llgoPrintfLiteral", "deferred": "llgoPrintfLiteral", "goroutine": "llgoPrintfLiteral",
 			"dynamic": "Printf", "argument": "Printf", "missing": "Printf", "spread": "Printf", "other": "Sprint",
 		} {
@@ -154,12 +154,16 @@ func TestSpecializeLiteralFormatsTargetPolicy(t *testing.T) {
 	}
 }
 
-func TestNativeLiteralWriterFrames(t *testing.T) {
-	pkg := literalFormatProgram(t, true)
-	recordPackageSSAInstructions(&context{progSSA: pkg.Prog,
-		buildConf: &Config{Goarch: "amd64", OptLevel: optlevel.O2}})
-	call := pkg.Func("writer").Blocks[0].Instrs[0].(*ssa.Call)
-	if got := call.Common().StaticCallee().Name(); got != "Fprintf" {
-		t.Fatalf("native Writer must retain Fprintf for caller inspection, got %s", got)
+func TestLiteralWriterFrames(t *testing.T) {
+	for _, arch := range []string{"amd64", "wasm"} {
+		for _, opt := range []optlevel.Level{optlevel.O2, optlevel.Oz} {
+			pkg := literalFormatProgram(t, true)
+			recordPackageSSAInstructions(&context{progSSA: pkg.Prog,
+				buildConf: &Config{Goarch: arch, OptLevel: opt}})
+			call := pkg.Func("writer").Blocks[0].Instrs[0].(*ssa.Call)
+			if got := call.Common().StaticCallee().Name(); got != "Fprintf" {
+				t.Fatalf("%s %v: Writer must retain Fprintf for caller inspection, got %s", arch, opt, got)
+			}
+		}
 	}
 }

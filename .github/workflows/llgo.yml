@@ -1127,6 +1127,8 @@ jobs:
           for target in wasi emscripten emscripten-memory64; do
             "$LLGO" test -target "$target" -emulator -v -count=1 -timeout=2m \
               -run '^TestLiteral' ./test/std/fmt
+            "$LLGO" run -target "$target" -emulator -O2 \
+              ./internal/build/testdata/wasm-fmt-literal-callers
             "$LLGO" run -target "$target" -emulator -tags=llgo.wasm.debugger \
               ./internal/build/testdata/wasm-fmt-literal-debugger
           done

@@ -4195,7 +4195,7 @@ func recordPackageSSAInstructions(ctx *context) {
 		for _, block := range fn.Blocks {
 			if literalFormats {
 				for _, instruction := range block.Instrs {
-					specializeLiteralFormat(instruction, ctx.buildConf.Goarch == "wasm")
+					specializeLiteralFormat(instruction)
 				}
 			}
 			if fn.Pkg == nil {

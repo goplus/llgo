@@ -16,7 +16,7 @@ func canSpecializeLiteralFormats(ctx *context) bool {
 
 // Rewrite during the instruction-counting pass, before reachability analysis,
 // so a literal write need not retain the general formatter and reflection.
-func specializeLiteralFormat(instruction ssa.Instruction, allowWriter bool) {
+func specializeLiteralFormat(instruction ssa.Instruction) {
 	call, ok := instruction.(ssa.CallInstruction)
 	if !ok {
 		return
@@ -26,27 +26,21 @@ func specializeLiteralFormat(instruction ssa.Instruction, allowWriter bool) {
 	if callee == nil || callee.Pkg == nil || callee.Pkg.Pkg.Path() != "fmt" {
 		return
 	}
-	formatIndex := 0
+	// An arbitrary Writer can inspect native or Wasm logical callers. Keep
+	// Fprintf until a helper can preserve its original frame identity.
 	switch callee.Name() {
 	case "Printf", "Sprintf":
-	case "Fprintf":
-		// An arbitrary native Writer can inspect its callers. Keep Fprintf
-		// until specialized helpers can preserve that logical frame identity.
-		if !allowWriter {
-			return
-		}
-		formatIndex = 1
 	default:
 		return
 	}
-	if len(common.Args) != formatIndex+2 {
+	if len(common.Args) != 2 {
 		return
 	}
-	args, ok := common.Args[formatIndex+1].(*ssa.Const)
+	args, ok := common.Args[1].(*ssa.Const)
 	if !ok || !args.IsNil() {
 		return
 	}
-	format, ok := common.Args[formatIndex].(*ssa.Const)
+	format, ok := common.Args[0].(*ssa.Const)
 	if !ok || format.Value == nil || format.Value.Kind() != constant.String {
 		return
 	}
@@ -59,8 +53,8 @@ func specializeLiteralFormat(instruction ssa.Instruction, allowWriter bool) {
 		return
 	}
 	common.Value = helper
-	common.Args = common.Args[:formatIndex+1]
-	common.Args[formatIndex] = ssa.NewConst(constant.MakeString(text), format.Type())
+	common.Args = common.Args[:1]
+	common.Args[0] = ssa.NewConst(constant.MakeString(text), format.Type())
 }
 
 // Only %% is interpreted here. Verbs, indexes, width/precision and malformed
