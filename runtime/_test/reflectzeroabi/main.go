@@ -8,10 +8,23 @@ import (
 
 type marker struct{}
 type emptyArray [0]byte
+type emptyReceiver struct{}
 type receiver struct{ bias int }
+
+type mixer interface {
+	Mix(marker, int, emptyArray, int, marker) int
+}
 
 func (r receiver) Mix(_ marker, a int, _ emptyArray, b int, _ marker) int {
 	return r.bias + 10*a + b
+}
+
+func (emptyReceiver) Mix(_ marker, a int, _ emptyArray, b int, _ marker) int {
+	return 10*a + b
+}
+
+func (emptyArray) Mix(_ marker, a int, _ emptyArray, b int, _ marker) int {
+	return 10*a + b
 }
 
 func require(ok bool, message string) {
@@ -84,8 +97,31 @@ func checkMakeFunc() {
 	require(first == 40 && second == 41, "multiple-result MakeFunc shifted arguments")
 }
 
+func checkEmptyReceiver() {
+	args := []reflect.Value{reflect.ValueOf(marker{}), reflect.ValueOf(4), reflect.ValueOf(emptyArray{}), reflect.ValueOf(1), reflect.ValueOf(marker{})}
+	for _, value := range []mixer{emptyReceiver{}, emptyArray{}} {
+		// Reflective methods call an interface wrapper with a receiver pointer,
+		// even when the source receiver itself has no storage.
+		for _, reflected := range []reflect.Value{reflect.ValueOf(value), reflect.ValueOf(&value).Elem()} {
+			method := reflected.MethodByName("Mix")
+			require(method.Call(args)[0].Int() == 41, "empty receiver method Call shifted arguments")
+			bound := method.Interface().(func(marker, int, emptyArray, int, marker) int)
+			runtime.GC()
+			require(bound(marker{}, 4, emptyArray{}, 1, marker{}) == 41, "empty receiver method Interface shifted arguments")
+		}
+	}
+
+	// A method expression instead exposes the empty receiver as an ordinary
+	// source argument. It must use the zero-sized-argument mapping.
+	expressionArgs := append([]reflect.Value{reflect.ValueOf(emptyReceiver{})}, args...)
+	require(reflect.ValueOf(emptyReceiver.Mix).Call(expressionArgs)[0].Int() == 41, "empty receiver method expression shifted arguments")
+	arrayExpressionArgs := append([]reflect.Value{reflect.ValueOf(emptyArray{})}, args...)
+	require(reflect.ValueOf(emptyArray.Mix).Call(arrayExpressionArgs)[0].Int() == 41, "empty array receiver method expression shifted arguments")
+}
+
 func main() {
 	checkCall()
 	checkMakeFunc()
+	checkEmptyReceiver()
 	fmt.Println("reflect zero-sized argument ABI verified")
 }
