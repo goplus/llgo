@@ -70,19 +70,34 @@ var choice = low.RuntimeSymbol(name, "One", "Two")
 }
 
 func TestRuntimeAuditForwarderMustBeTransparent(t *testing.T) {
-	for _, body := range []string{
-		`return p.rtFunc(name)`,
-		`name = change(name); return p.rtFunc(name)`,
-		`return p.rtFunc(change(name))`,
+	for _, tc := range []struct {
+		method, body string
+		transparent  bool
+	}{
+		{"RuntimeFunc", `return p.rtFunc(name)`, true},
+		{"RuntimeFunc", `name = change(name); return p.rtFunc(name)`, false},
+		{"RuntimeFunc", `return p.rtFunc(change(name))`, false},
+		{"RuntimeFunc", `p.rtFunc(name)`, false},
+		{"RuntimeFunc", `return cached`, false},
+		{"RuntimeFunc", `return rtFunc(name)`, false},
+		{"RuntimeFunc", `return p.rtFunc(name, extra)`, false},
+		{"RuntimeFunc", `return other.rtFunc(name)`, false},
+		{"rtType", `return p.rawType(p.rtNamed(name))`, true},
+		{"rtType", `return p.changedType(p.rtNamed(name))`, false},
+		{"rtType", `return p.rawType(name)`, false},
 	} {
+		receiver := "Package"
+		if tc.method == "rtType" {
+			receiver = "Program"
+		}
 		file, err := parser.ParseFile(token.NewFileSet(), "package.go",
-			"package ssa\nfunc (p Package) RuntimeFunc(name string) Expr {"+body+"}", 0)
+			"package ssa\nfunc (p "+receiver+") "+tc.method+"(name string) Expr {"+tc.body+"}", 0)
 		if err != nil {
 			t.Fatal(err)
 		}
 		got := runtimeAuditForwarders("ssa", "package.go", file)
-		if (len(got) == 1) != (body == `return p.rtFunc(name)`) {
-			t.Fatalf("incorrect forwarding classification for %s: %v", body, got)
+		if (len(got) == 1) != tc.transparent {
+			t.Fatalf("incorrect forwarding classification for %s %s: %v", tc.method, tc.body, got)
 		}
 	}
 }

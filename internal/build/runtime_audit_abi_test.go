@@ -9,18 +9,25 @@ import (
 	"github.com/xgo-dev/llgo/internal/env"
 )
 
-func TestRuntimeMetadataRejectsNewDependency(t *testing.T) {
+func TestRuntimeMetadataRejectsInvalidBoundary(t *testing.T) {
 	src, err := os.ReadFile(filepath.Join(env.LLGoRuntimeDir(), "abi/type.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	src = []byte(strings.Replace(string(src), "type Type struct {", "type Type struct {\n Future FutureMetadata", 1))
-	path := filepath.Join(t.TempDir(), "type.go")
-	if err := os.WriteFile(path, src, 0600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := runtimeMetadataType(path, "Type"); err == nil || !strings.Contains(err.Error(), "undefined: FutureMetadata") {
-		t.Fatalf("unreviewed descriptor dependency: %v", err)
+	for _, tc := range []struct{ name, source, want string }{
+		{"new-dependency", strings.Replace(string(src), "type Type struct {", "type Type struct {\n Future FutureMetadata", 1), "undefined: FutureMetadata"},
+		{"malformed-source", "package abi\nfunc (", "expected"},
+		{"non-struct-descriptor", "package abi\nimport \"unsafe\"\ntype Type unsafe.Pointer", "Type is not a struct"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "type.go")
+			if err := os.WriteFile(path, []byte(tc.source), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := runtimeMetadataType(path, "Type"); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("invalid metadata error = %v, want %s", err, tc.want)
+			}
+		})
 	}
 }
 

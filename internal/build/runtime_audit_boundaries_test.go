@@ -54,3 +54,39 @@ func TestRuntimeNativeOwnersAreUnique(t *testing.T) {
 		}
 	}
 }
+
+func TestRuntimeAuditRejectsBrokenProviders(t *testing.T) {
+	for _, tc := range []struct{ name, target, source, want string }{
+		{"missing-native-source", "C.llgo_debugtrap", "", "debugtrap.c"},
+		{"malformed-go-source", "provider.Hook", "package provider\nfunc (", "expected"},
+		{"conflicting-go-linknames", "provider.Hook", "package provider\nimport _ \"unsafe\"\n//go:linkname Hook one\n//go:linkname Hook two\nfunc Hook() {}", "conflicting linkname"},
+		{"bodyless-go-provider", "provider.Hook", "package provider\nfunc Hook()", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := runtimeAuditFixture(t)
+			if tc.source != "" {
+				dir := filepath.Join(a.goroot, "src/provider")
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "provider.go"), []byte(tc.source), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			report := RuntimeOwnership{Symbols: []RuntimeSymbol{{
+				Name: "runtime.hook", Linkname: tc.target, Owner: "external-boundary",
+			}}}
+			err := a.externalBoundaries(&report)
+			if tc.want != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.want) {
+					t.Fatalf("error = %v, want %s", err, tc.want)
+				}
+			} else if err != nil || len(report.UnresolvedBoundaries) != 1 || report.UnresolvedBoundaries[0].Symbol != tc.target {
+				t.Fatalf("bodyless provider was not rejected: %v, %+v", err, report.UnresolvedBoundaries)
+			}
+			if len(report.ExternalBoundaries) != 0 {
+				t.Fatalf("qualified a broken provider: %+v", report.ExternalBoundaries)
+			}
+		})
+	}
+}

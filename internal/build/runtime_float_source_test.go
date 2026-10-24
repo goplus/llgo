@@ -39,3 +39,26 @@ func TestRuntimeFloatingSourceRejectsDependencies(t *testing.T) {
 		})
 	}
 }
+
+func TestRuntimeFloatingSourceMissingInputs(t *testing.T) {
+	for _, tc := range []struct {
+		name, source, want string
+		err                error
+	}{
+		{"missing-file", "", "reuse GOROOT runtime/complex.go", os.ErrNotExist},
+		{"malformed-file", "package runtime\nfunc (", "expected", nil},
+		{"removed-helpers", "package runtime\n", "missing helpers", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			read := func(path string) ([]byte, error) {
+				if filepath.Base(path) == "complex.go" {
+					return []byte(tc.source), tc.err
+				}
+				return os.ReadFile(path)
+			}
+			if _, err := runtimeFloatingPointSources(read, runtime.GOROOT()); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %s", err, tc.want)
+			}
+		})
+	}
+}
