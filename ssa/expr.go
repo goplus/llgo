@@ -812,7 +812,7 @@ func (b Builder) StructBinOp(op token.Token, x, y, xaddr, yaddr Expr) Expr {
 	tret := prog.Bool()
 	typ := x.raw.Type.Underlying().(*types.Struct)
 	size := uint64(prog.abi.Size(typ))
-	regular := prog.abi.IsRegularMemory(typ)
+	regular := prog.IsRegularMemory(x.raw.Type)
 	if !regular || CanInlineStructEqual(typ, size, prog.GoWordSize()) {
 		ret := prog.BoolVal(true)
 		for i, n := 0, typ.NumFields(); i < n; i++ {
@@ -941,7 +941,7 @@ func (b Builder) callArrayEqual(x, y, xaddr, yaddr Expr, t *types.Array) Expr {
 		yaddr = b.PtrCast(prog.VoidPtr(), yaddr)
 	}
 	var ret Expr
-	if prog.abi.IsRegularMemory(t) {
+	if prog.IsRegularMemory(x.raw.Type) {
 		ret = b.Call(b.Pkg.rtFunc("memequal"), xaddr, yaddr, prog.IntVal(prog.SizeOf(x.Type), prog.Uintptr()))
 	} else {
 		equal := b.Pkg.rtEnvFunc("arrayequal")

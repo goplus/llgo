@@ -239,7 +239,29 @@ func (p Program) PointerSize() int {
 
 // IsRegularMemory reports whether values of typ may be compared bytewise.
 func (p Program) IsRegularMemory(typ types.Type) bool {
-	return p.abi.IsRegularMemory(typ)
+	if !p.abi.IsRegularMemory(typ) {
+		return false
+	}
+	storage := p.nativeMetadataType(typ)
+	if storage == nil {
+		return true
+	}
+	switch value := typ.Underlying().(type) {
+	case *types.Array:
+		return value.Len() == 0 || p.IsRegularMemory(value.Elem())
+	case *types.Struct:
+		var covered uint64
+		for i := 0; i < value.NumFields(); i++ {
+			if p.OffsetOf(storage, i) != covered || !p.IsRegularMemory(value.Field(i).Type()) {
+				return false
+			}
+			covered += p.SizeOf(p.Field(storage, i))
+		}
+		// Native padding is not a value field, even when Go's layout has
+		// no gap, e.g. {int32; uint64} on Windows/386.
+		return covered == p.SizeOf(storage)
+	}
+	return true
 }
 
 func (p Program) Slice(typ Type) Type {
