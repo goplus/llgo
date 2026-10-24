@@ -6,7 +6,7 @@ require (
 	github.com/coder/websocket v1.8.15
 	github.com/goplus/cobra v1.9.12 //xgo:class
 	github.com/goplus/gogen v1.24.8
-	github.com/goplus/lib v0.6.3
+	github.com/goplus/lib v0.7.0
 	github.com/goplus/mod v0.22.1
 	github.com/mattn/go-tty v0.0.8
 	github.com/qiniu/x v1.19.3
@@ -30,6 +30,3 @@ replace github.com/xgo-dev/llgo/runtime => ./runtime
 
 // v0.51.0 plus the generic-method wrapper fix; remove when upstream includes it.
 replace golang.org/x/tools => github.com/xgo-dev/tools v0.51.1
-
-// Explicit native variable bindings from goplus/lib#53; remove after its release.
-replace github.com/goplus/lib => github.com/cpunion/lib v0.0.0-20261021003434-95e56e9fa51c
