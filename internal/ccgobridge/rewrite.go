@@ -113,7 +113,7 @@ func Rewrite(fset *token.FileSet, pkg *types.Package, info *types.Info, files []
 		file := sites[0].file
 		unsafeName := unsafeImport(fset, file)
 		syncName := packageImport(fset, file, "sync", "sync")
-		helper, err := parser.ParseFile(token.NewFileSet(), "static.go", fmt.Sprintf(`package bridge
+		helper, err := parser.ParseFile(fset, "ccgo-static.go", fmt.Sprintf(`package bridge
 type __llgo_ccgo_staticBox[T any] struct {
 	once %s.Once
 	fn T
@@ -163,9 +163,14 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 	}
 	stats.StaticBoxes = len(boxes)
 
+	var importFile *ast.File
 	for _, file := range files {
-		ast.Inspect(file, func(node ast.Node) bool {
-			call, ok := node.(*ast.CallExpr)
+		astutil.Apply(file, nil, func(cursor *astutil.Cursor) bool {
+			load, ok := cursor.Node().(*ast.StarExpr)
+			if !ok {
+				return true
+			}
+			call, ok := unparen(load.X).(*ast.CallExpr)
 			if !ok || len(call.Args) != 1 {
 				return true
 			}
@@ -174,6 +179,10 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 				return true
 			}
 			if _, ok := ptr.Elem().Underlying().(*types.Signature); !ok {
+				return true
+			}
+			pointerType, ok := unparen(call.Fun).(*ast.StarExpr)
+			if !ok {
 				return true
 			}
 			cast, ok := unparen(call.Args[0]).(*ast.CallExpr)
@@ -195,12 +204,41 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 			if !types.Identical(info.TypeOf(box.Elts[0]), types.Typ[types.Uintptr]) {
 				return true
 			}
-			// gc's one-word function descriptor is replaced by a pointer to
-			// the complete function value, not by a raw code pointer.
-			cast.Args[0] = box.Elts[0]
+			// Read the complete function value, not a native code pointer.
+			// A zero descriptor represents a nil function, not an address to read.
+			cursor.Replace(&ast.CallExpr{
+				Fun: &ast.IndexExpr{
+					X:      &ast.Ident{NamePos: load.Pos(), Name: "__llgo_ccgo_import"},
+					Lbrack: pointerType.X.Pos(),
+					Index:  pointerType.X,
+					Rbrack: pointerType.X.End(),
+				},
+				Lparen: call.Lparen,
+				Args:   []ast.Expr{box.Elts[0]},
+				Rparen: call.Rparen,
+			})
+			if importFile == nil {
+				importFile = file
+			}
 			stats.Imports++
 			return true
 		})
+	}
+	if importFile != nil {
+		unsafeName := unsafeImport(fset, importFile)
+		helper, err := parser.ParseFile(fset, "ccgo-import.go", fmt.Sprintf(`package bridge
+func __llgo_ccgo_import[T any](p uintptr) T {
+	if p == 0 {
+		var zero T
+		return zero
+	}
+	return *(*T)(%s.Pointer(p))
+}
+`, unsafeName), 0)
+		if err != nil {
+			return Stats{}, err
+		}
+		importFile.Decls = append(importFile.Decls, helper.Decls...)
 	}
 	return stats, nil
 }

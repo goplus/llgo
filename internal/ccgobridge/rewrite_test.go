@@ -2,14 +2,19 @@ package ccgobridge
 
 import (
 	"bytes"
+	"context"
 	"go/ast"
 	"go/format"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const exportHelper = `
@@ -74,7 +79,7 @@ func call(p uintptr) int {
 	}
 	if !strings.Contains(out, "var __llgo_ccgo_box_0 __llgo_ccgo_staticBox[func(n int) int]") ||
 		strings.Count(out, "__llgo_ccgo_export(&__llgo_ccgo_box_0, twice)") != 2 ||
-		!strings.Contains(out, "(*func(int) int)(unsafe.Pointer(p))") {
+		!strings.Contains(out, "__llgo_ccgo_import[func(int) int](p)") {
 		t.Fatalf("not a full typed box round trip:\n%s", out)
 	}
 }
@@ -144,8 +149,110 @@ func TestUnrelatedUnsafeConversionUnchanged(t *testing.T) {
 	out, stats, err := rewriteSource(t, `package fixture
 import "unsafe"
 func raw(p *uintptr) uintptr { return *(*uintptr)(unsafe.Pointer(p)) }
+func ordinary(p unsafe.Pointer) func() { return *(*func())(p) }
 `)
-	if err != nil || stats != (Stats{}) || !strings.Contains(out, "*(*uintptr)(unsafe.Pointer(p))") {
+	if err != nil || stats != (Stats{}) || !strings.Contains(out, "*(*uintptr)(unsafe.Pointer(p))") ||
+		!strings.Contains(out, "*(*func())(p)") {
 		t.Fatalf("ordinary unsafe changed: %+v, %v\n%s", stats, err, out)
+	}
+}
+
+func TestConsumerNilRuntime(t *testing.T) {
+	source := `package main
+import "unsafe"
+
+// A zero CCGo descriptor must decode to a nil function without dereferencing it.
+func decode(p uintptr) func() {
+	return *(*func())(unsafe.Pointer(&struct{ uintptr }{p}))
+}
+
+func main() {
+	if decode(0) != nil {
+		panic("zero descriptor is not nil")
+	}
+}
+`
+	t.Run("original", func(t *testing.T) { runRewrittenSource(t, source) })
+	t.Run("adapted", func(t *testing.T) {
+		adapted, stats, err := rewriteSource(t, source)
+		if err != nil || stats.Imports != 1 {
+			t.Fatalf("nil consumer: %+v, %v", stats, err)
+		}
+		if !strings.Contains(adapted, "// A zero CCGo descriptor must decode to a nil function without dereferencing it.\nfunc decode") {
+			t.Fatalf("consumer comment lost or detached:\n%s", adapted)
+		}
+		runRewrittenSource(t, adapted)
+	})
+}
+
+func TestConsumerRuntimePreservesTypedValues(t *testing.T) {
+	source := `package main
+import "unsafe"
+` + exportHelper + `
+
+type callback func(int, ...int) (int, bool)
+
+// sum is shared by ordinary Go and adapted callbacks.
+func sum(first int, rest ...int) (int, bool) {
+	for _, n := range rest {
+		first += n
+	}
+	return first, true
+}
+
+var reads int
+
+func descriptor(p uintptr) uintptr {
+	reads++
+	return p
+}
+
+func decode(p uintptr) callback {
+	return *(*callback)(unsafe.Pointer(&struct{ uintptr }{
+		// Evaluate the descriptor exactly once.
+		descriptor(p),
+	}))
+}
+
+func main() {
+	if decode(0) != nil || reads != 1 {
+		panic("nil typed callback or evaluation count")
+	}
+	p := __ccgo_fp(sum)
+	fn := decode(p)
+	if n, ok := fn(20, 10, 12); !ok || n != 42 || reads != 2 {
+		panic("typed variadic callback")
+	}
+	if p != __ccgo_fp(sum) {
+		panic("static callback identity")
+	}
+}
+`
+	t.Run("original", func(t *testing.T) { runRewrittenSource(t, source) })
+	t.Run("adapted", func(t *testing.T) {
+		adapted, stats, err := rewriteSource(t, source)
+		if err != nil || stats.Imports != 1 || stats.Exports != 2 || stats.StaticBoxes != 1 {
+			t.Fatalf("typed consumer: %+v, %v", stats, err)
+		}
+		if !strings.Contains(adapted, "// sum is shared by ordinary Go and adapted callbacks.\nfunc sum") ||
+			strings.Count(adapted, "// Evaluate the descriptor exactly once.") != 1 {
+			t.Fatalf("comments lost or detached:\n%s", adapted)
+		}
+		runRewrittenSource(t, adapted)
+	})
+}
+
+func runRewrittenSource(t *testing.T, source string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "main.go")
+	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, "go", "run", path)
+	command.WaitDelay = 5 * time.Second
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("run function-box consumer: %v\n%s", err, output)
 	}
 }
