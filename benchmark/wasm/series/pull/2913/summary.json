@@ -11,8 +11,8 @@
         "sha": "ed6fbb30d292c0c32855270b04e00d04e012749f",
         "ref": "main",
         "url": "https://github.com/xgo-dev/llgo/commit/ed6fbb30d292c0c32855270b04e00d04e012749f",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40071293189",
-        "timestamp": "2026-10-24T06:42:57Z"
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40092826329",
+        "timestamp": "2026-10-24T12:10:17Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -24,8 +24,8 @@
             "sha": "ed6fbb30d292c0c32855270b04e00d04e012749f",
             "ref": "main",
             "url": "https://github.com/xgo-dev/llgo/commit/ed6fbb30d292c0c32855270b04e00d04e012749f",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40071293189",
-            "timestamp": "2026-10-24T06:42:57Z"
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40092826329",
+            "timestamp": "2026-10-24T12:10:17Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 9054984334
+                    "build-ns": 7832356354
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 9054984334
+                "build-ns": 7832356354
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 9073829691
+                    "build-ns": 7728746930
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 9073829691
+                "build-ns": 7728746930
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7936002499
+                    "build-ns": 7074807267
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7936002499
+                "build-ns": 7074807267
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 26965032383
+                    "build-ns": 24522134094
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 26965032383
+                "build-ns": 24522134094
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5950994191
+                    "build-ns": 5100501881
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5950994191
+                "build-ns": 5100501881
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5519678729
+                    "build-ns": 4536397791
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5519678729
+                "build-ns": 4536397791
               }
             },
             {
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "xgo-dev/llgo",
-        "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+        "sha": "964826272169a6e2f11fc10594a8be2db4a7002d",
         "ref": "codex/darwin-sdk-fallback-20261024",
-        "url": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40071293189",
-        "timestamp": "2026-10-24T06:42:57Z"
+        "url": "https://github.com/xgo-dev/llgo/commit/964826272169a6e2f11fc10594a8be2db4a7002d",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40092826329",
+        "timestamp": "2026-10-24T12:10:17Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "xgo-dev/llgo",
-            "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
+            "sha": "964826272169a6e2f11fc10594a8be2db4a7002d",
             "ref": "codex/darwin-sdk-fallback-20261024",
-            "url": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40071293189",
-            "timestamp": "2026-10-24T06:42:57Z"
+            "url": "https://github.com/xgo-dev/llgo/commit/964826272169a6e2f11fc10594a8be2db4a7002d",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40092826329",
+            "timestamp": "2026-10-24T12:10:17Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8263054972
+                    "build-ns": 8614870718
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8263054972
+                "build-ns": 8614870718
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 8098795852
+                    "build-ns": 7483328329
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 8098795852
+                "build-ns": 7483328329
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7567714947
+                    "build-ns": 7028161723
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7567714947
+                "build-ns": 7028161723
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 26346130425
+                    "build-ns": 26424057494
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 26346130425
+                "build-ns": 26424057494
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5306911637
+                    "build-ns": 4909686030
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5306911637
+                "build-ns": 4909686030
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 5484229966
+                    "build-ns": 4913917863
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 5484229966
+                "build-ns": 4913917863
               }
             },
             {

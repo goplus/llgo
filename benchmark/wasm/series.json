@@ -95,10 +95,10 @@
       "label": "Branch codex/darwin-sdk-fallback-20261024",
       "path": "series/branch/70844bd46b0ab683/summary.json",
       "configPath": "series/branch/70844bd46b0ab683/config.json",
-      "commitPath": "commits/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a.json",
-      "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-      "updatedAt": "2026-10-24T07:17:27.952Z"
+      "commitPath": "commits/964826272169a6e2f11fc10594a8be2db4a7002d.json",
+      "sha": "964826272169a6e2f11fc10594a8be2db4a7002d",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/964826272169a6e2f11fc10594a8be2db4a7002d",
+      "updatedAt": "2026-10-24T13:29:28.400Z"
     },
     {
       "kind": "branch",
@@ -6200,10 +6200,10 @@
       "label": "PR #2913",
       "path": "series/pull/2913/summary.json",
       "configPath": "series/pull/2913/config.json",
-      "commitPath": "commits/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a.json",
-      "sha": "5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/5abb5c74207edd0a8e4c57e6b38becbb66c38a6a",
-      "updatedAt": "2026-10-24T07:17:27.877Z"
+      "commitPath": "commits/964826272169a6e2f11fc10594a8be2db4a7002d.json",
+      "sha": "964826272169a6e2f11fc10594a8be2db4a7002d",
+      "sourceUrl": "https://github.com/xgo-dev/llgo/commit/964826272169a6e2f11fc10594a8be2db4a7002d",
+      "updatedAt": "2026-10-24T13:29:28.237Z"
     }
   ]
 }
