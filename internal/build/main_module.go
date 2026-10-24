@@ -504,7 +504,7 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	// user program has no TLS/GLS declarations. Root that state on the host
 	// entry stack before runtime.init and keep it installed while logical Go
 	// stacks are dispatched by RunWasmMain.
-	hasLocalContext := prog.NeedsLocalContext() || fns.wasmRunMain != nil
+	hasLocalContext := !ctx.wasmRuntimeFree && (prog.NeedsLocalContext() || fns.wasmRunMain != nil)
 	if hasLocalContext {
 		localCtx, previousLocalCtx = b.EnterLocalContext()
 	}
