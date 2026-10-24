@@ -11,8 +11,8 @@
         "sha": "7723e3025b520562ea61eda481b8afa61c58b100",
         "ref": "main",
         "url": "https://github.com/xgo-dev/llgo/commit/7723e3025b520562ea61eda481b8afa61c58b100",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40044463013",
-        "timestamp": "2026-10-24T00:20:13Z"
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40051676137",
+        "timestamp": "2026-10-24T01:51:32Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -24,8 +24,8 @@
             "sha": "7723e3025b520562ea61eda481b8afa61c58b100",
             "ref": "main",
             "url": "https://github.com/xgo-dev/llgo/commit/7723e3025b520562ea61eda481b8afa61c58b100",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40044463013",
-            "timestamp": "2026-10-24T00:20:13Z"
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40051676137",
+            "timestamp": "2026-10-24T01:51:32Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -56,12 +56,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7874225546
+                    "build-ns": 10727410307
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7874225546
+                "build-ns": 10727410307
               }
             },
             {
@@ -73,12 +73,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7415090306
+                    "build-ns": 9717661215
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7415090306
+                "build-ns": 9717661215
               }
             },
             {
@@ -90,12 +90,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6704088463
+                    "build-ns": 8537031514
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6704088463
+                "build-ns": 8537031514
               }
             },
             {
@@ -107,12 +107,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 24107017060
+                    "build-ns": 27985690086
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 24107017060
+                "build-ns": 27985690086
               }
             },
             {
@@ -124,12 +124,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4742913147
+                    "build-ns": 6476548828
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4742913147
+                "build-ns": 6476548828
               }
             },
             {
@@ -141,12 +141,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4538949868
+                    "build-ns": 5721294298
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4538949868
+                "build-ns": 5721294298
               }
             },
             {
@@ -650,11 +650,11 @@
     {
       "source": {
         "repository": "cpunion/llgo",
-        "sha": "2f0fe3f00db49ab95b0990dd414d69e57147c5b2",
+        "sha": "eb336f0fd3ceb8e0f2f64033730ce81d5105c8ed",
         "ref": "codex/fix-issue2691-struct-asm-20260929",
-        "url": "https://github.com/cpunion/llgo/commit/2f0fe3f00db49ab95b0990dd414d69e57147c5b2",
-        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40044463013",
-        "timestamp": "2026-10-24T00:20:13Z"
+        "url": "https://github.com/cpunion/llgo/commit/eb336f0fd3ceb8e0f2f64033730ce81d5105c8ed",
+        "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40051676137",
+        "timestamp": "2026-10-24T01:51:32Z"
       },
       "platforms": {
         "wasm-linux": {
@@ -663,11 +663,11 @@
           "shardId": "merged",
           "source": {
             "repository": "cpunion/llgo",
-            "sha": "2f0fe3f00db49ab95b0990dd414d69e57147c5b2",
+            "sha": "eb336f0fd3ceb8e0f2f64033730ce81d5105c8ed",
             "ref": "codex/fix-issue2691-struct-asm-20260929",
-            "url": "https://github.com/cpunion/llgo/commit/2f0fe3f00db49ab95b0990dd414d69e57147c5b2",
-            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40044463013",
-            "timestamp": "2026-10-24T00:20:13Z"
+            "url": "https://github.com/cpunion/llgo/commit/eb336f0fd3ceb8e0f2f64033730ce81d5105c8ed",
+            "runUrl": "https://github.com/xgo-dev/llgo/actions/runs/40051676137",
+            "timestamp": "2026-10-24T01:51:32Z"
           },
           "platform": {
             "id": "wasm-linux",
@@ -698,12 +698,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7800563469
+                    "build-ns": 8709807058
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7800563469
+                "build-ns": 8709807058
               }
             },
             {
@@ -715,12 +715,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 7560435414
+                    "build-ns": 8408094359
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 7560435414
+                "build-ns": 8408094359
               }
             },
             {
@@ -732,12 +732,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 6847609105
+                    "build-ns": 7912772696
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 6847609105
+                "build-ns": 7912772696
               }
             },
             {
@@ -749,12 +749,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 24448670216
+                    "build-ns": 29092792621
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 24448670216
+                "build-ns": 29092792621
               }
             },
             {
@@ -766,12 +766,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4809338005
+                    "build-ns": 5540408737
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4809338005
+                "build-ns": 5540408737
               }
             },
             {
@@ -783,12 +783,12 @@
                 {
                   "iterations": 1,
                   "measurements": {
-                    "build-ns": 4566923177
+                    "build-ns": 5411119464
                   }
                 }
               ],
               "measurements": {
-                "build-ns": 4566923177
+                "build-ns": 5411119464
               }
             },
             {
