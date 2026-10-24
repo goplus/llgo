@@ -608,11 +608,6 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
-	if needsExternalDarwinLLD(runtime.GOOS, runtime.GOARCH, conf) {
-		if err := configureDarwinLLD(commands, &export); err != nil {
-			return nil, err
-		}
-	}
 	// Update GOOS/GOARCH from export if target was used
 	if conf.Target != "" && export.GOOS != "" {
 		conf.Goos = export.GOOS

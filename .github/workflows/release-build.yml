@@ -490,11 +490,6 @@ jobs:
             goos: darwin
             goarch: arm64
             go-mod-version: "1.27"
-          - os: xcode-27
-            goos: darwin
-            goarch: arm64
-            go-mod-version: "1.27"
-            require-sdk27: true
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
@@ -552,28 +547,6 @@ jobs:
 
       - name: Test native assembly shared-library calls
         run: bash dev/test_native_asm.sh
-
-      - name: Test external LLD 23 with LLVM 22 output
-        if: matrix.goos == 'darwin' && matrix.goarch == 'arm64'
-        env:
-          REQUIRE_SDK27: ${{ matrix.require-sdk27 && '1' || '0' }}
-        run: |
-          set -euo pipefail
-          linker="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/lld@23/bin/ld64.lld"
-          "$linker" --version
-          sdk_version=$(xcrun --sdk macosx --show-sdk-version)
-          echo "Testing external LLD with SDK $sdk_version"
-          if [[ "$REQUIRE_SDK27" == 1 ]]; then
-            [[ "$sdk_version" == 27* ]]
-          fi
-          for mode in native thin full; do
-            flags=(-x)
-            if [[ "$mode" != native ]]; then flags+=("-lto=$mode"); fi
-            output="$RUNNER_TEMP/llgo-lld-$mode"
-            (cd _demo/c && llgo build "${flags[@]}" -o "$output" ./hello) 2>&1 | tee "$output.log"
-            grep -F -- "-fuse-ld=$linker" "$output.log"
-            "$output"
-          done
 
   test-linux-distributions:
     if: needs.prepare.outputs.run_code_ci == 'true'
