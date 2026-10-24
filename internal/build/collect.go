@@ -166,6 +166,9 @@ func (c *context) collectCommonInputs(m *manifestBuilder) {
 	m.common.CRTVersion = c.crossCompile.Toolchain.CRTVersion
 	m.common.ToolsetVersion = c.crossCompile.Toolchain.ToolsetVersion
 	m.common.GoGlobalDCE = c.buildConf.goGlobalDCEEnabled()
+	// Original DCE inserts interface-visibility predicates into package IR.
+	// A non-DCE link cannot resolve those predicates from a cached archive.
+	m.common.DeadcodeDrop = c.buildConf.deadcodeDropEnabled()
 	m.common.EnableLTOPlugin = c.buildConf.LTOPlugin.Enabled()
 	m.common.EmitDWARF = shouldEmitDebugInfo(c.buildConf, &c.crossCompile)
 	m.common.EmitCodeView = shouldEmitCodeView(c.buildConf, &c.crossCompile)
