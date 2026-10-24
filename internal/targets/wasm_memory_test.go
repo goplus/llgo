@@ -25,7 +25,7 @@ func TestWASIMemoryConfig(t *testing.T) {
 		{"maximum overflow", `,"wasm-max-memory":4295032832`, "wasm-max-memory"},
 		{"stack alignment", `,"wasm-stack-size":17`, "wasm-stack-size"},
 		{"stack overflow", `,"wasm-stack-size":4294967296`, "wasm-stack-size"},
-		{"maximum too small", `,"wasm-max-memory":8388608`, "exceeds"},
+		{"inherited conflict deferred to linker", `,"wasm-max-memory":8388608`, ""},
 		{"negative", `,"wasm-initial-memory":-65536`, "cannot unmarshal"},
 		{"other profile", `,"wasm-profile":"j32","wasm-provider":"emscripten"`, "w32/wasi"},
 		{"other OS", `,"goos":"js"`, "w32/wasi"},
@@ -46,11 +46,14 @@ func TestWASIMemoryConfig(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			initial, stack := uint64(16<<20), uint64(10<<20)
+			initial, stack, maximum := uint64(16<<20), uint64(10<<20), uint64(512<<20)
 			if tc.name == "override" {
 				initial, stack = 8<<20, 1<<20
 			}
-			if cfg.WasmInitialMemory != initial || cfg.WasmMaxMemory != 512<<20 || cfg.WasmStackSize != stack {
+			if tc.name == "inherited conflict deferred to linker" {
+				maximum = 8 << 20
+			}
+			if cfg.WasmInitialMemory != initial || cfg.WasmMaxMemory != maximum || cfg.WasmStackSize != stack {
 				t.Fatalf("incorrect inherited memory settings: %+v", cfg)
 			}
 		})

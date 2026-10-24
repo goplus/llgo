@@ -112,6 +112,9 @@ def run_arena_boundaries(env, directory):
 
 
 def run_memory_config_probe(env, directory):
+    # Budget assertions require a known linker policy, including the negative
+    # case. Inherited flags or @response files must not override these targets.
+    probe_env = dict(env, CCFLAGS="", CFLAGS="", LDFLAGS="")
     # Reuse one target name to exercise a changed link policy with warm package
     # caches. The final module, including imported shared memory, is authoritative.
     with tempfile.NamedTemporaryFile(dir=ROOT / "targets", prefix="wasi-memory-",
@@ -125,9 +128,7 @@ def run_memory_config_probe(env, directory):
                 "wasm-max-memory": maximum, "wasm-stack-size": stack,
             }), encoding="utf-8")
             module = pathlib.Path(directory) / "memory-config.wasm"
-            build_env = dict(env)
-            build_env["LDFLAGS"] = (env.get("LDFLAGS", "")
-                                    + " -Wl,--export=__stack_low,--export=__stack_high")
+            build_env = dict(probe_env, LDFLAGS="-Wl,--export=__stack_low,--export=__stack_high")
             subprocess.run([
                 LLGO, "build", "-target", target.stem,
                 "-o", str(module), str(ROOT / "internal/build/testdata/wasm-wasi-thread-startup"),
@@ -162,12 +163,46 @@ def run_memory_config_probe(env, directory):
             LLGO, "build", "-target", target.stem,
             "-o", str(pathlib.Path(directory) / "too-small.wasm"),
             str(ROOT / "internal/build/testdata/wasm-wasi-thread-startup"),
-        ], env=env, capture_output=True, text=True, timeout=180)
+        ], env=probe_env, capture_output=True, text=True, timeout=180)
         if result.returncode == 0 or "initial memory too small" not in result.stderr:
             raise SystemExit(f"WASI accepted an insufficient initial-memory budget: {result}")
         print("wasi target memory rejects an insufficient initial budget", flush=True)
+        run_inherited_memory_overrides(probe_env, directory, target)
     finally:
         target.unlink()
+
+
+def run_inherited_memory_overrides(env, directory, parent):
+    parent.write_text(json.dumps({"inherits": ["wasi"], "wasm-initial-memory": 16 << 20,
+                                  "wasm-max-memory": 128 << 20, "wasm-stack-size": 1 << 20}), encoding="utf-8")
+    with tempfile.NamedTemporaryFile(dir=ROOT / "targets", prefix="wasi-memory-child-",
+                                     suffix=".json", delete=False) as file:
+        child = pathlib.Path(file.name)
+    try:
+        child.write_text(json.dumps({"inherits": [parent.stem], "wasm-max-memory": 8 << 20}), encoding="utf-8")
+        response = pathlib.Path(directory) / "memory.rsp"
+        response.write_text("-Wl,--initial-memory=8388608", encoding="utf-8")
+        for name, flags, success in (
+            ("conflict", "", False),
+            ("initial", "-Wl,--initial-memory=8388608", True),
+            ("heap", "-Wl,--initial-heap=1048576", True),
+            ("response", f'"@{response}"', True),
+        ):
+            module = pathlib.Path(directory) / f"memory-override-{name}.wasm"
+            result = subprocess.run([LLGO, "build", "-target", child.stem,
+                                     "-o", str(module), str(ROOT / "internal/build/testdata/wasm-wasi-thread-startup")],
+                                    env=dict(env, LDFLAGS=flags), capture_output=True, text=True, timeout=180)
+            if success:
+                if result.returncode != 0:
+                    raise SystemExit(f"inherited WASI budget override {name} rejected: {result}")
+                result = subprocess.run(wasmer_command(module), env=env, capture_output=True, text=True, timeout=30)
+                if result.returncode != 0 or "wasi thread startup ok" not in (result.stdout + result.stderr).splitlines():
+                    raise SystemExit(f"inherited WASI budget override {name} failed: {result}")
+            elif result.returncode == 0 or "maximum memory too small" not in result.stderr:
+                raise SystemExit(f"inherited WASI budget conflict did not reach wasm-ld: {result}")
+            print(f"wasi inherited memory override {name} ok", flush=True)
+    finally:
+        child.unlink()
 
 
 def main():

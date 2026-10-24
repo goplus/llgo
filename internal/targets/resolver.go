@@ -78,9 +78,8 @@ func (r *Resolver) validateConfig(config *Config) error {
 		if config.WasmStackSize >= 1<<32 || config.WasmStackSize%16 != 0 {
 			return fmt.Errorf("wasm-stack-size must be a multiple of 16 bytes and below 4 GiB")
 		}
-		if config.WasmInitialMemory != 0 && config.WasmMaxMemory != 0 && config.WasmInitialMemory > config.WasmMaxMemory {
-			return fmt.Errorf("wasm-initial-memory exceeds wasm-max-memory")
-		}
+		// Compare effective initial/maximum sizes in wasm-ld, after explicit
+		// linker flags and response files have overridden inherited defaults.
 	}
 
 	return nil

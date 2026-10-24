@@ -73,7 +73,8 @@ multiples of 64 KiB, at most 4 GiB. The process stack must be 16-byte aligned
 and smaller than 4 GiB. Omitted or zero fields inherit the parent's setting;
 otherwise the toolchain defaults apply. These fields are supported by W32 WASI
 targets only. The linker rejects budgets too small for the actual static data
-and process stack.
+and process stack. The initial/maximum comparison is also left to the linker,
+after explicit flags and response files can override inherited defaults.
 
 The initial size covers the whole linear memory, including static data and the
 process stack. Memory may grow up to the maximum; a small initial size does not
