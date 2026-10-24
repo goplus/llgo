@@ -832,15 +832,6 @@ runs:
           echo "linked ld.lld path: $(command -v ld.lld || true)"
         fi
         
-        # Native Darwin links use this separate absolute path. Keep the matching
-        # LLVM/LLD toolchain above on PATH for WASI and other cross-target links.
-        # Release-artifact jobs also need it when install-llvm=false.
-        if [[ "$RUNNER_ARCH" == ARM64 ]]; then
-          # Consumers may check out LLGo below their workspace root.
-          LLGO_INSTALLER_LIBRARY_ONLY=1 source "$GITHUB_ACTION_PATH/../../../install.sh"
-          install_macos_lld
-        fi
-
         # Install common dependencies
         brew_install_missing bdw-gc openssl libffi libuv
         brew link --overwrite libffi

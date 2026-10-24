@@ -116,27 +116,6 @@ jobs:
           set -euo pipefail
           go build -v ./...
 
-      - name: Validate WASI ThinLTO with the matching linker
-        if: runner.os == 'macOS' && runner.arch == 'ARM64'
-        shell: bash
-        run: |
-          set -euo pipefail
-          linker=$(clang --target=wasm32-wasip1-threads --print-prog-name=wasm-ld)
-          echo "WASI linker: $linker"
-          "$linker" --version | grep -E '(^|[[:space:]])${{ matrix.llvm }}\.'
-          probe=$(mktemp -d "$RUNNER_TEMP/llgo-wasi-lto.XXXXXX")
-          go build -o "$probe/llgo" ./cmd/llgo
-          cat > "$probe/probe_test.go" <<'EOF'
-          package linkertest
-          import "testing"
-          func TestSimple(t *testing.T) {
-              if 2+2 != 4 { t.Fatal("bad") }
-          }
-          EOF
-          cd "$probe"
-          go mod init linkertest
-          GOOS=wasip1 GOARCH=wasm CGO_ENABLED=0 ./llgo test -c -lto=thin -o test.wasm .
-
       - name: Validate Windows host-only integration
         if: runner.os == 'Windows'
         shell: bash
@@ -365,9 +344,9 @@ jobs:
   macos-lto-plugin:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    name: macOS LTO plugin (SDK 27, LLVM 22 / LLD 23)
+    name: macOS LTO plugin
     timeout-minutes: 45
-    runs-on: xcode-27
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -385,16 +364,12 @@ jobs:
       - name: Build LTO plugin
         run: |
           set -euo pipefail
-          llvm-config --version | grep -E '^22\.'
-          [[ "$(xcrun --sdk macosx --show-sdk-version)" == 27* ]]
-          plugin_llvm="$(brew --prefix llvm@23)"
           cmake -S ltoplugin -B ltoplugin/build \
-            -DLLVM_DIR="$plugin_llvm/lib/cmake/llvm" \
+            -DLLVM_DIR="$(llvm-config --cmakedir)" \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build ltoplugin/build --config Release
           test -f ltoplugin/build/LLGOLTOPlugin.dylib
           echo "LLGO_LTO_PLUGIN=$GITHUB_WORKSPACE/ltoplugin/build/LLGOLTOPlugin.dylib" >> "$GITHUB_ENV"
-          echo "LLGO_LTO_OPT=$plugin_llvm/bin/opt" >> "$GITHUB_ENV"
 
       - name: Test LTO plugin passes, runtime behavior, and retained symbols
         env:

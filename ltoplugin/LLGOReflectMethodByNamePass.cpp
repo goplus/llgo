@@ -1569,7 +1569,7 @@ void insertMethodNameChecks(CallBase *GenericLoad, ArrayRef<std::string> Names,
   for (const std::string &Name : Names) {
     std::string TypeID = (Prefix + Name).str();
     Value *MDVal = MetadataAsValue::get(Ctx, MDString::get(Ctx, TypeID));
-    Value *Checked = B.CreateIntrinsic(
+    CallInst *Checked = B.CreateIntrinsic(
         Intrinsic::type_checked_load, {},
         {GenericLoad->getArgOperand(0), GenericLoad->getArgOperand(1), MDVal});
     OKs.push_back(B.CreateExtractValue(Checked, {1}));
