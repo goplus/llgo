@@ -99,6 +99,12 @@ func staticExportSites(fset *token.FileSet, info *types.Info, files []*ast.File)
 				invalid = fmt.Errorf("%s: CCGo export requires a static function declaration, not a closure, method, or variable", fset.Position(call.Pos()))
 				return false
 			}
+			// An inferred instantiation can still be a plain identifier in the
+			// AST. Reject the generic declaration, not only indexed syntax.
+			if fn.Type().(*types.Signature).TypeParams().Len() != 0 {
+				invalid = fmt.Errorf("%s: CCGo export does not support generic function instantiations", fset.Position(call.Pos()))
+				return false
+			}
 			sites = append(sites, exportSite{call: call, file: file, fn: fn})
 			return true
 		})

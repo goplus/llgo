@@ -175,6 +175,64 @@ var p = __ccgo_fp(`+value+`)
 	}
 }
 
+func TestRejectInferredGenericStaticExportBeforeMutation(t *testing.T) {
+	for _, target := range []string{"func(int) int", "namedCallback", "aliasCallback"} {
+		t.Run(target, func(t *testing.T) {
+			source := `package fixture
+import "unsafe"
+type namedCallback func(int) int
+type aliasCallback = func(int) int
+func cFuncPointer[T any](f T) uintptr {
+	return *(*uintptr)(unsafe.Pointer(&struct{ f T }{f}))
+}
+func genericFn[T any](value T) T { return value }
+var p = cFuncPointer[` + target + `](genericFn)
+`
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "generic-export.go", source, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			info := &types.Info{
+				Types:     make(map[ast.Expr]types.TypeAndValue),
+				Defs:      make(map[*ast.Ident]types.Object),
+				Uses:      make(map[*ast.Ident]types.Object),
+				Instances: make(map[*ast.Ident]types.Instance),
+			}
+			pkg, err := (&types.Config{Importer: importer.Default()}).Check("fixture", fset, []*ast.File{file}, info)
+			if err != nil {
+				t.Fatalf("inferred generic function must be valid Go: %v", err)
+			}
+			inferred := false
+			for id, instance := range info.Instances {
+				if id.Name == "genericFn" && instance.TypeArgs.Len() == 1 &&
+					types.Identical(instance.TypeArgs.At(0), types.Typ[types.Int]) {
+					inferred = true
+				}
+			}
+			if !inferred {
+				t.Fatal("fixture did not exercise generic function argument inference")
+			}
+			var before, after bytes.Buffer
+			if err := format.Node(&before, fset, file); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ExportedFunctions(fset, info, []*ast.File{file}); err == nil || !strings.Contains(err.Error(), "generic") {
+				t.Fatalf("inferred generic export passed preflight: %v", err)
+			}
+			if _, err := Rewrite(fset, pkg, info, []*ast.File{file}); err == nil || !strings.Contains(err.Error(), "generic") {
+				t.Fatalf("inferred generic export passed rewrite validation: %v", err)
+			}
+			if err := format.Node(&after, fset, file); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before.Bytes(), after.Bytes()) {
+				t.Fatal("rejected generic export changed the syntax")
+			}
+		})
+	}
+}
+
 func TestRejectChangedHelperAndEscapedHelper(t *testing.T) {
 	for _, source := range []string{
 		`func __ccgo_fp(f interface{}) uintptr { return 1 }; var p = __ccgo_fp(callback)`,
