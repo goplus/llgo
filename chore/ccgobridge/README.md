@@ -1,4 +1,4 @@
-# Explicit CCGo function-box adaptation
+# Explicit source ABI adaptation
 
 This experimental tool adapts **selected dependencies**, not ordinary Go
 `unsafe` conversions. It leaves LLGo's two-word function representation and
@@ -44,4 +44,23 @@ Real acceptance additionally requires final linking and execution: SQLite
 queries, rollback, UDF callbacks with distinct captured environments and GC,
 and the ABI0 `Yqsort`/TLS-slot path. Compilation or unit tests alone do not
 establish those results. This tool does not make the original, unadapted
-CCGo representation portable, and it does not address purego's native C ABI.
+CCGo representation portable.
+
+## purego v0.9.1
+
+The separate, hash-checked purego profile is Linux/amd64 with cgo enabled only.
+It replaces the Go-runtime trampoline backend with a qualified C ABI transport
+and the dedicated LLGo callback bridge. Original package initializers still
+run. It does not enable `runtime.cgocall` or `crosscall2` globally.
+
+```sh
+GOWORK=off GOOS=linux GOARCH=amd64 CGO_ENABLED=1 ./_out/ccgobridge \
+  -dir /path/to/application -out ./_out/purego-adapted \
+  -profile purego-v0.9.1 -runtime ./runtime github.com/ebitengine/purego
+```
+
+Build this stage with LLGo, using the printed `-modfile`. Compare its runtime
+results against Go running the original application, not the LLGo-only staged
+backend. Other versions, platforms, fakecgo, and changed backend source hashes
+are rejected. The emitted `environment.json` records the target and profile.
+See [the native and callback contracts](../../internal/puregobridge/README.md).

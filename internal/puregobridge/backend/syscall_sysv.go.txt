@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	LLGoPackage = "link"
+	// Unlike link-only packages, purego must run its Go initializers.
+	LLGoPackage = "llgo"
 	LLGoFiles   = "_llgo_compat/sysv_amd64.S"
 )
 

@@ -79,7 +79,7 @@ func call(p uintptr) int {
 	}
 	if !strings.Contains(out, "var __llgo_ccgo_box_0 __llgo_ccgo_staticBox[func(n int) int]") ||
 		strings.Count(out, "__llgo_ccgo_export(&__llgo_ccgo_box_0, twice)") != 2 ||
-		!strings.Contains(out, "__llgo_ccgo_import[func(int) int](p)") {
+		!strings.Contains(out, "__llgo_ccgo_import[func(int) int](unsafe.Pointer(p))") {
 		t.Fatalf("not a full typed box round trip:\n%s", out)
 	}
 }

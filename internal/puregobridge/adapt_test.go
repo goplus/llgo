@@ -85,8 +85,8 @@ func TestBackendIsExplicitAndWiresNativeSource(t *testing.T) {
 			t.Fatalf("adapter lacks implementation of %s", name)
 		}
 	}
-	if constants["LLGoPackage"] != `"link"` || constants["LLGoFiles"] != `"_llgo_compat/sysv_amd64.S"` {
-		t.Fatal("native source is not wired through the LLGo build path")
+	if constants["LLGoPackage"] != `"llgo"` || constants["LLGoFiles"] != `"_llgo_compat/sysv_amd64.S"` {
+		t.Fatal("native source must retain Go package initialization, including dlfcn function values and the argument pool")
 	}
 	if strings.Contains(string(data), "runtime.cgocall") || strings.Contains(string(data), "crosscall2") {
 		t.Fatal("explicit adapter must not alias an upstream Go runtime entry")

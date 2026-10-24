@@ -206,6 +206,9 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 			}
 			// Read the complete function value, not a native code pointer.
 			// A zero descriptor represents a nil function, not an address to read.
+			// Keep the caller's unsafe conversion and import in its original file;
+			// a shared helper must not leave another file with an unused import.
+			cast.Args = []ast.Expr{box.Elts[0]}
 			cursor.Replace(&ast.CallExpr{
 				Fun: &ast.IndexExpr{
 					X:      &ast.Ident{NamePos: load.Pos(), Name: "__llgo_ccgo_import"},
@@ -214,7 +217,7 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 					Rbrack: pointerType.X.End(),
 				},
 				Lparen: call.Lparen,
-				Args:   []ast.Expr{box.Elts[0]},
+				Args:   []ast.Expr{cast},
 				Rparen: call.Rparen,
 			})
 			if importFile == nil {
@@ -227,12 +230,12 @@ func __llgo_ccgo_export[T any](box *__llgo_ccgo_staticBox[T], fn T) uintptr {
 	if importFile != nil {
 		unsafeName := unsafeImport(fset, importFile)
 		helper, err := parser.ParseFile(fset, "ccgo-import.go", fmt.Sprintf(`package bridge
-func __llgo_ccgo_import[T any](p uintptr) T {
-	if p == 0 {
+func __llgo_ccgo_import[T any](p %s.Pointer) T {
+	if p == nil {
 		var zero T
 		return zero
 	}
-	return *(*T)(%s.Pointer(p))
+	return *(*T)(p)
 }
 `, unsafeName), 0)
 		if err != nil {

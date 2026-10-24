@@ -15,10 +15,21 @@ func TestStagedModuleRoundTrip(t *testing.T) {
 	files := map[string]string{
 		"app/go.mod": "module example.com/app\n\ngo 1.27\nrequire example.com/ccgo v0.0.0\nreplace example.com/ccgo => ../dependency\n",
 		"app/main.go": `package main
-import "example.com/ccgo"
-func main() { if ccgo.Call(21) != 42 { panic("callback") } }
+import (
+ "example.com/ccgo"
+ "example.com/ccgo/extra"
+)
+func main() { if ccgo.Call(extra.Input) != 42 { panic("callback") } }
 `,
-		"dependency/go.mod": "module example.com/ccgo\n\ngo 1.27\n",
+		"dependency/go.mod":         "module example.com/ccgo\n\ngo 1.27\n",
+		"dependency/extra/extra.go": "package extra\nconst Input = 21\n",
+		"dependency/other.go": `package ccgo
+import "unsafe"
+// Another file's consumer must remain valid after its unsafe cast is adapted.
+func Other(p uintptr) func() {
+ return *(*func())(unsafe.Pointer(&struct{ uintptr }{p}))
+}
+`,
 		"dependency/ccgo.go": `package ccgo
 import "unsafe"
 func __ccgo_fp(f interface{}) uintptr {
