@@ -19,7 +19,7 @@ import ci_policy
 WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
 PREPARE = "./.github/workflows/ci-prepare.yml"
 CODE_WORKFLOWS = {
-    "llgo.yml": 35, "go.yml": 6, "targets.yml": 4, "build-cache.yml": 4,
+    "llgo.yml": 40, "go.yml": 6, "targets.yml": 4, "build-cache.yml": 4,
     "benchmark.yml": 9, "release-build.yml": 25, "doc.yml": 6, "fmt.yml": 1,
     "mise.yml": 5, "pixi.yml": 5,
 }
@@ -189,6 +189,7 @@ class WorkflowContractTests(unittest.TestCase):
             "Test Hello World with go.mod 1.21 through 1.26",
             "Test Hello World with go.mod 1.27",
             "Test runtime module compatibility",
+            "Test zero-sized reflection argument ABI",
             "Run caller regressions in C shared libraries and archives",
             "Validate the native Windows toolchain profile",
             "Test Windows CPU profiler context",
@@ -221,6 +222,85 @@ class WorkflowContractTests(unittest.TestCase):
             "GDB native values and registry (Windows)",
             "GDB complete worker unwind (Windows amd64 and 386)"])
         self.assertTrue(all(step.get("run") or step.get("uses") for step in steps[start:]))
+
+    def test_source_abi_keeps_five_executed_llvm22_regressions(self):
+        job = load("llgo.yml")["jobs"]["source-abi"]
+        cases = ["sqlite", "purego", "turso", "libccallback", "crc32"]
+        self.assertEqual(job["strategy"], {
+            "fail-fast": "false", "matrix": {"case": cases}})
+        self.assertEqual(matrix_size(job), 5)
+        self.assertEqual(needs(job), ["prepare"])
+        self.assertEqual(job["if"], "needs.prepare.outputs.run_code_ci == 'true'")
+        self.assertEqual(job["runs-on"],
+                         "${{ fromJSON(needs.prepare.outputs.linux_large_runner) }}")
+        self.assertEqual(job["timeout-minutes"], "45")
+        self.assertNotIn("continue-on-error", job)
+        for step in job["steps"]:
+            self.assertNotIn("continue-on-error", step)
+            self.assertNotIn("|| true", step.get("run", ""))
+        deps = next(step for step in job["steps"]
+                    if step.get("uses") == "./.github/actions/setup-deps")
+        self.assertEqual(deps["with"]["llvm-version"], "22")
+        self.assertNotIn("if", deps)
+        steps = {step.get("name"): step for step in job["steps"]}
+        build = steps["Build source ABI compiler"]
+        self.assertNotIn("if", build)
+        self.assertEqual(build["shell"], "bash")
+        self.assertIn('go build -o "$RUNNER_TEMP/llgo-bin/llgo" ./cmd/llgo', build["run"])
+        self.assertIn('echo "$RUNNER_TEMP/llgo-bin" >> "$GITHUB_PATH"', build["run"])
+        self.assertIn('echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"', build["run"])
+        test = steps["Test exact-version source ABI regression"]
+        self.assertNotIn("if", test)
+        self.assertEqual(test["id"], "source_abi")
+        self.assertEqual(test["shell"], "bash")
+        self.assertEqual(test["run"], "bash dev/test_source_abi.sh '${{ matrix.case }}'")
+        callback = steps["Test callback ABI and foreign-thread lifetime"]
+        self.assertEqual(callback["if"], "matrix.case == 'purego'")
+        self.assertEqual(callback["shell"], "bash")
+        self.assertEqual(callback["working-directory"], "runtime/_test/puregobridge")
+        self.assertEqual(callback["run"], "timeout -k 10s 10m llgo run .")
+        receipts = steps["Upload source ABI regression receipts"]
+        # !cancelled() also runs after a failed build/run or callback step.
+        self.assertEqual(receipts["if"],
+                         "${{ !cancelled() && steps.source_abi.outcome != 'skipped' }}")
+        self.assertEqual(receipts["uses"], "actions/upload-artifact@v7")
+        self.assertEqual(receipts["with"], {
+            "name": "source-abi-${{ matrix.case }}", "path": "_out/source-abi.*/",
+            "if-no-files-found": "error", "retention-days": "7"})
+        self.assertEqual([step["name"] for step in job["steps"][-4:]],
+                         [build["name"], test["name"], callback["name"], receipts["name"]])
+
+    def test_source_abi_script_retains_build_run_and_failure_receipts(self):
+        script = (WORKFLOWS.parent.parent / "dev/test_source_abi.sh").read_text()
+        self.assertIn("set -euo pipefail", script)
+        self.assertIn("cases=(sqlite purego turso libccallback crc32)", script)
+        self.assertIn('[[ $("$llgo" env LLGO_LLVM_VERSION) == 22.* ]]', script)
+        self.assertIn("grep -Eq 'clang version 22\\.'", script)
+        self.assertIn("compilers=(go llgo)", script)
+        self.assertIn("compilers=(go go-adapted llgo)", script)
+        self.assertIn('flags+=(-modfile="$stage/build.mod")', script)
+        self.assertIn('tool="$llgo"', script)
+        self.assertIn('timeout -k 10s 20m "$tool" build "${flags[@]}" -o "$binary" .', script)
+        self.assertIn('if ! timeout -k 10s 2m "$binary" > "$report/$name-$compiler.run.log" 2>&1; then\n'
+                      '        status=failed', script)
+        self.assertIn('else\n      status=failed\n    fi', script)
+        self.assertIn('"$name" "$compiler" "$phase" "$status" >> "$report/results.jsonl"', script)
+        self.assertIn('if [[ $status == failed ]]; then\n      failed=1', script)
+        self.assertTrue(script.rstrip().endswith('exit "$failed"'))
+        self.assertNotIn("|| true", script)
+
+    def test_zero_sized_reflection_gate_keeps_native_abi_boundary(self):
+        steps = load("llgo.yml")["jobs"]["native-integration"]["steps"]
+        test = next(step for step in steps
+                    if step.get("name") == "Test zero-sized reflection argument ABI")
+        # Windows AMD64 and 386 do not omit empty parameters; their existing
+        # ABI rules are not qualified by the newly added omission fix.
+        self.assertEqual(test["if"],
+                         "runner.os != 'Windows' || matrix.windows_arch == 'arm64'")
+        self.assertEqual(test["shell"], "bash")
+        self.assertEqual(test["working-directory"], "runtime/_test/reflectzeroabi")
+        self.assertEqual(test["run"].splitlines(), ["go run .", "llgo run ."])
+        self.assertNotIn("continue-on-error", test)
 
     def test_gdb_windows_acceptance_covers_both_abis_and_all_native_architectures(self):
         job = load("llgo.yml")["jobs"]["native-integration"]
