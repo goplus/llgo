@@ -2,6 +2,7 @@
 """Run optimized Emscripten products through their actual host boundaries."""
 
 import argparse
+import json
 import os
 import pathlib
 import subprocess
@@ -14,7 +15,6 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser", action="store_true", help="also run each artifact in Chrome")
-    parser.add_argument("--wasm-opt", choices=("off", "size"), default="off")
     args = parser.parse_args()
     env = dict(os.environ, LLGO_ROOT=str(ROOT))
     llgo = env.get("LLGO", "llgo")
@@ -46,7 +46,7 @@ def main():
                 build_env = dict(env, LLGO_WASM_WORKERS=str(workers))
                 print(f"Checking {name}", flush=True)
                 subprocess.run(
-                    [llgo, "build", "-target", target, f"-{level}", f"-wasm-opt={args.wasm_opt}", "-o", str(output),
+                    [llgo, "build", "-target", target, f"-{level}", "-o", str(output),
                      str(ROOT / "internal/build/testdata" / fixture)],
                     env=build_env, check=True, timeout=300,
                 )
@@ -72,10 +72,13 @@ def main():
             # when size mode stops publishing incidental JS implementation names.
             output = pathlib.Path(directory) / f"{target}-exports.mjs"
             subprocess.run(
-                [llgo, "build", "-target", target, f"-wasm-opt={args.wasm_opt}",
+                [llgo, "build", "-target", target, "-Oz", "-ldflags=-s",
                  "-o", str(output), str(ROOT / "internal/build/testdata/wasm-exports")],
                 env=dict(env, LLGO_WASM_WORKERS="1"), check=True, timeout=300,
             )
+            manifest = json.loads(output.with_suffix(".wasm-manifest.json").read_text())
+            if manifest["optimization"] != "size" or manifest["strip"] != "debug":
+                raise RuntimeError(f"{target}: -Oz/-s policy was not applied")
             subprocess.run(
                 [node, "--input-type=module", "-e", '''
 import {pathToFileURL} from "node:url";
@@ -90,7 +93,7 @@ console.log("wasm public export ok");
         output = pathlib.Path(directory) / "raw-js-Oz.mjs"
         raw_env = dict(env, GOOS="js", GOARCH="wasm", LLGO_WASM_WORKERS="1")
         subprocess.run(
-            [llgo, "build", "-Oz", f"-wasm-opt={args.wasm_opt}", "-o", str(output),
+            [llgo, "build", "-Oz", "-o", str(output),
              str(ROOT / "internal/build/testdata/wasm-callback")],
             env=raw_env, check=True, timeout=300,
         )

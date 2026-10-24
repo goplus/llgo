@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 	"github.com/xgo-dev/llgo/internal/wasmdebug"
 )
 
@@ -45,10 +46,12 @@ const (
 	WasmStripNone  WasmStripMode = "none"
 	WasmStripDebug WasmStripMode = "debug"
 	WasmStripAll   WasmStripMode = "all"
+	// Symbols is the internal -s -w=0 policy: retain DWARF and source maps.
+	WasmStripSymbols WasmStripMode = "symbols"
 )
 
 func needsWasmFinalization(conf *Config) bool {
-	return conf != nil && (conf.WasmOpt == WasmOptSize || conf.WasmStrip == WasmStripDebug || conf.WasmStrip == WasmStripAll)
+	return conf != nil && (conf.WasmOpt == WasmOptSize || conf.WasmStrip == WasmStripDebug || conf.WasmStrip == WasmStripAll || conf.WasmStrip == WasmStripSymbols)
 }
 
 func validateWasmFinalOptions(conf *Config, target *crosscompile.Export) error {
@@ -58,21 +61,42 @@ func validateWasmFinalOptions(conf *Config, target *crosscompile.Export) error {
 		return fmt.Errorf("invalid wasm-opt mode %q", conf.WasmOpt)
 	}
 	switch conf.WasmStrip {
-	case "", WasmStripNone, WasmStripDebug, WasmStripAll:
+	case "", WasmStripNone, WasmStripDebug, WasmStripAll, WasmStripSymbols:
 	default:
 		return fmt.Errorf("invalid wasm-strip mode %q", conf.WasmStrip)
+	}
+	hostedExe := conf.BuildMode == BuildModeExe && conf.Mode != ModeGen &&
+		target.WasmProfile != crosscompile.WasmProfileNone && conf.OutFmts == (OutFmts{})
+	if hostedExe {
+		// The aggressive cross-platform size level also optimizes the final
+		// Wasm executable. -Os and inferred target defaults retain their
+		// established pipeline and tool dependencies.
+		if conf.WasmOpt == "" && !conf.optLevelDefaulted && conf.OptLevel == optlevel.Oz {
+			conf.WasmOpt = WasmOptSize
+		}
+		if conf.LinkOptions.OmitSymbolTable {
+			switch conf.WasmStrip {
+			case WasmStripNone:
+				return fmt.Errorf("-wasm-strip=none conflicts with -ldflags=-s")
+			case "":
+				conf.WasmStrip = WasmStripDebug
+				if conf.DebugArtifactMode == DebugArtifactEmbedded {
+					conf.WasmStrip = WasmStripSymbols
+				}
+			}
+		}
 	}
 	if !needsWasmFinalization(conf) {
 		return nil
 	}
 	if conf.BuildMode != BuildModeExe || conf.Mode == ModeGen || target.WasmProfile == crosscompile.WasmProfileNone {
-		return fmt.Errorf("wasm-opt and wasm-strip require a hosted WebAssembly executable")
+		return fmt.Errorf("final optimization and wasm-strip require a hosted WebAssembly executable")
 	}
-	if conf.WasmStrip != "" && conf.WasmStrip != WasmStripNone && conf.DebugArtifactMode == DebugArtifactEmbedded {
+	if (conf.WasmStrip == WasmStripDebug || conf.WasmStrip == WasmStripAll) && conf.DebugArtifactMode == DebugArtifactEmbedded {
 		return fmt.Errorf("wasm-strip conflicts with embedded DWARF; use -debug-artifact=external or none")
 	}
 	if conf.OutFmts != (OutFmts{}) {
-		return fmt.Errorf("wasm-opt and wasm-strip do not support firmware output conversion")
+		return fmt.Errorf("final optimization and wasm-strip do not support firmware output conversion")
 	}
 	return nil
 }
@@ -125,7 +149,7 @@ func wasmFinalArgs(conf *Config, target *crosscompile.Export, input, output stri
 		args = append(args, "--enable-"+f)
 	}
 	if conf.WasmOpt == WasmOptSize {
-		args = append(args, "-Oz")
+		args = append(args, optlevel.Oz.Flag())
 		if conf.DebugArtifactMode == DebugArtifactEmbedded || conf.DebugArtifactMode == DebugArtifactExternal {
 			// Binaryen 132 loses surviving Go call-site line mappings in these
 			// passes. Keep the rest of -Oz, including its DWARF compatibility
@@ -159,9 +183,14 @@ func finalWasmTool() (wasmManifestTool, error) {
 // debugger packaging and hashing succeed. Basenames stay unchanged so emcc's
 // JS/worker URLs remain valid after publication. The manifest is published last.
 func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails, verbose bool) error {
-	tool, err := finalWasmTool()
-	if err != nil {
-		return err
+	// Go-compatible stripping uses the built-in parser and needs no Binaryen.
+	var tool wasmManifestTool
+	if ctx.buildConf.WasmOpt == WasmOptSize {
+		var err error
+		tool, err = finalWasmTool()
+		if err != nil {
+			return err
+		}
 	}
 	dir, err := os.MkdirTemp(filepath.Dir(out.Out), ".llgo-wasm-*")
 	if err != nil {
@@ -190,19 +219,17 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	if err := validateWasmFinalFeatures(data, &ctx.crossCompile); err != nil {
 		return err
 	}
-	tmp := module + ".optimized"
-	args := wasmFinalArgs(ctx.buildConf, &ctx.crossCompile, module, tmp)
-	if err := runWasmOpt(tool.Path, args, verbose, ctx); err != nil {
-		return fmt.Errorf("final Wasm optimization/validation failed: %w", err)
-	}
+	var args []string
 	if ctx.buildConf.WasmOpt == WasmOptSize {
+		tmp := module + ".optimized"
+		args = wasmFinalArgs(ctx.buildConf, &ctx.crossCompile, module, tmp)
+		if err := runWasmOpt(tool.Path, args, verbose, ctx); err != nil {
+			return fmt.Errorf("final Wasm optimization failed: %w", err)
+		}
 		if err := os.Rename(tmp, module); err != nil {
 			return err
 		}
-	} else if err := os.Remove(tmp); err != nil {
-		// A validation-only wasm-opt invocation still re-encodes the module.
-		// Strip-only builds must preserve the original code and data bytes.
-		return err
+		args = args[:len(args)-3]
 	}
 	if err := finalizeRuntimePCLN(ctx, &staged, verbose); err != nil {
 		return err
@@ -214,8 +241,12 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	if err != nil {
 		return err
 	}
-	if ctx.buildConf.WasmStrip == WasmStripDebug || ctx.buildConf.WasmStrip == WasmStripAll {
-		data, err = wasmdebug.StripMetadata(data, ctx.buildConf.WasmStrip == WasmStripAll)
+	if ctx.buildConf.WasmStrip != "" && ctx.buildConf.WasmStrip != WasmStripNone {
+		if ctx.buildConf.WasmStrip == WasmStripSymbols {
+			data, err = wasmdebug.StripNames(data)
+		} else {
+			data, err = wasmdebug.StripMetadata(data, ctx.buildConf.WasmStrip == WasmStripAll)
+		}
 		if err != nil {
 			return err
 		}
@@ -225,7 +256,7 @@ func finalizeWasmArtifacts(ctx *context, plan *mainLinkPlan, out *OutFmtDetails,
 	}
 	manifestName := filepath.Base(wasmManifestPath(module))
 	linkFlags := append(slices.Clone(ctx.crossCompile.LDFLAGS), plan.linkArgs...)
-	if err := writeWasmManifest(ctx, dir, filepath.Base(module), data, manifestName, tool, args[:len(args)-3], linkFlags, before.Size()); err != nil {
+	if err := writeWasmManifest(ctx, dir, filepath.Base(module), data, manifestName, tool, args, linkFlags, before.Size()); err != nil {
 		return err
 	}
 	var remove []string

@@ -21,10 +21,11 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/build"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 )
 
 func TestWasmFinalFlags(t *testing.T) {
-	for _, args := range [][]string{{}, {"-wasm-opt=size", "-wasm-strip=debug"}, {"-wasm-opt=off", "-wasm-strip=all"}, {"-wasm-strip=none"}} {
+	for _, args := range [][]string{{}, {"-Oz", "-wasm-strip=debug"}, {"-Os", "-wasm-strip=all"}, {"-wasm-strip=none"}} {
 		fs := flag.NewFlagSet("wasm", flag.ContinueOnError)
 		AddBuildFlags(fs)
 		if err := fs.Parse(args); err != nil {
@@ -34,15 +35,35 @@ func TestWasmFinalFlags(t *testing.T) {
 		if err := UpdateConfig(conf); err != nil {
 			t.Fatal(err)
 		}
-		if string(conf.WasmOpt) != WasmOpt || string(conf.WasmStrip) != WasmStrip {
+		if conf.WasmOpt != "" || string(conf.WasmStrip) != WasmStrip {
 			t.Fatalf("config=%+v", conf)
 		}
 	}
-	for _, arg := range []string{"-wasm-opt=", "-wasm-opt=fast", "-wasm-strip=symbols"} {
+	for _, arg := range []string{"-wasm-opt=size", "-wasm-strip=", "-wasm-strip=symbols"} {
 		fs := flag.NewFlagSet("bad", flag.ContinueOnError)
 		AddBuildFlags(fs)
 		if err := fs.Parse([]string{arg}); err == nil {
 			t.Fatalf("accepted %s", arg)
+		}
+	}
+}
+
+func TestPortableSizeAndGoStripFlags(t *testing.T) {
+	for _, arch := range []string{"amd64", "arm64", "wasm"} {
+		fs := flag.NewFlagSet("build", flag.ContinueOnError)
+		AddBuildFlags(fs)
+		if err := fs.Parse([]string{"-Oz"}); err != nil {
+			t.Fatal(err)
+		}
+		conf := &build.Config{Goarch: arch}
+		if err := UpdateConfig(conf); err != nil {
+			t.Fatal(err)
+		}
+		if err := ApplyGoBuildFlags(conf, []string{"-ldflags=-s -w=0"}); err != nil {
+			t.Fatal(err)
+		}
+		if conf.OptLevel != optlevel.Oz || !conf.LinkOptions.OmitSymbolTable || conf.LinkOptions.EffectiveOmitDWARF() {
+			t.Fatalf("%s: portable size/strip options lost: %+v", arch, conf)
 		}
 	}
 }

@@ -1,27 +1,32 @@
 # Final WebAssembly size optimization
 
-Hosted W32, J32 and J64 executables support an optional final Binaryen pass:
+Use LLGo's cross-platform size levels and Go-compatible linker stripping:
 
 ```sh
-llgo build -target=wasi -wasm-opt=size -wasm-strip=debug -o app.wasm ./app
-llgo build -target=emscripten -wasm-opt=size -wasm-strip=debug -o app.mjs ./app
+llgo build -Oz -ldflags=-s -o app ./app
+llgo build -target=wasi -Oz -ldflags=-s -o app.wasm ./app
+llgo build -target=emscripten -Oz -ldflags=-s -o app.mjs ./app
 ```
 
-The defaults are `-wasm-opt=off` and `-wasm-strip=none`. These options do not
-change the Go/LLVM optimization level, PCLN policy, GC, scheduler, reflection,
-exception handling, or existing development-only optimization gates. They do
-not support libraries, IR generation, or firmware output conversions.
+Explicit `-Os` and `-Oz` select the corresponding LLVM size optimization on
+all targets. Explicit `-Oz` also runs a final Binaryen `-Oz` pass for hosted
+W32, J32 and J64 executables after required linker/Asyncify transformations. The pass
+uses an explicit feature allowlist; only J64 enables memory64. Inferred target
+optimization defaults and `-Os` retain their existing pipeline. Generation, libraries
+and firmware conversions continue to use their normal compiler optimization.
 
-| Option | Effect |
-| --- | --- |
-| `-wasm-opt=size` | Runs Binaryen `-Oz` after required linker/Asyncify transformations, with an explicit hosted-target feature allowlist. Memory64 is enabled only for J64. |
-| `-wasm-strip=debug` | Removes optional DWARF, name and source-map metadata. |
-| `-wasm-strip=all` | Also removes producer metadata. |
+`-ldflags=-s` strips optional Wasm names and DWARF, as it strips native symbols
+and debug information. `-ldflags="-s -w=0"` strips names while retaining DWARF
+and source maps. `-w` alone controls DWARF and does not request name stripping.
+The built-in metadata stripper requires no Binaryen when size optimization is
+disabled. Code/data section bytes, runtime PCLN, target features, build identity,
+external DWARF references and unknown custom sections are retained.
 
-Strip-only builds validate the module but preserve its original code/data
-section bytes. Stripping retains runtime PCLN, target features, build identity,
-external DWARF references, and unknown custom sections. It is independent of
-`-pclntab=none`, which changes runtime symbolization behavior.
+For explicit Wasm metadata policy, `-wasm-strip=debug` removes DWARF, name and
+source-map metadata; `-wasm-strip=all` additionally removes producer metadata.
+The default is `none` unless `-s` requests stripping. Explicit
+`-wasm-strip=none` conflicts with `-s`. PCLN policy remains independently
+controlled by `-pclntab`.
 
 For Emscripten, size mode sets `EXPORT_ALL=0`. Explicit native/public exports
 and the existing runtime methods (`cwrap`, `allocateUTF8`, `stringToUTF8`,
@@ -33,7 +38,9 @@ explicit runtime APIs.
 ## Toolchain and debugging
 
 Use LLGo Binaryen `llgo-v132.3`, selected through `WASMOPT` or
-`EM_BINARYEN_ROOT`. CI pins its release archive checksum. The final pipeline
+`EM_BINARYEN_ROOT`. Browser builds must also set `EM_BINARYEN_ROOT` so
+Emscripten uses the patched tools during linking, not only the final pass.
+CI pins the release archive checksum. Size optimization
 checks the Binaryen 132 version string and records the executable SHA-256;
 the version string alone cannot distinguish upstream Binaryen from LLGo's
 patched build.
@@ -41,7 +48,7 @@ patched build.
 Debug packaging happens after optimization:
 
 ```sh
-llgo build -target=emscripten -wasm-opt=size \
+llgo build -target=emscripten -Oz \
   -debug-artifact=external -wasm-strip=debug -o app.mjs ./app
 ```
 
@@ -56,8 +63,8 @@ CI checks Go/C++ source locations and executes the final modules for W32/J32/J64
 
 An enabled final pipeline writes `app.wasm-manifest.json` beside the output.
 It records compiler/source-Go/LLVM/link-driver identity, target profile and
-pointer width, PCLN and final optimization modes, Binaryen identity/arguments,
-link flags, declared and allowed Wasm features, and each artifact's byte count,
+pointer width, PCLN and final optimization modes, Binaryen identity/arguments
+(empty for built-in stripping), link flags, declared and allowed Wasm features, and each artifact's byte count,
 gzip-9 byte count and SHA-256. Its build ID covers sorted artifact names and
 hashes. Tool names and absolute flag paths are normalized to omit local machine
 directories; the manifest is a build record, not a portable linker command.
@@ -75,17 +82,17 @@ failures restore the previous files; an unsuccessful restore retains its backup
 and reports the recovery path. The manifest is published last. This is not an
 atomic multi-file deployment: serve a versioned directory or verify artifact
 hashes before switching readers. Successful builds remove obsolete debug/glue
-siblings, and a successful rebuild with both options disabled removes the old
-manifest.
+siblings, and a successful rebuild without final optimization or stripping removes
+the old manifest.
 
 ## Measurement
 
 Darwin arm64, Go 1.27.2, LLVM 22.1.8, Emscripten 6.0.8 and LLGo Binaryen
 `llgo-v132.3`; fixtures `benchmark/binary_size/{cprintf,println,fmtprintf}`.
-Both columns use LLGo's default optimization and `-debug-artifact=none`,
-without `-s`, development DCE or LTO. The baseline is `057851875`; the final
-column adds `-wasm-opt=size -wasm-strip=debug` to that compiler. It does not
-include the separate initializer/metadata pruning in PR #2908. All 18 final
+The baseline uses LLGo's default optimization and `-debug-artifact=none`;
+the final column additionally selects explicit `-Oz` and metadata stripping.
+The named targets already default to LLVM `Oz`. Neither column uses
+development DCE or LTO. Baseline: `057851875`. The measurements do not include the separate initializer/metadata pruning in PR #2908. All 18 final
 products executed successfully in Wasmer or the matching Node runner.
 
 Sizes below are **complete artifact bytes / independently compressed Brotli-11

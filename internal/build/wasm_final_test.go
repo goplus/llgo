@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/xgo-dev/llgo/internal/crosscompile"
+	"github.com/xgo-dev/llgo/internal/optlevel"
 )
 
 func TestWasmFinalOptions(t *testing.T) {
@@ -39,7 +40,7 @@ func TestWasmFinalOptions(t *testing.T) {
 		{"strip only", func(c *Config) { c.WasmOpt = WasmOptOff; c.WasmStrip = WasmStripAll }, false},
 		{"external debug", func(c *Config) { c.DebugArtifactMode = DebugArtifactExternal; c.WasmStrip = WasmStripDebug }, false},
 		{"invalid opt", func(c *Config) { c.WasmOpt = "fast" }, true},
-		{"invalid strip", func(c *Config) { c.WasmStrip = "symbols" }, true},
+		{"invalid strip", func(c *Config) { c.WasmStrip = "invalid" }, true},
 		{"library", func(c *Config) { c.BuildMode = BuildModeCArchive }, true},
 		{"generation", func(c *Config) { c.Mode = ModeGen }, true},
 		{"embedded debug", func(c *Config) { c.DebugArtifactMode = DebugArtifactEmbedded; c.WasmStrip = WasmStripDebug }, true},
@@ -294,7 +295,7 @@ func TestFinalizeWasmArtifacts(t *testing.T) {
 }
 
 func TestWasmStripOnlyPreservesEncoding(t *testing.T) {
-	t.Setenv("WASMOPT", writeWasmOptTestTool(t, t.TempDir()))
+	t.Setenv("WASMOPT", filepath.Join(t.TempDir(), "missing-wasm-opt"))
 	t.Setenv("LLGO_TEST_FINAL_WASM", "1")
 	t.Setenv("LLGO_TEST_LINKER_HELPER", "write-padded-wasm")
 	t.Setenv("LLGO_TEST_WASM_OPT_HELPER", "rewrite-wasm")
@@ -306,6 +307,67 @@ func TestWasmStripOnlyPreservesEncoding(t *testing.T) {
 	raw, err := os.ReadFile(out.Out)
 	if err != nil || string(raw) != "\x00asm\x01\x00\x00\x00\x0a\x81\x80\x80\x80\x00\x00" {
 		t.Fatalf("strip-only changed code section encoding: %x, %v", raw, err)
+	}
+}
+
+func TestPortableSizeAndWasmStripPolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name                     string
+		level                    optlevel.Level
+		native, strip, keepDWARF bool
+		wantOpt                  WasmOptMode
+		wantStrip                WasmStripMode
+	}{
+		{name: "implicit target default"},
+		{name: "Os retains compiler pipeline", level: optlevel.Os},
+		{name: "explicit Oz", level: optlevel.Oz, wantOpt: WasmOptSize},
+		{name: "O0", level: optlevel.O0},
+		{name: "O2", level: optlevel.O2},
+		{name: "native Os", level: optlevel.Os, native: true},
+		{name: "native Oz and strip", level: optlevel.Oz, native: true, strip: true},
+		{name: "Go s", strip: true, wantStrip: WasmStripDebug},
+		{name: "Go s w=0", strip: true, keepDWARF: true, wantStrip: WasmStripSymbols},
+		{name: "Oz and Go s", level: optlevel.Oz, strip: true, wantOpt: WasmOptSize, wantStrip: WasmStripDebug},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := &Config{Target: "wasi", Goos: "wasip1", Goarch: "wasm", OptLevel: tc.level}
+			target := crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}
+			if tc.native {
+				input.Target, input.Goos, input.Goarch = "", "linux", "amd64"
+				target.WasmProfile = crosscompile.WasmProfileNone
+			}
+			input.LinkOptions.OmitSymbolTable = tc.strip
+			input.DebugArtifactMode = DebugArtifactNone
+			if tc.keepDWARF {
+				input.LinkOptions.DWARF = DWARFPreserve
+				input.DebugArtifactMode = DebugArtifactEmbedded
+			}
+			conf, err := resolveBuildConfig(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Multi-package fallbacks resolve cloned configurations again.
+			conf, err = resolveBuildConfig(conf)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := validateWasmFinalOptions(conf, &target); err != nil {
+				t.Fatal(err)
+			}
+			if conf.WasmOpt != tc.wantOpt || conf.WasmStrip != tc.wantStrip {
+				t.Fatalf("opt=%s strip=%s; want opt=%s strip=%s", conf.WasmOpt, conf.WasmStrip, tc.wantOpt, tc.wantStrip)
+			}
+			if tc.wantOpt == WasmOptSize && !slices.Contains(wasmFinalArgs(conf, &target, "in", "out"), tc.level.Flag()) {
+				t.Fatal("final optimizer did not use the requested level")
+			}
+			if input.WasmOpt != "" || input.WasmStrip != "" {
+				t.Fatal("mutated caller configuration")
+			}
+		})
+	}
+	conf := &Config{BuildMode: BuildModeExe, LinkOptions: LinkOptions{OmitSymbolTable: true}, WasmStrip: WasmStripNone}
+	if err := validateWasmFinalOptions(conf, &crosscompile.Export{WasmProfile: crosscompile.WasmProfileW32}); err == nil {
+		t.Fatal("explicit strip=none silently overrode -s")
 	}
 }
 
@@ -360,7 +422,7 @@ func TestWasmFinalFailurePreservesArtifacts(t *testing.T) {
 		{name: "missing module", linker: "missing-output"},
 		{name: "invalid module", linker: "invalid-wasm"},
 		{name: "missing optimized module", optimizer: "missing-output"},
-		{name: "missing validation output", optimizer: "missing-output", configure: func(ctx *context) { ctx.buildConf.WasmOpt = WasmOptOff }},
+		{name: "strip-only invalid input", linker: "invalid-wasm", configure: func(ctx *context) { ctx.buildConf.WasmOpt = WasmOptOff }},
 		{name: "invalid optimized metadata", optimizer: "invalid-wasm"},
 		{name: "invalid debug output", optimizer: "invalid-wasm", configure: func(ctx *context) { ctx.buildConf.DebugArtifactMode = DebugArtifactExternal }},
 		{name: "invalid manifest input", optimizer: "invalid-wasm", configure: func(ctx *context) { ctx.buildConf.WasmStrip = WasmStripNone }},

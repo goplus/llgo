@@ -23,13 +23,22 @@ import "fmt"
 // all additionally removes producer metadata. target_features is retained so
 // consumers can validate the module's required capabilities.
 func StripMetadata(module []byte, all bool) ([]byte, error) {
+	return stripMetadata(module, all, false)
+}
+
+// StripNames implements -s -w=0: remove names while preserving DWARF and maps.
+func StripNames(module []byte) ([]byte, error) {
+	return stripMetadata(module, false, true)
+}
+
+func stripMetadata(module []byte, all, namesOnly bool) ([]byte, error) {
 	sections, err := parse(module)
 	if err != nil {
 		return nil, err
 	}
 	out := append(make([]byte, 0, len(module)), wasmHeader...)
 	for _, s := range sections {
-		if s.id == 0 && (isDWARFSection(s.name) || s.name == "name" || s.name == "sourceMappingURL" || all && s.name == "producers") {
+		if s.id == 0 && (s.name == "name" || !namesOnly && (isDWARFSection(s.name) || s.name == "sourceMappingURL" || all && s.name == "producers")) {
 			continue
 		}
 		out = append(out, s.raw...)

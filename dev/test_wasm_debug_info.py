@@ -115,7 +115,7 @@ def check_module(module, *, dwarfdump, addr2line):
     check_source_lines(module, line_table, addr2line)
 
 
-def check_artifact_report(output, profile, artifact, build_log, wasm_opt="off"):
+def check_artifact_report(output, profile, artifact, build_log, final_pipeline=False):
     module = output.with_suffix(".wasm")
     role = "debug+deployment" if artifact == "embedded" else "deployment"
     expected = {module: (role, "wasm")}
@@ -127,7 +127,7 @@ def check_artifact_report(output, profile, artifact, build_log, wasm_opt="off"):
         expected[output.parent / "wasm_fs.js"] = ("deployment", "javascript")
     if artifact == "external":
         expected[output.with_suffix(".debug.wasm")] = ("debug", "wasm-dwarf")
-    if wasm_opt != "off":
+    if final_pipeline:
         manifest = output.with_suffix(".wasm-manifest.json")
         expected[manifest] = ("deployment", "wasm-manifest")
         data = json.loads(manifest.read_text())
@@ -161,9 +161,9 @@ def check_artifact_report(output, profile, artifact, build_log, wasm_opt="off"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", action="append", choices=PROFILES, dest="profiles")
-    parser.add_argument("--opt", action="append", choices=("0", "2"), dest="opts")
+    parser.add_argument("--opt", action="append", choices=("0", "2", "z"), dest="opts")
     parser.add_argument("--artifact", action="append", choices=("embedded", "external"), dest="artifacts")
-    parser.add_argument("--wasm-opt", choices=("off", "size"), default="off")
+    parser.add_argument("--strip-symbols", action="store_true", help="exercise Go -s -w=0 while retaining DWARF")
     options = parser.parse_args()
     profiles = options.profiles or list(PROFILES)
     opts = options.opts or ["0", "2"]
@@ -175,6 +175,7 @@ def main():
     env = os.environ.copy()
     env["LLGO_ROOT"] = str(ROOT)
     env["RUST_LOG"] = "off"
+    strip_flags = ["-ldflags=-s -w=0"] if options.strip_symbols else []
     with tempfile.TemporaryDirectory(prefix="llgo-wasm-debug-") as directory:
         for profile, opt, artifact in itertools.product(profiles, opts, artifacts):
             stem = Path(directory) / f"{profile}-O{opt}-{artifact}"
@@ -182,10 +183,12 @@ def main():
             output = module if profile == "w32" else stem.with_suffix(".mjs")
             build_log = run(
                 [llgo, "build", "-target", PROFILES[profile], f"-O{opt}",
-                 f"-debug-artifact={artifact}", f"-wasm-opt={options.wasm_opt}", "-o", str(output), str(FIXTURE)],
+                 f"-debug-artifact={artifact}", *strip_flags, "-o", str(output), str(FIXTURE)],
                 env=env,
             )
-            check_artifact_report(output, profile, artifact, build_log, options.wasm_opt)
+            check_artifact_report(output, profile, artifact, build_log, opt == "z" or options.strip_symbols)
+            if options.strip_symbols and any(name == "name" for _, name, _, _ in wasm_sections(module)):
+                raise RuntimeError(f"{module}: -s retained the optional Wasm name section")
             debug_module = module
             if artifact == "external":
                 debug_module = stem.with_suffix(".debug.wasm")
@@ -208,10 +211,10 @@ def main():
             output = Path(directory) / "html-report.html"
             build_log = run(
                 [llgo, "build", "-target", PROFILES["j32"], f"-O{opts[0]}",
-                 f"-debug-artifact={artifacts[0]}", f"-wasm-opt={options.wasm_opt}", "-o", str(output), str(FIXTURE)],
+                 f"-debug-artifact={artifacts[0]}", *strip_flags, "-o", str(output), str(FIXTURE)],
                 env=env,
             )
-            check_artifact_report(output, "j32", artifacts[0], build_log, options.wasm_opt)
+            check_artifact_report(output, "j32", artifacts[0], build_log, opts[0] == "z" or options.strip_symbols)
             print("j32 HTML: complete deployment artifacts and byte sizes passed", flush=True)
 
 

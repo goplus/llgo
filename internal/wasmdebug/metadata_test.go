@@ -70,3 +70,15 @@ func TestTargetFeatures(t *testing.T) {
 		t.Fatal("bad module accepted")
 	}
 }
+
+func TestStripNamesKeepsDWARF(t *testing.T) {
+	base := bytes.Clone(wasmHeader)
+	for _, name := range []string{".debug_info", ".debug_line", "sourceMappingURL", "producers", "llgo.pcln", "target_features", "build_id", "unknown"} {
+		base = appendCustomSection(base, name, []byte{1, 2, 3})
+	}
+	input := appendCustomSection(bytes.Clone(base), "name", []byte{9})
+	got, err := StripNames(input)
+	if err != nil || !bytes.Equal(got, base) {
+		t.Fatalf("Go -s -w=0 removed non-name metadata: %x, %v", got, err)
+	}
+}

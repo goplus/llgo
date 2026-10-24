@@ -272,6 +272,9 @@ type Config struct {
 	// Resolved once per invocation, independently of the Go version that built LLGo.
 	sourceGoVersion string
 	toolTags        []string
+	// Preserve inferred optimization levels when invocations are cloned.
+	// Only explicit -Oz requests the optional final optimizer.
+	optLevelDefaulted bool
 }
 
 type Rewrites map[string]string
@@ -365,6 +368,7 @@ func resolveBuildConfig(input *Config) (*Config, error) {
 	if err := conf.LinkOptions.validate(); err != nil {
 		return nil, err
 	}
+	conf.optLevelDefaulted = conf.optLevelDefaulted || conf.OptLevel == optlevel.Unset
 	conf.OptLevel = effectiveOptLevel(conf)
 	return conf, nil
 }

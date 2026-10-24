@@ -22,10 +22,10 @@ import (
 	"slices"
 )
 
-var WasmOpt, WasmStrip string
+var WasmStrip string
 
 func addWasmFinalFlags(fs *flag.FlagSet) {
-	WasmOpt, WasmStrip = "", ""
+	WasmStrip = ""
 	add := func(name, usage string, dst *string, values ...string) {
 		fs.Func(name, usage, func(value string) error {
 			if !slices.Contains(values, value) {
@@ -35,6 +35,5 @@ func addWasmFinalFlags(fs *flag.FlagSet) {
 			return nil
 		})
 	}
-	add("wasm-opt", "Final WebAssembly optimization: off or size (default off)", &WasmOpt, "off", "size")
 	add("wasm-strip", "Final WebAssembly metadata stripping: none, debug, or all (default none)", &WasmStrip, "none", "debug", "all")
 }
