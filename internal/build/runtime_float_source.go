@@ -63,7 +63,6 @@ func runtimeFloatingPointSources(read func(string) ([]byte, error), goroot strin
 				signature := want[decl.Name.Name]
 				if signature == "" {
 					signature = optional[decl.Name.Name]
-					delete(optional, decl.Name.Name)
 				}
 				if err := checkRuntimeSourceFunction(fset, decl, signature); err != nil {
 					return nil, err

@@ -635,12 +635,13 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 		}
 		args = append(args, b.Pkg.mapZeroAddr(vsize, int(prog.AlignOf(vtyp))))
 	}
+	fn := b.Pkg.rtFunc(RuntimeSymbol(name,
+		"MapAccess1", "MapAccess2", "MapAccess1Fat", "MapAccess2Fat", "MapAccess1Fast32",
+		"MapAccess2Fast32", "MapAccess1Fast64", "MapAccess2Fast64", "MapAccess1FastStr",
+		"MapAccess2FastStr",
+	))
 	if commaOk {
-		vals := b.Call(b.Pkg.rtFunc(RuntimeSymbol(name,
-			"MapAccess1", "MapAccess2", "MapAccess1Fat", "MapAccess2Fat", "MapAccess1Fast32",
-			"MapAccess2Fast32", "MapAccess1Fast64", "MapAccess2Fast64", "MapAccess1FastStr",
-			"MapAccess2FastStr",
-		)), args...)
+		vals := b.Call(fn, args...)
 		valuePtr := b.getField(vals, 0)
 		valuePtr.Type = prog.Pointer(vtyp)
 		val := b.Load(valuePtr)
@@ -648,11 +649,7 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 		t := prog.Struct(vtyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok)
 	} else {
-		val := b.Call(b.Pkg.rtFunc(RuntimeSymbol(name,
-			"MapAccess1", "MapAccess2", "MapAccess1Fat", "MapAccess2Fat", "MapAccess1Fast32",
-			"MapAccess2Fast32", "MapAccess1Fast64", "MapAccess2Fast64", "MapAccess1FastStr",
-			"MapAccess2FastStr",
-		)), args...)
+		val := b.Call(fn, args...)
 		val.Type = prog.Pointer(vtyp)
 		ret = b.Load(val)
 	}

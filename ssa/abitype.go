@@ -702,7 +702,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			methods = b.abiInterfaceMethods(mset)
 		}
 		methodCount := len(methods)
-		rt := prog.rtNamed(RuntimeSymbol(prog.abi.RuntimeName(t), "_type", "ptrtype", "slicetype", "functype", "interfacetype", "structtype", "maptype", "arraytype", "chantype"))
+		rt := prog.rtNamedABI(t)
 		var typ types.Type = rt
 		if hasUncommon {
 			ut := prog.rtNamed("uncommonType")
@@ -789,10 +789,7 @@ func (p Package) RegisterAbiTypes(infos []AbiTypeInfo) {
 		if hasUncommon {
 			methods = builder.abiInterfaceMethods(mset)
 		}
-		rt := p.Prog.rtNamed(RuntimeSymbol(p.Prog.abi.RuntimeName(t),
-			"_type", "ptrtype", "slicetype", "functype", "interfacetype", "structtype", "maptype",
-			"arraytype", "chantype",
-		))
+		rt := p.Prog.rtNamedABI(t)
 		var typ types.Type = rt
 		if hasUncommon {
 			ut := p.Prog.rtNamed("uncommonType")
@@ -884,3 +881,11 @@ func (p Package) InitAbiTypes(fname string) Function {
 }
 
 // -----------------------------------------------------------------------------
+
+// Keep the descriptor selector and its audited literal domain in one place.
+func (p Program) rtNamedABI(t types.Type) *types.Named {
+	return p.rtNamed(RuntimeSymbol(p.abi.RuntimeName(t),
+		"_type", "ptrtype", "slicetype", "functype", "interfacetype", "structtype",
+		"maptype", "arraytype", "chantype",
+	))
+}
