@@ -202,7 +202,7 @@ func AddOptLevelFlags(fs *flag.FlagSet) {
 	fs.BoolFunc("O2", "Optimize for performance", optLevelBoolFunc(optlevel.O2, "-O2"))
 	fs.BoolFunc("O3", "Optimize aggressively", optLevelBoolFunc(optlevel.O3, "-O3"))
 	fs.BoolFunc("Os", "Optimize for size", optLevelBoolFunc(optlevel.Os, "-Os"))
-	fs.BoolFunc("Oz", "Optimize aggressively for size", optLevelBoolFunc(optlevel.Oz, "-Oz"))
+	fs.BoolFunc("Oz", "Optimize aggressively for size, including final hosted WebAssembly optimization", optLevelBoolFunc(optlevel.Oz, "-Oz"))
 	fs.Func("O", "Optimization level (0,1,2,3,s,z; default s for host, z for targets)", func(val string) error {
 		level, err := optlevel.Parse(val)
 		if err != nil {
@@ -225,6 +225,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.StringVar(&LTOPluginPath, "lto-pass-plugin", "", "Load an LLVM LTO pass plugin during full LTO (ELF lld or Mach-O ld64.lld)")
 	AddGlobalDCEFlag(fs)
 	addPCLNFlag(fs)
+	addWasmFinalFlags(fs)
 	addDebugArtifactFlag(fs)
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.Var(&PthreadStackSize, "goroutine-stack-size", "Stack size for native threads and WebAssembly goroutines, e.g. 2MB (0 uses the platform default)")
@@ -424,6 +425,9 @@ func UpdateConfig(conf *build.Config) error {
 	}
 	if LTO.Specified {
 		conf.LTO = LTO.Mode
+	}
+	if WasmStrip != "" {
+		conf.WasmStrip = build.WasmStripMode(WasmStrip)
 	}
 	if PCLN.Specified {
 		conf.PCLNMode = PCLN.Mode

@@ -132,6 +132,8 @@ type OutFmtDetails struct {
 	Uf2   string // UF2 output file path (.uf2)
 	Zip   string // ZIP/DFU output file path (.zip)
 
+	WasmManifest string // Final Wasm artifact manifest
+
 	tempDir string // LLGo-owned directory removed with implicit test outputs
 }
 
@@ -152,6 +154,8 @@ type Config struct {
 	GOEXPERIMENT       string // Go experiments; empty inherits cmd/go configuration, "none" disables defaults
 	Target             string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
 	OptLevel           optlevel.Level
+	WasmOpt            WasmOptMode
+	WasmStrip          WasmStripMode
 	LTO                lto.Mode
 	LTOPlugin          lto.PassPlugin
 	BinPath            string
@@ -268,6 +272,9 @@ type Config struct {
 	// Resolved once per invocation, independently of the Go version that built LLGo.
 	sourceGoVersion string
 	toolTags        []string
+	// Preserve inferred optimization levels when invocations are cloned.
+	// Only explicit -Oz requests the optional final optimizer.
+	optLevelDefaulted bool
 }
 
 type Rewrites map[string]string
@@ -361,6 +368,7 @@ func resolveBuildConfig(input *Config) (*Config, error) {
 	if err := conf.LinkOptions.validate(); err != nil {
 		return nil, err
 	}
+	conf.optLevelDefaulted = conf.optLevelDefaulted || conf.OptLevel == optlevel.Unset
 	conf.OptLevel = effectiveOptLevel(conf)
 	return conf, nil
 }
@@ -646,6 +654,10 @@ func buildInvocation(inv Invocation, plan *initialBuildPlan) (result []Package, 
 	if err := validateLinkOptions(conf, &export); err != nil {
 		return nil, err
 	}
+	if err := validateWasmFinalOptions(conf, &export); err != nil {
+		return nil, err
+	}
+	export.LDFLAGS = append(export.LDFLAGS, wasmFinalLinkFlags(conf, &export)...)
 	verbose := conf.Verbose
 	patterns := slices.Clone(inv.Args)
 	target := &llssa.Target{
@@ -1289,6 +1301,9 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 	linkCtx := newLinkExecutionContext(ctx, plan)
 	err := func() error {
 		defer linkSpan.done()
+		if needsWasmFinalization(link.conf) {
+			return finalizeWasmArtifacts(linkCtx, plan, link.outFmts, verbose)
+		}
 		if err := executeMainLink(linkCtx, plan, verbose); err != nil {
 			return err
 		}
@@ -1304,7 +1319,10 @@ func executeInitialPackageLink(ctx *context, link *initialPackageLink, verbose, 
 		if err := finalizeNativeSymbols(linkCtx, link.outFmts, verbose); err != nil {
 			return err
 		}
-		return finalizeNativeDWARFCompression(linkCtx, link.outFmts.Out, verbose)
+		if err := finalizeNativeDWARFCompression(linkCtx, link.outFmts.Out, verbose); err != nil {
+			return err
+		}
+		return removeStaleWasmManifest(link.conf, link.outFmts)
 	}()
 	if err != nil {
 		return nil, err
@@ -1443,7 +1461,7 @@ func removeOutFmts(outFmts *OutFmtDetails) {
 		_ = os.RemoveAll(outFmts.DSYM)
 	}
 	for _, output := range []string{
-		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex,
+		outFmts.Out, outFmts.PCLN, outFmts.Bin, outFmts.Hex, outFmts.WasmManifest,
 		outFmts.Img, outFmts.Uf2, outFmts.Zip,
 	} {
 		if output != "" {
@@ -1822,6 +1840,9 @@ type context struct {
 
 	// linkRuntimeSites snapshots the backend-dependent site policy for linking.
 	linkRuntimeSites *bool
+
+	// effectiveLinkArgs records the actual driver invocation for the Wasm manifest.
+	effectiveLinkArgs []string
 
 	buildTrace *buildTracer
 
@@ -2995,6 +3016,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	buildArgs = append(buildArgs, defaultWASIHeapArgs(ctx, cmd, buildArgs)...)
 	cmd.Verbose = printCmds
+	if needsWasmFinalization(ctx.buildConf) {
+		ctx.effectiveLinkArgs = cmd.LinkArguments(buildArgs...)
+	}
 	if err := cmd.Link(buildArgs...); err != nil {
 		if len(ltoObjectArgs) != 0 {
 			_ = os.RemoveAll(filepath.Dir(ltoObjectArgs[len(ltoObjectArgs)-1]))
