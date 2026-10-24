@@ -60,3 +60,24 @@ preserves usable DWARF while reducing executable symbol overhead. ELF retains
 dynamic symbols and debug sections when requested; Mach-O retains required
 dynamic-binding entries and generates a matching `.dSYM` before stripping.
 Record the complete dSYM bundle separately and include it in debug totals.
+
+For WASI, compare each workload with the same compiler/toolchain and final
+Binaryen `wasm-opt -Oz` pass. Record both the linked module and the final file,
+then run the final file under the supported Wasmer runner. Keep three separate
+columns: default, dev `-deadcodedrop`, and dev
+`-deadcodedrop -lto=full -globaldce=false`. Full LTO otherwise selects the
+existing LLVM GoGlobalDCE path, so those results are a different configuration.
+Do not add `-s` to this comparison.
+
+Optimized Wasm executables discard unused scalar global stores and safe blank
+map initialization, preserving operand effects and potential panics. Globals
+containing GC pointers remain roots even without explicit reads. Native inputs
+with unknown references disable this analysis. Original dev DCE also clears
+method metadata for types outside its interface/reflection domain; observable
+method sets and structural metadata remain intact. WASI executables without
+address-based `FuncForPC` entries prune embedded PCLN against linked function
+names only when the name map covers every imported and defined function.
+Sparse maps retain all records. Emscripten, library outputs and entry-bearing PCLN retain their current
+packaging policy. `dev/test_wasm_wasi_threads.py` and
+`dev/test_wasm_wasi_lto.py` check initialization, map/reflect behavior and source
+locations, including an unrecovered panic, across the default and LTO paths.

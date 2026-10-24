@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"sort"
+	"strconv"
 
 	"github.com/xgo-dev/llgo/internal/genmethod"
 	"github.com/xgo-dev/llgo/ssa/abi"
@@ -127,10 +128,19 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, gl
 	case "":
 		equal = prog.Nil(prog.Type(equalFunc, GoDecl))
 	case "structequal", "arrayequal":
-		equal = b.Pkg.rtEnvFunc(name)
-		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
-		env := b.abiType(t)
-		equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, env.impl)
+		// Hidden regular-memory structs may lose their field metadata during
+		// dev Wasm DCE. Compare bytes without consulting that metadata.
+		if prog.enableDeadcodeDrop && prog.target.effectiveGOARCH() == "wasm" && ab.IsRegularMemory(t) {
+			equal = b.Pkg.regularMemoryEqual(uint64(ab.Size(t)))
+			b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
+			typ := prog.Type(equal.raw.Type, GoDecl)
+			equal = checkExpr(equal, typ.raw.Type, b)
+		} else {
+			equal = b.Pkg.rtEnvFunc(name)
+			b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
+			env := b.abiType(t)
+			equal = b.aggregateValue(prog.Type(equalFunc, GoDecl), equal.impl, env.impl)
+		}
 	default:
 		equal = b.Pkg.rtFunc(name)
 		b.Pkg.recordAbiTypeFakeUse(global, equal.impl)
@@ -150,6 +160,25 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool, gl
 		fields = append(fields, b.abiType(ptr).impl)
 	}
 	return
+}
+
+// Share one metadata-independent equality function per size, including arrays.
+func (p Package) regularMemoryEqual(size uint64) Expr {
+	switch size {
+	case 0, 1, 2, 4, 8, 16:
+		return p.rtFunc("memequal" + strconv.FormatUint(size*8, 10))
+	}
+	name := "_llgo_memequal." + strconv.FormatUint(size, 10)
+	fn := p.FuncOf(name)
+	if fn == nil {
+		fn = p.NewFunc(name, equalFunc, GoDecl)
+		fn.impl.SetLinkage(llvm.WeakODRLinkage)
+		builder := fn.MakeBody(1)
+		defer builder.Dispose()
+		builder.Return(builder.Call(p.rtFunc("memequal"), fn.Param(0), fn.Param(1), p.Prog.IntVal(size, p.Prog.Uintptr())))
+		builder.EndBuild()
+	}
+	return fn.Expr
 }
 
 /*
@@ -431,6 +460,11 @@ func (b Builder) structuralTypeChildren(t types.Type) []types.Type {
 		}
 		return children
 	case *types.Named:
+		if basic, ok := t.Underlying().(*types.Basic); ok && basic.Info()&(types.IsFloat|types.IsComplex) != 0 {
+			// Panic printing can inspect a named floating-point kind without
+			// converting it to the corresponding basic interface type.
+			return []types.Type{basic}
+		}
 		return b.structuralTypeChildren(t.Underlying())
 	}
 	return nil

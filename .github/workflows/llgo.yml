@@ -736,7 +736,8 @@ jobs:
   cross-compile:
     if: needs.prepare.outputs.run_code_ci == 'true'
     needs: prepare
-    timeout-minutes: 30
+    # Allow the threaded-runtime, LTO and size-build suites to finish on a cold cache.
+    timeout-minutes: 45
     strategy:
       matrix:
         # WASI output is host-independent; keep this qualification on Ubuntu.
@@ -799,6 +800,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          go test -tags=dev ./internal/build -count=1 \
+            -run '^Test(DeadcodeDropCollectFingerprint|DevLTOGlobalDCECollectFingerprint)$'
           go build -tags=dev -o "$RUNNER_TEMP/llgo-dev" ./cmd/llgo
           LLGO="$RUNNER_TEMP/llgo-dev" python3 dev/test_wasm_wasi_lto.py
 

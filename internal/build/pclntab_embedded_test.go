@@ -174,7 +174,7 @@ func TestEmbeddedPCLNPublication(t *testing.T) {
 					if stage == "publish" {
 						return fail
 					}
-					return os.Rename(candidate, dest)
+					return replaceFile(candidate, dest)
 				},
 			}
 			err := pruneEmbeddedPCLNWith(plan, output, true, linker)

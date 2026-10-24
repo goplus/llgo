@@ -638,32 +638,33 @@ func (p *context) bitCastIntrinsic(b llssa.Builder, args []llssa.Expr, result ty
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
-	"simd":        llgoSIMD,
-	"cstr":        llgoCstr,
-	"advance":     llgoAdvance,
-	"index":       llgoIndex,
-	"alloca":      llgoAlloca,
-	"allocCStr":   llgoAllocCStr,
-	"allocaCStr":  llgoAllocaCStr,
-	"allocaCStrs": llgoAllocaCStrs,
-	"string":      llgoString,
-	"stringData":  llgoStringData,
-	"funcAddr":    llgoFuncAddr,
-	"funcPCABI0":  llgoFuncPCABI0,
-	"skip":        llgoSkip,
-	"syscall":     llgoSyscall,
-	"boolToUint8": llgoBoolToUint8,
-	"closureEnv":  llgoClosureEnv,
-	"pystr":       llgoPyStr,
-	"pyList":      llgoPyList,
-	"pyTuple":     llgoPyTuple,
-	"sigjmpbuf":   llgoSigjmpbuf,
-	"sigsetjmp":   llgoSigsetjmp,
-	"siglongjmp":  llgoSiglongjmp,
-	"setjmp":      llgoSetjmp,
-	"longjmp":     llgoLongjmp,
-	"deferData":   llgoDeferData,
-	"unreachable": llgoUnreachable,
+	"simd":              llgoSIMD,
+	"cstr":              llgoCstr,
+	"advance":           llgoAdvance,
+	"index":             llgoIndex,
+	"alloca":            llgoAlloca,
+	"allocCStr":         llgoAllocCStr,
+	"allocaCStr":        llgoAllocaCStr,
+	"allocaCStrs":       llgoAllocaCStrs,
+	"string":            llgoString,
+	"stringData":        llgoStringData,
+	"funcAddr":          llgoFuncAddr,
+	"funcPCABI0":        llgoFuncPCABI0,
+	"skip":              llgoSkip,
+	"syscall":           llgoSyscall,
+	"boolToUint8":       llgoBoolToUint8,
+	"interfaceKindUsed": llgoInterfaceKindUsed,
+	"closureEnv":        llgoClosureEnv,
+	"pystr":             llgoPyStr,
+	"pyList":            llgoPyList,
+	"pyTuple":           llgoPyTuple,
+	"sigjmpbuf":         llgoSigjmpbuf,
+	"sigsetjmp":         llgoSigsetjmp,
+	"siglongjmp":        llgoSiglongjmp,
+	"setjmp":            llgoSetjmp,
+	"longjmp":           llgoLongjmp,
+	"deferData":         llgoDeferData,
+	"unreachable":       llgoUnreachable,
 
 	"atomicLoad":         llgoAtomicLoad,
 	"atomicStore":        llgoAtomicStore,
@@ -2613,7 +2614,11 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	p.emitPCLineLabel(b, call.Pos())
 	cv := call.Value
 	mayRecover := p.callMayRecover(cv)
+	if act == llssa.Call && p.emitDirectFinalizer(b, call, ds, mayRecover) {
+		return
+	}
 	if mthd := call.Method; mthd != nil {
+		p.recordReflectValueMethodInvoke(call, mthd)
 		reflectCheck := p.reflectTypeMethodCheck(call, mthd)
 		o := p.compileValue(b, cv)
 		var fn llssa.Expr
@@ -2782,6 +2787,15 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.boolToUint8(b, args)
 			}, args...)
+		case llgoInterfaceKindUsed:
+			if len(call.Args) != 1 {
+				panic("interfaceKindUsed(kind): invalid arguments")
+			}
+			kind, ok := constInt(call.Args[0])
+			if !ok || kind < int(types.Float32) || kind > int(types.Complex128) {
+				panic("interfaceKindUsed(kind): expected a constant floating-point kind")
+			}
+			ret = b.InterfaceBasicTypeUsed(types.Typ[kind])
 		case llgoClosureEnv:
 			if len(args) != 0 || p.fn == nil || !p.fn.NeedsEnv() {
 				panic("closureEnv(): called outside an env-bearing function")
@@ -2934,6 +2948,30 @@ func needsNamedClosureChange(got, want types.Type) bool {
 	_, gotIsFunc := got.Underlying().(*types.Signature)
 	_, wantIsFunc := want.Underlying().(*types.Signature)
 	return gotIsFunc && wantIsFunc && types.Identical(got.Underlying(), want.Underlying())
+}
+
+// A user interface can invoke reflect.Value's method lookup without a direct
+// reference to reflect.Value.Method. Preserve the same DCE demand, including
+// when its result is spelled through a type alias.
+func (p *context) recordReflectValueMethodInvoke(call *ssa.CallCommon, method *types.Func) {
+	sig := method.Type().(*types.Signature)
+	if sig.Results().Len() != 1 || len(call.Args) != 1 {
+		return
+	}
+	typ, ok := types.Unalias(sig.Results().At(0).Type()).(*types.Named)
+	if !ok || typ.Obj().Pkg() == nil || typ.Obj().Pkg().Path() != "reflect" || typ.Obj().Name() != "Value" {
+		return
+	}
+	switch method.Name() {
+	case "Method":
+		p.pkg.MarkReflectMethod(p.fn.Name())
+	case "MethodByName":
+		if name, ok := constStr(call.Args[0]); ok {
+			p.pkg.RecordReflectMethodByName(p.fn.Name(), name)
+		} else {
+			p.pkg.MarkReflectMethod(p.fn.Name())
+		}
+	}
 }
 
 func (p *context) reflectTypeMethodCheck(call *ssa.CallCommon, method *types.Func) (check llssa.ReflectMethodCheck) {

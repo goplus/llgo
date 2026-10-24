@@ -7,14 +7,14 @@ import pathlib
 import subprocess
 import tempfile
 
-from test_wasm_wasi_threads import wasmer_command
+from test_wasm_wasi_threads import check_size_probe, wasmer_command
 
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LLGO = os.environ.get("LLGO", "llgo")
 
 
-def build(env, directory, mode, fixture, tags="", test=False):
+def build(env, directory, mode, fixture, tags="", test=False, extra_flags=(), opt="O2"):
     module = directory / f"{fixture.name}-{mode}-{tags or 'gc'}.wasm"
     link_object = module.with_suffix(".lto.o")
     build_env = env.copy()
@@ -24,7 +24,8 @@ def build(env, directory, mode, fixture, tags="", test=False):
         flags += " -Wl,--save-temps"
     build_env["LDFLAGS"] = (env.get("LDFLAGS", "") + " " + flags).strip()
     command = [LLGO, "test", "-c"] if test else [LLGO, "build"]
-    command += ["-target", "wasi", "-O2", f"-lto={mode}"]
+    command += ["-target", "wasi", f"-{opt}", f"-lto={mode}"]
+    command += extra_flags
     if tags:
         command += ["-tags", tags]
     subprocess.run(command + ["-o", str(module), str(fixture)],
@@ -61,11 +62,61 @@ def main():
     env["RUST_LOG"] = "off"
     with tempfile.TemporaryDirectory(prefix="llgo-wasi-lto-") as temporary:
         directory = pathlib.Path(temporary)
+        diagnostic = directory / "bootstrap-diagnostic.wasm"
+        subprocess.run([LLGO, "build", "-target=wasi", "-o", str(diagnostic),
+                        "./internal/clite/diagnostic/_test"],
+                       cwd=ROOT / "runtime", env=env, check=True, timeout=300)
+        run(env, diagnostic, ["0", "ffffffffffffffff", "(error=42)", "zero: (error=0)", "negative: (error=-1)",
+                              "minimum: (error=-2147483648)", "maximum: (error=2147483647)"])
         for mode in ("thin", "full"):
             print(f"Testing WASI {mode} LTO", flush=True)
             fixture = ROOT / "cl/_testlto/globaldce_interface_matrix"
             module = build(env, directory, mode, fixture)
             run(env, module, (fixture / "expect.txt").read_text().splitlines())
+            # Keep the original method-summary DCE covered alongside Full LTO;
+            # the interface matrix above exercises LLVM GoGlobalDCE instead.
+            module = build(env, directory, mode, ROOT / "internal/build/testdata/wasm-size",
+                           extra_flags=("-deadcodedrop", "-globaldce=false"))
+            check_size_probe(env, module)
+            for fixture, marker in (
+                ("wasm-type-fields", "wasm type fields passed"),
+                ("wasm-type-fields-reflect", "wasm type fields reflection passed"),
+                ("wasm-finalizer-direct", "wasm direct finalizers passed"),
+                ("wasm-root-sharing", "wasm root sharing passed"),
+            ):
+                module = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
+                               extra_flags=("-deadcodedrop", "-globaldce=false"))
+                run(env, module, [marker])
+                if fixture == "wasm-root-sharing":
+                    # Frame helpers are outlined only by size optimization.
+                    sized = build(env, directory, mode, ROOT / "internal/build/testdata" / fixture,
+                                  extra_flags=("-deadcodedrop", "-globaldce=false"), opt="Oz")
+                    run(env, sized, [marker])
+                if fixture == "wasm-finalizer-direct":
+                    run(env, module, ["panic: fatal error: runtime.SetFinalizer: first argument is nil"],
+                        expected_exits=(1, 2), args=("nil",))
+            for fixture, marker in (
+                ("interface-domain", "wasm interface domain passed"),
+                ("reflect-method-value", "wasm reflect method values: 42 42 42 42 42"),
+                ("reflect-method-alias", "wasm reflect method aliases: 42 42"),
+                ("reflect-method-alias/named", "wasm named method aliases: 42 42"),
+            ):
+                module = build(env, directory, mode, ROOT / "test/wasm" / fixture,
+                               extra_flags=("-deadcodedrop", "-globaldce=false"))
+                run(env, module, [marker])
+                if mode == "full":
+                    module = build(env, directory, mode, ROOT / "test/wasm" / fixture)
+                    run(env, module, [marker])
+            module = build(env, directory, mode, ROOT / "internal/build/testdata/wasm-interface-panic",
+                           extra_flags=("-deadcodedrop", "-globaldce=false"))
+            for kind, message in (
+                ("float32", "main.F32(1.25)"),
+                ("float64", "main.F64(1.25)"),
+                ("complex64", "main.C64 (1.25+2.5i)"),
+                ("complex128", "main.C128 (1.25+2.5i)"),
+            ):
+                for args in ((kind,), (kind, "reflect")):
+                    run(env, module, ["panic: " + message], expected_exits=(1, 2), args=args)
             for tags in ("nogc", ""):
                 fixture = ROOT / "internal/build/testdata/wasm-wasi-goexit-defer"
                 module = build(env, directory, mode, fixture, tags)
